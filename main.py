@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 from scipy import ndimage
@@ -15,6 +16,14 @@ COLOR_PROVINCE_TYPE_MAP = {
     (255, 203, 91, 255): "yellow",
 }
 
+
+# Debugging tool to visualize which province corresponds to which id
+def draw_provinces_by_id(labels):
+    _, ax = plt.subplots()
+    ax.imshow(labels, cmap=plt.cm.gray, vmin=0, vmax=1)
+    plt.show()
+
+
 if __name__ == '__main__':
     provinces = np.asarray(Image.open(MAP_IMAGE).convert('RGBA'))
     province_ids, num_provinces = ndimage.label((provinces != BORDER_COLOR).any(-1), structure=np.ones((3, 3)))
@@ -26,9 +35,10 @@ if __name__ == '__main__':
         adjacencies[province_id] = np.setdiff1d(np.unique(province_ids_expanded * boundaries), [0])
 
     province_owners = {}
-    for province_id in range(1, num_provinces+1):
+    for province_id in range(1, num_provinces + 1):
         colors = np.unique(provinces[province_ids == province_id], axis=0)
         # assert len(colors) == 1, f"Province #{province_id} is not one solid color: {colors}."
         # assert tuple(colors[0]) in COLOR_PROVINCE_TYPE_MAP, \
         #     f"{tuple(colors[0])} is not in the color to province type dictionary (province #{province_id})."
+        # TODO: use most common color
         province_owners[province_id] = COLOR_PROVINCE_TYPE_MAP[tuple(colors[0])]
