@@ -36,9 +36,10 @@ if __name__ == '__main__':
 
     province_owners = {}
     for province_id in range(1, num_provinces + 1):
-        colors = np.unique(provinces[province_ids == province_id], axis=0)
-        # assert len(colors) == 1, f"Province #{province_id} is not one solid color: {colors}."
-        # assert tuple(colors[0]) in COLOR_PROVINCE_TYPE_MAP, \
-        #     f"{tuple(colors[0])} is not in the color to province type dictionary (province #{province_id})."
-        # TODO: use most common color
-        province_owners[province_id] = COLOR_PROVINCE_TYPE_MAP[tuple(colors[0])]
+        colors, frequency = np.unique(provinces[province_ids == province_id], return_counts=True, axis=0)
+        if len(colors) != 1:
+            print(f"Province #{province_id} is not one solid color: {colors} with frequency: {frequency}.")
+        top_color = colors[np.argmax(frequency)]
+        assert tuple(top_color) in COLOR_PROVINCE_TYPE_MAP, \
+            f"{tuple(top_color)} is not in the color to province type dictionary (province #{province_id})."
+        province_owners[province_id] = COLOR_PROVINCE_TYPE_MAP[tuple(top_color)]
