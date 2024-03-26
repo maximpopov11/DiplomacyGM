@@ -3,7 +3,8 @@ from PIL import Image
 from scipy import ndimage
 from skimage.segmentation import expand_labels, find_boundaries
 
-MAP_IMAGE = "assets/provinces.png"
+PROVINCES_IMAGE = "assets/provinces.png"
+CENTERS_IMAGE = "assets/centers.png"
 
 BORDER_COLOR = [0, 0, 0, 255]
 
@@ -17,12 +18,15 @@ COLOR_PROVINCE_TYPE_MAP = {
 
 
 def read_map_data():
-    provinces = np.asarray(Image.open(MAP_IMAGE).convert('RGBA'))
-    province_id_map, num_provinces = ndimage.label((provinces != BORDER_COLOR).any(-1), structure=np.ones((3, 3)))
+    provinces_image = np.asarray(Image.open(PROVINCES_IMAGE).convert('RGBA'))
+    centers_image = np.asarray(Image.open(CENTERS_IMAGE).convert('RGBA'))
+
+    province_id_map, num_provinces = ndimage.label((provinces_image != BORDER_COLOR).any(-1), structure=np.ones((3, 3)))
     province_id_map_expanded = expand_labels(province_id_map, distance=6)
 
     adjacencies = get_adjacencies(province_id_map_expanded, num_provinces)
-    province_owners = get_province_owners(provinces, province_id_map, num_provinces)
+    province_owners = get_province_owners(provinces_image, province_id_map, num_provinces)
+    centers = get_centers(province_id_map, centers_image)
 
 
 def get_adjacencies(province_id_map_expanded, num_provinces):
@@ -49,6 +53,10 @@ def get_province_owners(provinces, province_id_map, num_provinces):
         province_owners[province_id] = COLOR_PROVINCE_TYPE_MAP[tuple(top_color)]
 
     return province_owners
+
+
+def get_centers(province_id_map, centers_image):
+    return set(np.setdiff1d(np.unique(province_id_map * (centers_image[:, :, 3] != 0)), [0]))
 
 
 if __name__ == '__main__':
