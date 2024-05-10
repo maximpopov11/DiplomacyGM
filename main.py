@@ -5,21 +5,29 @@ from skimage.segmentation import expand_labels, find_boundaries
 
 PROVINCES_IMAGE = "assets/provinces.png"
 CENTERS_IMAGE = "assets/centers.png"
+UNITS_IMAGE = "assets/units.png"
 
 BORDER_COLOR = [0, 0, 0, 255]
 
-COLOR_PROVINCE_TYPE_MAP = {
-    (96, 96, 96, 255): "impassable",
-    (197, 223, 234, 255): "ocean",
-    (196, 143, 133, 255): "brown",
-    (255, 56, 50, 255): "red",
-    (255, 203, 91, 255): "yellow",
+PROVINCE_COLOR_TYPE_MAP = {
+    (96, 96, 96): "impassable",
+    (197, 223, 234): "ocean",
+    (196, 143, 133): "brown",
+    (255, 56, 50): "red",
+    (255, 203, 91): "yellow",
+}
+
+UNIT_COLOR_TYPE_MAP = {
+    (221, 168, 158): "brown",
+    (255, 228, 116): "yellow",
+    (255, 81, 75): "red",
 }
 
 
 def read_map_data():
     provinces_image = np.asarray(Image.open(PROVINCES_IMAGE).convert('RGBA'))
     centers_image = np.asarray(Image.open(CENTERS_IMAGE).convert('RGBA'))
+    units_image = np.asarray(Image.open(UNITS_IMAGE).convert('RGBA'))
 
     province_id_map, num_provinces = ndimage.label((provinces_image != BORDER_COLOR).any(-1), structure=np.ones((3, 3)))
     province_id_map_expanded = expand_labels(province_id_map, distance=6)
@@ -27,6 +35,7 @@ def read_map_data():
     adjacencies = get_adjacencies(province_id_map_expanded, num_provinces)
     province_owners = get_province_owners(provinces_image, province_id_map, num_provinces)
     centers = get_centers(province_id_map, centers_image)
+    units = get_units(province_id_map, units_image)
 
 
 def get_adjacencies(province_id_map_expanded, num_provinces):
@@ -47,10 +56,10 @@ def get_province_owners(provinces, province_id_map, num_provinces):
         if len(colors) != 1:
             print(f"Province #{province_id} is not one solid color: {colors} with frequency: {frequency}.")
 
-        top_color = colors[np.argmax(frequency)]
-        assert tuple(top_color) in COLOR_PROVINCE_TYPE_MAP, \
-            f"{tuple(top_color)} is not in the color to province type dictionary (province #{province_id})."
-        province_owners[province_id] = COLOR_PROVINCE_TYPE_MAP[tuple(top_color)]
+        top_color = tuple(colors[np.argmax(frequency)][:3])
+        assert top_color in PROVINCE_COLOR_TYPE_MAP, \
+            f"{top_color} is not in the color to province type dictionary (province #{province_id})."
+        province_owners[province_id] = PROVINCE_COLOR_TYPE_MAP[top_color]
 
     return province_owners
 
@@ -59,5 +68,30 @@ def get_centers(province_id_map, centers_image):
     return set(np.setdiff1d(np.unique(province_id_map * (centers_image[:, :, 3] != 0)), [0]))
 
 
+def get_units(province_id_map, units_image):
+    units = {}
+
+    unit_id_map, num_units = ndimage.label((units_image[:, :, 3] != 0), structure=np.ones((3, 3)))
+    for unit_id in range(1, num_units + 1):
+        province_ids, frequency = np.unique(province_id_map[unit_id_map == unit_id], return_counts=True)
+        province_id = province_ids[frequency.argmax()]
+
+        unit_colors = np.unique(units_image[unit_id_map == unit_id], axis=0)
+        unit_player = None
+        for color in unit_colors:
+            color = tuple(color[:3])
+            if color in UNIT_COLOR_TYPE_MAP:
+                unit_player = UNIT_COLOR_TYPE_MAP[color]
+                break
+        assert unit_player is not None, f"Could not find player for unit {unit_id} with colors {unit_colors}"
+        units[province_id] = {"unit_number": unit_id, "player": unit_player}
+
+    return units
+
+
 if __name__ == '__main__':
     read_map_data()
+    # TODO: Map Reading: Unit Type, Unit Coast, Displaced Unit, Impassable, X/Y Wrap, Label Names, SVG Support
+    # TODO: Adjudication
+    # TODO: Map Drawing: Orders, Results
+    # TODO: Bot: Order Input, Order Viewing, Adjudication
