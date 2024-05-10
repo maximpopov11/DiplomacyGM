@@ -3,8 +3,7 @@ from PIL import Image
 from scipy import ndimage
 from skimage.segmentation import expand_labels, find_boundaries
 
-from config import PROVINCES_IMAGE, CENTERS_IMAGE, UNITS_IMAGE, BORDER_COLOR, PROVINCE_COLOR_TYPE_MAP, \
-    UNIT_COLOR_TYPE_MAP
+from config import *
 
 
 def read_map_data():

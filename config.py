@@ -5,15 +5,13 @@ UNITS_IMAGE = "assets/units.png"
 BORDER_COLOR = [0, 0, 0, 255]
 
 PROVINCE_COLOR_TYPE_MAP = {
-    (96, 96, 96): "impassable",
-    (197, 223, 234): "ocean",
-    (196, 143, 133): "brown",
-    (255, 56, 50): "red",
-    (255, 203, 91): "yellow",
+    (0, 38, 255): "ocean",
+    (0, 255, 33): "green",
+    (255, 0, 0): "red",
 }
 
 UNIT_COLOR_TYPE_MAP = {
-    (221, 168, 158): "brown",
-    (255, 228, 116): "yellow",
-    (255, 81, 75): "red",
+    (182, 255, 0): "green army",
+    (255, 0, 221): "red army",
+    (178, 0, 255): "red fleet",
 }
