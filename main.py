@@ -9,7 +9,8 @@ from config import *
 def read_map_data():
     provinces_image = np.asarray(Image.open(PROVINCES_IMAGE).convert('RGBA'))
     centers_image = np.asarray(Image.open(CENTERS_IMAGE).convert('RGBA'))
-    units_image = np.asarray(Image.open(UNITS_IMAGE).convert('RGBA'))
+    armies_image = np.asarray(Image.open(ARMIES_IMAGE).convert('RGBA'))
+    fleets_image = np.asarray(Image.open(FLEETS_IMAGE).convert('RGBA'))
 
     province_id_map, num_provinces = ndimage.label((provinces_image != BORDER_COLOR).any(-1), structure=np.ones((3, 3)))
     province_id_map_expanded = expand_labels(province_id_map, distance=6)
@@ -17,7 +18,8 @@ def read_map_data():
     adjacencies = get_adjacencies(province_id_map_expanded, num_provinces)
     province_owners = get_province_owners(provinces_image, province_id_map, num_provinces)
     centers = get_centers(province_id_map, centers_image)
-    units = get_units(province_id_map, units_image)
+    armies = get_units(province_id_map, armies_image)
+    fleets = get_units(province_id_map, fleets_image)
 
 
 def get_adjacencies(province_id_map_expanded, num_provinces):
@@ -47,14 +49,17 @@ def get_province_owners(provinces, province_id_map, num_provinces):
 
 
 def get_centers(province_id_map, centers_image):
+    # TODO: check majority province
     return set(np.setdiff1d(np.unique(province_id_map * (centers_image[:, :, 3] != 0)), [0]))
 
 
+# Requires separate calls per unit type (armies, fleets)
 def get_units(province_id_map, units_image):
     units = {}
 
     unit_id_map, num_units = ndimage.label((units_image[:, :, 3] != 0), structure=np.ones((3, 3)))
     for unit_id in range(1, num_units + 1):
+        # TODO: check majority province
         province_ids, frequency = np.unique(province_id_map[unit_id_map == unit_id], return_counts=True)
         province_id = province_ids[frequency.argmax()]
 
@@ -73,7 +78,13 @@ def get_units(province_id_map, units_image):
 
 if __name__ == '__main__':
     read_map_data()
-    # TODO: Map Reading: Unit Type, Unit Coast, Displaced Unit, Impassable, X/Y Wrap, Label Names, SVG Support
-    # TODO: Adjudication
-    # TODO: Map Drawing: Orders, Results
-    # TODO: Bot: Order Input, Order Viewing, Adjudication
+    # TODO: Adjudicate
+    # TODO: Draw Results
+    # TODO: Draw Orders
+    # TODO: Support SVG
+    # TODO: Read Province Names
+    # TODO: Input Orders via Bot
+    # TODO: View Preliminary Orders via Bot
+    # TODO: Adjudicate via Bot
+    # TODO: Output as Layers for GM Corrections
+    # TODO: GM Corrections Commands
