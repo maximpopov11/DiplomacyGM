@@ -48,18 +48,18 @@ def get_province_owners(provinces, province_id_map, num_provinces):
     return province_owners
 
 
+# If a center overlaps multiple provinces all provinces will be considered a center
 def get_centers(province_id_map, centers_image):
-    # TODO: check majority province
     return set(np.setdiff1d(np.unique(province_id_map * (centers_image[:, :, 3] != 0)), [0]))
 
 
 # Requires separate calls per unit type (armies, fleets)
+# If a unit overlaps multiple provinces, the province with most overlap is selected as the unit's position
 def get_units(province_id_map, units_image):
     units = {}
 
     unit_id_map, num_units = ndimage.label((units_image[:, :, 3] != 0), structure=np.ones((3, 3)))
     for unit_id in range(1, num_units + 1):
-        # TODO: check majority province
         province_ids, frequency = np.unique(province_id_map[unit_id_map == unit_id], return_counts=True)
         province_id = province_ids[frequency.argmax()]
 
@@ -78,10 +78,14 @@ def get_units(province_id_map, units_image):
 
 if __name__ == '__main__':
     read_map_data()
+    # TODO: Support SVG
     # TODO: Adjudicate
+    # TODO: Consider Coasts
+    # TODO: Read Displaced Units
+    # TODO: Allow X-Wrap
+    # TODO: Parse Province Names
     # TODO: Draw Results
     # TODO: Draw Orders
-    # TODO: Support SVG
     # TODO: Read Province Names
     # TODO: Input Orders via Bot
     # TODO: View Preliminary Orders via Bot
