@@ -16,12 +16,3 @@ if __name__ == '__main__':
             if len(split) != 2:
                 continue
             coordinates.get(province_id).append((split[0], split[1]))
-
-    # TODO: parse provinces
-        # TODO: populate territories
-        # TODO: populate province coordinates twice sorted x and y globally w/ province match
-        # TODO: record centers
-    # TODO: parse adjacencies
-        # TODO: iterate through coordinate windows and add to set all in range of a point's x and y
-    # TODO: parse players
-    # TODO: parse units

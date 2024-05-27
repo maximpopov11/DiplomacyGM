@@ -78,17 +78,3 @@ def get_units(province_id_map, units_image):
 
 if __name__ == '__main__':
     read_map_data()
-    # TODO: Support SVG
-    # TODO: Adjudicate
-    # TODO: Consider Coasts
-    # TODO: Read Displaced Units
-    # TODO: Allow X-Wrap
-    # TODO: Parse Province Names
-    # TODO: Draw Results
-    # TODO: Draw Orders
-    # TODO: Read Province Names
-    # TODO: Input Orders via Bot
-    # TODO: View Preliminary Orders via Bot
-    # TODO: Adjudicate via Bot
-    # TODO: Output as Layers for GM Corrections
-    # TODO: GM Corrections Commands
