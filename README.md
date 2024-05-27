@@ -1,1 +1,1 @@
-This code parses arbitrary Diplomacy images representing the map background, supply center layer, and unit layer. The resulting data is stored but not currently output.
+This project is designed to fully automate the adjudication of Diplomacy games over Discord. SVG map variants are the current focus but support for various functionalities will be added by demand.

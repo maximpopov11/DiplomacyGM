@@ -2,7 +2,6 @@ from pydip.map.map import Map
 from pydip.player.command.command import MoveCommand, ConvoyMoveCommand, ConvoyTransportCommand
 from pydip.player.player import Player
 from pydip.player.unit import UnitTypes
-from pydip.turn.command_map import CommandMap
 from pydip.turn.resolve import resolve_turn
 
 if __name__ == '__main__':
