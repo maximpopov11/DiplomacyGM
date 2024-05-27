@@ -3,6 +3,16 @@ from lxml import etree
 from vector.config import *
 
 
+def get_centers(provinces):
+    centers = set()
+
+    for province in provinces:
+        if province.get('center') == 'True':
+            centers.add(province.get('name'))
+
+    return centers
+
+
 # Return coordinate x,y,province list sorted by x
 def get_coordinates(provinces):
     coordinates = []
@@ -65,6 +75,9 @@ def get_adjacencies(coordinates):
 def parse_map_data():
     map_data = etree.parse(SVG)
     provinces_data = map_data.xpath(f'//*[@id="{PROVINCE_LAYER_ID}"]')[0].getchildren()
+
+    centers = get_centers(provinces_data)
+
     coordinates = get_coordinates(provinces_data)
     adjacencies = get_adjacencies(coordinates)
 
