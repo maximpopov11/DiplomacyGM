@@ -6,3 +6,5 @@ SVG = 'assets/test.svg'
 
 # Layer group in SVG containing province data
 PROVINCE_LAYER_ID = 'layer10'
+# Layer group in SVG containing center data
+CENTER_LAYER_ID = 'layer13'
