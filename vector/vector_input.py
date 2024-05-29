@@ -17,6 +17,7 @@ def get_coordinates(province_data):
         path = province.get('d').split()
 
         province_coordinates = []
+        last_coordinate = None
         for element in path:
             split = element.split(',')
 
@@ -24,10 +25,17 @@ def get_coordinates(province_data):
             if len(split) != 2:
                 continue
 
-            province_coordinates.append((float(split[0]), float(split[1])))
+            if not last_coordinate:
+                coordinate = (float(split[0]), float(split[1]))
+            else:
+                # Coordinate data in an SVG is provided relative to last coordinate after the first
+                coordinate = (last_coordinate[0] + float(split[0]), last_coordinate[1] + float(split[1]))
+            last_coordinate = coordinate
 
-            coordinate = {'x': float(split[0]), 'y': float(split[1]), 'province': province_name}
-            binary_insert(coordinate, coordinates)
+            province_coordinates.append(coordinate)
+
+            coordinate_dict = {'x': float(split[0]), 'y': float(split[1]), 'province': province_name}
+            binary_insert(coordinate_dict, coordinates)
 
         provinces.append(Province(province_name, province_coordinates))
 
@@ -61,7 +69,7 @@ def get_centers(provinces, center_data):
         for center in center_coordinates:
             point = Point(center)
             if polygon.contains(point):
-                centers.add(province.get('name'))
+                centers.add(province.name)
                 center_coordinates.remove(center)
 
     return centers
@@ -103,4 +111,3 @@ def parse_map_data():
 
 if __name__ == '__main__':
     parse_map_data()
-    # TODO: we don't get coordinates right actually evidenced by polygon not finding center
