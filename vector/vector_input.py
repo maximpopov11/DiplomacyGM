@@ -4,6 +4,8 @@ from shapely.geometry import Point, Polygon
 from vector.config import *
 from vector.province import Province
 
+NAMESPACE = {'svg': 'http://www.w3.org/2000/svg'}
+
 
 # Parse provinces, adjacencies, centers, and units
 def parse_map_data():
@@ -62,57 +64,79 @@ def create_provinces(provinces_data):
     return provinces
 
 
-# TODO: can we share the geometry in the next 3 functions? Pass attribute to check, value to get, function to set
 # Sets province names
 def initialize_province_names(provinces, names_data):
-    # TODO: get name
-    namespace = {'svg': 'http://www.w3.org/2000/svg'}
-    # names_data[0].findall('.//svg:tspan', namespaces=namespace)
+    def get_x(name_data):
+        return name_data.get('x')
 
-    names = set(names_data)
-    for province in provinces:
-        polygon = Polygon(province.coordinates)
+    def get_y(name_data):
+        return name_data.get('y')
 
-        for name in names:
-            x = name.get('x')
-            y = name.get('y')
+    def set_province_name(province, name_data):
+        province.set_name(name_data.findall('.//svg:tspan', namespaces=NAMESPACE)[0].text)
 
-            if not x or not y:
-                names.remove(name)
-                continue
-
-            point = Point((x, y))
-            if polygon.contains(point):
-                province.set_name(name.get('id'))  # TODO: how do we access the name?
-                names.remove(name)
+    initialize_province_resident_data(provinces, names_data, get_x, get_y, set_province_name)
 
 
 # Sets province supply center values
 def initialize_supply_centers(provinces, centers_data):
-    centers = set(centers_data)
+    def get_x(supply_center_data):
+        return supply_center_data.get('cx')
 
-    for province in provinces:
-        polygon = Polygon(province.coordinates)
+    def get_y(supply_center_data):
+        return supply_center_data.get('cy')
 
-        for center in centers:
-            point = Point(center.get('cx'), center.get('cy'))
-            if polygon.contains(point):
-                province.set_center(True)
-                centers.remove(center)
+    def set_province_supply_center(province, _):
+        province.set_has_supply_center(True)
+
+    initialize_province_resident_data(provinces, centers_data, get_x, get_y, set_province_supply_center)
 
 
 # Sets province unit values
 def initialize_units(provinces, units_data):
-    units = set(units_data)
+    def get_x(unit_data):
+        return unit_data.findall('.//svg:path', namespaces=NAMESPACE)[0].get('d').split()[1].split(',')[0]
 
+    def get_y(unit_data):
+        return unit_data.findall('.//svg:path', namespaces=NAMESPACE)[0].get('d').split()[1].split(',')[1]
+
+    def set_province_unit(province, unit_data):
+        # TODO: The unit type is derived from shape which lives in sodipodi:type
+        #  for which we might need to add sodipop to the namespace?
+        unity_type = 'Lets pretend this is a unit type'
+        # TODO: The player is derived from fill color lives in style below
+        player = unit_data.findall('.//svg:path', namespaces=NAMESPACE)[0].get('style')
+        province.set_unit({'type': unity_type, 'player': player})
+
+    initialize_province_resident_data(provinces, units_data, get_x, get_y, set_province_unit)
+
+
+# Initializes relevant province data
+# resident_dataset: SVG element whose children each live in some province
+# get_x and get_y: functions to get x and y child data in SVG
+# function: method in Province that, given the province and a child element corresponding to that province, initializes
+# that data in the Province
+def initialize_province_resident_data(provinces, resident_dataset, get_x, get_y, function):
+    resident_dataset = set(resident_dataset)
     for province in provinces:
-        polygon = Polygon(province.coordinates)
+        remove = set()
 
-        for unit in units:
-            point = Point(unit.get('cx'), unit.get('cy'))
+        polygon = Polygon(province.coordinates)
+        for resident_data in resident_dataset:
+            x = get_x(resident_data)
+            y = get_y(resident_data)
+
+            if not x or not y:
+                remove.add(resident_data)
+                continue
+
+            point = Point((x, y))
             if polygon.contains(point):
-                province.set_unit({'type': unit.get('type'), 'player': unit.get('color')})
-                units.remove(unit)
+                function(province, resident_data)
+                remove.add(resident_data)
+
+        for resident_data in remove:
+            resident_dataset.remove(resident_data)
 
 
 # Returns province adjacency set
@@ -144,4 +168,7 @@ def get_adjacencies(provinces):
 
 
 if __name__ == '__main__':
+    # TODO: stop get adjacencies from crashing
+    # TODO: provide print warning safety for titles, centers, units not found a home for
+    # TODO: rig this up to the bot!
     parse_map_data()
