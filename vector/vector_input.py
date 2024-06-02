@@ -5,16 +5,40 @@ from vector.config import *
 from vector.province import Province
 
 
-# Return:
-# * Province list
-# * Coordinate x,y,province dict sorted by x
-def get_coordinates(province_data):
-    provinces = []
-    coordinates = []
+# Parse provinces, adjacencies, centers, and units
+def parse_map_data():
+    provinces_data, names_data, centers_data, units_data = get_svg_data()
+    provinces = get_provinces(provinces_data, names_data, centers_data, units_data)
+    adjacencies = get_adjacencies(provinces)
 
-    for province in province_data:
-        province_name = province.get('name')
-        path = province.get('d').split()
+
+# Gets provinces, names, centers, and units data from SVG
+def get_svg_data():
+    map_data = etree.parse(SVG_PATH)
+    provinces_data = map_data.xpath(f'//*[@id="{LAND_PROVINCE_FILL_LAYER_ID}"]')[0].getchildren()
+    names_data = map_data.xpath(f'//*[@id="{PROVINCE_NAMES_LAYER_ID}"]')[0].getchildren()
+    centers_data = map_data.xpath(f'//*[@id="{SUPPLY_CENTER_LAYER_ID}"]')[0].getchildren()
+    units_data = map_data.xpath(f'//*[@id="{UNITS_LAYER_ID}"]')[0].getchildren()
+    return provinces_data, names_data, centers_data, units_data
+
+
+# Creates and initializes provinces
+def get_provinces(provinces_data, names_data, centers_data, units_data):
+    provinces = create_provinces(provinces_data)
+    initialize_province_names(provinces, names_data)
+    initialize_supply_centers(provinces, centers_data)
+    initialize_units(provinces, units_data)
+    return provinces
+
+
+# Creates provinces with border coordinates
+def create_provinces(provinces_data):
+    provinces = []
+    for province in provinces_data:
+        path = province.get('d')
+        if not path:
+            continue
+        path = path.split()
 
         province_coordinates = []
         last_coordinate = None
@@ -31,82 +55,92 @@ def get_coordinates(province_data):
                 # Coordinate data in an SVG is provided relative to last coordinate after the first
                 coordinate = (last_coordinate[0] + float(split[0]), last_coordinate[1] + float(split[1]))
             last_coordinate = coordinate
-
             province_coordinates.append(coordinate)
 
-            coordinate_dict = {'x': float(split[0]), 'y': float(split[1]), 'province': province_name}
-            binary_insert(coordinate_dict, coordinates)
+        provinces.append(Province(province_coordinates))
 
-        provinces.append(Province(province_name, province_coordinates))
-
-    return provinces, coordinates
+    return provinces
 
 
-# Binary insert for coordinates by x
-def binary_insert(coordinate, coordinates):
-    left, right = 0, len(coordinates) - 1
+# TODO: can we share the geometry in the next 3 functions? Pass attribute to check, value to get, function to set
+# Sets province names
+def initialize_province_names(provinces, names_data):
+    # TODO: get name
+    namespace = {'svg': 'http://www.w3.org/2000/svg'}
+    # names_data[0].findall('.//svg:tspan', namespaces=namespace)
 
-    while left <= right:
-        mid = (left + right) // 2
-        if coordinates[mid]['x'] < coordinate['x']:
-            left = mid + 1
-        else:
-            right = mid - 1
-
-    coordinates.insert(left, coordinate)
-
-
-# Return set of names of provinces with centers
-def get_centers(provinces, center_data):
-    center_coordinates = []
-    for center in center_data:
-        center_coordinates.append((center.get('cx'), center.get('cy')))
-
-    centers = set()
+    names = set(names_data)
     for province in provinces:
         polygon = Polygon(province.coordinates)
 
-        for center in center_coordinates:
-            point = Point(center)
+        for name in names:
+            x = name.get('x')
+            y = name.get('y')
+
+            if not x or not y:
+                names.remove(name)
+                continue
+
+            point = Point((x, y))
             if polygon.contains(point):
-                centers.add(province.name)
-                center_coordinates.remove(center)
-
-    return centers
+                province.set_name(name.get('id'))  # TODO: how do we access the name?
+                names.remove(name)
 
 
-# Return province adjacency set
-def get_adjacencies(coordinates):
+# Sets province supply center values
+def initialize_supply_centers(provinces, centers_data):
+    centers = set(centers_data)
+
+    for province in provinces:
+        polygon = Polygon(province.coordinates)
+
+        for center in centers:
+            point = Point(center.get('cx'), center.get('cy'))
+            if polygon.contains(point):
+                province.set_center(True)
+                centers.remove(center)
+
+
+# Sets province unit values
+def initialize_units(provinces, units_data):
+    units = set(units_data)
+
+    for province in provinces:
+        polygon = Polygon(province.coordinates)
+
+        for unit in units:
+            point = Point(unit.get('cx'), unit.get('cy'))
+            if polygon.contains(point):
+                province.set_unit({'type': unit.get('type'), 'player': unit.get('color')})
+                units.remove(unit)
+
+
+# Returns province adjacency set
+def get_adjacencies(provinces):
+    coordinates = []
+    for province in provinces:
+        for coordinate in province.coordinates:
+            coordinates.append({'x': coordinate[0], 'y': coordinate[1], 'province_name': province.name})
+    coordinates = sorted(coordinates, key=lambda item: item[0][0])
+
     adjacencies = set()
-
     for i in range(len(coordinates) - 1):
-        upper_x = coordinates[i]['x'] + 1
-        lower_y, upper_y = coordinates[i]['y'] - 1, coordinates[i]['y'] + 1
+        upper_x = coordinates[i]['x'] + PROVINCE_BORDER_MARGIN
+        lower_y, upper_y = coordinates[i]['y'] - PROVINCE_BORDER_MARGIN, coordinates[i]['y'] + PROVINCE_BORDER_MARGIN
 
         for j in range(i + 1, len(coordinates) - 1):
             if coordinates[j]['x'] > upper_x:
                 # Out of x-scope
                 break
 
-            if coordinates[i]['province'] == coordinates[j]['province']:
+            if coordinates[i]['province_name'] == coordinates[j]['province_name']:
                 # Province doesn't border itself
                 continue
 
             if lower_y < coordinates[j]['y'] < upper_y:
-                adjacencies.add((coordinates[i]['province'], coordinates[j]['province']))
+                adjacencies.add((coordinates[i]['province_name'], coordinates[j]['province_name']))
 
     return adjacencies
-
-
-# Parse provinces, adjacencies, centers, and units
-def parse_map_data():
-    map_data = etree.parse(SVG)
-    provinces_data = map_data.xpath(f'//*[@id="{PROVINCE_LAYER_ID}"]')[0].getchildren()
-    centers_data = map_data.xpath(f'//*[@id="{CENTER_LAYER_ID}"]')[0].getchildren()
-
-    provinces, coordinates = get_coordinates(provinces_data)
-    centers = get_centers(provinces, centers_data)
-    adjacencies = get_adjacencies(coordinates)
 
 
 if __name__ == '__main__':
