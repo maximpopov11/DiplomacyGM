@@ -145,7 +145,7 @@ def get_adjacencies(provinces):
     for province in provinces:
         for coordinate in province.coordinates:
             coordinates.append({'x': coordinate[0], 'y': coordinate[1], 'province_name': province.name})
-    coordinates = sorted(coordinates, key=lambda item: item[0][0])
+    coordinates = sorted(coordinates, key=lambda item: item['x'])
 
     adjacencies = set()
     for i in range(len(coordinates) - 1):
