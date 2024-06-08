@@ -1,3 +1,5 @@
+import re
+
 from lxml import etree
 from shapely.geometry import Point, Polygon
 
@@ -12,6 +14,17 @@ def parse_map_data():
     provinces_data, names_data, centers_data, units_data = get_svg_data()
     provinces = get_provinces(provinces_data, names_data, centers_data, units_data)
     adjacencies = get_adjacencies(provinces)
+
+    centers = []
+    units = []
+    for province in provinces:
+        if province.has_supply_center:
+            centers.append(province.name)
+        if province.unit:
+            units.append(province.name)
+
+    print(centers)
+    print(units)
 
 
 # Gets provinces, names, centers, and units data from SVG
@@ -66,39 +79,35 @@ def create_provinces(provinces_data):
 
 # Sets province names
 def initialize_province_names(provinces, names_data):
-    def get_x(name_data):
-        return name_data.get('x')
-
-    def get_y(name_data):
-        return name_data.get('y')
+    def get_coordinates(name_data):
+        return name_data.get('x'), name_data.get('y')
 
     def set_province_name(province, name_data):
         province.set_name(name_data.findall('.//svg:tspan', namespaces=NAMESPACE)[0].text)
 
-    initialize_province_resident_data(provinces, names_data, get_x, get_y, set_province_name)
+    initialize_province_resident_data(provinces, names_data, get_coordinates, set_province_name)
 
 
 # Sets province supply center values
 def initialize_supply_centers(provinces, centers_data):
-    def get_x(supply_center_data):
-        return supply_center_data.get('cx')
-
-    def get_y(supply_center_data):
-        return supply_center_data.get('cy')
+    def get_coordinates(supply_center_data):
+        transform = supply_center_data.get('transform')
+        if not transform:
+            return None, None
+        split = re.split(r'[(),]', transform)
+        return split[1], split[2]
 
     def set_province_supply_center(province, _):
         province.set_has_supply_center(True)
 
-    initialize_province_resident_data(provinces, centers_data, get_x, get_y, set_province_supply_center)
+    initialize_province_resident_data(provinces, centers_data, get_coordinates, set_province_supply_center)
 
 
 # Sets province unit values
 def initialize_units(provinces, units_data):
-    def get_x(unit_data):
-        return unit_data.findall('.//svg:path', namespaces=NAMESPACE)[0].get('d').split()[1].split(',')[0]
-
-    def get_y(unit_data):
-        return unit_data.findall('.//svg:path', namespaces=NAMESPACE)[0].get('d').split()[1].split(',')[1]
+    def get_coordinates(unit_data):
+        coordinates = unit_data.findall('.//svg:path', namespaces=NAMESPACE)[0].get('d').split()[1].split(',')
+        return coordinates[0], coordinates[1]
 
     def set_province_unit(province, unit_data):
         # TODO: The unit type is derived from shape which lives in sodipodi:type
@@ -108,23 +117,22 @@ def initialize_units(provinces, units_data):
         player = unit_data.findall('.//svg:path', namespaces=NAMESPACE)[0].get('style')
         province.set_unit({'type': unity_type, 'player': player})
 
-    initialize_province_resident_data(provinces, units_data, get_x, get_y, set_province_unit)
+    initialize_province_resident_data(provinces, units_data, get_coordinates, set_province_unit)
 
 
 # Initializes relevant province data
 # resident_dataset: SVG element whose children each live in some province
-# get_x and get_y: functions to get x and y child data in SVG
+# get_coordinates: functions to get x and y child data coordinates in SVG
 # function: method in Province that, given the province and a child element corresponding to that province, initializes
 # that data in the Province
-def initialize_province_resident_data(provinces, resident_dataset, get_x, get_y, function):
+def initialize_province_resident_data(provinces, resident_dataset, get_coordinates, function):
     resident_dataset = set(resident_dataset)
     for province in provinces:
         remove = set()
 
         polygon = Polygon(province.coordinates)
         for resident_data in resident_dataset:
-            x = get_x(resident_data)
-            y = get_y(resident_data)
+            x, y = get_coordinates(resident_data)
 
             if not x or not y:
                 remove.add(resident_data)
