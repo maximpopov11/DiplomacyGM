@@ -91,11 +91,13 @@ def initialize_province_names(provinces, names_data):
 # Sets province supply center values
 def initialize_supply_centers(provinces, centers_data):
     def get_coordinates(supply_center_data):
-        transform = supply_center_data.get('transform')
-        if not transform:
+        circles = supply_center_data.findall('.//svg:circle', namespaces=NAMESPACE)
+        if not circles:
             return None, None
-        split = re.split(r'[(),]', transform)
-        return split[1], split[2]
+        circle = circles[0]
+        base_coordinates = float(circle.get('cx')), float(circle.get('cy'))
+        translation_coordinates = get_translation_coordinates(supply_center_data)
+        return base_coordinates[0] + translation_coordinates[0], base_coordinates[1] + translation_coordinates[1]
 
     def set_province_supply_center(province, _):
         province.set_has_supply_center(True)
@@ -106,8 +108,9 @@ def initialize_supply_centers(provinces, centers_data):
 # Sets province unit values
 def initialize_units(provinces, units_data):
     def get_coordinates(unit_data):
-        coordinates = unit_data.findall('.//svg:path', namespaces=NAMESPACE)[0].get('d').split()[1].split(',')
-        return coordinates[0], coordinates[1]
+        base_coordinates = unit_data.findall('.//svg:path', namespaces=NAMESPACE)[0].get('d').split()[1].split(',')
+        translation_coordinates = get_translation_coordinates(unit_data)
+        return float(base_coordinates[0]) + translation_coordinates[0], float(base_coordinates[1]) + translation_coordinates[1]
 
     def set_province_unit(province, unit_data):
         # TODO: The unit type is derived from shape which lives in sodipodi:type
@@ -118,6 +121,16 @@ def initialize_units(provinces, units_data):
         province.set_unit({'type': unity_type, 'player': player})
 
     initialize_province_resident_data(provinces, units_data, get_coordinates, set_province_unit)
+
+
+# Returns the coordinates of the translation transform in the given element
+def get_translation_coordinates(element):
+    transform = element.get('transform')
+    if not transform:
+        return None, None
+    split = re.split(r'[(),]', transform)
+    assert split[0] == 'translate'
+    return float(split[1]), float(split[2])
 
 
 # Initializes relevant province data
