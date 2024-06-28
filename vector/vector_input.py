@@ -115,10 +115,10 @@ def initialize_units(provinces, units_data):
     def set_province_unit(province, unit_data):
         # TODO: The unit type is derived from shape which lives in sodipodi:type
         #  for which we might need to add sodipop to the namespace?
-        unity_type = 'Lets pretend this is a unit type'
+        unit_type = 'Lets pretend this is a unit type'
         # TODO: The player is derived from fill color lives in style below
         player = unit_data.findall('.//svg:path', namespaces=NAMESPACE)[0].get('style')
-        province.set_unit({'type': unity_type, 'player': player})
+        province.set_unit({'type': unit_type, 'player': player})
 
     initialize_province_resident_data(provinces, units_data, get_coordinates, set_province_unit)
 
@@ -189,7 +189,6 @@ def get_adjacencies(provinces):
 
 
 if __name__ == '__main__':
-    # TODO: stop get adjacencies from crashing
-    # TODO: provide print warning safety for titles, centers, units not found a home for
+    # TODO: provide print warning safety for titles, centers, units not found a home for / double found home
     # TODO: rig this up to the bot!
     parse_map_data()
