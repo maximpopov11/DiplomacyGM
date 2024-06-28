@@ -17,6 +17,9 @@ SUPPLY_CENTER_LAYER_ID = 'layer3'
 # Layer group in SVG containing units
 UNITS_LAYER_ID = 'layer10'
 
+# If the province fills are labeled directly on the SVG we can guarantee 100% accuracy on naming the provinces
+PROVINCE_FILLS_LABELED = True
+
 # Margin of error for distance between province border points. If two province borders have a point within distance of
 # this value in both x and y values, they will be considered adjacent.
 PROVINCE_BORDER_MARGIN = 1

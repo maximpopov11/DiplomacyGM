@@ -6,7 +6,11 @@ from shapely.geometry import Point, Polygon
 from vector.config import *
 from vector.province import Province
 
-NAMESPACE = {'svg': 'http://www.w3.org/2000/svg'}
+NAMESPACE = {
+    'inkscape': 'http://www.inkscape.org/namespaces/inkscape',
+    'sodipodi': 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd',
+    'svg': 'http://www.w3.org/2000/svg',
+}
 
 
 # Parse provinces, adjacencies, centers, and units
@@ -39,18 +43,21 @@ def get_svg_data():
 
 # Creates and initializes provinces
 def get_provinces(provinces_data, names_data, centers_data, units_data):
-    provinces = create_provinces(provinces_data)
-    initialize_province_names(provinces, names_data)
+    provinces = create_provinces(provinces_data, PROVINCE_FILLS_LABELED)
+
+    if not PROVINCE_FILLS_LABELED:
+        initialize_province_names(provinces, names_data)
+
     initialize_supply_centers(provinces, centers_data)
     initialize_units(provinces, units_data)
     return provinces
 
 
 # Creates provinces with border coordinates
-def create_provinces(provinces_data):
+def create_provinces(provinces_data, province_fills_labeled):
     provinces = []
-    for province in provinces_data:
-        path = province.get('d')
+    for province_data in provinces_data:
+        path = province_data.get('d')
         if not path:
             continue
         path = path.split()
@@ -72,12 +79,19 @@ def create_provinces(provinces_data):
             last_coordinate = coordinate
             province_coordinates.append(coordinate)
 
-        provinces.append(Province(province_coordinates))
+        province = Province(province_coordinates)
+
+        if province_fills_labeled:
+            # TODO: use our namespace rather than hard coding inkscape
+            name = province_data.get(('{http://www.inkscape.org/namespaces/inkscape}label'))
+            province.set_name(name)
+
+        provinces.append(province)
 
     return provinces
 
 
-# Sets province names
+# Sets province names given the names layer
 def initialize_province_names(provinces, names_data):
     def get_coordinates(name_data):
         return name_data.get('x'), name_data.get('y')
@@ -114,7 +128,7 @@ def initialize_units(provinces, units_data):
 
     def set_province_unit(province, unit_data):
         # TODO: The unit type is derived from shape which lives in sodipodi:type
-        #  for which we might need to add sodipop to the namespace?
+        #  for which we might need to add sodipop to the namespace? Yay we did it now so when we get to this it'll be easier
         unit_type = 'Lets pretend this is a unit type'
         # TODO: The player is derived from fill color lives in style below
         player = unit_data.findall('.//svg:path', namespaces=NAMESPACE)[0].get('style')
@@ -190,5 +204,9 @@ def get_adjacencies(provinces):
 
 if __name__ == '__main__':
     # TODO: provide print warning safety for titles, centers, units not found a home for / double found home
+    # TODO: clean up & provide type safety & comment code
+    # TODO: rig this up to the adjudicator!
     # TODO: rig this up to the bot!
+    # TODO: GM state corrections
+    # TODO: personal move map
     parse_map_data()
