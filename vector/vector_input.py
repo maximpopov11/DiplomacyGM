@@ -97,6 +97,8 @@ def initialize_province_names(provinces, names_data):
         return name_data.get('x'), name_data.get('y')
 
     def set_province_name(province, name_data):
+        if province.name is not None:
+            print(province.name, 'already has a name!')
         province.set_name(name_data.findall('.//svg:tspan', namespaces=NAMESPACE)[0].text)
 
     initialize_province_resident_data(provinces, names_data, get_coordinates, set_province_name)
@@ -114,6 +116,8 @@ def initialize_supply_centers(provinces, centers_data):
         return base_coordinates[0] + translation_coordinates[0], base_coordinates[1] + translation_coordinates[1]
 
     def set_province_supply_center(province, _):
+        if province.has_supply_center:
+            print(province.name, 'already has a supply center!')
         province.set_has_supply_center(True)
 
     initialize_province_resident_data(provinces, centers_data, get_coordinates, set_province_supply_center)
@@ -127,6 +131,8 @@ def initialize_units(provinces, units_data):
         return float(base_coordinates[0]) + translation_coordinates[0], float(base_coordinates[1]) + translation_coordinates[1]
 
     def set_province_unit(province, unit_data):
+        if province.unit is not None:
+            print(province.name, 'already has a unit!')
         # TODO: The unit type is derived from shape which lives in sodipodi:type
         #  for which we might need to add sodipop to the namespace? Yay we did it now so when we get to this it'll be easier
         unit_type = 'Lets pretend this is a unit type'
