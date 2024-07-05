@@ -7,7 +7,7 @@ from vector.config import *
 from vector.province import Province
 
 NAMESPACE = {
-    'inkscape': 'http://www.inkscape.org/namespaces/inkscape',
+    'inkscape': '{http://www.inkscape.org/namespaces/inkscape}',
     'sodipodi': 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd',
     'svg': 'http://www.w3.org/2000/svg',
 }
@@ -82,8 +82,7 @@ def create_provinces(provinces_data, province_fills_labeled):
         province = Province(province_coordinates)
 
         if province_fills_labeled:
-            # TODO: use our namespace rather than hard coding inkscape
-            name = province_data.get(('{http://www.inkscape.org/namespaces/inkscape}label'))
+            name = province_data.get(f"{NAMESPACE.get('inkscape')}label")
             province.set_name(name)
 
         provinces.append(province)
