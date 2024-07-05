@@ -134,9 +134,9 @@ def initialize_units(provinces, units_data):
         if province.unit is not None:
             print(province.name, 'already has a unit!')
         num_sides = unit_data.findall('.//svg:path', namespaces=NAMESPACE)[0].get('{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides')
-        if num_sides == 3:
+        if num_sides == '3':
             unit_type = 'Army'
-        elif num_sides == 6:
+        elif num_sides == '6':
             unit_type = 'Fleet'
         else:
             print('Number of sides on unit does not match any unit types')
