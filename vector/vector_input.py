@@ -164,6 +164,7 @@ def initialize_province_resident_data(provinces, resident_dataset, get_coordinat
         remove = set()
 
         polygon = Polygon(province.coordinates)
+        found = False
         for resident_data in resident_dataset:
             x, y = get_coordinates(resident_data)
 
@@ -173,8 +174,12 @@ def initialize_province_resident_data(provinces, resident_dataset, get_coordinat
 
             point = Point((x, y))
             if polygon.contains(point):
+                found = True
                 function(province, resident_data)
                 remove.add(resident_data)
+
+        if not found:
+            print('Not found!')
 
         for resident_data in remove:
             resident_dataset.remove(resident_data)
