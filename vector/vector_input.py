@@ -214,7 +214,6 @@ def get_adjacencies(provinces):
 
 
 if __name__ == '__main__':
-    # TODO: provide print warning safety for titles, centers, units not found a home for / double found home
     # TODO: clean up & provide type safety & comment code
     # TODO: rig this up to the adjudicator!
     # TODO: rig this up to the bot!
