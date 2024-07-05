@@ -5,6 +5,7 @@ from shapely.geometry import Point, Polygon
 
 from vector.config import *
 from vector.province import Province
+from vector.utils import extract_value
 
 NAMESPACE = {
     'inkscape': '{http://www.inkscape.org/namespaces/inkscape}',
@@ -135,8 +136,7 @@ def initialize_units(provinces, units_data):
         # TODO: The unit type is derived from shape which lives in sodipodi:type
         #  for which we might need to add sodipop to the namespace? Yay we did it now so when we get to this it'll be easier
         unit_type = 'Lets pretend this is a unit type'
-        # TODO: The player is derived from fill color lives in style below
-        player = unit_data.findall('.//svg:path', namespaces=NAMESPACE)[0].get('style')
+        player = extract_value(unit_data.findall('.//svg:path', namespaces=NAMESPACE)[0].get('style'), 'fill')
         province.set_unit({'type': unit_type, 'player': player})
 
     initialize_province_resident_data(provinces, units_data, get_coordinates, set_province_unit)
