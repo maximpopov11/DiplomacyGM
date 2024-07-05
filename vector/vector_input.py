@@ -133,9 +133,14 @@ def initialize_units(provinces, units_data):
     def set_province_unit(province, unit_data):
         if province.unit is not None:
             print(province.name, 'already has a unit!')
-        # TODO: The unit type is derived from shape which lives in sodipodi:type
-        #  for which we might need to add sodipop to the namespace? Yay we did it now so when we get to this it'll be easier
-        unit_type = 'Lets pretend this is a unit type'
+        num_sides = unit_data.findall('.//svg:path', namespaces=NAMESPACE)[0].get('{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides')
+        if num_sides == 3:
+            unit_type = 'Army'
+        elif num_sides == 6:
+            unit_type = 'Fleet'
+        else:
+            print('Number of sides on unit does not match any unit types')
+            unit_type = 'Undefined'
         player = extract_value(unit_data.findall('.//svg:path', namespaces=NAMESPACE)[0].get('style'), 'fill')
         province.set_unit({'type': unit_type, 'player': player})
 
