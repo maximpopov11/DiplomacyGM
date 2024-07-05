@@ -213,6 +213,7 @@ def get_adjacencies(provinces):
 
 
 if __name__ == '__main__':
+    # TODO: break up the file and refactor file structure
     # TODO: clean up & provide type safety & comment code
     # TODO: rig this up to the adjudicator!
     # TODO: rig this up to the bot!
