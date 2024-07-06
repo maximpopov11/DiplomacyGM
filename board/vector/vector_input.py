@@ -3,9 +3,9 @@ import re
 from lxml import etree
 from shapely.geometry import Point, Polygon
 
-from vector.config import *
-from vector.province import Province
-from vector.utils import extract_value
+from board.vector.config import *
+from board.province import Province
+from board.vector.utils import extract_value
 
 NAMESPACE = {
     'inkscape': '{http://www.inkscape.org/namespaces/inkscape}',
@@ -218,10 +218,4 @@ def get_adjacencies(provinces):
 
 
 if __name__ == '__main__':
-    # TODO: break up the file and refactor file structure
-    # TODO: clean up & provide type safety & comment code
-    # TODO: rig this up to the adjudicator!
-    # TODO: rig this up to the bot!
-    # TODO: GM state corrections
-    # TODO: personal move map
     parse_map_data()

@@ -3,7 +3,7 @@ from PIL import Image
 from scipy import ndimage
 from skimage.segmentation import expand_labels, find_boundaries
 
-from config import *
+from board.raster.config import *
 
 
 def read_map_data():

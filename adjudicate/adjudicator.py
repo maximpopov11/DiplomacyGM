@@ -4,7 +4,9 @@ from pydip.player.player import Player
 from pydip.player.unit import UnitTypes
 from pydip.turn.resolve import resolve_turn
 
-if __name__ == '__main__':
+
+def adjudicate(board):
+    # TODO: make the actual adjudicator rather than this test
     territories = [
         {'name': 'Naples', 'coasts': ['Naples Coast']},
         {'name': 'Rome', 'coasts': ['Rome Coast']},
