@@ -4,7 +4,6 @@ from board import board
 board = board.get_or_parse()
 adjudicator.adjudicate(board)
 
-# TODO: refactor file structure
 # TODO: complete board todos
 # TODO: complete adjudicator todos
 # TODO: moves & results map
