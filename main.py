@@ -1,15 +1,17 @@
 from adjudicate import adjudicator
-from board import board
+from board.vector.vector import parse
 
-board = board.get_or_parse()
+board = parse()
 adjudicator.adjudicate(board)
 
-# TODO: complete board todos
-# TODO: complete adjudicator todos
-# TODO: moves & results map
 # TODO: implement bot api
+# TODO: draw moves map
+# TODO: implement adjudicator
+# TODO: draw results maps
+# TODO: persist board state
 # TODO: implement GM corrections api
-# TODO: complete logging todos
+# TODO: implement logging
 # TODO: update readme
-# TODO: live testing time!
-# TODO: classic map example & walkthrough
+# TODO: conduct live testing
+# TODO: break up big files & clean up & type safety
+# TODO: add classic map example

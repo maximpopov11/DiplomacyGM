@@ -15,7 +15,7 @@ NAMESPACE = {
 
 
 # Parse provinces, adjacencies, centers, and units
-def parse_map_data():
+def parse():
     provinces_data, names_data, centers_data, units_data = get_svg_data()
     provinces = get_provinces(provinces_data, names_data, centers_data, units_data)
     adjacencies = get_adjacencies(provinces)
@@ -215,7 +215,3 @@ def get_adjacencies(provinces):
                 adjacencies.add((coordinates[i]['province_name'], coordinates[j]['province_name']))
 
     return adjacencies
-
-
-if __name__ == '__main__':
-    parse_map_data()
