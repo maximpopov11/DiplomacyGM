@@ -1,17 +1,16 @@
-import os
-
 import discord
-from dotenv import load_dotenv
 
-load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
-
-client = discord.Client()
+from _token import DISCORD_TOKEN
 
 
-@client.event
+# @client.event
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
+    for guild in client.guilds:
+        print(f'guild {guild.name}')
 
 
-client.run(TOKEN)
+if __name__ == "__main__":
+    print('ro')
+    client = discord.Client()
+    client.run(DISCORD_TOKEN)
