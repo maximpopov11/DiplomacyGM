@@ -12,8 +12,8 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    author = message.author
-    await client.send_message(message.channel, 'Welcome again {}!'.format(author))
+    channel = message.channel
+    await channel.send('Beep Boop')
 
 
 if __name__ == "__main__":
