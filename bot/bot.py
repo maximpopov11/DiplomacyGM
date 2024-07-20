@@ -2,15 +2,19 @@ import discord
 
 from _token import DISCORD_TOKEN
 
+client = discord.Client(intents=discord.Intents.default(), command_prefix='.', help_command=None)
 
-# @client.event
+
+@client.event
 async def on_ready():
-    print(f'{client.user} has connected to Discord!')
-    for guild in client.guilds:
-        print(f'guild {guild.name}')
+    print('Bot is ready!')
+
+
+@client.event
+async def on_message(message):
+    author = message.author
+    await client.send_message(message.channel, 'Welcome again {}!'.format(author))
 
 
 if __name__ == "__main__":
-    print('ro')
-    client = discord.Client()
     client.run(DISCORD_TOKEN)
