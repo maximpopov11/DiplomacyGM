@@ -10,7 +10,7 @@ adjudicator.adjudicate(board)
 # TODO: draw results maps
 # TODO: persist board state
 # TODO: implement GM corrections api
-# TODO: implement logging
+# TODO: implement logger
 # TODO: update readme
 # TODO: conduct live testing
 # TODO: break up big files & clean up & type safety
