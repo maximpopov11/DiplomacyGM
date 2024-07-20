@@ -18,3 +18,11 @@ async def on_message(message):
 
 if __name__ == "__main__":
     client.run(DISCORD_TOKEN)
+
+# TODO: commands
+#  .ping
+#  .order
+#  .view_orders
+#  .adjudicate
+#  .rollback
+#  .help
