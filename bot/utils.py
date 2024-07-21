@@ -1,6 +1,5 @@
 none = 'none'
 
-# TODO: this should be in config
 players = {
     none,
     'player 1',
@@ -15,5 +14,4 @@ def get_player(author) -> str:
 
 
 def get_scoreboard() -> str:
-    # TODO: implement
     return 'pretend this is the scoreboard'

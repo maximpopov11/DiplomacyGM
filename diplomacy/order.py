@@ -64,6 +64,5 @@ order_dict = {
 }
 
 
-def _parse_order(order: str) -> str:
-    # TODO: implement this func: assert correct # of parts and legal values of parts for assertion error to trickle down
-    return ''
+def _parse_order(string: str) -> str:
+    raise AssertionError('invalid')

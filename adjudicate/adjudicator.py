@@ -5,7 +5,6 @@ from pydip.player.unit import UnitTypes
 from pydip.turn.resolve import resolve_turn
 
 
-# TODO: this should not live here
 game_master = 'GM'
 
 
@@ -22,7 +21,6 @@ def rollback(author: str) -> str:
 
 
 def _adjudicate() -> str:
-    # TODO: make the actual adjudicator rather than this test
     territories = [
         {'name': 'Naples', 'coasts': ['Naples Coast']},
         {'name': 'Rome', 'coasts': ['Rome Coast']},
@@ -59,5 +57,4 @@ def _adjudicate() -> str:
 
 
 def _rollback() -> str:
-    # TODO: implement
     return 'Pretend we rolled back the map to the last version!'

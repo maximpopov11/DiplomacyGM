@@ -5,10 +5,10 @@
 # TODO: draw moves map
 # TODO: implement adjudicator
 # TODO: draw results maps
-# TODO: persist diplomacy state
+# TODO: persist state
 # TODO: implement GM corrections api
 # TODO: implement logger
 # TODO: update readme
 # TODO: conduct live testing
-# TODO: break up big files & clean up & type safety
+# TODO: clean up everything
 # TODO: add classic map example

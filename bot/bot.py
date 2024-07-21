@@ -18,19 +18,38 @@ async def on_ready():
     print('Bot is ready!')
 
 
+async def try_command(command, ctx):
+    try:
+        await command(ctx)
+    except Exception as e:
+        await ctx.channel.send('Command errored with description: ' + str(e))
+
+
 @bot.command()
 async def ping(ctx):
+    await try_command(_ping, ctx)
+
+
+async def _ping(ctx):
     await ctx.channel.send('Beep Boop')
 
 
 @bot.command()
 async def order(ctx):
-    response = parse_order(ctx.message)
+    await try_command(_order, ctx)
+
+
+async def _order(ctx):
+    response = parse_order(ctx.message.content)
     await ctx.channel.send(response)
 
 
 @bot.command()
 async def view_orders(ctx):
+    await try_command(_view_orders, ctx)
+
+
+async def _view_orders(ctx):
     player = utils.get_player(ctx.message.author)
     response = board.get(player)
     await ctx.channel.send(response)
@@ -38,6 +57,10 @@ async def view_orders(ctx):
 
 @bot.command()
 async def adjudicate(ctx):
+    await try_command(_adjudicate, ctx)
+
+
+async def _adjudicate(ctx):
     author = utils.get_player(ctx.message.author)
     response = adjudicator.adjudicate(author)
     await ctx.channel.send(response)
@@ -45,6 +68,10 @@ async def adjudicate(ctx):
 
 @bot.command()
 async def rollback(ctx):
+    await try_command(_rollback, ctx)
+
+
+async def _rollback(ctx):
     author = utils.get_player(ctx.message.author)
     response = adjudicator.rollback(author)
     await ctx.channel.send(response)
@@ -52,10 +79,13 @@ async def rollback(ctx):
 
 @bot.command()
 async def scoreboard(ctx):
+    await try_command(_scoreboard, ctx)
+
+
+async def _scoreboard(ctx):
     response = utils.get_scoreboard()
     await ctx.channel.send(response)
 
 
-# TODO: this should live in a class
 if __name__ == "__main__":
     bot.run(DISCORD_TOKEN)
