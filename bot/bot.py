@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 
 from _token import DISCORD_TOKEN
+from adjudicate import adjudicator
 from board import board
 from bot import orders, utils
 
@@ -27,9 +28,17 @@ async def order(ctx):
     await ctx.channel.send(response)
 
 
+@commands.command
 async def view_orders(ctx):
     player = utils.get_player(ctx.message.author)
     response = board.get(player)
+    await ctx.channel.send(response)
+
+
+@commands.command
+async def adjudicate(ctx):
+    author = utils.get_player(ctx.message.author)
+    response = adjudicator.adjudicate(author)
     await ctx.channel.send(response)
 
 
@@ -38,7 +47,6 @@ if __name__ == "__main__":
 
 # TODO: test commands
 # TODO: commands
-#  .adjudicate
 #  .rollback
 #  .scoreboard
 #  .help

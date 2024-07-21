@@ -5,7 +5,17 @@ from pydip.player.unit import UnitTypes
 from pydip.turn.resolve import resolve_turn
 
 
-def adjudicate(board):
+# TODO: this should not live here
+game_master = 'GM'
+
+
+def adjudicate(author: str) -> str:
+    if author is not game_master:
+        return author + ' is not authorized to adjudicate.'
+    return _adjudicate()
+
+
+def _adjudicate() -> str:
     # TODO: make the actual adjudicator rather than this test
     territories = [
         {'name': 'Naples', 'coasts': ['Naples Coast']},
@@ -38,3 +48,5 @@ def adjudicate(board):
     new_unit_positions = resolve_turn(game_map, commands)
 
     print('Great success! (Actually something is off when convoys are involved, but without it it is good.)')
+
+    return ''

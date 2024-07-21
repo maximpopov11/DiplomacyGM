@@ -1,8 +1,8 @@
 from adjudicate import adjudicator
 from board.vector.vector import parse
 
-board = parse()
-adjudicator.adjudicate(board)
+# board = parse()
+# adjudicator.adjudicate(board)
 
 # TODO: implement bot api
 # TODO: draw moves map
