@@ -1,28 +1,39 @@
 import discord
 
+from discord.ext import commands
+
 from _token import DISCORD_TOKEN
+from bot import orders
 
-client = discord.Client(intents=discord.Intents.default(), command_prefix='.', help_command=None)
+intent = discord.Intents.default()
+intent.message_content = True
+bot = discord.Client(intents=intent, command_prefix='.', help_command=None)
 
 
-@client.event
+@bot.event
 async def on_ready():
     print('Bot is ready!')
 
 
-@client.event
-async def on_message(message):
-    channel = message.channel
-    await channel.send('Beep Boop')
+@commands.command
+async def ping(ctx):
+    await ctx.channel.send('Beep Boop')
+
+
+@commands.command
+async def order(ctx):
+    response = orders.parse(ctx.message)
+    await ctx.channel.send(response)
 
 
 if __name__ == "__main__":
-    client.run(DISCORD_TOKEN)
+    bot.run(DISCORD_TOKEN)
 
+# TODO: test commands
 # TODO: commands
-#  .ping
 #  .order
 #  .view_orders
 #  .adjudicate
 #  .rollback
+#  .scoreboard
 #  .help
