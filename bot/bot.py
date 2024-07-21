@@ -5,7 +5,8 @@ import utils
 
 from _token import DISCORD_TOKEN
 from adjudicate import adjudicator
-from diplomacy import board
+from diplomacy.board import board
+from diplomacy.order import parse as parse_order
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -24,7 +25,7 @@ async def ping(ctx):
 
 @bot.command()
 async def order(ctx):
-    response = orders.parse(ctx.message)
+    response = parse_order(ctx.message)
     await ctx.channel.send(response)
 
 
