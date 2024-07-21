@@ -1,3 +1,36 @@
+from diplomacy.province import Province
+from diplomacy.unit import Army, Fleet, Unit
+
+
+class Order:
+    def __init__(self, unit: Unit):
+        self.unit = unit
+
+
+class Hold(Order):
+    def __init__(self, unit: Unit):
+        super().__init__(unit)
+
+
+class Move(Order):
+    def __init__(self, unit: Unit, destination: Province):
+        super().__init__(unit)
+        self.destination = destination
+
+
+class Convoy(Order):
+    def __init__(self, unit: Fleet, source: Army, destination: Province):
+        super().__init__(unit)
+        self.source = source
+        self.destination = destination
+
+
+class Support(Order):
+    def __init__(self, unit: Unit, supporting: Order):
+        super().__init__(unit)
+        self.supporting = supporting
+
+
 def parse(message: str) -> str:
     orders = str.splitlines(message)
     invalid = []
@@ -32,6 +65,5 @@ order_dict = {
 
 
 def _parse_order(order: str) -> str:
-    # TODO: implement order class
     # TODO: implement this func: assert correct # of parts and legal values of parts for assertion error to trickle down
     return ''

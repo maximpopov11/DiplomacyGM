@@ -1,14 +1,11 @@
-from adjudicate import adjudicator
-from board.vector.vector import parse
-
-# board = parse()
-# adjudicator.adjudicate(board)
+# diplomacy = parse()
+# adjudicator.adjudicate(diplomacy)
 
 # TODO: implement bot api
 # TODO: draw moves map
 # TODO: implement adjudicator
 # TODO: draw results maps
-# TODO: persist board state
+# TODO: persist diplomacy state
 # TODO: implement GM corrections api
 # TODO: implement logger
 # TODO: update readme

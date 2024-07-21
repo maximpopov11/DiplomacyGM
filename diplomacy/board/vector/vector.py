@@ -3,9 +3,9 @@ import re
 from lxml import etree
 from shapely.geometry import Point, Polygon
 
-from board.vector.config import *
-from board.province import Province
-from board.vector.utils import extract_value
+from diplomacy.board.vector.config import *
+from diplomacy.province import Province
+from diplomacy.board.vector.utils import extract_value
 
 NAMESPACE = {
     'inkscape': '{http://www.inkscape.org/namespaces/inkscape}',

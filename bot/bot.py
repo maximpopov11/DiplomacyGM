@@ -1,12 +1,11 @@
 import discord
 from discord.ext import commands
 
-import orders
 import utils
 
 from _token import DISCORD_TOKEN
 from adjudicate import adjudicator
-from board import board
+from diplomacy import board
 
 intents = discord.Intents.default()
 intents.message_content = True
