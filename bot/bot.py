@@ -1,12 +1,12 @@
 import discord
-
 from discord.ext import commands
+
+import orders
+import utils
 
 from _token import DISCORD_TOKEN
 from adjudicate import adjudicator
 from board import board
-from bot import orders, utils
-
 
 intent = discord.Intents.default()
 intent.message_content = True
@@ -56,6 +56,7 @@ async def scoreboard(ctx):
     await ctx.channel.send(response)
 
 
+# TODO: this should live in a class
 if __name__ == "__main__":
     bot.run(DISCORD_TOKEN)
 
