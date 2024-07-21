@@ -3,7 +3,8 @@ import discord
 from discord.ext import commands
 
 from _token import DISCORD_TOKEN
-from bot import orders
+from board import board
+from bot import orders, utils
 
 intent = discord.Intents.default()
 intent.message_content = True
@@ -26,13 +27,17 @@ async def order(ctx):
     await ctx.channel.send(response)
 
 
+async def view_orders(ctx):
+    player = utils.get_player(ctx.message.author)
+    response = board.get(player)
+    await ctx.channel.send(response)
+
+
 if __name__ == "__main__":
     bot.run(DISCORD_TOKEN)
 
 # TODO: test commands
 # TODO: commands
-#  .order
-#  .view_orders
 #  .adjudicate
 #  .rollback
 #  .scoreboard
