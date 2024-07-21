@@ -17,7 +17,7 @@ def adjudicate(author: str) -> str:
 
 def rollback(author: str) -> str:
     if author is not game_master:
-        return author + ' is not authorized to adjudicate.'
+        return author + ' is not authorized to rollback.'
     return _rollback()
 
 
