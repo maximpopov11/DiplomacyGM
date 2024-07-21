@@ -49,10 +49,15 @@ async def rollback(ctx):
     await ctx.channel.send(response)
 
 
+@commands.command
+async def scoreboard(ctx):
+    response = utils.get_scoreboard()
+    await ctx.channel.send(response)
+
+
 if __name__ == "__main__":
     bot.run(DISCORD_TOKEN)
 
 # TODO: test commands
 # TODO: commands
-#  .scoreboard
 #  .help

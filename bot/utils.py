@@ -12,3 +12,8 @@ def get_player(author) -> str:
         if role in players:
             return role
     return none
+
+
+def get_scoreboard() -> str:
+    # TODO: implement
+    return 'pretend this is the scoreboard'
