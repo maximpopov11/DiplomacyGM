@@ -42,11 +42,17 @@ async def adjudicate(ctx):
     await ctx.channel.send(response)
 
 
+@commands.command
+async def rollback(ctx):
+    author = utils.get_player(ctx.message.author)
+    response = adjudicator.rollback(author)
+    await ctx.channel.send(response)
+
+
 if __name__ == "__main__":
     bot.run(DISCORD_TOKEN)
 
 # TODO: test commands
 # TODO: commands
-#  .rollback
 #  .scoreboard
 #  .help

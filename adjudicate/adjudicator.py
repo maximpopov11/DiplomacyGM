@@ -15,6 +15,12 @@ def adjudicate(author: str) -> str:
     return _adjudicate()
 
 
+def rollback(author: str) -> str:
+    if author is not game_master:
+        return author + ' is not authorized to adjudicate.'
+    return _rollback()
+
+
 def _adjudicate() -> str:
     # TODO: make the actual adjudicator rather than this test
     territories = [
@@ -50,3 +56,8 @@ def _adjudicate() -> str:
     print('Great success! (Actually something is off when convoys are involved, but without it it is good.)')
 
     return ''
+
+
+def _rollback() -> str:
+    # TODO: implement
+    return 'Pretend we rolled back the map to the last version!'
