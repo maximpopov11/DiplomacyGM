@@ -7,6 +7,7 @@ from adjudicate import adjudicator
 from board import board
 from bot import orders, utils
 
+
 intent = discord.Intents.default()
 intent.message_content = True
 bot = discord.Client(intents=intent, command_prefix='.', help_command=None)
