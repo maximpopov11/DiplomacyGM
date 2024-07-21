@@ -59,5 +59,4 @@ if __name__ == "__main__":
     bot.run(DISCORD_TOKEN)
 
 # TODO: test commands
-# TODO: commands
-#  .help
+# TODO: test builtin help command
