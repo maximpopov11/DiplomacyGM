@@ -5,6 +5,8 @@ from pydip.player.unit import UnitTypes
 from pydip.turn.resolve import resolve_turn
 
 
+# TODO: (FRAMEWORK) create adjudication framework
+
 game_master = 'GM'
 
 

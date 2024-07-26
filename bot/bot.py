@@ -4,14 +4,19 @@ from discord.ext import commands
 import utils
 
 from _token import DISCORD_TOKEN
-from adjudicate import adjudicator
-from diplomacy.board import board
+from diplomacy.adjudicate import adjudicator
+from diplomacy.persistence import state
 from diplomacy.order import parse as parse_order
 
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='.', intents=intents)
 
+# TODO: (FRAMEWORK) API only here, all actual implementations (that check perms, call into state, whatever) go into separate file
+# TODO: (FRAMEWORK) parse map to create state API
+# TODO: implement & test all bot API commands
+# TODO: all commands should have an output/confirmation
+# TODO: GM manual correction API
 
 @bot.event
 async def on_ready():
@@ -61,6 +66,7 @@ async def adjudicate(ctx):
 
 
 async def _adjudicate(ctx):
+    # TODO: return moves & results
     author = utils.get_player(ctx.message.author)
     response = adjudicator.adjudicate(author)
     await ctx.channel.send(response)
