@@ -1,4 +1,4 @@
-from typing import Callable, NoReturn
+from typing import NoReturn, Callable
 
 import discord
 from discord.ext import commands
@@ -11,13 +11,10 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='.', intents=intents)
 
-# TODO: ensure all private commands (both player and GM) are illegal in non order/GM channels
-# TODO: all commands should have an output/confirmation
 # TODO: help command should describe commands
-# TODO: implement & test all bot API commands
 
 
-commandFunctionType = Callable[[discord.ext.commands.Context], str]
+commandFunctionType = Callable[[commands.Context], str]
 
 
 async def handle_command(function: commandFunctionType, ctx: discord.ext.commands.Context) -> NoReturn:
@@ -25,7 +22,7 @@ async def handle_command(function: commandFunctionType, ctx: discord.ext.command
         response = function(ctx)
         await ctx.channel.send(response)
     except Exception as e:
-        await ctx.channel.send('Command errored with description: ' + str(e))
+        await ctx.channel.send('Command errored: ' + str(e))
 
 
 @bot.command()

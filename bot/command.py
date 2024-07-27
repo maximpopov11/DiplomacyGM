@@ -4,66 +4,107 @@ from discord.ext import commands
 
 import diplomacy.order
 import diplomacy.persistence.state
+import utils
 from diplomacy.adjudicate import adjudicator
 
-none = 'none'
 
-players = {
-    none,
-    'player 1',
-}
-
-
-# TODO: improve get role; should be checked in here, not passed along
-def get_player(author) -> str:
-    for role in author.roles:
-        if role in players:
-            return role
-    return none
-
-
-ping_text_choices = {
+ping_text_choices = [
     'proudly states',
     'fervently believes in the power of'
     'is being mind controlled by'
-}
+]
 
 
 def ping(ctx: commands.Context) -> str:
     response = 'Beep Boop'
     if random.random() < 0.1:
         author = ctx.message.author
-        content = ctx.message.content
-        response = author + ' ' + random.choice(ping_text_choices) + ' ' + content
+        content = ctx.message.content.removeprefix('.ping')
+        if content == '':
+            content = 'nothing'
+        response = author.name + ' ' + random.choice(ping_text_choices) + ' ' + content
     return response
 
 
 def order(ctx: commands.Context) -> str:
-    return diplomacy.order.parse(ctx.message.content)
+    if utils.is_gm(ctx.author):
+        if not utils.is_gm_channel(ctx.channel):
+            raise RuntimeError('You cannot order as a GM in a non-GM channel.')
+        return diplomacy.order.parse(ctx.message.content, None)
+
+    player = utils.get_player(ctx.author)
+    if player is not None:
+        if not utils.is_player_channel(player.name, ctx.channel):
+            raise RuntimeError('You cannot order as a player outside of your orders channel.')
+        return diplomacy.order.parse(ctx.message.content, player)
+
+    raise PermissionError('You cannot order any units because you are neither a GM nor a player.')
 
 
 def view_orders(ctx: commands.Context) -> str:
-    player = get_player(ctx.message.author)
-    return diplomacy.persistence.state.get(player)
+    if utils.is_gm(ctx.author):
+        if not utils.is_gm_channel(ctx.channel):
+            raise RuntimeError('You cannot view orders as a GM in a non-GM channel.')
+        return diplomacy.persistence.state.view(None)
+
+    player = utils.get_player(ctx.author)
+    if player is not None:
+        if not utils.is_player_channel(player.name, ctx.channel):
+            raise RuntimeError('You cannot view orders as a player outside of your orders channel.')
+        return diplomacy.persistence.state.view(player)
+
+    raise PermissionError('You cannot view orders because you are neither a GM nor a player.')
 
 
 def adjudicate(ctx: commands.Context) -> str:
-    author = get_player(ctx.message.author)
-    return adjudicator.adjudicate(author)
+    if not utils.is_gm(ctx.author):
+        raise PermissionError('You cannot adjudicate because you are not a GM.')
+
+    if not utils.is_gm_channel(ctx.channel):
+        raise RuntimeError('You cannot adjudicate in a non-GM channel.')
+
+    board = diplomacy.persistence.state.get()
+    return adjudicator.adjudicate(board)
 
 
 def rollback(ctx: commands.Context) -> str:
-    author = get_player(ctx.message.author)
-    return adjudicator.rollback(author)
+    if not utils.is_gm(ctx.author):
+        raise PermissionError('You cannot rollback because you are not a GM.')
+
+    if not utils.is_gm_channel(ctx.channel):
+        raise RuntimeError('You cannot rollback in a non-GM channel.')
+
+    return adjudicator.rollback()
 
 
-def get_scoreboard(_: commands.Context) -> str:
+def get_scoreboard(ctx: commands.Context) -> str:
+    if not utils.is_gm(ctx.author):
+        raise PermissionError('You cannot get the scoreboard because you are not a GM.')
+
+    if not utils.is_gm_channel(ctx.channel):
+        raise RuntimeError('You cannot get the scoreboard in a non-GM channel.')
+
+    # TODO: implement the scoreboard
     return 'pretend this is the scoreboard'
 
 
-def edit(_: commands.Context) -> str:
+def edit(ctx: commands.Context) -> str:
+    if not utils.is_gm(ctx.author):
+        raise PermissionError('You cannot edit the board state because you are not a GM.')
+
+    if not utils.is_gm_channel(ctx.channel):
+        raise RuntimeError('You cannot edit the board state in a non-GM channel.')
+
+    # TODO: implement edit state
     return 'looks like the GM would like to manually fix something, too bad this is not implemented yet'
 
 
 def initialize_board_setup(ctx: commands.Context) -> str:
+    if not utils.is_gm(ctx.author):
+        raise PermissionError('You cannot initialize the board state because you are not a GM.')
+
+    if not utils.is_gm_channel(ctx.channel):
+        raise RuntimeError('You cannot initialize the board state in a non-GM channel.')
+
+    # TODO: implement board setup
     return 'pretend the board setup is done'

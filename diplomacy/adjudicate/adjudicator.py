@@ -4,13 +4,14 @@ from pydip.player.player import Player
 from pydip.player.unit import UnitTypes
 from pydip.turn.resolve import resolve_turn
 
+from diplomacy.board import board
 
-# TODO: (FRAMEWORK) create adjudication framework: take in the state and output a dummy string rather than map
 
 game_master = 'GM'
 
 
-def adjudicate() -> str:
+def adjudicate(gameboard: board) -> str:
+    # TODO: implement
     territories = [
         {'name': 'Naples', 'coasts': ['Naples Coast']},
         {'name': 'Rome', 'coasts': ['Rome Coast']},
@@ -43,8 +44,9 @@ def adjudicate() -> str:
 
     print('Great success! (Actually something is off when convoys are involved, but without it it is good.)')
 
-    return 'Pretend we adjudicated!'
+    return 'Pretend this is the moves map and the adjudication map!'
 
 
 def rollback() -> str:
+    # TODO: implement
     return 'Pretend we rolled back the map to the last version!'

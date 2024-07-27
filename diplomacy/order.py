@@ -1,3 +1,6 @@
+from typing import Optional
+
+from diplomacy.player import Player
 from diplomacy.province import Province
 from diplomacy.unit import Army, Fleet, Unit
 
@@ -31,12 +34,12 @@ class Support(Order):
         self.supporting = supporting
 
 
-def parse(message: str) -> str:
+def parse(message: str, player_restriction: Optional[Player]) -> str:
     orders = str.splitlines(message)
     invalid = []
     for order in orders:
         try:
-            _parse_order(order)
+            _parse_order(order, player_restriction)
         except AssertionError:
             invalid.append(order)
 
@@ -64,5 +67,6 @@ order_dict = {
 }
 
 
-def _parse_order(string: str) -> str:
+def _parse_order(order: str, player_restriction: Player) -> str:
+    # TODO: implement parsing of individual order
     raise AssertionError('invalid')
