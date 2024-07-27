@@ -5,24 +5,12 @@ from pydip.player.unit import UnitTypes
 from pydip.turn.resolve import resolve_turn
 
 
-# TODO: (FRAMEWORK) create adjudication framework
+# TODO: (FRAMEWORK) create adjudication framework: take in the state and output a dummy string rather than map
 
 game_master = 'GM'
 
 
-def adjudicate(author: str) -> str:
-    if author is not game_master:
-        return author + ' is not authorized to adjudicate.'
-    return _adjudicate()
-
-
-def rollback(author: str) -> str:
-    if author is not game_master:
-        return author + ' is not authorized to rollback.'
-    return _rollback()
-
-
-def _adjudicate() -> str:
+def adjudicate() -> str:
     territories = [
         {'name': 'Naples', 'coasts': ['Naples Coast']},
         {'name': 'Rome', 'coasts': ['Rome Coast']},
@@ -55,8 +43,8 @@ def _adjudicate() -> str:
 
     print('Great success! (Actually something is off when convoys are involved, but without it it is good.)')
 
-    return ''
+    return 'Pretend we adjudicated!'
 
 
-def _rollback() -> str:
+def rollback() -> str:
     return 'Pretend we rolled back the map to the last version!'

@@ -1,3 +1,5 @@
+import random
+
 from discord.ext import commands
 
 import diplomacy.order
@@ -12,7 +14,7 @@ players = {
 }
 
 
-# TODO: improve get role
+# TODO: improve get role; should be checked in here, not passed along
 def get_player(author) -> str:
     for role in author.roles:
         if role in players:
@@ -20,8 +22,20 @@ def get_player(author) -> str:
     return none
 
 
+ping_text_choices = {
+    'proudly states',
+    'fervently believes in the power of'
+    'is being mind controlled by'
+}
+
+
 def ping(ctx: commands.Context) -> str:
-    return 'Beep Boop'
+    response = 'Beep Boop'
+    if random.random() < 0.1:
+        author = ctx.message.author
+        content = ctx.message.content
+        response = author + ' ' + random.choice(ping_text_choices) + ' ' + content
+    return response
 
 
 def order(ctx: commands.Context) -> str:
@@ -43,8 +57,12 @@ def rollback(ctx: commands.Context) -> str:
     return adjudicator.rollback(author)
 
 
-def get_scoreboard(ctx: commands.Context) -> str:
+def get_scoreboard(_: commands.Context) -> str:
     return 'pretend this is the scoreboard'
+
+
+def edit(_: commands.Context) -> str:
+    return 'looks like the GM would like to manually fix something, too bad this is not implemented yet'
 
 
 def initialize_board_setup(ctx: commands.Context) -> str:
