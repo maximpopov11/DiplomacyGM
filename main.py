@@ -1,4 +1,4 @@
-# TODO: (FRAMEWORK) start bot from here
+# TODO: start bot from main
 
 # diplomacy = parse()
 # adjudicator.adjudicate(diplomacy)
