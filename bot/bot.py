@@ -11,11 +11,11 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='.', intents=intents)
 
-# TODO: (FRAMEWORK) GM initial (or messed something up big time) API for parse map to create state
 # TODO: ensure all private commands (both player and GM) are illegal in non order/GM channels
 # TODO: implement & test all bot API commands
 # TODO: all commands should have an output/confirmation
 # TODO: GM manual correction API
+# TODO: help command should describe commands
 
 
 commandFunctionType = Callable[[discord.ext.commands.Context], str]
@@ -57,6 +57,11 @@ async def rollback(ctx: discord.ext.commands.Context):
 @bot.command()
 async def scoreboard(ctx: discord.ext.commands.Context):
     await try_command(command.get_scoreboard, ctx)
+
+
+@bot.command()
+async def initialize_board_setup(ctx: discord.ext.commands.Context):
+    await try_command(command.initialize_board_setup, ctx)
 
 
 if __name__ == "__main__":

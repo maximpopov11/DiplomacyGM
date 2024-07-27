@@ -45,3 +45,7 @@ def rollback(ctx: commands.Context) -> str:
 
 def get_scoreboard(ctx: commands.Context) -> str:
     return 'pretend this is the scoreboard'
+
+
+def initialize_board_setup(ctx: commands.Context) -> str:
+    return 'pretend the board setup is done'
