@@ -4,8 +4,11 @@ from diplomacy.player import Player
 
 class Board:
     def __init__(self):
-        # TODO: implement
+        # TODO: (IMPL) implement
         self.players = set()
         for name in players:
             self.players.add(Player(name))
-        pass
+
+        self.provinces = set()
+
+        self.phase = None

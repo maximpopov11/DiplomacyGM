@@ -3,6 +3,7 @@ import re
 from lxml import etree
 from shapely.geometry import Point, Polygon
 
+from diplomacy.board.board import Board
 from diplomacy.board.vector.config import *
 from diplomacy.province import Province
 from diplomacy.board.vector.utils import extract_value
@@ -15,7 +16,8 @@ NAMESPACE = {
 
 
 # Parse provinces, adjacencies, centers, and units
-def parse():
+def parse() -> Board:
+    # TODO: (IMPL) create a board and return it
     provinces_data, names_data, centers_data, units_data = get_svg_data()
     provinces = get_provinces(provinces_data, names_data, centers_data, units_data)
     adjacencies = get_adjacencies(provinces)

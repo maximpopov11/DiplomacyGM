@@ -1,10 +1,11 @@
-# TODO: start bot from main
+import bot.bot as bot
 
-# diplomacy = parse()
-# adjudicator.adjudicate(diplomacy)
+
+bot.run()
 
 # TODO: update readme
 # TODO: conduct live testing
 # TODO: clean up everything
 # TODO: add classic map example
 # TODO: create tests
+# TODO: implement a better diplomacy library

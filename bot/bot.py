@@ -3,8 +3,8 @@ from typing import NoReturn, Callable
 import discord
 from discord.ext import commands
 
-import command
-from _token import DISCORD_TOKEN
+import bot.command as command
+from bot._token import DISCORD_TOKEN
 
 
 intents = discord.Intents.default()
@@ -12,6 +12,15 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='.', intents=intents)
 
 commandFunctionType = Callable[[commands.Context], str]
+
+
+@bot.event
+async def on_ready():
+    # TODO: (FRAMEWORK) setup db (make sure it's stable) / use files if it'll take too long to write (state, game id)
+    # TODO: (IMPL) read ctx.guild.id (or equivalent) and store that in db API
+    # TODO: (IMPL) get state from db and create adjudicator
+    # TODO: (IMPL) update state -> update db (protect against malicious inputs like drop table)
+    pass
 
 
 async def handle_command(function: commandFunctionType, ctx: discord.ext.commands.Context) -> NoReturn:
@@ -62,5 +71,5 @@ async def initialize_board_setup(ctx: discord.ext.commands.Context) -> NoReturn:
     await handle_command(command.initialize_board_setup, ctx)
 
 
-if __name__ == "__main__":
+def run():
     bot.run(DISCORD_TOKEN)

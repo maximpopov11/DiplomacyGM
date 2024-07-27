@@ -4,14 +4,10 @@ from diplomacy.board.board import Board
 from diplomacy.player import Player
 
 
-# TODO: (FRAMEWORK) current board/orders state
-# TODO: (FRAMEWORK) persist state: ideally in database, if easier can do file for now
-# TODO: (FRAMEWORK) support multiple simultaneous games (can context see what server it is? else might need multiple bot instances)
-
-
 class State:
     def __init__(self):
-        # TODO: implement
+        # TODO: (IMPL) implement: state = board + orders
+        # TODO: (IMPL) set all unset orders to hold (for pydip)
         self.board = Board()
         pass
 
@@ -26,11 +22,10 @@ class State:
 
 
 def get() -> State:
-    # TODO: implement
-    return State()
+    # TODO: (IMPL) implement
     pass
 
 
 def view(player_restriction: Optional[Player]) -> str:
-    # TODO: implement
+    # TODO: (IMPL) implement
     return 'view current state (with orders drawn) not implemented yet'

@@ -68,5 +68,5 @@ order_dict = {
 
 
 def _parse_order(order: str, player_restriction: Player) -> str:
-    # TODO: implement parsing of individual order
+    # TODO: (IMPL) implement parsing of individual order
     raise AssertionError('invalid')

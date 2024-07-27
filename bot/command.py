@@ -2,10 +2,11 @@ import random
 
 from discord.ext import commands
 
+import bot.utils as utils
 import diplomacy.order
 import diplomacy.persistence.state
-import utils
-from diplomacy.adjudicate import adjudicator
+from diplomacy.persistence.adjudicator import Adjudicator
+from diplomacy.board.vector.vector import parse as parse_board
 
 
 ping_text_choices = [
@@ -64,7 +65,7 @@ def adjudicate(ctx: commands.Context) -> str:
         raise RuntimeError('You cannot adjudicate in a non-GM channel.')
 
     board = diplomacy.persistence.state.get()
-    return adjudicator.adjudicate(board)
+    return self.adjudicator.adjudicate(board)
 
 
 def rollback(ctx: commands.Context) -> str:
@@ -74,7 +75,7 @@ def rollback(ctx: commands.Context) -> str:
     if not utils.is_gm_channel(ctx.channel):
         raise RuntimeError('You cannot rollback in a non-GM channel.')
 
-    return adjudicator.rollback()
+    return self.adjudicator.rollback()
 
 
 def get_scoreboard(ctx: commands.Context) -> str:
@@ -106,5 +107,7 @@ def initialize_board_setup(ctx: commands.Context) -> str:
     if not utils.is_gm_channel(ctx.channel):
         raise RuntimeError('You cannot initialize the board state in a non-GM channel.')
 
-    # TODO: implement board setup
-    return 'pretend the board setup is done'
+    # TODO: (IMPL): parse board and give the adjudicator what it needs
+    board = parse_board()
+    self.adjudicator = Adjudicator(board)
+    return 'pretend we actually did the setup'
