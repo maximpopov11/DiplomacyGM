@@ -4,6 +4,8 @@ from diplomacy.player import Player
 from diplomacy.province import Province
 from diplomacy.unit import Army, Fleet, Unit
 
+# TODO: (1) store orders in file in case we crash
+
 
 class Order:
     def __init__(self, unit: Unit):
@@ -68,5 +70,5 @@ order_dict = {
 
 
 def _parse_order(order: str, player_restriction: Player) -> str:
-    # TODO: (IMPL) implement parsing of individual order
+    # TODO: (1) implement parsing of individual order
     raise AssertionError('invalid')

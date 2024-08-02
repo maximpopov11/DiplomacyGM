@@ -15,6 +15,7 @@ from diplomacy.province import Province
 
 game_master = 'GM'
 
+# TODO: (1) fix compilation
 
 class Adjudicator:
     def __init__(self, board: Board):
@@ -35,26 +36,26 @@ class Adjudicator:
         else:
             raise ValueError('Illegal phase:', self.phase)
 
-        # TODO: (IMPL) output new map
+        # TODO: (1) output new map
         return 'Pretend this is the moves map and the adjudication map!'
 
     def rollback(self) -> str:
-        # TODO: (IMPL) implement
+        # TODO: (2) implement rollback to last map
         return 'Pretend we rolled back the map to the last version!'
 
 
 def _get_territory_descriptors(provinces: List[Province]) -> List[Mapping[str, any]]:
-    # TODO: (IMPL) 'name': String, 'coasts': [ { 'name': String } ] (Optional)
+    # TODO: (1) implement: 'name': String, 'coasts': [ { 'name': String } ] (Optional)
     pass
 
 
 def _get_adjacencies(provinces: List[Province]) -> List[Tuple[str, str]]:
-    # TODO: (IMPL) implement: land/land and coast/coast and coast/sea and sea/sea only
+    # TODO: (1) implement: land/land and coast/coast and coast/sea and sea/sea only
     pass
 
 
 def _get_commands(orders: List[Order]) -> List[Command]:
-    # TODO: (IMPL) orders -> CommandMap
+    # TODO: (1) orders -> CommandMap
 
     italy_units = [
         {'territory_name': 'Rome', 'unit_type': UnitTypes.TROOP},

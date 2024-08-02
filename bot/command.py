@@ -8,6 +8,7 @@ import diplomacy.persistence.state
 from diplomacy.persistence.adjudicator import Adjudicator
 from diplomacy.board.vector.vector import parse as parse_board
 
+# TODO: (1) fix compilation
 
 ping_text_choices = [
     'proudly states',
@@ -85,7 +86,7 @@ def get_scoreboard(ctx: commands.Context) -> str:
     if not utils.is_gm_channel(ctx.channel):
         raise RuntimeError('You cannot get the scoreboard in a non-GM channel.')
 
-    # TODO: implement the scoreboard
+    # TODO: (1) output center counts by player
     return 'pretend this is the scoreboard'
 
 
@@ -96,7 +97,7 @@ def edit(ctx: commands.Context) -> str:
     if not utils.is_gm_channel(ctx.channel):
         raise RuntimeError('You cannot edit the board state in a non-GM channel.')
 
-    # TODO: implement edit state
+    # TODO: (2) implement edit state
     return 'looks like the GM would like to manually fix something, too bad this is not implemented yet'
 
 
@@ -107,7 +108,7 @@ def initialize_board_setup(ctx: commands.Context) -> str:
     if not utils.is_gm_channel(ctx.channel):
         raise RuntimeError('You cannot initialize the board state in a non-GM channel.')
 
-    # TODO: (IMPL): parse board and give the adjudicator what it needs
+    # TODO: (2): parse board and give the adjudicator what it needs
     board = parse_board()
     self.adjudicator = Adjudicator(board)
     return 'pretend we actually did the setup'
