@@ -8,7 +8,7 @@ import diplomacy.persistence.state
 from diplomacy.persistence.adjudicator import Adjudicator
 from diplomacy.board.vector.vector import parse as parse_board
 
-# TODO: (1) fix compilation
+adjudicator = Adjudicator()
 
 ping_text_choices = [
     'proudly states',
@@ -66,7 +66,8 @@ def adjudicate(ctx: commands.Context) -> str:
         raise RuntimeError('You cannot adjudicate in a non-GM channel.')
 
     board = diplomacy.persistence.state.get()
-    return self.adjudicator.adjudicate(board)
+    global adjudicator
+    return adjudicator.adjudicate(board)
 
 
 def rollback(ctx: commands.Context) -> str:
@@ -76,7 +77,8 @@ def rollback(ctx: commands.Context) -> str:
     if not utils.is_gm_channel(ctx.channel):
         raise RuntimeError('You cannot rollback in a non-GM channel.')
 
-    return self.adjudicator.rollback()
+    global adjudicator
+    return adjudicator.rollback()
 
 
 def get_scoreboard(ctx: commands.Context) -> str:
@@ -110,5 +112,6 @@ def initialize_board_setup(ctx: commands.Context) -> str:
 
     # TODO: (2): parse board and give the adjudicator what it needs
     board = parse_board()
-    self.adjudicator = Adjudicator(board)
+    global adjudicator
+    adjudicator = adjudicator.set_board(board)
     return 'pretend we actually did the setup'

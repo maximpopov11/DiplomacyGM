@@ -1,8 +1,10 @@
+from diplomacy.player import Player
 from diplomacy.province import Province
 
 
 class Unit:
-    def __init__(self, province: Province):
+    def __init__(self, player: Player, province: Province):
+        self.player = player
         self.province = province
 
 

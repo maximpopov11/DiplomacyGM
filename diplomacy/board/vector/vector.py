@@ -17,21 +17,10 @@ NAMESPACE = {
 
 # Parse provinces, adjacencies, centers, and units
 def parse() -> Board:
-    # TODO: (1) create a board and return it
     provinces_data, names_data, centers_data, units_data = get_svg_data()
     provinces = get_provinces(provinces_data, names_data, centers_data, units_data)
     adjacencies = get_adjacencies(provinces)
-
-    centers = []
-    units = []
-    for province in provinces:
-        if province.has_supply_center:
-            centers.append(province.name)
-        if province.unit:
-            units.append(province.name)
-
-    print(centers)
-    print(units)
+    return Board(provinces, adjacencies)
 
 
 # Gets provinces, names, centers, and units data from SVG

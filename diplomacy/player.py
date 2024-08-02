@@ -1,5 +1,10 @@
+from typing import Set
+
+from diplomacy.unit import Unit
+
+
 class Player:
-    def __init__(self, name):
-        # TODO: (1) players have units, own provinces (unless we read provinces to get players?)
+    def __init__(self, name: str, units: Set[Unit]):
         self.name = name
+        self.units = units
         pass

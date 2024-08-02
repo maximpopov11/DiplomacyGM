@@ -12,6 +12,12 @@ class Order:
         self.unit = unit
 
 
+class InteractingOrder:
+    def __init__(self, unit: Unit, source: Unit):
+        self.unit = unit
+        self.source = source
+
+
 class Hold(Order):
     def __init__(self, unit: Unit):
         super().__init__(unit)
@@ -23,17 +29,16 @@ class Move(Order):
         self.destination = destination
 
 
-class Convoy(Order):
+class Convoy(InteractingOrder):
     def __init__(self, unit: Fleet, source: Army, destination: Province):
-        super().__init__(unit)
-        self.source = source
+        super().__init__(unit, source)
         self.destination = destination
 
 
-class Support(Order):
-    def __init__(self, unit: Unit, supporting: Order):
-        super().__init__(unit)
-        self.supporting = supporting
+class Support(InteractingOrder):
+    def __init__(self, unit: Unit, source: Unit, destination: Province):
+        super().__init__(unit, source)
+        self.destination = destination
 
 
 def parse(message: str, player_restriction: Optional[Player]) -> str:
