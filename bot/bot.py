@@ -36,7 +36,8 @@ async def ping(ctx: discord.ext.commands.Context) -> NoReturn:
     await handle_command(command.ping, ctx)
 
 
-@bot.command(brief='Submits orders (one per line). Note: convoy moves must be entered explicitly at this time.')
+@bot.command(brief="Submits orders (one per line). "
+                   "Note: convoy moves must explicitly include 'via convoy' at this time.")
 async def order(ctx: discord.ext.commands.Context) -> NoReturn:
     await handle_command(command.order, ctx)
 

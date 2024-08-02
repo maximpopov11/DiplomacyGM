@@ -1,10 +1,9 @@
-from typing import Optional
+from typing import List, Mapping, Optional
 
+from diplomacy.persistence.adjudicator import Adjudicator
 from diplomacy.player import Player
 from diplomacy.province import Province
 from diplomacy.unit import Army, Fleet, Unit
-
-# TODO: (1) store orders in file in case we crash
 
 
 class Order:
@@ -12,9 +11,9 @@ class Order:
         self.unit = unit
 
 
-class InteractingOrder:
+class InteractingOrder(Order):
     def __init__(self, unit: Unit, source: Unit):
-        self.unit = unit
+        super().__init__(unit)
         self.source = source
 
 
@@ -47,19 +46,27 @@ class Support(InteractingOrder):
         self.destination = destination
 
 
-def parse(message: str, player_restriction: Optional[Player]) -> str:
+def parse(
+        message: str,
+        player_restriction: Optional[Player],
+        provinces: Mapping[str, Province],
+        adjudicator: Adjudicator,
+) -> str:
     orders = str.splitlines(message)
+    valid = set()
     invalid = []
     for order in orders:
         try:
-            _parse_order(order, player_restriction)
-        except AssertionError:
-            invalid.append(order)
+            valid.add(_parse_order(order, player_restriction, provinces))
+        except AssertionError as error:
+            invalid.append((order, error))
+
+    adjudicator.add_orders(valid)
 
     if invalid:
-        response = 'The following orders were invalid:'
+        response = 'Some orders validated successfully. The following orders were invalid:'
         for order in invalid:
-            response += '\n' + order
+            response += f'\n{order[0]} with error: {order[1]}'
     else:
         response = 'Orders validated successfully.'
 
@@ -80,6 +87,74 @@ order_dict = {
 }
 
 
-def _parse_order(order: str, player_restriction: Player) -> str:
-    # TODO: (1) implement parsing of individual order
-    raise AssertionError('invalid')
+def _parse_order(order: str, player_restriction: Player, provinces: Mapping[str, Province]) -> Order:
+    if 'via' in order and 'convoy' in order:
+        return _parse_convoy_move(order, player_restriction, provinces)
+
+    for keyword in hold:
+        if keyword in order:
+            return _parse_hold(order, player_restriction, provinces)
+
+    for keyword in move:
+        if keyword in order:
+            return _parse_move(order, player_restriction, provinces)
+
+    for keyword in support:
+        if keyword in order:
+            return _parse_support(order, player_restriction, provinces)
+
+    for keyword in convoy:
+        if keyword in order:
+            return _parse_convoy_transport(order, player_restriction, provinces)
+
+    raise ValueError('Order does not contain any keywords:', order)
+
+
+def _parse_convoy_move(order: str, player_restriction: Player, provinces: Mapping[str, Province]) -> Order:
+    position, destination = _parse_provinces(order, provinces, 2)
+    if player_restriction is not None and position.unit.player != player_restriction:
+        raise PermissionError(f'You, {player_restriction.name}, do not have permissions to order the unit in '
+                              f'{position.name} which belongs to {position.unit.player}')
+    return ConvoyMove(position.unit, destination)
+
+
+def _parse_hold(order: str, player_restriction: Player, provinces: Mapping[str, Province]) -> Order:
+    province = _parse_provinces(order, provinces, 1)[0]
+    if player_restriction is not None and province.unit.player != player_restriction:
+        raise PermissionError(f'You, {player_restriction.name}, do not have permissions to order the unit in '
+                              f'{province.name} which belongs to {province.unit.player}')
+    return Hold(province.unit)
+
+
+def _parse_move(order: str, player_restriction: Player, provinces: Mapping[str, Province]) -> Order:
+    position, destination = _parse_provinces(order, provinces, 2)
+    if player_restriction is not None and position.unit.player != player_restriction:
+        raise PermissionError(f'You, {player_restriction.name}, do not have permissions to order the unit in '
+                              f'{position.name} which belongs to {position.unit.player}')
+    return Move(position.unit, destination)
+
+
+def _parse_convoy_transport(order: str, player_restriction: Player, provinces: Mapping[str, Province]) -> Order:
+    position, source, destination = _parse_provinces(order, provinces, 3)
+    if player_restriction is not None and source.unit.player != player_restriction:
+        raise PermissionError(f'You, {player_restriction.name}, do not have permissions to order the unit in '
+                              f'{source.name} which belongs to {source.unit.player}')
+    return ConvoyTransport(position.unit, source, destination)
+
+
+def _parse_support(order: str, player_restriction: Player, provinces: Mapping[str, Province]) -> Order:
+    position, source, destination = _parse_provinces(order, provinces, 3)
+    if player_restriction is not None and source.unit.player != player_restriction:
+        raise PermissionError(f'You, {player_restriction.name}, do not have permissions to order the unit in '
+                              f'{source.name} which belongs to {source.unit.player}')
+    return Support(position.unit, source, destination)
+
+
+def _parse_provinces(order: str, all_provinces: Mapping[str, Province], count: int) -> List[Province]:
+    provinces = []
+    for word in order:
+        if word in all_provinces:
+            provinces.append(all_provinces[word])
+    if len(provinces) != count:
+        raise ValueError(f'{count} provinces not found in order:', order)
+    return provinces

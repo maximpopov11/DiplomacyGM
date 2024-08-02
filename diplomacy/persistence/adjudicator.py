@@ -1,4 +1,4 @@
-from typing import List, Mapping, Set, Tuple
+from typing import List, Mapping, Set, Tuple, NoReturn
 
 from pydip.map.map import Map as Map
 from pydip.player.command.command import MoveCommand, ConvoyMoveCommand, ConvoyTransportCommand, Command, HoldCommand, \
@@ -20,6 +20,7 @@ from diplomacy.unit import Army, Fleet
 
 class Adjudicator:
     def __init__(self):
+        self.provinces = None
         self.map = None
         self.unit_config = None
         self.players = None
@@ -27,6 +28,7 @@ class Adjudicator:
 
     def set_board(self, board: Board):
         provinces = board.provinces
+        self.provinces = {province.name: province for province in provinces}
         territory_descriptors = _get_territory_descriptors(provinces)
         adjacencies = _get_adjacencies(board.adjacencies)
         self.map = Map(territory_descriptors, adjacencies)
@@ -34,7 +36,16 @@ class Adjudicator:
         self.players = _get_players(board.players, self.map, self.unit_config)
         self.phase = board.phase
 
-    def adjudicate(self, orders: List[Order]) -> str:
+    def add_orders(self, orders: Set[Order]) -> NoReturn:
+        # TODO: (1) store orders in file in case we crash
+        pass
+
+    def _get_orders(self) -> List[Order]:
+        # TODO: (1) get orders from file in case we crash
+        pass
+
+    def adjudicate(self) -> str:
+        orders = self._get_orders()
         commands = _get_commands(orders, self.players, self.unit_config)
         if phase.is_moves_phase(self.phase):
             resolve_turn(self.map, commands)
