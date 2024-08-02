@@ -29,7 +29,13 @@ class Move(Order):
         self.destination = destination
 
 
-class Convoy(InteractingOrder):
+class ConvoyMove(Order):
+    def __init__(self, unit: Unit, destination: Province):
+        super().__init__(unit)
+        self.destination = destination
+
+
+class ConvoyTransport(InteractingOrder):
     def __init__(self, unit: Fleet, source: Army, destination: Province):
         super().__init__(unit, source)
         self.destination = destination

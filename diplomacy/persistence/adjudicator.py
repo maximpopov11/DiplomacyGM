@@ -11,7 +11,7 @@ from pydip.turn.retreat import resolve_retreats
 
 from diplomacy import phase
 from diplomacy.board.board import Board
-from diplomacy.order import Order, Hold, Convoy, Move, Support, InteractingOrder
+from diplomacy.order import Order, Hold, ConvoyTransport, Move, Support, InteractingOrder, ConvoyMove
 from diplomacy.persistence.mapper import Mapper
 from diplomacy.player import Player as InternalPlayer
 from diplomacy.province import Province
@@ -143,7 +143,9 @@ def _order_to_command(
         return HoldCommand(player, unit)
     elif isinstance(order, Move):
         return MoveCommand(player, unit, order.destination)
-    elif isinstance(order, Convoy):
+    elif isinstance(order, ConvoyMove):
+        return ConvoyMoveCommand(player, unit, order.destination)
+    elif isinstance(order, ConvoyTransport):
         return ConvoyTransportCommand(player, unit, unit2, order.destination)
     elif isinstance(order, Support):
         return SupportCommand(player, unit, unit2, order.destination)
