@@ -117,7 +117,6 @@ def _order_to_command(
         players: Mapping[str, Player],
         unit_config: Mapping[str, List[Mapping[str, str]]],
 ) -> Command:
-    # TODO: (1) explicit convoy move command
     player = players[order.unit.player.name]
     player_units = unit_config[player.name]
     province = order.unit.province.name
