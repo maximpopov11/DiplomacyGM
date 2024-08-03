@@ -87,8 +87,16 @@ def get_scoreboard(ctx: commands.Context) -> str:
     if not utils.is_gm_channel(ctx.channel):
         raise RuntimeError('You cannot get the scoreboard in a non-GM channel.')
 
-    # TODO: (!) output center counts by player
-    return 'pretend this is the scoreboard'
+    counts_list = []
+    for player, count in adjudicator.get_build_counts().items():
+        counts_list.append((player, count))
+    counts_list = sorted(counts_list, key=lambda counts: counts[1])
+
+    response = ''
+    for player, count in counts_list:
+        response += f'{player} {count}\n'
+
+    return response
 
 
 def edit(ctx: commands.Context) -> str:

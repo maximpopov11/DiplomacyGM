@@ -40,6 +40,9 @@ class Adjudicator:
         # TODO: (DB) get orders from file in case we crash
         pass
 
+    def get_build_counts(self) -> Mapping[str, int]:
+        return translation.get_adjustment_counts(self.players)
+
     def adjudicate(self) -> str:
         orders = self._get_orders()
         commands = translation.get_commands(orders, self.pydip_players, self.units)
@@ -49,7 +52,7 @@ class Adjudicator:
             resolve_retreats(self.map, commands)
         elif phase.is_adjustments_phase(self.phase):
             ownership_map = translation.get_ownership_map(self.provinces, self.map)
-            adjustment_counts = translation.get_adjustment_counts(self.players)
+            adjustment_counts = self.get_build_counts()
             resolve_adjustment(ownership_map, adjustment_counts, self.units, commands)
         else:
             raise ValueError('Illegal phase:', self.phase)
