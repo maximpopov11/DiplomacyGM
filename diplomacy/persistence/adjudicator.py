@@ -1,4 +1,4 @@
-from typing import List, Mapping, NoReturn, Set
+from typing import List, Mapping, NoReturn, Optional, Set
 
 from pydip.map.map import Map as PydipMap
 from pydip.player.player import Player as PydipPlayer
@@ -23,9 +23,10 @@ class Adjudicator:
         territory_descriptors = translation.get_territory_descriptors(self.provinces)
         adjacencies = translation.get_adjacencies(self.provinces)
         self.map: PydipMap = PydipMap(territory_descriptors, adjacencies)
+        self.mapper: Mapper = Mapper(self.map)
 
-        start_config: Mapping[str, List[Mapping[str, str]]] = translation.get_start_config(board.players)
         self.players: Set[Player] = board.players
+        start_config: Mapping[str, List[Mapping[str, str]]] = translation.get_start_config(board.players)
         self.pydip_players: Mapping[str, PydipPlayer] = translation.get_players(board.players, self.map, start_config)
 
         self.units = translation.get_units(board.provinces)
@@ -53,12 +54,18 @@ class Adjudicator:
         else:
             raise ValueError('Illegal phase:', self.phase)
 
-        mapper = Mapper(self.map)
-        moves_map = mapper.get_moves_map()
-        results_map = mapper.get_results_map()
+        self.mapper = Mapper(self.map)
+        moves_map = self.mapper.get_moves_map(None)
+        results_map = self.mapper.get_results_map(None)
         # TODO: (MAP) return both SVGs
         return 'Pretend this is the moves map and the adjudication map!'
 
     def rollback(self) -> str:
         # TODO: (DB) implement rollback to last map
         pass
+
+    def get_player(self, name) -> Optional[Player]:
+        for player in self.players:
+            if player.name == name:
+                return player
+        return None

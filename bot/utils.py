@@ -3,7 +3,7 @@ from typing import Optional
 from discord.ext import commands
 
 from config import *
-import diplomacy.persistence.state
+from diplomacy.persistence.adjudicator import Adjudicator
 from diplomacy.player import Player
 
 
@@ -22,9 +22,9 @@ def is_player(author: commands.Context.author) -> bool:
     return get_player(author) is not None
 
 
-def get_player(author: commands.Context.author) -> Optional[Player]:
+def get_player(author: commands.Context.author, adjudicator: Adjudicator) -> Optional[Player]:
     for role in author.roles:
-        player = diplomacy.persistence.state.get().get_player(role.name)
+        player = adjudicator.get_player(role.name)
         if player is not None:
             return player
     return None

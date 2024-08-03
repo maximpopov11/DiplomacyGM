@@ -5,7 +5,6 @@ from discord.ext import commands
 
 import bot.utils as utils
 import diplomacy.order
-import diplomacy.persistence.state
 from diplomacy.persistence.adjudicator import Adjudicator
 from diplomacy.board.vector.vector import parse as parse_board
 
@@ -35,7 +34,7 @@ def order(ctx: commands.Context) -> str:
             raise RuntimeError('You cannot order as a GM in a non-GM channel.')
         return diplomacy.order.parse(ctx.message.content, None, adjudicator.provinces, adjudicator)
 
-    player = utils.get_player(ctx.author)
+    player = utils.get_player(ctx.author, adjudicator)
     if player is not None:
         if not utils.is_player_channel(player.name, ctx.channel):
             raise RuntimeError('You cannot order as a player outside of your orders channel.')
@@ -48,13 +47,13 @@ def view_orders(ctx: commands.Context) -> str:
     if utils.is_gm(ctx.author):
         if not utils.is_gm_channel(ctx.channel):
             raise RuntimeError('You cannot view orders as a GM in a non-GM channel.')
-        return diplomacy.persistence.state.view(None)
+        return adjudicator.mapper.get_moves_map(None)
 
-    player = utils.get_player(ctx.author)
+    player = utils.get_player(ctx.author, adjudicator)
     if player is not None:
         if not utils.is_player_channel(player.name, ctx.channel):
             raise RuntimeError('You cannot view orders as a player outside of your orders channel.')
-        return diplomacy.persistence.state.view(player)
+        return adjudicator.mapper.get_moves_map(player)
 
     raise PermissionError('You cannot view orders because you are neither a GM nor a player.')
 
