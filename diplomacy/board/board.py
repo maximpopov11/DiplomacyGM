@@ -25,23 +25,13 @@ def get_centers(provinces: Set[Province]) -> Mapping[str, Set[Province]]:
     center_map = {}
     for province in provinces:
         if province.has_supply_center:
-            player = province.owner.name
-            if player not in center_map:
-                center_map[player] = set()
-            center_map[player].add(province)
+            center_map.setdefault(province.owner.name, set()).add(province)
     return center_map
 
 
 def get_units(provinces: Set[Province]) -> Mapping[str, Set[Unit]]:
     unit_map = {}
     for province in provinces:
-        unit = province.unit
-        if unit is None:
-            continue
-
-        player = unit.player.name
-        if player not in unit_map:
-            unit_map[player] = set()
-
-        unit_map[player].add(unit)
+        if province.unit:
+            unit_map.setdefault(province.unit.player.name, set()).add(province.unit)
     return unit_map

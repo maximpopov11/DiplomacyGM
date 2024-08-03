@@ -86,10 +86,6 @@ def get_units(provinces: Set[Province]) -> Mapping[str, Set[PydipUnit]]:
     pydip_units = {}
     for province in provinces:
         if province.unit:
-            player = province.unit.player.name
-            if player not in pydip_units:
-                pydip_units[player] = set()
-
             if isinstance(province.unit, Army):
                 unit_type = PydipUnitTypes.TROOP
             elif isinstance(province.unit, Fleet):
@@ -97,7 +93,7 @@ def get_units(provinces: Set[Province]) -> Mapping[str, Set[PydipUnit]]:
             else:
                 raise ValueError(f'Illegal unit type {province.unit.__class__} for unit in {province.name}.')
 
-            pydip_units[player].add(PydipUnit(unit_type, province.name))
+            pydip_units.setdefault(province.unit.player.name, set()).add(PydipUnit(unit_type, province.name))
     return pydip_units
 
 
@@ -155,15 +151,10 @@ def get_ownership_map(provinces: Set[Province], pydip_map: PydipMap) -> Ownershi
     for province in provinces:
         if province.has_supply_center:
             supply_centers.add(province.name)
-
-            if province.owner not in owned_territories:
-                owned_territories[province.owner] = set()
-            owned_territories[province.owner].add(province.name)
-
-            if province.core is not None:
-                if province.owner not in home_territories:
-                    home_territories[province.owner] = set()
-                home_territories[province.owner].add(province.name)
+            if province.core:
+                home_territories.setdefault(province.owner, set()).add(province.name)
+                if province.owner:
+                    owned_territories.setdefault(province.owner, set()).add(province.name)
 
     supply_map = SupplyCenterMap(pydip_map, supply_centers)
     return OwnershipMap(supply_map, owned_territories, home_territories)
