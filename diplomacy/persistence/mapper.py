@@ -1,6 +1,7 @@
 from pydip.map.map import Map
 
 
+# TODO: (1) island borders need to get colored in alongside the island fill
 class Mapper:
     def __init__(self, board_map: Map):
         pass

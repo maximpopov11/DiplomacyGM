@@ -1,23 +1,23 @@
 from typing import List, Set, Tuple, Mapping
 
 from config import players
-from diplomacy.phase import spring_moves
+from diplomacy.phase import spring_moves, Phase
 from diplomacy.player import Player
 from diplomacy.province import Province
 from diplomacy.unit import Unit
 
 
+# TODO: (1) support high seas/sands via manual input for alphabot
 class Board:
-    def __init__(self, provinces: List[Province], adjacencies: Set[Tuple[str, str]]):
-        self.provinces = provinces
-        self.adjacencies = adjacencies
+    def __init__(self, provinces: Set[Province]):
+        self.provinces: Set[Province] = provinces
 
-        self.players = set()
-        units = get_units(provinces)
+        self.players: Set[Player] = set()
+        units: Set[Unit] = get_units(provinces)
         for name in players:
-            self.players.add(Player(name, units[name]))
+            self.players.add(Player(name, player_centers, units[name]))
 
-        self.phase = spring_moves
+        self.phase: Phase = spring_moves
 
 
 def get_units(provinces: List[Province]) -> Mapping[str, Set[Unit]]:

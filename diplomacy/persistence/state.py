@@ -3,6 +3,8 @@ from typing import Optional
 from diplomacy.board.board import Board
 from diplomacy.player import Player
 
+# TODO: (1) figure out what this file is for
+
 
 class State:
     def __init__(self):

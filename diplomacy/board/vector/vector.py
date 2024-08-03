@@ -20,7 +20,7 @@ def parse() -> Board:
     provinces_data, names_data, centers_data, units_data = get_svg_data()
     provinces = get_provinces(provinces_data, names_data, centers_data, units_data)
     adjacencies = get_adjacencies(provinces)
-    return Board(provinces, adjacencies)
+    return Board(set(provinces))
 
 
 # Gets provinces, names, centers, and units data from SVG

@@ -1,15 +1,52 @@
-class Province:
-    def __init__(self, coordinates):
-        self.coordinates = coordinates
-        self.name = None
-        self.has_supply_center = False
-        self.unit = None
+from __future__ import annotations
 
-    def set_name(self, name):
+from enum import Enum
+from typing import List, NoReturn, Optional, Set, Tuple
+
+from diplomacy.player import Player
+from diplomacy.unit import Unit
+
+
+class ProvinceType(Enum):
+    LAND = 1
+    SEA = 2
+
+
+class Province:
+    def __init__(self, coordinates: List[Tuple[float, float]], province_type: ProvinceType):
+        self.coordinates: List[Tuple[float, float]] = coordinates
+        # TODO: (1) set these immediately
+        self.name: str = ''
+        self.type: ProvinceType = province_type
+        self.owner: Optional[Player] = None
+        self.core: Optional[Player] = None
+
+        # TODO: (2) setting everything in initialization would be cool, just needs a bit more prep on the gathering side
+        # will be set later, needs defined province coordinates first
+        self.adjacent: Set[Province] = set()
+        self.coasts: Set[Coast] = set()
+        self.has_supply_center: bool = False
+        self.unit: Optional[Unit] = None
+
+    def set_name(self, name) -> NoReturn:
+        # TODO: (1) don't need this anymore, can set immediately
         self.name = name
 
-    def set_has_supply_center(self, boolean):
-        self.has_supply_center = boolean
+    def set_adjacent(self, provinces: Set[Province]) -> NoReturn:
+        self.adjacent = provinces
+        # TODO: (1) include sea provinces
+        # TODO: (1) set coasts
 
-    def set_unit(self, unit):
+    def set_has_supply_center(self, val: bool) -> NoReturn:
+        self.has_supply_center = val
+
+    def set_unit(self, unit: Unit) -> NoReturn:
         self.unit = unit
+
+
+class Coast:
+    def __init__(self, name: str, adjacent_seas: Set[Province], adjacent_coasts: Tuple[Coast, Coast]):
+        # the name should be "<province_name> coast #<x>" with unique <x> for each coast in this province
+        self.name: str = name
+        self.adjacent_seas: Set[Province] = adjacent_seas
+        self.adjacent_coasts: Tuple[Coast, Coast] = adjacent_coasts

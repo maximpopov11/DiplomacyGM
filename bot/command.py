@@ -1,4 +1,5 @@
 import random
+from typing import Optional
 
 from discord.ext import commands
 
@@ -8,7 +9,7 @@ import diplomacy.persistence.state
 from diplomacy.persistence.adjudicator import Adjudicator
 from diplomacy.board.vector.vector import parse as parse_board
 
-adjudicator = Adjudicator()
+adjudicator: Optional[Adjudicator] = None
 
 ping_text_choices = [
     'proudly states',
@@ -112,5 +113,5 @@ def initialize_board_setup(ctx: commands.Context) -> str:
     # TODO: (2): parse board and give the adjudicator what it needs
     board = parse_board()
     global adjudicator
-    adjudicator = adjudicator.set_board(board)
+    adjudicator = Adjudicator(board)
     return 'pretend we actually did the setup'
