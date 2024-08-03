@@ -1,6 +1,7 @@
 from typing import List, Mapping, Optional
 
 from diplomacy.persistence.adjudicator import Adjudicator
+from diplomacy.phase import is_moves_phase, is_retreats_phase, is_adjustments_phase
 from diplomacy.player import Player
 from diplomacy.province import Province
 from diplomacy.unit import Army, Fleet, Unit
@@ -19,6 +20,11 @@ class ComplexOrder(Order):
     def __init__(self, unit: Unit, source: Unit):
         super().__init__(unit)
         self.source = source
+
+
+class RetreatOrder(Order):
+    def __init__(self, unit: Unit):
+        super().__init__(unit)
 
 
 class Hold(Order):
@@ -50,6 +56,17 @@ class Support(ComplexOrder):
         self.destination = destination
 
 
+class RetreatMove(RetreatOrder):
+    def __init__(self, unit: Unit, destination: Province):
+        super().__init__(unit)
+        self.destination = destination
+
+
+class RetreatDisband(RetreatOrder):
+    def __init__(self, unit: Unit):
+        super().__init__(unit)
+
+
 def parse(
         message: str,
         player_restriction: Optional[Player],
@@ -61,7 +78,13 @@ def parse(
     invalid = []
     for order in orders:
         try:
-            valid.add(_parse_order(order, player_restriction, provinces))
+            if is_moves_phase(adjudicator.phase):
+                valid.add(_parse_order_moves(order, player_restriction, provinces))
+            elif is_retreats_phase(adjudicator.phase):
+                valid.add(_parse_order_retreats(order, player_restriction, provinces))
+            elif is_adjustments_phase(adjudicator.phase):
+                valid.add(_parse_order_adjustments(order, player_restriction, provinces))
+            raise ValueError(f'Invalid phase: {adjudicator.phase}')
         except AssertionError as error:
             invalid.append((order, error))
 
@@ -81,6 +104,8 @@ hold = 'hold'
 move = 'move'
 support = 'support'
 convoy = 'convoy'
+retreat_move = 'retreat move'
+retreat_disband = 'retreat disband'
 
 
 order_dict = {
@@ -88,10 +113,12 @@ order_dict = {
     move: ['-', '->', 'to', 'm', 'move', 'moves'],
     support: ['s', 'support', 'supports'],
     convoy: ['c', 'convoy', 'convoys'],
+    retreat_move: ['-', '->', 'to', 'm', 'move', 'moves', 'r', 'retreat', 'retreats'],
+    retreat_disband: ['disband', 'disbands', 'boom', 'explodes', 'dies'],
 }
 
 
-def _parse_order(order: str, player_restriction: Player, provinces: Mapping[str, Province]) -> Order:
+def _parse_order_moves(order: str, player_restriction: Player, provinces: Mapping[str, Province]) -> Order:
     if 'via' in order and 'convoy' in order:
         return _parse_convoy_move(order, player_restriction, provinces)
 
@@ -111,7 +138,19 @@ def _parse_order(order: str, player_restriction: Player, provinces: Mapping[str,
         if keyword in order:
             return _parse_convoy_transport(order, player_restriction, provinces)
 
-    raise ValueError('Order does not contain any keywords:', order)
+    raise ValueError('Order does not contain any move phase keywords:', order)
+
+
+def _parse_order_retreats(order: str, player_restriction: Player, provinces: Mapping[str, Province]) -> Order:
+    for keyword in retreat_move:
+        if keyword in order:
+            return _parse_retreat_move(order, player_restriction, provinces)
+
+    for keyword in retreat_disband:
+        if keyword in order:
+            return _parse_retreat_disband(order, player_restriction, provinces)
+
+    raise ValueError('Order does not contain any retreat phase keywords:', order)
 
 
 def _parse_convoy_move(order: str, player_restriction: Player, provinces: Mapping[str, Province]) -> Order:
@@ -152,6 +191,22 @@ def _parse_support(order: str, player_restriction: Player, provinces: Mapping[st
         raise PermissionError(f'You, {player_restriction.name}, do not have permissions to order the unit in '
                               f'{source.name} which belongs to {source.unit.player}')
     return Support(position.unit, source, destination)
+
+
+def _parse_retreat_move(order: str, player_restriction: Player, provinces: Mapping[str, Province]) -> Order:
+    position, destination = _parse_provinces(order, provinces, 2)
+    if player_restriction is not None and position.unit.player != player_restriction:
+        raise PermissionError(f'You, {player_restriction.name}, do not have permissions to order the unit in '
+                              f'{position.name} which belongs to {position.unit.player}')
+    return RetreatMove(position.unit, destination)
+
+
+def _parse_retreat_disband(order: str, player_restriction: Player, provinces: Mapping[str, Province]) -> Order:
+    province = _parse_provinces(order, provinces, 1)[0]
+    if player_restriction is not None and province.unit.player != player_restriction:
+        raise PermissionError(f'You, {player_restriction.name}, do not have permissions to order the unit in '
+                              f'{province.name} which belongs to {province.unit.player}')
+    return RetreatDisband(province.unit)
 
 
 def _parse_provinces(order: str, all_provinces: Mapping[str, Province], count: int) -> List[Province]:

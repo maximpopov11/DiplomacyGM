@@ -3,10 +3,12 @@ from typing import List, Mapping, Set, Tuple
 from pydip.player.command.command import Command as PydipCommand, ConvoyMoveCommand, ConvoyTransportCommand, \
     HoldCommand, MoveCommand, SupportCommand
 from pydip.map.map import Map as PydipMap, OwnershipMap, SupplyCenterMap
+from pydip.player.command.retreat_command import RetreatMoveCommand, RetreatDisbandCommand
 from pydip.player.player import Player as PydipPlayer
 from pydip.player.unit import Unit as PydipUnit, UnitTypes as PydipUnitTypes
 
-from diplomacy.order import ConvoyMove, ConvoyTransport, Hold, Move, Order, Support, ComplexOrder
+from diplomacy.order import ConvoyMove, ConvoyTransport, Hold, Move, Order, Support, ComplexOrder, RetreatMove, \
+    RetreatDisband, RetreatOrder
 from diplomacy.player import Player
 from diplomacy.province import Province
 from diplomacy.unit import Army, Fleet
@@ -70,9 +72,9 @@ def get_start_config(players: Set[Player]) -> Mapping[str, List[Mapping[str, str
 
 
 def get_players(
-        players: Set[Player],
-        game_map: PydipMap,
-        start_configs: Mapping[str, List[Mapping[str, str]]],
+    players: Set[Player],
+    game_map: PydipMap,
+    start_configs: Mapping[str, List[Mapping[str, str]]],
 ) -> Mapping[str, PydipPlayer]:
     pydip_players = {}
     for player in players:
@@ -98,9 +100,10 @@ def get_units(provinces: Set[Province]) -> Mapping[str, Set[PydipUnit]]:
 
 
 def get_commands(
-        orders: List[Order],
-        pydip_players: Mapping[str, PydipPlayer],
-        pydip_units: Mapping[str, Set[PydipUnit]],
+    orders: List[Order],
+    pydip_players: Mapping[str, PydipPlayer],
+    pydip_units: Mapping[str, Set[PydipUnit]],
+    retreats_map: Mapping[PydipPlayer, Mapping[PydipUnit, str]]
 ) -> List[PydipCommand]:
     commands = []
     for order in orders:
@@ -137,6 +140,10 @@ def get_commands(
             commands.append(ConvoyTransportCommand(pydip_player, unit, source_unit, order.destination))
         elif isinstance(order, Support):
             commands.append(SupportCommand(pydip_player, unit, source_unit, order.destination))
+        elif isinstance(order, RetreatMove):
+            commands.append(RetreatMoveCommand(retreats_map, pydip_player, unit, order.destination))
+        elif isinstance(order, RetreatDisband):
+            commands.append(RetreatDisbandCommand(retreats_map, pydip_player, unit))
         else:
             raise ValueError(f'Order type {order.__class__} is not legal for order:', order)
 

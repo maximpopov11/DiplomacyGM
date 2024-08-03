@@ -2,6 +2,7 @@ from typing import List, Mapping, NoReturn, Optional, Set
 
 from pydip.map.map import Map as PydipMap
 from pydip.player.player import Player as PydipPlayer
+from pydip.player.unit import Unit as PydipUnit
 from pydip.turn.adjustment import resolve_adjustment
 from pydip.turn.resolve import resolve_turn
 from pydip.turn.retreat import resolve_retreats
@@ -16,6 +17,7 @@ from diplomacy.player import Player
 from diplomacy.province import Province
 
 
+# TODO: (DB) if DB is not used, check that all persistence is saved to file
 class Adjudicator:
     def __init__(self, board: Board):
         self.provinces: Set[Province] = board.provinces
@@ -32,6 +34,8 @@ class Adjudicator:
         self.units = translation.get_units(board.provinces)
         self.phase: Phase = board.phase
 
+        self.retreat_map: Optional[Mapping[PydipPlayer, Mapping[PydipUnit, str]]] = None
+
     def add_orders(self, orders: Set[Order]) -> NoReturn:
         # TODO: (DB) store orders in file in case we crash; make sure we overwrite old orders for unit
         pass
@@ -45,9 +49,9 @@ class Adjudicator:
 
     def adjudicate(self) -> str:
         orders = self._get_orders()
-        commands = translation.get_commands(orders, self.pydip_players, self.units)
+        commands = translation.get_commands(orders, self.pydip_players, self.units, self.retreat_map)
         if phase.is_moves_phase(self.phase):
-            resolve_turn(self.map, commands)
+            self.retreat_map = resolve_turn(self.map, commands)
         elif phase.is_retreats_phase(self.phase):
             resolve_retreats(self.map, commands)
         elif phase.is_adjustments_phase(self.phase):
@@ -59,7 +63,7 @@ class Adjudicator:
 
         self.mapper = Mapper(self.map)
         moves_map = self.mapper.get_moves_map(None)
-        results_map = self.mapper.get_results_map(None)
+        results_map = self.mapper.get_results_map()
         # TODO: (MAP) return both SVGs
         raise RuntimeError('Adjudication has not yet been fully implemented.')
 
