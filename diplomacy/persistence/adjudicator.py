@@ -61,11 +61,11 @@ class Adjudicator:
         moves_map = self.mapper.get_moves_map(None)
         results_map = self.mapper.get_results_map(None)
         # TODO: (MAP) return both SVGs
-        return 'Pretend this is the moves map and the adjudication map!'
+        raise RuntimeError('Adjudication has not yet been fully implemented.')
 
     def rollback(self) -> str:
         # TODO: (DB) implement rollback to last map
-        pass
+        raise RuntimeError('Rollback will not be implemented until we have a server running the bot rather than a GM.')
 
     def get_player(self, name) -> Optional[Player]:
         for player in self.players:

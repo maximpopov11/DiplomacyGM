@@ -107,17 +107,16 @@ def edit(ctx: commands.Context) -> str:
         raise RuntimeError('You cannot edit the board state in a non-GM channel.')
 
     # TODO: (DB) implement edit state
-    return 'looks like the GM would like to manually fix something, too bad this is not implemented yet'
+    raise RuntimeError('Edit state has not been implemented yet and is not needed until the bot is running via server.')
 
 
 def initialize_board_setup(ctx: commands.Context) -> str:
     if not utils.is_gm(ctx.author):
         raise PermissionError('You cannot initialize the board state because you are not a GM.')
-
     if not utils.is_gm_channel(ctx.channel):
         raise RuntimeError('You cannot initialize the board state in a non-GM channel.')
 
     board = parse_board()
     global adjudicator
     adjudicator = Adjudicator(board)
-    return 'pretend we actually did the setup'
+    return 'Setup completed successfully!'
