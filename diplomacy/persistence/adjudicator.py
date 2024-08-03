@@ -49,7 +49,9 @@ class Adjudicator:
 
     def adjudicate(self) -> str:
         orders = self._get_orders()
-        commands = translation.get_commands(orders, self.pydip_players, self.units, self.retreat_map)
+        ownership_map = translation.get_ownership_map(self.map)
+        commands = translation.get_commands(orders, self.pydip_players, self.units, self.retreat_map, ownership_map)
+
         if phase.is_moves_phase(self.phase):
             self.retreat_map = resolve_turn(self.map, commands)
         elif phase.is_retreats_phase(self.phase):

@@ -2,16 +2,17 @@ from typing import List, Mapping, Set, Tuple
 
 from pydip.player.command.command import Command as PydipCommand, ConvoyMoveCommand, ConvoyTransportCommand, \
     HoldCommand, MoveCommand, SupportCommand
+from pydip.player.command.adjustment_command import AdjustmentCreateCommand, AdjustmentDisbandCommand
 from pydip.map.map import Map as PydipMap, OwnershipMap, SupplyCenterMap
 from pydip.player.command.retreat_command import RetreatMoveCommand, RetreatDisbandCommand
 from pydip.player.player import Player as PydipPlayer
-from pydip.player.unit import Unit as PydipUnit, UnitTypes as PydipUnitTypes
+from pydip.player.unit import Unit as PydipUnit, UnitTypes as PydipUnitType
 
-from diplomacy.order import ConvoyMove, ConvoyTransport, Hold, Move, Order, Support, ComplexOrder, RetreatMove, \
-    RetreatDisband, RetreatOrder
+from diplomacy.order import ConvoyMove, ConvoyTransport, Hold, Move, Support, ComplexOrder, RetreatMove, \
+    RetreatDisband, Order, Disband, UnitOrder, Build
 from diplomacy.player import Player
 from diplomacy.province import Province
-from diplomacy.unit import Army, Fleet
+from diplomacy.unit import Army, Fleet, Unit
 
 
 def get_territory_descriptors(provinces: Set[Province]) -> List[Mapping[str, any]]:
@@ -55,16 +56,9 @@ def get_start_config(players: Set[Player]) -> Mapping[str, List[Mapping[str, str
     for player in players:
         player_config = []
         for unit in player.units:
-            if isinstance(unit, Army):
-                unit_type = PydipUnitTypes.TROOP
-            elif isinstance(unit, Fleet):
-                unit_type = PydipUnitTypes.FLEET
-            else:
-                raise ValueError('Unit type is not legal:', unit.__class__)
-
             mapping = {
                 'territory_name': unit.province.name,
-                'unit_type': unit_type,
+                'unit_type': _get_unit_type(unit),
             }
             player_config.append(mapping)
         start_config[player.name] = player_config
@@ -88,35 +82,45 @@ def get_units(provinces: Set[Province]) -> Mapping[str, Set[PydipUnit]]:
     pydip_units = {}
     for province in provinces:
         if province.unit:
-            if isinstance(province.unit, Army):
-                unit_type = PydipUnitTypes.TROOP
-            elif isinstance(province.unit, Fleet):
-                unit_type = PydipUnitTypes.FLEET
-            else:
-                raise ValueError(f'Illegal unit type {province.unit.__class__} for unit in {province.name}.')
-
+            unit_type = _get_unit_type(province.unit)
             pydip_units.setdefault(province.unit.player.name, set()).add(PydipUnit(unit_type, province.name))
     return pydip_units
+
+
+def _get_unit_type(unit: Unit) -> PydipUnitType:
+    if isinstance(unit, Army):
+        return PydipUnitType.TROOP
+    elif isinstance(unit, Fleet):
+        return PydipUnitType.FLEET
+    else:
+        raise ValueError(f'Illegal unit type {unit.__class__} for unit in {unit.province.name}.')
 
 
 def get_commands(
     orders: List[Order],
     pydip_players: Mapping[str, PydipPlayer],
     pydip_units: Mapping[str, Set[PydipUnit]],
-    retreats_map: Mapping[PydipPlayer, Mapping[PydipUnit, str]]
+    retreats_map: Mapping[PydipPlayer, Mapping[PydipUnit, str]],
+    ownership_map: OwnershipMap,
 ) -> List[PydipCommand]:
+    # TODO: (ALPHA) support core
     commands = []
     for order in orders:
-        pydip_player = pydip_players[order.unit.player.name]
-        player_units = pydip_units[pydip_player.name]
-
         unit = None
-        for pydip_unit in player_units:
-            if pydip_unit.position == order.unit.province.name:
-                unit = pydip_unit
-        if unit is None:
-            raise ValueError(f'Ordered unit at {order.unit.province.name} not found when connecting to adjudication '
-                             'library.')
+        if isinstance(order, UnitOrder):
+            pydip_player = pydip_players[order.unit.player.name]
+            player_units = pydip_units[pydip_player.name]
+
+            for pydip_unit in player_units:
+                if pydip_unit.position == order.unit.province.name:
+                    unit = pydip_unit
+            if unit is None:
+                raise ValueError(f'Ordered unit at {order.unit.province.name} not found when connecting to adjudication'
+                                 ' library.')
+        elif isinstance(order, Build):
+            pydip_player = pydip_players[order.province.owner.name]
+        else:
+            raise ValueError(f'Illegal order type: {order.__class__}')
 
         source_unit = None
         if isinstance(order, ComplexOrder):
@@ -144,6 +148,11 @@ def get_commands(
             commands.append(RetreatMoveCommand(retreats_map, pydip_player, unit, order.destination))
         elif isinstance(order, RetreatDisband):
             commands.append(RetreatDisbandCommand(retreats_map, pydip_player, unit))
+        elif isinstance(order, Build):
+            new_unit = PydipUnit(_get_unit_type(order.unit), order.province.name)
+            commands.append(AdjustmentCreateCommand(ownership_map, pydip_player, new_unit))
+        elif isinstance(order, Disband):
+            commands.append(AdjustmentDisbandCommand(pydip_player, unit))
         else:
             raise ValueError(f'Order type {order.__class__} is not legal for order:', order)
 
