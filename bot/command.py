@@ -88,7 +88,7 @@ def get_scoreboard(ctx: commands.Context) -> str:
     if not utils.is_gm_channel(ctx.channel):
         raise RuntimeError('You cannot get the scoreboard in a non-GM channel.')
 
-    # TODO: (1) output center counts by player
+    # TODO: (!) output center counts by player
     return 'pretend this is the scoreboard'
 
 
@@ -99,7 +99,7 @@ def edit(ctx: commands.Context) -> str:
     if not utils.is_gm_channel(ctx.channel):
         raise RuntimeError('You cannot edit the board state in a non-GM channel.')
 
-    # TODO: (2) implement edit state
+    # TODO: (DB) implement edit state
     return 'looks like the GM would like to manually fix something, too bad this is not implemented yet'
 
 
@@ -110,7 +110,6 @@ def initialize_board_setup(ctx: commands.Context) -> str:
     if not utils.is_gm_channel(ctx.channel):
         raise RuntimeError('You cannot initialize the board state in a non-GM channel.')
 
-    # TODO: (2): parse board and give the adjudicator what it needs
     board = parse_board()
     global adjudicator
     adjudicator = Adjudicator(board)

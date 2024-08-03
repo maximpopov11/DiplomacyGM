@@ -7,7 +7,7 @@ from diplomacy.province import Province
 from diplomacy.unit import Unit
 
 
-# TODO: (1) support high seas/sands via manual input for alphabot
+# TODO: (MAP) manually support high seas/sands (do last; awaiting GM fill file)
 class Board:
     def __init__(self, provinces: Set[Province]):
         self.provinces: Set[Province] = provinces

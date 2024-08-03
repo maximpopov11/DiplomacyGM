@@ -32,12 +32,11 @@ class Adjudicator:
         self.phase: Phase = board.phase
 
     def add_orders(self, orders: Set[Order]) -> NoReturn:
-        # TODO: (1) store orders in file in case we crash
-        # TODO: (1) make sure we overwrite old orders for unit
+        # TODO: (DB) store orders in file in case we crash; make sure we overwrite old orders for unit
         pass
 
     def _get_orders(self) -> List[Order]:
-        # TODO: (1) get orders from file in case we crash
+        # TODO: (DB) get orders from file in case we crash
         pass
 
     def adjudicate(self) -> str:
@@ -57,9 +56,9 @@ class Adjudicator:
         mapper = Mapper(self.map)
         moves_map = mapper.get_moves_map()
         results_map = mapper.get_results_map()
-        # TODO: (1) return both SVGs
+        # TODO: (MAP) return both SVGs
         return 'Pretend this is the moves map and the adjudication map!'
 
     def rollback(self) -> str:
-        # TODO: (2) implement rollback to last map
+        # TODO: (DB) implement rollback to last map
         pass

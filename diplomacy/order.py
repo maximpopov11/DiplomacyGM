@@ -6,9 +6,9 @@ from diplomacy.province import Province
 from diplomacy.unit import Army, Fleet, Unit
 
 
-# TODO: (1) implement retreats (RetreatMoveCommand and RetreatDisbandCommand in library)
-# TODO: (1) implement builds (AdjustmentCommandType.CREATE and DISBAND in library)
-# TODO: (1) implement coring
+# TODO: (!) implement retreats (RetreatMoveCommand and RetreatDisbandCommand in library)
+# TODO: (!) implement builds (AdjustmentCommandType.CREATE and DISBAND in library)
+# TODO: (!) implement coring
 class Order:
     def __init__(self, unit: Unit):
         self.unit = unit

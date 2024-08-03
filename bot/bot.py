@@ -16,10 +16,10 @@ commandFunctionType = Callable[[commands.Context], str]
 
 @bot.event
 async def on_ready():
-    # TODO: (2) setup db (make sure it's stable) for state, game ID
-    # TODO: (2) read ctx.guild.id (or equivalent) and store that in db API
-    # TODO: (2) get state from db and create adjudicator
-    # TODO: (2) update state -> update db (protect against malicious inputs like drop table)
+    # TODO: (DB) setup db (make sure it's stable) for state, game ID
+    # TODO: (DB) read ctx.guild.id (or equivalent) and store that in db API to differentiate games
+    # TODO: (DB) get state from db and create adjudicator
+    # TODO: (DB) update state -> update db (protect against malicious inputs like drop table)
     pass
 
 

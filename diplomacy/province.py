@@ -15,13 +15,13 @@ class ProvinceType(Enum):
 class Province:
     def __init__(self, coordinates: List[Tuple[float, float]], province_type: ProvinceType):
         self.coordinates: List[Tuple[float, float]] = coordinates
-        # TODO: (1) set these immediately
+        # TODO: (MAP) set these immediately
         self.name: str = ''
         self.type: ProvinceType = province_type
         self.owner: Optional[Player] = None
         self.core: Optional[Player] = None
 
-        # TODO: (2) setting everything in initialization would be cool, just needs a bit more prep on the gathering side
+        # TODO: (BETA) setting everything in initialization would be cool, needs a bit more prep on the gathering side
         # will be set later, needs defined province coordinates first
         self.adjacent: Set[Province] = set()
         self.coasts: Set[Coast] = set()
@@ -29,13 +29,13 @@ class Province:
         self.unit: Optional[Unit] = None
 
     def set_name(self, name) -> NoReturn:
-        # TODO: (1) don't need this anymore, can set immediately
+        # TODO: (MAP) don't need this anymore, can set immediately
         self.name = name
 
     def set_adjacent(self, provinces: Set[Province]) -> NoReturn:
         self.adjacent = provinces
-        # TODO: (1) include sea provinces
-        # TODO: (1) set coasts
+        # TODO: (MAP) include sea provinces (awaiting GM fill file)
+        # TODO: (MAP) set coasts (awaiting GM fill file)
 
     def set_has_supply_center(self, val: bool) -> NoReturn:
         self.has_supply_center = val

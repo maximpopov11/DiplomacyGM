@@ -26,7 +26,7 @@ def parse() -> Board:
 # Gets provinces, names, centers, and units data from SVG
 def get_svg_data():
     map_data = etree.parse(SVG_PATH)
-    # TODO: (1.5) parse sea provinces
+    # TODO: (MAP) parse sea provinces (awaiting GM fill file)
     provinces_data = map_data.xpath(f'//*[@id="{LAND_PROVINCE_FILL_LAYER_ID}"]')[0].getchildren()
     names_data = map_data.xpath(f'//*[@id="{PROVINCE_NAMES_LAYER_ID}"]')[0].getchildren()
     centers_data = map_data.xpath(f'//*[@id="{SUPPLY_CENTER_LAYER_ID}"]')[0].getchildren()
