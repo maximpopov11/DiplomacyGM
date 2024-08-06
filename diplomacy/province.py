@@ -15,10 +15,12 @@ class ProvinceType(Enum):
 
 
 class Province:
-    def __init__(self, coordinates: List[Tuple[float, float]], province_type: ProvinceType):
+    def __init__(
+        self, coordinates: List[Tuple[float, float]], province_type: ProvinceType
+    ):
         self.coordinates: List[Tuple[float, float]] = coordinates
         # TODO: (MAP) set these immediately
-        self.name: str = ''
+        self.name: str = ""
         self.type: ProvinceType = province_type
         self.owner: Optional[Player] = None
         self.core: Optional[Player] = None
@@ -47,7 +49,12 @@ class Province:
 
 
 class Coast:
-    def __init__(self, name: str, adjacent_seas: Set[Province], adjacent_coasts: Tuple[Coast, Coast]):
+    def __init__(
+        self,
+        name: str,
+        adjacent_seas: Set[Province],
+        adjacent_coasts: Tuple[Coast, Coast],
+    ):
         # the name should be "<province_name> coast #<x>" with unique <x> for each coast in this province
         self.name: str = name
         self.adjacent_seas: Set[Province] = adjacent_seas

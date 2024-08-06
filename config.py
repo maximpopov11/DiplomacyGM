@@ -1,5 +1,5 @@
-gm = 'GM'
-heavenly_angel = 'Heavenly Angel'
+gm = "GM"
+heavenly_angel = "Heavenly Angel"
 
 gms = {
     gm,
@@ -7,33 +7,33 @@ gms = {
 }
 
 gm_channels = {
-    'admin-chat',
+    "admin-chat",
 }
 
-abyssina = 'Abyssina'
-ajuuran = 'Ajuuran'
-athapasca = 'Athapasca'
-austria = 'Austria'
-ayutthaya = 'Ayutthaya'
-bornu = 'Bornu'
-britain = 'Britain'
-france = 'France'
-inuit = 'Inuit'
-kongo = 'Kongo'
-mapuche_tehuelche = 'Mapuche-Tehuelche'
-ming = 'Ming'
-mughal = 'Mughal'
-netherlands = 'Netherlands'
-ottoman = 'Ottoman'
-poland_lithuania = 'Poland-Lithuania'
-portugal = 'Portugal'
-qing = 'Qing'
-russia = 'Russia'
-safavid = 'Safavid'
-sioux = 'Sioux'
-spain = 'Spain'
-sweden = 'Sweden'
-tokugawa = 'Tokugawa'
+abyssina = "Abyssina"
+ajuuran = "Ajuuran"
+athapasca = "Athapasca"
+austria = "Austria"
+ayutthaya = "Ayutthaya"
+bornu = "Bornu"
+britain = "Britain"
+france = "France"
+inuit = "Inuit"
+kongo = "Kongo"
+mapuche_tehuelche = "Mapuche-Tehuelche"
+ming = "Ming"
+mughal = "Mughal"
+netherlands = "Netherlands"
+ottoman = "Ottoman"
+poland_lithuania = "Poland-Lithuania"
+portugal = "Portugal"
+qing = "Qing"
+russia = "Russia"
+safavid = "Safavid"
+sioux = "Sioux"
+spain = "Spain"
+sweden = "Sweden"
+tokugawa = "Tokugawa"
 
 players = {
     abyssina,
@@ -62,4 +62,4 @@ players = {
     tokugawa,
 }
 
-player_channel_suffix = '-orders'
+player_channel_suffix = "-orders"

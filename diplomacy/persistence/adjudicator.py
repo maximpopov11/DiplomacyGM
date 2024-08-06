@@ -31,8 +31,12 @@ class Adjudicator:
         self.mapper: Mapper = Mapper(self.map)
 
         self.players: Set[Player] = board.players
-        start_config: Mapping[str, List[Mapping[str, str]]] = translation.get_start_config(board.players)
-        self.pydip_players: Mapping[str, PydipPlayer] = translation.get_players(board.players, self.map, start_config)
+        start_config: Mapping[
+            str, List[Mapping[str, str]]
+        ] = translation.get_start_config(board.players)
+        self.pydip_players: Mapping[str, PydipPlayer] = translation.get_players(
+            board.players, self.map, start_config
+        )
 
         self.units = translation.get_units(board.provinces)
         self.phase: Phase = board.phase
@@ -53,7 +57,9 @@ class Adjudicator:
     def adjudicate(self) -> str:
         orders = self._get_orders()
         ownership_map = translation.get_ownership_map(self.map)
-        commands = translation.get_commands(orders, self.pydip_players, self.units, self.retreat_map, ownership_map)
+        commands = translation.get_commands(
+            orders, self.pydip_players, self.units, self.retreat_map, ownership_map
+        )
 
         if phase.is_moves_phase(self.phase):
             self.retreat_map = resolve_turn(self.map, commands)
@@ -64,17 +70,19 @@ class Adjudicator:
             adjustment_counts = self.get_build_counts()
             resolve_adjustment(ownership_map, adjustment_counts, self.units, commands)
         else:
-            raise ValueError('Illegal phase:', self.phase)
+            raise ValueError("Illegal phase:", self.phase)
 
         self.mapper = Mapper(self.map)
         moves_map = self.mapper.get_moves_map(None)
         results_map = self.mapper.get_results_map()
         # TODO: (MAP) return both SVGs
-        raise RuntimeError('Adjudication has not yet been fully implemented.')
+        raise RuntimeError("Adjudication has not yet been fully implemented.")
 
     def rollback(self) -> str:
         # TODO: (DB) implement rollback to last map
-        raise RuntimeError('Rollback will not be implemented until we have a server running the bot rather than a GM.')
+        raise RuntimeError(
+            "Rollback will not be implemented until we have a server running the bot rather than a GM."
+        )
 
     def get_player(self, name) -> Optional[Player]:
         for player in self.players:

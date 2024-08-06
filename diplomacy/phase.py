@@ -7,11 +7,11 @@ class Phase:
         self.next = None
 
 
-spring_moves = Phase('Spring Moves')
-spring_retreats = Phase('Spring Retreats')
-fall_moves = Phase('Fall Moves')
-fall_retreats = Phase('Fall Retreats')
-winter_adjustments = Phase('Winter Adjustments')
+spring_moves = Phase("Spring Moves")
+spring_retreats = Phase("Spring Retreats")
+fall_moves = Phase("Fall Moves")
+fall_retreats = Phase("Fall Retreats")
+winter_adjustments = Phase("Winter Adjustments")
 
 spring_moves.next = spring_retreats
 spring_retreats.next = fall_moves

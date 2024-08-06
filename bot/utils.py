@@ -22,7 +22,9 @@ def is_player(author: commands.Context.author) -> bool:
     return get_player(author) is not None
 
 
-def get_player(author: commands.Context.author, adjudicator: Adjudicator) -> Optional[Player]:
+def get_player(
+    author: commands.Context.author, adjudicator: Adjudicator
+) -> Optional[Player]:
     for role in author.roles:
         player = adjudicator.get_player(role.name)
         if player is not None:
