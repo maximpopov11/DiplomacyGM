@@ -1,4 +1,5 @@
-from typing import List, Mapping, NoReturn, Optional, Set
+from __future__ import annotations
+from typing import List, Mapping, NoReturn, Optional, Set, TYPE_CHECKING
 
 from pydip.map.map import Map as PydipMap
 from pydip.player.player import Player as PydipPlayer
@@ -9,12 +10,14 @@ from pydip.turn.retreat import resolve_retreats
 
 from diplomacy import phase
 from diplomacy.board.board import Board
-from diplomacy.order import Order
 from diplomacy.persistence import translation
 from diplomacy.persistence.mapper import Mapper
 from diplomacy.phase import Phase
 from diplomacy.player import Player
 from diplomacy.province import Province
+
+if TYPE_CHECKING:
+    from diplomacy.order import Order
 
 
 # TODO: (DB) if DB is not used, check that all persistence is saved to file

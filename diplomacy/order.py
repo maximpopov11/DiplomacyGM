@@ -1,10 +1,14 @@
-from typing import List, Mapping, Optional, Union
+from __future__ import annotations
 
-from diplomacy.persistence.adjudicator import Adjudicator
+from typing import List, Mapping, Optional, Union, TYPE_CHECKING
+
 from diplomacy.phase import is_moves_phase, is_retreats_phase, is_adjustments_phase
 from diplomacy.player import Player
 from diplomacy.province import Province
 from diplomacy.unit import Army, Fleet, Unit
+
+if TYPE_CHECKING:
+    from diplomacy.persistence.adjudicator import Adjudicator
 
 
 class Order:

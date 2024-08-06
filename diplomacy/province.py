@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import List, NoReturn, Optional, Set, Tuple
+from typing import List, NoReturn, Optional, Set, Tuple, TYPE_CHECKING
 
 from diplomacy.player import Player
-from diplomacy.unit import Unit
+
+if TYPE_CHECKING:
+    from diplomacy.unit import Unit
 
 
 class ProvinceType(Enum):
