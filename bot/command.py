@@ -5,8 +5,8 @@ from discord.ext import commands
 
 import bot.utils as utils
 import diplomacy.order
-from diplomacy.persistence.adjudicator import Adjudicator
 from diplomacy.board.vector.vector import parse as parse_board
+from diplomacy.persistence.adjudicator import Adjudicator
 
 adjudicator: Optional[Adjudicator] = None
 
