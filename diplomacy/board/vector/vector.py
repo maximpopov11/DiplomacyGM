@@ -23,6 +23,7 @@ def parse() -> Board:
     return Board(set(provinces))
 
 
+# TODO: (MAP) implement x-wrap
 # Gets provinces, names, centers, and units data from SVG
 def get_svg_data():
     map_data = etree.parse(SVG_PATH)

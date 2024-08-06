@@ -3,7 +3,10 @@ import bot.bot as bot
 
 bot.run()
 
-# TODO: priorities: (!), (MAP), (DB), (ALPHA), (BETA)
+# TODO: priorities: (MAP), (DB), (ALPHA), (BETA)
+
+# TODO: (DB) setup test cloud program with input, db write, db read, output
+# TODO: (DB) backup the core elements of the db
 
 # TODO: (ALPHA) update readme for GMs figuring out how this works
 # TODO: (ALPHA) conduct testing: check all warnings, test solo, test group, live game test

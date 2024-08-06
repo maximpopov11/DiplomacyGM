@@ -293,6 +293,7 @@ def _parse_disband(order: str, player_restriction: Player, provinces: Mapping[st
     return Disband(province.unit)
 
 
+# TODO: (ALPHA) people will misspell provinces, use a library to find the nearest one
 def _parse_provinces(order: str, all_provinces: Mapping[str, Province], count: int) -> List[Province]:
     provinces = []
     for word in order:
