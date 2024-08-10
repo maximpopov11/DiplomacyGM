@@ -8,6 +8,8 @@ SVG_PATH = "assets/imperial_diplomacy.svg"
 
 # Layer group in SVG containing land province color fills
 LAND_PROVINCE_FILL_LAYER_ID = "layer6"
+# Layer group in SVG containing island rings
+ISLAND_LAYER_ID = "layer9"
 # Layer group in SVG containing sea province borders
 SEA_PROVINCE_BORDER_LAYER_ID = "layer8"
 # Layer group in SVG containing province names
@@ -19,6 +21,10 @@ UNITS_LAYER_ID = "layer10"
 
 # If the province fills are labeled directly on the SVG we can guarantee 100% accuracy on naming the provinces
 PROVINCE_FILLS_LABELED = True
+# If the center provinces are labeled directly on the SVG we can guarantee 100% accuracy on matching center to province
+CENTER_PROVINCES_LABELED = True
+# If the unit provinces are labeled directly on the SVG we can guarantee 100% accuracy on matching unit to province
+UNIT_PROVINCES_LABELED = True
 
 # Margin of error for distance between province border points. If two province borders have a point within distance of
 # this value in both x and y values, they will be considered adjacent.

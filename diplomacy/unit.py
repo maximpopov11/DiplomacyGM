@@ -9,10 +9,10 @@ class Unit:
 
 
 class Army(Unit):
-    def __init__(self, province: Province):
-        super().__init__(province)
+    def __init__(self, player: Player, province: Province):
+        super().__init__(player, province)
 
 
 class Fleet(Unit):
-    def __init__(self, province: Province):
-        super().__init__(province)
+    def __init__(self, player: Player, province: Province):
+        super().__init__(player, province)

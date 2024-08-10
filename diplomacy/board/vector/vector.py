@@ -1,4 +1,6 @@
 import re
+from typing import List, Tuple, Set, NoReturn, Mapping, Optional, Callable
+from xml.etree.ElementTree import Element
 
 from lxml import etree
 from shapely.geometry import Point, Polygon
@@ -7,6 +9,7 @@ from diplomacy.board.board import Board
 from diplomacy.board.vector.config import *
 from diplomacy.board.vector.utils import extract_value
 from diplomacy.province import Province, ProvinceType
+from diplomacy.unit import Army, Fleet
 
 NAMESPACE = {
     "inkscape": "{http://www.inkscape.org/namespaces/inkscape}",
@@ -20,12 +23,27 @@ def parse() -> Board:
     provinces_data, names_data, centers_data, units_data = get_svg_data()
     provinces = get_provinces(provinces_data, names_data, centers_data, units_data)
     adjacencies = get_adjacencies(provinces)
-    return Board(set(provinces))
+
+    province_names = []
+    centers = []
+    units = []
+    for province in provinces:
+        province_names.append(province.name)
+        if province.has_supply_center:
+            centers.append(province.name)
+        if province.unit:
+            units.append(province.name)
+
+    print(province_names)
+    print(centers)
+    print(units)
+
+    return Board(provinces)
 
 
 # TODO: (MAP) implement x-wrap
 # Gets provinces, names, centers, and units data from SVG
-def get_svg_data():
+def get_svg_data() -> Tuple[List[Element], List[Element], List[Element], List[Element]]:
     map_data = etree.parse(SVG_PATH)
     # TODO: (MAP) parse sea provinces (awaiting GM fill file)
     provinces_data = map_data.xpath(f'//*[@id="{LAND_PROVINCE_FILL_LAYER_ID}"]')[
@@ -42,20 +60,37 @@ def get_svg_data():
 
 
 # Creates and initializes provinces
-def get_provinces(provinces_data, names_data, centers_data, units_data):
-    provinces = create_provinces(provinces_data, PROVINCE_FILLS_LABELED)
+def get_provinces(
+    provinces_data: List[Element],
+    names_data: List[Element],
+    centers_data: List[Element],
+    units_data: List[Element],
+) -> Set[Province]:
+    provinces = create_provinces(provinces_data)
 
     if not PROVINCE_FILLS_LABELED:
         initialize_province_names(provinces, names_data)
 
-    initialize_supply_centers(provinces, centers_data)
-    initialize_units(provinces, units_data)
+    name_to_province = {}
+    for province in provinces:
+        name_to_province[province.name] = province
+
+    if CENTER_PROVINCES_LABELED:
+        initialize_supply_centers_assisted(name_to_province, centers_data)
+    else:
+        initialize_supply_centers(provinces, centers_data)
+
+    if UNIT_PROVINCES_LABELED:
+        initialize_units_assisted(name_to_province, units_data)
+    else:
+        initialize_units(provinces, units_data)
+
     return provinces
 
 
 # Creates provinces with border coordinates
-def create_provinces(provinces_data, province_fills_labeled):
-    provinces = []
+def create_provinces(provinces_data: List[Element]) -> Set[Province]:
+    provinces = set()
     for province_data in provinces_data:
         path = province_data.get("d")
         if not path:
@@ -84,21 +119,23 @@ def create_provinces(provinces_data, province_fills_labeled):
 
         province = Province(province_coordinates, ProvinceType.LAND)
 
-        if province_fills_labeled:
+        if PROVINCE_FILLS_LABELED:
             name = province_data.get(f"{NAMESPACE.get('inkscape')}label")
             province.set_name(name)
 
-        provinces.append(province)
+        provinces.add(province)
 
     return provinces
 
 
 # Sets province names given the names layer
-def initialize_province_names(provinces, names_data):
-    def get_coordinates(name_data):
-        return name_data.get("x"), name_data.get("y")
+def initialize_province_names(
+    provinces: Set[Province], names_data: List[Element]
+) -> NoReturn:
+    def get_coordinates(name_data: Element) -> Tuple[float, float]:
+        return float(name_data.get("x")), float(name_data.get("y"))
 
-    def set_province_name(province, name_data):
+    def set_province_name(province: Province, name_data: Element) -> NoReturn:
         if province.name is not None:
             print(province.name, "already has a name!")
         province.set_name(
@@ -110,9 +147,28 @@ def initialize_province_names(provinces, names_data):
     )
 
 
+def initialize_supply_centers_assisted(
+    provinces: Mapping[str, Province], centers_data: List[Element]
+) -> NoReturn:
+    for center_data in centers_data:
+        province_name = center_data.get(f"{NAMESPACE.get('inkscape')}label")
+        province = provinces.get(province_name)
+        if not province:
+            print("Province not found for center in: ", province_name)
+        else:
+            if province.has_supply_center:
+                print("Province: ", province_name, "already has a supply center!")
+            province.set_has_supply_center(True)
+
+
 # Sets province supply center values
-def initialize_supply_centers(provinces, centers_data):
-    def get_coordinates(supply_center_data):
+def initialize_supply_centers(
+    provinces: Set[Province], centers_data: List[Element]
+) -> NoReturn:
+
+    def get_coordinates(
+        supply_center_data: Element,
+    ) -> Tuple[Optional[float], Optional[float]]:
         circles = supply_center_data.findall(".//svg:circle", namespaces=NAMESPACE)
         if not circles:
             return None, None
@@ -124,7 +180,7 @@ def initialize_supply_centers(provinces, centers_data):
             base_coordinates[1] + translation_coordinates[1],
         )
 
-    def set_province_supply_center(province, _):
+    def set_province_supply_center(province: Province, _: Element) -> NoReturn:
         if province.has_supply_center:
             print(province.name, "already has a supply center!")
         province.set_has_supply_center(True)
@@ -134,9 +190,44 @@ def initialize_supply_centers(provinces, centers_data):
     )
 
 
+def set_province_unit(province: Province, unit_data: Element) -> NoReturn:
+    if province.unit:
+        print("Province", province.name, "already has a unit!")
+
+    player = extract_value(
+        unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get("style"),
+        "fill",
+    )
+
+    num_sides = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get(
+        "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides"
+    )
+    if num_sides == "3":
+        unit = Army(player, province)
+    elif num_sides == "6":
+        unit = Fleet(player, province)
+    else:
+        print("Number of sides on unit", num_sides, "does not match any unit types.")
+        unit = None
+
+    province.set_unit(unit)
+
+
+def initialize_units_assisted(
+    provinces: Mapping[str, Province], units_data: List[Element]
+) -> NoReturn:
+    for unit_data in units_data:
+        province_name = unit_data.get(f"{NAMESPACE.get('inkscape')}label")
+        province = provinces.get(province_name)
+        if not province:
+            print("Province not found for unit in: ", province_name)
+        else:
+            set_province_unit(province, unit_data)
+
+
 # Sets province unit values
-def initialize_units(provinces, units_data):
-    def get_coordinates(unit_data):
+def initialize_units(provinces: Set[Province], units_data: List[Element]) -> NoReturn:
+    def get_coordinates(unit_data: Element) -> Tuple[Optional[float], Optional[float]]:
         base_coordinates = (
             unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
             .get("d")
@@ -149,32 +240,15 @@ def initialize_units(provinces, units_data):
             float(base_coordinates[1]) + translation_coordinates[1],
         )
 
-    def set_province_unit(province, unit_data):
-        if province.unit is not None:
-            print(province.name, "already has a unit!")
-        num_sides = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get(
-            "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides"
-        )
-        if num_sides == "3":
-            unit_type = "Army"
-        elif num_sides == "6":
-            unit_type = "Fleet"
-        else:
-            print("Number of sides on unit does not match any unit types")
-            unit_type = "Undefined"
-        player = extract_value(
-            unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get("style"),
-            "fill",
-        )
-        province.set_unit({"type": unit_type, "player": player})
-
     initialize_province_resident_data(
         provinces, units_data, get_coordinates, set_province_unit
     )
 
 
 # Returns the coordinates of the translation transform in the given element
-def get_translation_coordinates(element):
+def get_translation_coordinates(
+    element: Element,
+) -> Tuple[Optional[float], Optional[float]]:
     transform = element.get("transform")
     if not transform:
         return None, None
@@ -189,8 +263,11 @@ def get_translation_coordinates(element):
 # function: method in Province that, given the province and a child element corresponding to that province, initializes
 # that data in the Province
 def initialize_province_resident_data(
-    provinces, resident_dataset, get_coordinates, function
-):
+    provinces: Set[Province],
+    resident_dataset: List[Element],
+    get_coordinates: Callable[[Element], Tuple[Optional[float], Optional[float]]],
+    function: Callable[[Province, Element], NoReturn],
+) -> NoReturn:
     resident_dataset = set(resident_dataset)
     for province in provinces:
         remove = set()
@@ -218,7 +295,7 @@ def initialize_province_resident_data(
 
 
 # Returns province adjacency set
-def get_adjacencies(provinces):
+def get_adjacencies(provinces: Set[Province]) -> Set[Tuple[str, str]]:
     coordinates = []
     for province in provinces:
         for coordinate in province.coordinates:
