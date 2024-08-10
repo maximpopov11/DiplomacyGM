@@ -35,23 +35,17 @@ def order(ctx: commands.Context) -> str:
     if utils.is_gm(ctx.author):
         if not utils.is_gm_channel(ctx.channel):
             raise RuntimeError("You cannot order as a GM in a non-GM channel.")
-        return diplomacy.order.parse(
-            ctx.message.content, None, adjudicator.provinces, adjudicator
-        )
+        return diplomacy.order.parse(ctx.message.content, None, adjudicator.provinces, adjudicator)
 
     player = utils.get_player(ctx.author, adjudicator)
     if player is not None:
         if not utils.is_player_channel(player.name, ctx.channel):
-            raise RuntimeError(
-                "You cannot order as a player outside of your orders channel."
-            )
+            raise RuntimeError("You cannot order as a player outside of your orders channel.")
         return diplomacy.order.parse(
             ctx.message.content, player, adjudicator.provinces, adjudicator
         )
 
-    raise PermissionError(
-        "You cannot order any units because you are neither a GM nor a player."
-    )
+    raise PermissionError("You cannot order any units because you are neither a GM nor a player.")
 
 
 def view_orders(ctx: commands.Context) -> str:
@@ -63,14 +57,10 @@ def view_orders(ctx: commands.Context) -> str:
     player = utils.get_player(ctx.author, adjudicator)
     if player is not None:
         if not utils.is_player_channel(player.name, ctx.channel):
-            raise RuntimeError(
-                "You cannot view orders as a player outside of your orders channel."
-            )
+            raise RuntimeError("You cannot view orders as a player outside of your orders channel.")
         return adjudicator.mapper.get_moves_map(player)
 
-    raise PermissionError(
-        "You cannot view orders because you are neither a GM nor a player."
-    )
+    raise PermissionError("You cannot view orders because you are neither a GM nor a player.")
 
 
 def adjudicate(ctx: commands.Context) -> str:
@@ -116,14 +106,12 @@ def get_scoreboard(ctx: commands.Context) -> str:
 
 def edit(ctx: commands.Context) -> str:
     if not utils.is_gm(ctx.author):
-        raise PermissionError(
-            "You cannot edit the board state because you are not a GM."
-        )
+        raise PermissionError("You cannot edit the board state because you are not a GM.")
 
     if not utils.is_gm_channel(ctx.channel):
         raise RuntimeError("You cannot edit the board state in a non-GM channel.")
 
-    # TODO: (DB) implement edit state
+    # TODO: (DB) implement edit state: anything in province, unit, (player via touching those)
     raise RuntimeError(
         "Edit state has not been implemented yet and is not needed until the bot is running via server."
     )
@@ -131,9 +119,7 @@ def edit(ctx: commands.Context) -> str:
 
 def initialize_board_setup(ctx: commands.Context) -> str:
     if not utils.is_gm(ctx.author):
-        raise PermissionError(
-            "You cannot initialize the board state because you are not a GM."
-        )
+        raise PermissionError("You cannot initialize the board state because you are not a GM.")
     if not utils.is_gm_channel(ctx.channel):
         raise RuntimeError("You cannot initialize the board state in a non-GM channel.")
 

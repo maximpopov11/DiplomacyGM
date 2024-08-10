@@ -9,9 +9,13 @@ SVG_PATH = "assets/imperial_diplomacy.svg"
 # Layer group in SVG containing land province color fills
 LAND_PROVINCE_FILL_LAYER_ID = "layer6"
 # Layer group in SVG containing island rings
-ISLAND_LAYER_ID = "layer9"
+ISLAND_RING_LAYER_ID = "layer9"
+# Layer group in SVG containing island province color fills
+ISLAND_FILL_PLAYER_ID = "layer11"
+# Layer group in SVG containing island province borders
+ISLAND_PROVINCE_BORDER_LAYER_ID = "layer5"
 # Layer group in SVG containing sea province borders
-SEA_PROVINCE_BORDER_LAYER_ID = "layer8"
+SEA_PROVINCE_BORDER_LAYER_ID = "layer2"
 # Layer group in SVG containing province names
 PROVINCE_NAMES_LAYER_ID = "layer1"
 # Layer group in SVG containing supply centers

@@ -22,8 +22,22 @@ NAMESPACE = {
 
 # Parse provinces, adjacencies, centers, and units
 def parse() -> Board:
-    provinces_data, islands_data, names_data, centers_data, units_data = get_svg_data()
-    provinces = get_provinces(provinces_data, islands_data, names_data, centers_data, units_data)
+    (
+        land_provinces_data,
+        island_provinces_data,
+        sea_provinces_data,
+        names_data,
+        centers_data,
+        units_data,
+    ) = get_svg_data()
+    provinces = get_provinces(
+        land_provinces_data,
+        island_provinces_data,
+        sea_provinces_data,
+        names_data,
+        centers_data,
+        units_data,
+    )
     adjacencies = get_adjacencies(provinces)
 
     province_names = []
@@ -43,32 +57,46 @@ def parse() -> Board:
     return Board(provinces)
 
 
-# TODO: (MAP) implement x-wrap
+# TODO: (MAP) implement x-wrap (probably cheat file on this for Alpha?)
 # Gets provinces, names, centers, and units data from SVG
 def get_svg_data() -> (
-    Tuple[List[Element], List[Element], List[Element], List[Element], List[Element]]
+    Tuple[List[Element], List[Element], List[Element], List[Element], List[Element], List[Element]]
 ):
     map_data = etree.parse(SVG_PATH)
     # TODO: (MAP) parse sea provinces (awaiting GM fill file)
-    provinces_data = map_data.xpath(f'//*[@id="{LAND_PROVINCE_FILL_LAYER_ID}"]')[0].getchildren()
-    islands_data = map_data.xpath(f'//*[@id="{ISLAND_LAYER_ID}"]')[0].getchildren()
+    land_provinces_data = map_data.xpath(f'//*[@id="{LAND_PROVINCE_FILL_LAYER_ID}"]')[
+        0
+    ].getchildren()
+    island_provinces_data = map_data.xpath(f'//*[@id="{ISLAND_PROVINCE_BORDER_LAYER_ID}"]')[
+        0
+    ].getchildren()
+    sea_provinces_data = map_data.xpath(f'//*[@id="{SEA_PROVINCE_BORDER_LAYER_ID}"]')[
+        0
+    ].getchildren()
     names_data = map_data.xpath(f'//*[@id="{PROVINCE_NAMES_LAYER_ID}"]')[0].getchildren()
     centers_data = map_data.xpath(f'//*[@id="{SUPPLY_CENTER_LAYER_ID}"]')[0].getchildren()
     units_data = map_data.xpath(f'//*[@id="{UNITS_LAYER_ID}"]')[0].getchildren()
-    return provinces_data, islands_data, names_data, centers_data, units_data
+    return (
+        land_provinces_data,
+        island_provinces_data,
+        sea_provinces_data,
+        names_data,
+        centers_data,
+        units_data,
+    )
 
 
 # Creates and initializes provinces
 def get_provinces(
-    provinces_data: List[Element],
-    islands_data: List[Element],
+    land_provinces_data: List[Element],
+    island_provinces_data: List[Element],
+    sea_provinces_data: List[Element],
     names_data: List[Element],
     centers_data: List[Element],
     units_data: List[Element],
 ) -> Set[Province]:
-    land_provinces = create_provinces(provinces_data)
-    islands_provinces = create_islands(islands_data)
-    provinces = land_provinces.union(islands_provinces)
+    provinces_data = land_provinces_data + island_provinces_data
+    provinces = create_provinces(provinces_data, sea_provinces_data)
 
     if not PROVINCE_FILLS_LABELED:
         initialize_province_names(provinces, names_data)
@@ -91,7 +119,19 @@ def get_provinces(
 
 
 # Creates provinces with border coordinates
-def create_provinces(provinces_data: List[Element]) -> Set[Province]:
+def create_provinces(
+    land_provinces_data: List[Element],
+    sea_provinces_data: List[Element],
+) -> Set[Province]:
+    land_provinces = create_provinces_type(land_provinces_data, ProvinceType.LAND)
+    sea_provinces = create_provinces_type(sea_provinces_data, ProvinceType.SEA)
+    return land_provinces.union(sea_provinces)
+
+
+def create_provinces_type(
+    provinces_data: List[Element],
+    province_type: ProvinceType,
+) -> Set[Province]:
     provinces = set()
     for province_data in provinces_data:
         path = province_data.get("d")
@@ -119,7 +159,7 @@ def create_provinces(provinces_data: List[Element]) -> Set[Province]:
             last_coordinate = coordinate
             province_coordinates.append(coordinate)
 
-        province = Province(province_coordinates, ProvinceType.LAND)
+        province = Province(province_coordinates, province_type)
 
         if PROVINCE_FILLS_LABELED:
             name = province_data.get(f"{NAMESPACE.get('inkscape')}label")
@@ -127,16 +167,6 @@ def create_provinces(provinces_data: List[Element]) -> Set[Province]:
 
         provinces.add(province)
 
-    return provinces
-
-
-def create_islands(islands_data: List[Element]) -> Set[Province]:
-    provinces = set()
-    for island_data in islands_data:
-        province = Province([], ProvinceType.LAND)
-        name = island_data.get(f"{NAMESPACE.get('inkscape')}label")
-        province.set_name(name)
-        provinces.add(province)
     return provinces
 
 
