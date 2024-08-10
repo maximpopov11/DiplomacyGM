@@ -23,8 +23,11 @@ def ping(ctx: commands.Context) -> str:
         author = ctx.message.author
         content = ctx.message.content.removeprefix(".ping")
         if content == "":
-            content = "nothing"
-        response = author.name + " " + random.choice(ping_text_choices) + " " + content
+            content = " nothing"
+        name = author.nick
+        if not name:
+            name = author.name
+        response = name + " " + random.choice(ping_text_choices) + content
     return response
 
 
