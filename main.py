@@ -1,4 +1,4 @@
-from bot.bot import bot
+import bot.bot as bot
 
 bot.run()
 
