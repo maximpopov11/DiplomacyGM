@@ -328,29 +328,36 @@ def get_adjacencies(provinces: Set[Province]) -> Set[Tuple[str, str]]:
     coordinates = []
     for province in provinces:
         for coordinate in province.coordinates:
-            coordinates.append(
-                {"x": coordinate[0], "y": coordinate[1], "province_name": province.name}
-            )
-    coordinates = sorted(coordinates, key=lambda item: item["x"])
+            coordinates.append((province.name, coordinate))
+    # sort by x
+    coordinates = sorted(coordinates, key=lambda item: item[1][0])
 
     adjacencies = set()
     for i in range(len(coordinates) - 1):
-        upper_x = coordinates[i]["x"] + PROVINCE_BORDER_MARGIN
-        lower_y, upper_y = (
-            coordinates[i]["y"] - PROVINCE_BORDER_MARGIN,
-            coordinates[i]["y"] + PROVINCE_BORDER_MARGIN,
-        )
+        province_1 = coordinates[i][0]
+        coordinates_1 = coordinates[i][1]
+        x_1 = coordinates_1[0]
+        y_1 = coordinates_1[1]
 
         for j in range(i + 1, len(coordinates) - 1):
-            if coordinates[j]["x"] > upper_x:
+            province_2 = coordinates[j][0]
+            coordinates_2 = coordinates[j][1]
+            x_2 = coordinates_2[0]
+            y_2 = coordinates_2[1]
+
+            if x_2 > x_1 + PROVINCE_BORDER_MARGIN:
                 # Out of x-scope
                 break
 
-            if coordinates[i]["province_name"] == coordinates[j]["province_name"]:
+            if province_1 == province_2:
                 # Province doesn't border itself
                 continue
 
-            if lower_y < coordinates[j]["y"] < upper_y:
-                adjacencies.add((coordinates[i]["province_name"], coordinates[j]["province_name"]))
+            if y_1 - PROVINCE_BORDER_MARGIN < y_2 < y_1 + PROVINCE_BORDER_MARGIN:
+                if province_1 < province_2:
+                    adjacency = (province_1, province_2)
+                else:
+                    adjacency = (province_2, province_1)
+                adjacencies.add(adjacency)
 
     return adjacencies
