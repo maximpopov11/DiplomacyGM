@@ -20,8 +20,8 @@ NAMESPACE = {
 
 # Parse provinces, adjacencies, centers, and units
 def parse() -> Board:
-    provinces_data, names_data, centers_data, units_data = get_svg_data()
-    provinces = get_provinces(provinces_data, names_data, centers_data, units_data)
+    provinces_data, islands_data, names_data, centers_data, units_data = get_svg_data()
+    provinces = get_provinces(provinces_data, islands_data, names_data, centers_data, units_data)
     adjacencies = get_adjacencies(provinces)
 
     province_names = []
@@ -43,30 +43,30 @@ def parse() -> Board:
 
 # TODO: (MAP) implement x-wrap
 # Gets provinces, names, centers, and units data from SVG
-def get_svg_data() -> Tuple[List[Element], List[Element], List[Element], List[Element]]:
+def get_svg_data() -> (
+    Tuple[List[Element], List[Element], List[Element], List[Element], List[Element]]
+):
     map_data = etree.parse(SVG_PATH)
     # TODO: (MAP) parse sea provinces (awaiting GM fill file)
-    provinces_data = map_data.xpath(f'//*[@id="{LAND_PROVINCE_FILL_LAYER_ID}"]')[
-        0
-    ].getchildren()
-    names_data = map_data.xpath(f'//*[@id="{PROVINCE_NAMES_LAYER_ID}"]')[
-        0
-    ].getchildren()
-    centers_data = map_data.xpath(f'//*[@id="{SUPPLY_CENTER_LAYER_ID}"]')[
-        0
-    ].getchildren()
+    provinces_data = map_data.xpath(f'//*[@id="{LAND_PROVINCE_FILL_LAYER_ID}"]')[0].getchildren()
+    islands_data = map_data.xpath(f'//*[@id="{ISLAND_LAYER_ID}"]')[0].getchildren()
+    names_data = map_data.xpath(f'//*[@id="{PROVINCE_NAMES_LAYER_ID}"]')[0].getchildren()
+    centers_data = map_data.xpath(f'//*[@id="{SUPPLY_CENTER_LAYER_ID}"]')[0].getchildren()
     units_data = map_data.xpath(f'//*[@id="{UNITS_LAYER_ID}"]')[0].getchildren()
-    return provinces_data, names_data, centers_data, units_data
+    return provinces_data, islands_data, names_data, centers_data, units_data
 
 
 # Creates and initializes provinces
 def get_provinces(
     provinces_data: List[Element],
+    islands_data: List[Element],
     names_data: List[Element],
     centers_data: List[Element],
     units_data: List[Element],
 ) -> Set[Province]:
-    provinces = create_provinces(provinces_data)
+    land_provinces = create_provinces(provinces_data)
+    islands_provinces = create_islands(islands_data)
+    provinces = land_provinces.union(islands_provinces)
 
     if not PROVINCE_FILLS_LABELED:
         initialize_province_names(provinces, names_data)
@@ -128,23 +128,27 @@ def create_provinces(provinces_data: List[Element]) -> Set[Province]:
     return provinces
 
 
+def create_islands(islands_data: List[Element]) -> Set[Province]:
+    provinces = set()
+    for island_data in islands_data:
+        province = Province([], ProvinceType.LAND)
+        name = island_data.get(f"{NAMESPACE.get('inkscape')}label")
+        province.set_name(name)
+        provinces.add(province)
+    return provinces
+
+
 # Sets province names given the names layer
-def initialize_province_names(
-    provinces: Set[Province], names_data: List[Element]
-) -> NoReturn:
+def initialize_province_names(provinces: Set[Province], names_data: List[Element]) -> NoReturn:
     def get_coordinates(name_data: Element) -> Tuple[float, float]:
         return float(name_data.get("x")), float(name_data.get("y"))
 
     def set_province_name(province: Province, name_data: Element) -> NoReturn:
         if province.name is not None:
             print(province.name, "already has a name!")
-        province.set_name(
-            name_data.findall(".//svg:tspan", namespaces=NAMESPACE)[0].text
-        )
+        province.set_name(name_data.findall(".//svg:tspan", namespaces=NAMESPACE)[0].text)
 
-    initialize_province_resident_data(
-        provinces, names_data, get_coordinates, set_province_name
-    )
+    initialize_province_resident_data(provinces, names_data, get_coordinates, set_province_name)
 
 
 def initialize_supply_centers_assisted(
@@ -162,9 +166,7 @@ def initialize_supply_centers_assisted(
 
 
 # Sets province supply center values
-def initialize_supply_centers(
-    provinces: Set[Province], centers_data: List[Element]
-) -> NoReturn:
+def initialize_supply_centers(provinces: Set[Province], centers_data: List[Element]) -> NoReturn:
 
     def get_coordinates(
         supply_center_data: Element,
@@ -229,10 +231,7 @@ def initialize_units_assisted(
 def initialize_units(provinces: Set[Province], units_data: List[Element]) -> NoReturn:
     def get_coordinates(unit_data: Element) -> Tuple[Optional[float], Optional[float]]:
         base_coordinates = (
-            unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
-            .get("d")
-            .split()[1]
-            .split(",")
+            unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get("d").split()[1].split(",")
         )
         translation_coordinates = get_translation_coordinates(unit_data)
         return (
@@ -240,9 +239,7 @@ def initialize_units(provinces: Set[Province], units_data: List[Element]) -> NoR
             float(base_coordinates[1]) + translation_coordinates[1],
         )
 
-    initialize_province_resident_data(
-        provinces, units_data, get_coordinates, set_province_unit
-    )
+    initialize_province_resident_data(provinces, units_data, get_coordinates, set_province_unit)
 
 
 # Returns the coordinates of the translation transform in the given element
@@ -322,8 +319,6 @@ def get_adjacencies(provinces: Set[Province]) -> Set[Tuple[str, str]]:
                 continue
 
             if lower_y < coordinates[j]["y"] < upper_y:
-                adjacencies.add(
-                    (coordinates[i]["province_name"], coordinates[j]["province_name"])
-                )
+                adjacencies.add((coordinates[i]["province_name"], coordinates[j]["province_name"]))
 
     return adjacencies
