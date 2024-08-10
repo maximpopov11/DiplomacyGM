@@ -5,8 +5,8 @@ from shapely.geometry import Point, Polygon
 
 from diplomacy.board.board import Board
 from diplomacy.board.vector.config import *
-from diplomacy.province import Province
 from diplomacy.board.vector.utils import extract_value
+from diplomacy.province import Province, ProvinceType
 
 NAMESPACE = {
     "inkscape": "{http://www.inkscape.org/namespaces/inkscape}",
@@ -82,7 +82,7 @@ def create_provinces(provinces_data, province_fills_labeled):
             last_coordinate = coordinate
             province_coordinates.append(coordinate)
 
-        province = Province(province_coordinates)
+        province = Province(province_coordinates, ProvinceType.LAND)
 
         if province_fills_labeled:
             name = province_data.get(f"{NAMESPACE.get('inkscape')}label")

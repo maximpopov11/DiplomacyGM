@@ -1,11 +1,11 @@
-import bot.bot as bot
-
+from bot.bot import bot
 
 bot.run()
 
 # TODO: priorities: (MAP), (DB), (ALPHA), (BETA)
 
 # TODO: (DB) setup test cloud program with input, db write, db read, output
+# TODO: (DB) main -> BotManager -> Bot & DB
 # TODO: (DB) backup the core elements of the db
 
 # TODO: (ALPHA) update readme for GMs figuring out how this works
