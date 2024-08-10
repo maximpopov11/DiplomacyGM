@@ -11,6 +11,8 @@ from diplomacy.board.vector.utils import extract_value
 from diplomacy.province import Province, ProvinceType
 from diplomacy.unit import Army, Fleet
 
+# TODO: (DB) when updating DB map state, update SVG so it can be read if needed (everything we read here), and save SVG
+
 NAMESPACE = {
     "inkscape": "{http://www.inkscape.org/namespaces/inkscape}",
     "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd",

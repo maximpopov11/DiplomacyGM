@@ -15,21 +15,19 @@ class ProvinceType(Enum):
 
 
 class Province:
-    def __init__(
-        self, coordinates: List[Tuple[float, float]], province_type: ProvinceType
-    ):
+    def __init__(self, coordinates: List[Tuple[float, float]], province_type: ProvinceType):
         self.coordinates: List[Tuple[float, float]] = coordinates
-        # TODO: (MAP) set these immediately
-        self.name: str = ""
-        self.type: ProvinceType = province_type
-        self.owner: Optional[Player] = None
-        self.core: Optional[Player] = None
 
         # TODO: (BETA) setting everything in initialization would be cool, needs a bit more prep on the gathering side
         # will be set later, needs defined province coordinates first
-        self.adjacent: Set[Province] = set()
-        self.coasts: Set[Coast] = set()
+        self.name: str = ""
+        self.type: ProvinceType = province_type
         self.has_supply_center: bool = False
+        self.coasts: Set[Coast] = set()
+        self.adjacent: Set[Province] = set()
+        self.core: Optional[Player] = None
+        self.half_core: Optional[Player] = None
+        self.owner: Optional[Player] = None
         self.unit: Optional[Unit] = None
 
     def set_name(self, name) -> NoReturn:
