@@ -1,11 +1,10 @@
+import os
 from typing import NoReturn, Callable
 
 import discord
 from discord.ext import commands
 
 import bot.command as command
-from bot._token import DISCORD_TOKEN
-
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -77,4 +76,5 @@ async def initialize_board_setup(ctx: discord.ext.commands.Context) -> NoReturn:
 
 
 def run():
-    bot.run(DISCORD_TOKEN)
+    token = os.getenv("DISCORD_TOKEN")
+    bot.run(token)
