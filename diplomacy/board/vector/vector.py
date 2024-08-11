@@ -2,7 +2,9 @@ import re
 from typing import List, Tuple, Set, NoReturn, Mapping, Optional, Callable
 from xml.etree.ElementTree import Element
 
+import numpy as np
 from lxml import etree
+from scipy.spatial import cKDTree
 from shapely.geometry import Point, Polygon
 
 from diplomacy.board.board import Board
@@ -11,6 +13,9 @@ from diplomacy.board.vector.utils import extract_value
 from diplomacy.province import Province, ProvinceType
 from diplomacy.unit import Army, Fleet
 
+# TODO: (MAP) cheat on x-wrap, high seas, complicated coasts
+# TODO: (!) de-duplicate state in Unit/Province/Player knowledge of one another, have one source of truth
+# TODO: (!) determine how edit base map state (province) should work (shared problem), allow all GMs? Only me? Only by admin in hub server?
 # TODO: (DB) when updating DB map state, update SVG so it can be read if needed (everything we read here), and save SVG
 
 NAMESPACE = {
@@ -38,6 +43,7 @@ def parse() -> Board:
         centers_data,
         units_data,
     )
+    # TODO: (MAP) create adjacency manager that maps province to adjacent and all updates go via it
     adjacencies = get_adjacencies(provinces)
 
     province_names = []
@@ -54,25 +60,16 @@ def parse() -> Board:
     print(centers)
     print(units)
 
-    return Board(provinces)
+    return Board(provinces, adjacencies)
 
 
-# TODO: (MAP) implement x-wrap (probably cheat file on this for Alpha?)
 # Gets provinces, names, centers, and units data from SVG
-def get_svg_data() -> (
-    Tuple[List[Element], List[Element], List[Element], List[Element], List[Element], List[Element]]
-):
+def get_svg_data() -> Tuple[List[Element], List[Element], List[Element], List[Element], List[Element], List[Element]]:
     map_data = etree.parse(SVG_PATH)
     # TODO: (MAP) parse sea provinces (awaiting GM fill file)
-    land_provinces_data = map_data.xpath(f'//*[@id="{LAND_PROVINCE_FILL_LAYER_ID}"]')[
-        0
-    ].getchildren()
-    island_provinces_data = map_data.xpath(f'//*[@id="{ISLAND_PROVINCE_BORDER_LAYER_ID}"]')[
-        0
-    ].getchildren()
-    sea_provinces_data = map_data.xpath(f'//*[@id="{SEA_PROVINCE_BORDER_LAYER_ID}"]')[
-        0
-    ].getchildren()
+    land_provinces_data = map_data.xpath(f'//*[@id="{LAND_PROVINCE_FILL_LAYER_ID}"]')[0].getchildren()
+    island_provinces_data = map_data.xpath(f'//*[@id="{ISLAND_PROVINCE_BORDER_LAYER_ID}"]')[0].getchildren()
+    sea_provinces_data = map_data.xpath(f'//*[@id="{SEA_PROVINCE_BORDER_LAYER_ID}"]')[0].getchildren()
     names_data = map_data.xpath(f'//*[@id="{PROVINCE_NAMES_LAYER_ID}"]')[0].getchildren()
     centers_data = map_data.xpath(f'//*[@id="{SUPPLY_CENTER_LAYER_ID}"]')[0].getchildren()
     units_data = map_data.xpath(f'//*[@id="{UNITS_LAYER_ID}"]')[0].getchildren()
@@ -140,24 +137,22 @@ def create_provinces_type(
         path = path.split()
 
         province_coordinates = []
-        last_coordinate = None
+
+        command = None
+        base_coordinate = [0, 0]
+        former_coordinate = (0, 0)
         for element in path:
             split = element.split(",")
-
-            # Only accept data formatted x,y to ignore irrelevant SVG data
-            if len(split) != 2:
-                continue
-
-            if not last_coordinate:
+            if len(split) == 1:
+                command = split[0]
+            elif len(split) == 2:
                 coordinate = (float(split[0]), float(split[1]))
+                new_coordinate = parse_path_command(command, coordinate, base_coordinate, former_coordinate)
+                if new_coordinate:
+                    province_coordinates.append(new_coordinate)
             else:
-                # Coordinate data in an SVG is provided relative to last coordinate after the first
-                coordinate = (
-                    last_coordinate[0] + float(split[0]),
-                    last_coordinate[1] + float(split[1]),
-                )
-            last_coordinate = coordinate
-            province_coordinates.append(coordinate)
+                print("Unknown SVG path coordinate:", split)
+                continue
 
         province = Province(province_coordinates, province_type)
 
@@ -166,8 +161,50 @@ def create_provinces_type(
             province.set_name(name)
 
         provinces.add(province)
-
     return provinces
+
+
+def parse_path_command(
+    command: str,
+    coordinate: Tuple[float, float],
+    base_coordinate: List[float],  # this should be a coordinate list of length 2, but we need it to be mutable
+    former_coordinate: Tuple[float, float],
+) -> Optional[Tuple[float, float]]:
+    if command.isupper():
+        former_coordinate = (0, 0)
+        command = command.lower()
+
+    if command == "m":
+        base_coordinate[0] = coordinate[0]
+        base_coordinate[1] = coordinate[1]
+        return None
+    elif command == "z":
+        # TODO: (!) z does not need an input after it, this command should be parsed immediately, not with next coords
+        return base_coordinate[0], base_coordinate[1]
+    elif command == "l" or command == "c" or command == "s" or command == "q" or command == "t" or command == "a":
+        return get_coordinate(coordinate, former_coordinate, True, True)
+    elif command == "h":
+        return get_coordinate(coordinate, former_coordinate, True, False)
+    elif command == "v":
+        return get_coordinate(coordinate, former_coordinate, False, True)
+    else:
+        print("Unknown SVG path command:", command)
+        return None
+
+
+def get_coordinate(
+    coordinate: Tuple[float, float],
+    former_coordinate: Tuple[float, float],
+    use_x: bool,
+    use_y: bool,
+) -> Tuple[float, float]:
+    x = former_coordinate[0]
+    y = former_coordinate[1]
+    if use_x:
+        x += coordinate[0]
+    if use_y:
+        y += coordinate[1]
+    return x, y
 
 
 # Sets province names given the names layer
@@ -183,9 +220,7 @@ def initialize_province_names(provinces: Set[Province], names_data: List[Element
     initialize_province_resident_data(provinces, names_data, get_coordinates, set_province_name)
 
 
-def initialize_supply_centers_assisted(
-    provinces: Mapping[str, Province], centers_data: List[Element]
-) -> NoReturn:
+def initialize_supply_centers_assisted(provinces: Mapping[str, Province], centers_data: List[Element]) -> NoReturn:
     for center_data in centers_data:
         province_name = center_data.get(f"{NAMESPACE.get('inkscape')}label")
         province = provinces.get(province_name)
@@ -200,9 +235,7 @@ def initialize_supply_centers_assisted(
 # Sets province supply center values
 def initialize_supply_centers(provinces: Set[Province], centers_data: List[Element]) -> NoReturn:
 
-    def get_coordinates(
-        supply_center_data: Element,
-    ) -> Tuple[Optional[float], Optional[float]]:
+    def get_coordinates(supply_center_data: Element) -> Tuple[Optional[float], Optional[float]]:
         circles = supply_center_data.findall(".//svg:circle", namespaces=NAMESPACE)
         if not circles:
             return None, None
@@ -219,9 +252,7 @@ def initialize_supply_centers(provinces: Set[Province], centers_data: List[Eleme
             print(province.name, "already has a supply center!")
         province.set_has_supply_center(True)
 
-    initialize_province_resident_data(
-        provinces, centers_data, get_coordinates, set_province_supply_center
-    )
+    initialize_province_resident_data(provinces, centers_data, get_coordinates, set_province_supply_center)
 
 
 def set_province_unit(province: Province, unit_data: Element) -> NoReturn:
@@ -247,9 +278,7 @@ def set_province_unit(province: Province, unit_data: Element) -> NoReturn:
     province.set_unit(unit)
 
 
-def initialize_units_assisted(
-    provinces: Mapping[str, Province], units_data: List[Element]
-) -> NoReturn:
+def initialize_units_assisted(provinces: Mapping[str, Province], units_data: List[Element]) -> NoReturn:
     for unit_data in units_data:
         province_name = unit_data.get(f"{NAMESPACE.get('inkscape')}label")
         province = provinces.get(province_name)
@@ -262,9 +291,7 @@ def initialize_units_assisted(
 # Sets province unit values
 def initialize_units(provinces: Set[Province], units_data: List[Element]) -> NoReturn:
     def get_coordinates(unit_data: Element) -> Tuple[Optional[float], Optional[float]]:
-        base_coordinates = (
-            unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get("d").split()[1].split(",")
-        )
+        base_coordinates = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get("d").split()[1].split(",")
         translation_coordinates = get_translation_coordinates(unit_data)
         return (
             float(base_coordinates[0]) + translation_coordinates[0],
@@ -325,39 +352,43 @@ def initialize_province_resident_data(
 
 # Returns province adjacency set
 def get_adjacencies(provinces: Set[Province]) -> Set[Tuple[str, str]]:
-    coordinates = []
+    # TODO: (MAP) fix adjacencies, currently points are obtained inaccurately
+    # cKDTree is great, but it doesn't intelligently exclude clearly impossible cases of which we will have many
+    coordinates = {}
     for province in provinces:
-        for coordinate in province.coordinates:
-            coordinates.append((province.name, coordinate))
-    # sort by x
-    coordinates = sorted(coordinates, key=lambda item: item[1][0])
+        x_sort = sorted(province.coordinates, key=lambda coordinate: coordinate[0])
+        y_sort = sorted(province.coordinates, key=lambda coordinate: coordinate[1])
+        coordinates[province.name] = {"x_sort": x_sort, "y_sort": y_sort}
 
     adjacencies = set()
-    for i in range(len(coordinates) - 1):
-        province_1 = coordinates[i][0]
-        coordinates_1 = coordinates[i][1]
-        x_1 = coordinates_1[0]
-        y_1 = coordinates_1[1]
+    for province_1, coordinates_1 in coordinates.items():
+        tree_1 = cKDTree(np.array(coordinates_1["x_sort"]))
 
-        for j in range(i + 1, len(coordinates) - 1):
-            province_2 = coordinates[j][0]
-            coordinates_2 = coordinates[j][1]
-            x_2 = coordinates_2[0]
-            y_2 = coordinates_2[1]
+        x1_min = coordinates_1["x_sort"][0][0]
+        x1_max = coordinates_1["x_sort"][-1][0]
+        y1_min = coordinates_1["y_sort"][0][1]
+        y1_max = coordinates_1["y_sort"][-1][1]
 
-            if x_2 > x_1 + PROVINCE_BORDER_MARGIN:
-                # Out of x-scope
-                break
-
-            if province_1 == province_2:
-                # Province doesn't border itself
+        for province_2, coordinates_2 in coordinates.items():
+            if province_1 >= province_2:
+                # check each pair once, don't check self-self
                 continue
 
-            if y_1 - PROVINCE_BORDER_MARGIN < y_2 < y_1 + PROVINCE_BORDER_MARGIN:
-                if province_1 < province_2:
-                    adjacency = (province_1, province_2)
-                else:
-                    adjacency = (province_2, province_1)
-                adjacencies.add(adjacency)
+            x2_min = coordinates_2["x_sort"][0][0]
+            x2_max = coordinates_2["x_sort"][-1][0]
+            y2_min = coordinates_2["y_sort"][0][1]
+            y2_max = coordinates_2["y_sort"][-1][1]
 
+            if x1_min > x2_max or x1_max < x2_min:
+                # out of x-scope
+                continue
+
+            if y1_min > y2_max or y1_max < y2_min:
+                # out of y-scope
+                continue
+
+            for point in coordinates_2["x_sort"]:
+                if tree_1.query_ball_point(point, r=PROVINCE_BORDER_MARGIN):
+                    adjacencies.add((province_1, province_2))
+                    continue
     return adjacencies

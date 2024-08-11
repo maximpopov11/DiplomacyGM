@@ -14,6 +14,7 @@ class ProvinceType(Enum):
     SEA = 2
 
 
+# TODO: (MAP) check that we set all province values in vector map parsing (owners, cores, etc.)
 class Province:
     def __init__(self, coordinates: List[Tuple[float, float]], province_type: ProvinceType):
         self.coordinates: List[Tuple[float, float]] = coordinates
