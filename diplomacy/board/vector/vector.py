@@ -146,7 +146,7 @@ def create_provinces_type(
             if len(split) == 1:
                 command = split[0]
                 if command == "z":
-                    former_coordinate = base_coordinate.copy()
+                    former_coordinate = base_coordinate
                     province_coordinates.append(former_coordinate)
             elif len(split) == 2:
                 coordinate = (float(split[0]), float(split[1]))
