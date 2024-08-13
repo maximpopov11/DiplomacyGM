@@ -150,10 +150,10 @@ def create_provinces_type(
                     province_coordinates.append(former_coordinate)
             elif len(split) == 2:
                 coordinate = (float(split[0]), float(split[1]))
-                new_coordinate, base_coordinate = parse_path_command(
+                former_coordinate, base_coordinate = parse_path_command(
                     command, coordinate, base_coordinate, former_coordinate
                 )
-                province_coordinates.append(new_coordinate)
+                province_coordinates.append(former_coordinate)
             else:
                 print("Unknown SVG path coordinate:", split)
                 continue
@@ -182,7 +182,8 @@ def parse_path_command(
         command = command.lower()
 
     if command == "m":
-        return coordinate, coordinate
+        new_coordinate = get_coordinate(coordinate, former_coordinate, True, True)
+        return new_coordinate, new_coordinate
     elif command == "l" or command == "c" or command == "s" or command == "q" or command == "t" or command == "a":
         return get_coordinate(coordinate, former_coordinate, True, True), base_coordinate
     elif command == "h":
