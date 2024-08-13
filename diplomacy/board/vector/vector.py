@@ -13,7 +13,7 @@ from diplomacy.board.vector.utils import extract_value
 from diplomacy.province import Province, ProvinceType
 from diplomacy.unit import Army, Fleet
 
-# TODO: (MAP) cheat on x-wrap, high seas, complicated coasts
+# TODO: (MAP) cheat on x-wrap, high seas, complicated coasts, canals
 # TODO: (!) de-duplicate state in Unit/Province/Player knowledge of one another, have one source of truth
 # TODO: (!) determine how edit base map state (province) should work (shared problem), allow all GMs? Only me? Only by admin in hub server?
 # TODO: (DB) when updating DB map state, update SVG so it can be read if needed (everything we read here), and save SVG
@@ -145,11 +145,15 @@ def create_provinces_type(
             split = element.split(",")
             if len(split) == 1:
                 command = split[0]
+                if command == "z":
+                    former_coordinate = base_coordinate.copy()
+                    province_coordinates.append(former_coordinate)
             elif len(split) == 2:
                 coordinate = (float(split[0]), float(split[1]))
-                new_coordinate = parse_path_command(command, coordinate, base_coordinate, former_coordinate)
-                if new_coordinate:
-                    province_coordinates.append(new_coordinate)
+                new_coordinate, base_coordinate = parse_path_command(
+                    command, coordinate, base_coordinate, former_coordinate
+                )
+                province_coordinates.append(new_coordinate)
             else:
                 print("Unknown SVG path coordinate:", split)
                 continue
@@ -164,32 +168,33 @@ def create_provinces_type(
     return provinces
 
 
+# returns:
+# new coordinate (= former_coordinate if not applicable),
+# new base_coordinate (= base_coordinate if not applicable),
 def parse_path_command(
     command: str,
     coordinate: Tuple[float, float],
-    base_coordinate: List[float],  # this should be a coordinate list of length 2, but we need it to be mutable
+    base_coordinate: Tuple[float, float],
     former_coordinate: Tuple[float, float],
-) -> Optional[Tuple[float, float]]:
+) -> Tuple[Tuple[float, float], Tuple[float, float]]:
     if command.isupper():
         former_coordinate = (0, 0)
         command = command.lower()
 
     if command == "m":
-        base_coordinate[0] = coordinate[0]
-        base_coordinate[1] = coordinate[1]
-        return None
-    elif command == "z":
-        # TODO: (!) z does not need an input after it, this command should be parsed immediately, not with next coords
-        return base_coordinate[0], base_coordinate[1]
+        return coordinate, coordinate
     elif command == "l" or command == "c" or command == "s" or command == "q" or command == "t" or command == "a":
-        return get_coordinate(coordinate, former_coordinate, True, True)
+        return get_coordinate(coordinate, former_coordinate, True, True), base_coordinate
     elif command == "h":
-        return get_coordinate(coordinate, former_coordinate, True, False)
+        return get_coordinate(coordinate, former_coordinate, True, False), base_coordinate
     elif command == "v":
-        return get_coordinate(coordinate, former_coordinate, False, True)
+        return get_coordinate(coordinate, former_coordinate, False, True), base_coordinate
+    elif command == "z":
+        print("SVG command z should not be followed by any coordinates")
+        return former_coordinate, base_coordinate
     else:
         print("Unknown SVG path command:", command)
-        return None
+        return former_coordinate, base_coordinate
 
 
 def get_coordinate(
