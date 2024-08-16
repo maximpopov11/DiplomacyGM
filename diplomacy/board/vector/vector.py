@@ -1,4 +1,5 @@
 import re
+import sys
 from typing import List, Tuple, Set, NoReturn, Mapping, Optional, Callable
 from xml.etree.ElementTree import Element
 
@@ -139,24 +140,49 @@ def create_provinces_type(
         province_coordinates = []
 
         command = None
-        base_coordinate = [0, 0]
+        expected_arguments = 0
+        base_coordinate = (0, 0)
         former_coordinate = (0, 0)
-        for element in path:
-            split = element.split(",")
-            if len(split) == 1:
-                command = split[0]
-                if command == "z":
+        current_index = 0
+        while current_index < len(path):
+            if path[current_index][0].isalpha():
+                if len(path[current_index]) != 1:
+                    # m20,70 is valid syntax, so move the 20,70 to the next element
+                    path.insert(current_index+1, path[current_index][1:])
+                    path[current_index] = path[current_index][0]
+                command = path[current_index]
+                if command.lower() == "z":
+                    expected_arguments = 0
                     former_coordinate = base_coordinate
                     province_coordinates.append(former_coordinate)
-            elif len(split) == 2:
-                coordinate = (float(split[0]), float(split[1]))
-                former_coordinate, base_coordinate = parse_path_command(
-                    command, coordinate, base_coordinate, former_coordinate
-                )
-                province_coordinates.append(former_coordinate)
-            else:
-                print("Unknown SVG path coordinate:", split)
-                continue
+                    current_index += 1
+                    continue
+                # No switch statement in python annoys me.
+                # There's probably a really neat pythonic way to do this easier
+                # Maybe with a dict? idk
+                if command.lower() in ["m", "l", "h", "v", "t"]:
+                    expected_arguments = 1
+                if command.lower() in ["s", "q"]:
+                    expected_arguments = 2
+                if command.lower() in ["c"]:
+                    expected_arguments = 3
+                if command.lower() in ["a"]:
+                    expected_arguments = 4
+                current_index += 1
+
+            if len(path) < (current_index + expected_arguments):
+                print(f"Ran out of arguments for {command}", file=sys.stderr)
+                break
+
+            args = [
+                (float(coord_string.split(",")[0]), float(coord_string.split(",")[-1]))
+                for coord_string in path[current_index:current_index + expected_arguments]
+            ]
+            base_coordinate, former_coordinate = parse_path_command(
+                command, args, base_coordinate, former_coordinate
+            )
+            province_coordinates.append(former_coordinate)
+            current_index += expected_arguments
 
         province = Province(province_coordinates, province_type)
 
@@ -169,11 +195,11 @@ def create_provinces_type(
 
 
 # returns:
-# new coordinate (= former_coordinate if not applicable),
+# new former_coordinate (= former_coordinate if not applicable),
 # new base_coordinate (= base_coordinate if not applicable),
 def parse_path_command(
     command: str,
-    coordinate: Tuple[float, float],
+    args: List[Tuple[float, float]],
     base_coordinate: Tuple[float, float],
     former_coordinate: Tuple[float, float],
 ) -> Tuple[Tuple[float, float], Tuple[float, float]]:
@@ -182,33 +208,33 @@ def parse_path_command(
         command = command.lower()
 
     if command == "m":
-        new_coordinate = get_coordinate(coordinate, former_coordinate, True, True)
+        new_coordinate = move_coordinate(former_coordinate, args[0])
         return new_coordinate, new_coordinate
-    elif command == "l" or command == "c" or command == "s" or command == "q" or command == "t" or command == "a":
-        return get_coordinate(coordinate, former_coordinate, True, True), base_coordinate
+    elif command == "l" or command == "t" or command == "s" or command == "q" or command == "c" or command == "a":
+        return base_coordinate, move_coordinate(former_coordinate, args[-1])  # Ignore all args except the last
     elif command == "h":
-        return get_coordinate(coordinate, former_coordinate, True, False), base_coordinate
+        return base_coordinate, move_coordinate(former_coordinate, args[0], ignore_y=True)
     elif command == "v":
-        return get_coordinate(coordinate, former_coordinate, False, True), base_coordinate
+        return base_coordinate, move_coordinate(former_coordinate, args[0], ignore_x=True)
     elif command == "z":
-        print("SVG command z should not be followed by any coordinates")
-        return former_coordinate, base_coordinate
+        print("SVG command z should not be followed by any coordinates", file=sys.stderr)
+        return base_coordinate, former_coordinate
     else:
-        print("Unknown SVG path command:", command)
-        return former_coordinate, base_coordinate
+        print("Unknown SVG path command:", command, file=sys.stderr)
+        return base_coordinate, former_coordinate
 
 
-def get_coordinate(
-    coordinate: Tuple[float, float],
+def move_coordinate(
     former_coordinate: Tuple[float, float],
-    use_x: bool,
-    use_y: bool,
+    coordinate: Tuple[float, float],
+    ignore_x=False,
+    ignore_y=False
 ) -> Tuple[float, float]:
     x = former_coordinate[0]
     y = former_coordinate[1]
-    if use_x:
+    if not ignore_x:
         x += coordinate[0]
-    if use_y:
+    if not ignore_y:
         y += coordinate[1]
     return x, y
 
