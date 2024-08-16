@@ -195,8 +195,8 @@ def create_provinces_type(
 
 
 # returns:
-# new former_coordinate (= former_coordinate if not applicable),
 # new base_coordinate (= base_coordinate if not applicable),
+# new former_coordinate (= former_coordinate if not applicable),
 def parse_path_command(
     command: str,
     args: List[Tuple[float, float]],
