@@ -1,78 +1,76 @@
 import os
-from typing import NoReturn, Callable
+from typing import Callable
 
 import discord
 from discord.ext import commands
 
-import bot.command as command
+from bot import command
+from diplomacy.persistence.manager import Manager
 
+# TODO: (BETA) this should live in a class
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix=".", intents=intents)
 
-commandFunctionType = Callable[[commands.Context], str]
+manager = Manager()
 
 
-@bot.event
-async def on_ready():
-    # TODO: (DB) setup db (make sure it's stable) for state, game ID
-    # TODO: (DB) read ctx.guild.id (or equivalent) and store that in db API to differentiate games
-    # TODO: (DB) get state from db and create adjudicator
-    # TODO: (DB) update state -> update db (protect against malicious inputs like drop table)
-    pass
-
-
-async def handle_command(
-    function: commandFunctionType, ctx: discord.ext.commands.Context
-) -> NoReturn:
+# TODO: (BETA) improve help to display player/GM/admin/shared commands and with extra descriptions for command help
+async def _handle_command(
+    function: Callable[[commands.Context, Manager], str], ctx: discord.ext.commands.Context
+) -> None:
     try:
-        response = function(ctx)
+        response = function(ctx, manager)
         await ctx.channel.send(response)
     except Exception as e:
         await ctx.channel.send("Command errored: " + str(e))
 
 
 @bot.command(help="Checks bot listens and responds")
-async def ping(ctx: discord.ext.commands.Context) -> NoReturn:
-    await handle_command(command.ping, ctx)
+async def ping(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.ping, ctx)
 
 
+# TODO: (BETA) allow ambiguous moves/convoys
+# TODO: (BETA) warn move incompatible for supports when supported move not ordered
 @bot.command(
-    brief="Submits orders (one per line). "
-    "Note: convoy moves must explicitly include 'via convoy' at this time."
+    brief="Submits orders (one per line). Note: convoy moves must explicitly include 'via convoy' at this time."
 )
-async def order(ctx: discord.ext.commands.Context) -> NoReturn:
-    await handle_command(command.order, ctx)
+async def order(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.order, ctx)
 
 
 @bot.command(brief="Outputs the map with your current submitted moves shown")
-async def view_orders(ctx: discord.ext.commands.Context) -> NoReturn:
-    await handle_command(command.view_orders, ctx)
+async def view_orders(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.view_orders, ctx)
 
 
 @bot.command(brief="Adjudicates the game and outputs the moves and results maps")
-async def adjudicate(ctx: discord.ext.commands.Context) -> NoReturn:
-    await handle_command(command.adjudicate, ctx)
+async def adjudicate(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.adjudicate, ctx)
 
 
 @bot.command(brief="Rolls back to the previous game state and outputs the results map")
-async def rollback(ctx: discord.ext.commands.Context) -> NoReturn:
-    await handle_command(command.rollback, ctx)
+async def rollback(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.rollback, ctx)
 
 
 @bot.command(brief="Outputs the scoreboard")
-async def scoreboard(ctx: discord.ext.commands.Context) -> NoReturn:
-    await handle_command(command.get_scoreboard, ctx)
+async def scoreboard(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.get_scoreboard, ctx)
 
 
-@bot.command(brief="Edits the game state and outputs the results map")
-async def edit(ctx: discord.ext.commands.Context) -> NoReturn:
-    await handle_command(command.edit, ctx)
+@bot.command(
+    brief="Edits the game state and outputs the results map. "
+    "Note: you cannot edit inherent map state (eg. province adjacency)."
+)
+async def edit(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.edit, ctx)
 
 
-@bot.command(brief="Parses the input map image file")
-async def initialize_board_setup(ctx: discord.ext.commands.Context) -> NoReturn:
-    await handle_command(command.initialize_board_setup, ctx)
+@bot.command(brief="Create a game of Imp Dip and output the map. (there are no other variant options at this time)")
+async def create_game(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.create_game, ctx)
 
 
 def run():

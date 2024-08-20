@@ -3,7 +3,7 @@ from PIL import Image
 from scipy import ndimage
 from skimage.segmentation import expand_labels, find_boundaries
 
-from diplomacy.board.raster.config import *
+from diplomacy.map_parser.raster.config import *
 
 
 def read_map_data():
@@ -12,15 +12,11 @@ def read_map_data():
     armies_image = np.asarray(Image.open(ARMIES_IMAGE).convert("RGBA"))
     fleets_image = np.asarray(Image.open(FLEETS_IMAGE).convert("RGBA"))
 
-    province_id_map, num_provinces = ndimage.label(
-        (provinces_image != BORDER_COLOR).any(-1), structure=np.ones((3, 3))
-    )
+    province_id_map, num_provinces = ndimage.label((provinces_image != BORDER_COLOR).any(-1), structure=np.ones((3, 3)))
     province_id_map_expanded = expand_labels(province_id_map, distance=6)
 
     adjacencies = get_adjacencies(province_id_map_expanded, num_provinces)
-    province_owners = get_province_owners(
-        provinces_image, province_id_map, num_provinces
-    )
+    province_owners = get_province_owners(provinces_image, province_id_map, num_provinces)
     centers = get_centers(province_id_map, centers_image)
     armies = get_units(province_id_map, armies_image)
     fleets = get_units(province_id_map, fleets_image)
@@ -30,12 +26,8 @@ def get_adjacencies(province_id_map_expanded, num_provinces):
     adjacencies = {}
 
     for province_id in range(1, num_provinces + 1):
-        boundaries = find_boundaries(
-            province_id_map_expanded == province_id, mode="outer"
-        )
-        adjacencies[province_id] = np.setdiff1d(
-            np.unique(province_id_map_expanded * boundaries), [0]
-        )
+        boundaries = find_boundaries(province_id_map_expanded == province_id, mode="outer")
+        adjacencies[province_id] = np.setdiff1d(np.unique(province_id_map_expanded * boundaries), [0])
 
     return adjacencies
 
@@ -44,13 +36,9 @@ def get_province_owners(provinces, province_id_map, num_provinces):
     province_owners = {}
 
     for province_id in range(1, num_provinces + 1):
-        colors, frequency = np.unique(
-            provinces[province_id_map == province_id], return_counts=True, axis=0
-        )
+        colors, frequency = np.unique(provinces[province_id_map == province_id], return_counts=True, axis=0)
         if len(colors) != 1:
-            print(
-                f"Province #{province_id} is not one solid color: {colors} with frequency: {frequency}."
-            )
+            print(f"Province #{province_id} is not one solid color: {colors} with frequency: {frequency}.")
 
         top_color = tuple(colors[np.argmax(frequency)][:3])
         assert (
@@ -63,9 +51,7 @@ def get_province_owners(provinces, province_id_map, num_provinces):
 
 # If a center overlaps multiple provinces all provinces will be considered a center
 def get_centers(province_id_map, centers_image):
-    return set(
-        np.setdiff1d(np.unique(province_id_map * (centers_image[:, :, 3] != 0)), [0])
-    )
+    return set(np.setdiff1d(np.unique(province_id_map * (centers_image[:, :, 3] != 0)), [0]))
 
 
 # Requires separate calls per unit type (armies, fleets)
@@ -73,13 +59,9 @@ def get_centers(province_id_map, centers_image):
 def get_units(province_id_map, units_image):
     units = {}
 
-    unit_id_map, num_units = ndimage.label(
-        (units_image[:, :, 3] != 0), structure=np.ones((3, 3))
-    )
+    unit_id_map, num_units = ndimage.label((units_image[:, :, 3] != 0), structure=np.ones((3, 3)))
     for unit_id in range(1, num_units + 1):
-        province_ids, frequency = np.unique(
-            province_id_map[unit_id_map == unit_id], return_counts=True
-        )
+        province_ids, frequency = np.unique(province_id_map[unit_id_map == unit_id], return_counts=True)
         province_id = province_ids[frequency.argmax()]
 
         unit_colors = np.unique(units_image[unit_id_map == unit_id], axis=0)
@@ -89,9 +71,7 @@ def get_units(province_id_map, units_image):
             if color in UNIT_COLOR_TYPE_MAP:
                 unit_player = UNIT_COLOR_TYPE_MAP[color]
                 break
-        assert (
-            unit_player is not None
-        ), f"Could not find player for unit {unit_id} with colors {unit_colors}"
+        assert unit_player is not None, f"Could not find player for unit {unit_id} with colors {unit_colors}"
         units[province_id] = {"unit_number": unit_id, "player": unit_player}
 
     return units

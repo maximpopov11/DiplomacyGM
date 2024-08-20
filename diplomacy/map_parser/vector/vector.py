@@ -8,13 +8,17 @@ from lxml import etree
 from scipy.spatial import cKDTree
 from shapely.geometry import Point, Polygon
 
-from diplomacy.board.board import Board
-from diplomacy.board.vector.config import *
-from diplomacy.board.vector.utils import extract_value
-from diplomacy.province import Province, ProvinceType
-from diplomacy.unit import Army, Fleet
+from diplomacy.map_parser.vector.config_svg import *
+from diplomacy.map_parser.vector.utils import extract_value
+from diplomacy.persistence.board import Board
+from diplomacy.persistence.province import Province, ProvinceType
+from diplomacy.persistence.unit import UnitType, Unit
 
-# TODO: (MAP) cheat on x-wrap, high seas, complicated coasts, canals
+# TODO: hold off on refactoring this because PR
+
+# TODO: can a library do all of this for us?
+
+# TODO: (MAP) cheat on x-wrap, high seas/sands, complicated coasts, canals
 # TODO: (!) de-duplicate state in Unit/Province/Player knowledge of one another, have one source of truth
 # TODO: (!) determine how edit base map state (province) should work (shared problem), allow all GMs? Only me? Only by admin in hub server?
 # TODO: (DB) when updating DB map state, update SVG so it can be read if needed (everything we read here), and save SVG
@@ -28,46 +32,16 @@ NAMESPACE = {
 
 # Parse provinces, adjacencies, centers, and units
 def parse() -> Board:
-    (
-        land_provinces_data,
-        island_provinces_data,
-        sea_provinces_data,
-        names_data,
-        centers_data,
-        units_data,
-    ) = get_svg_data()
-    provinces = get_provinces(
-        land_provinces_data,
-        island_provinces_data,
-        sea_provinces_data,
-        names_data,
-        centers_data,
-        units_data,
-    )
-    # TODO: (MAP) create adjacency manager that maps province to adjacent and all updates go via it
+    land_data, island_data, sea_data, names_data, centers_data, units_data = get_svg_data()
+    # TODO: feed everything into the board state
+    provinces = get_provinces(land_data, island_data, sea_data, names_data, centers_data, units_data)
     adjacencies = get_adjacencies(provinces)
-
-    province_names = []
-    centers = []
-    units = []
-    for province in provinces:
-        province_names.append(province.name)
-        if province.has_supply_center:
-            centers.append(province.name)
-        if province.unit:
-            units.append(province.name)
-
-    print(province_names)
-    print(centers)
-    print(units)
-
-    return Board(provinces, adjacencies)
+    return Board()
 
 
 # Gets provinces, names, centers, and units data from SVG
-def get_svg_data() -> Tuple[List[Element], List[Element], List[Element], List[Element], List[Element], List[Element]]:
+def get_svg_data() -> tuple[list[Element], list[Element], list[Element], list[Element], list[Element], list[Element]]:
     map_data = etree.parse(SVG_PATH)
-    # TODO: (MAP) parse sea provinces (awaiting GM fill file)
     land_provinces_data = map_data.xpath(f'//*[@id="{LAND_PROVINCE_FILL_LAYER_ID}"]')[0].getchildren()
     island_provinces_data = map_data.xpath(f'//*[@id="{ISLAND_PROVINCE_BORDER_LAYER_ID}"]')[0].getchildren()
     sea_provinces_data = map_data.xpath(f'//*[@id="{SEA_PROVINCE_BORDER_LAYER_ID}"]')[0].getchildren()
@@ -86,13 +60,13 @@ def get_svg_data() -> Tuple[List[Element], List[Element], List[Element], List[El
 
 # Creates and initializes provinces
 def get_provinces(
-    land_provinces_data: List[Element],
-    island_provinces_data: List[Element],
-    sea_provinces_data: List[Element],
-    names_data: List[Element],
-    centers_data: List[Element],
-    units_data: List[Element],
-) -> Set[Province]:
+    land_provinces_data: list[Element],
+    island_provinces_data: list[Element],
+    sea_provinces_data: list[Element],
+    names_data: list[Element],
+    centers_data: list[Element],
+    units_data: list[Element],
+) -> set[Province]:
     provinces_data = land_provinces_data + island_provinces_data
     provinces = create_provinces(provinces_data, sea_provinces_data)
 
@@ -118,24 +92,26 @@ def get_provinces(
 
 # Creates provinces with border coordinates
 def create_provinces(
-    land_provinces_data: List[Element],
-    sea_provinces_data: List[Element],
-) -> Set[Province]:
+    land_provinces_data: list[Element],
+    sea_provinces_data: list[Element],
+) -> set[Province]:
+    # TODO: might be island
     land_provinces = create_provinces_type(land_provinces_data, ProvinceType.LAND)
     sea_provinces = create_provinces_type(sea_provinces_data, ProvinceType.SEA)
     return land_provinces.union(sea_provinces)
 
 
+# TODO: manage the layer transform (always translate?)
 def create_provinces_type(
-    provinces_data: List[Element],
+    provinces_data: list[Element],
     province_type: ProvinceType,
-) -> Set[Province]:
+) -> set[Province]:
     provinces = set()
     for province_data in provinces_data:
-        path = province_data.get("d")
-        if not path:
+        path_data = province_data.get("d")
+        if not path_data:
             continue
-        path = path.split()
+        path: list[str] = path_data.split()
 
         province_coordinates = []
 
@@ -148,8 +124,9 @@ def create_provinces_type(
             if path[current_index][0].isalpha():
                 if len(path[current_index]) != 1:
                     # m20,70 is valid syntax, so move the 20,70 to the next element
-                    path.insert(current_index+1, path[current_index][1:])
+                    path.insert(current_index + 1, path[current_index][1:])
                     path[current_index] = path[current_index][0]
+
                 command = path[current_index]
                 if command.lower() == "z":
                     expected_arguments = 0
@@ -157,17 +134,17 @@ def create_provinces_type(
                     province_coordinates.append(former_coordinate)
                     current_index += 1
                     continue
-                # No switch statement in python annoys me.
-                # There's probably a really neat pythonic way to do this easier
-                # Maybe with a dict? idk
-                if command.lower() in ["m", "l", "h", "v", "t"]:
+                elif command.lower() in ["m", "l", "h", "v", "t"]:
                     expected_arguments = 1
-                if command.lower() in ["s", "q"]:
+                elif command.lower() in ["s", "q"]:
                     expected_arguments = 2
-                if command.lower() in ["c"]:
+                elif command.lower() in ["c"]:
                     expected_arguments = 3
-                if command.lower() in ["a"]:
+                elif command.lower() in ["a"]:
                     expected_arguments = 4
+                else:
+                    print("Unknown command.")
+
                 current_index += 1
 
             if len(path) < (current_index + expected_arguments):
@@ -176,11 +153,9 @@ def create_provinces_type(
 
             args = [
                 (float(coord_string.split(",")[0]), float(coord_string.split(",")[-1]))
-                for coord_string in path[current_index:current_index + expected_arguments]
+                for coord_string in path[current_index : current_index + expected_arguments]
             ]
-            base_coordinate, former_coordinate = parse_path_command(
-                command, args, base_coordinate, former_coordinate
-            )
+            base_coordinate, former_coordinate = parse_path_command(command, args, base_coordinate, former_coordinate)
             province_coordinates.append(former_coordinate)
             current_index += expected_arguments
 
@@ -204,6 +179,7 @@ def parse_path_command(
     former_coordinate: Tuple[float, float],
 ) -> Tuple[Tuple[float, float], Tuple[float, float]]:
     if command.isupper():
+        # TODO: (!) uppercase C has a massive province movement
         former_coordinate = (0, 0)
         command = command.lower()
 
@@ -225,10 +201,7 @@ def parse_path_command(
 
 
 def move_coordinate(
-    former_coordinate: Tuple[float, float],
-    coordinate: Tuple[float, float],
-    ignore_x=False,
-    ignore_y=False
+    former_coordinate: Tuple[float, float], coordinate: Tuple[float, float], ignore_x=False, ignore_y=False
 ) -> Tuple[float, float]:
     x = former_coordinate[0]
     y = former_coordinate[1]
@@ -287,7 +260,7 @@ def initialize_supply_centers(provinces: Set[Province], centers_data: List[Eleme
     initialize_province_resident_data(provinces, centers_data, get_coordinates, set_province_supply_center)
 
 
-def set_province_unit(province: Province, unit_data: Element) -> NoReturn:
+def set_province_unit(province: Province, unit_data: Element, board: Board) -> NoReturn:
     if province.unit:
         print("Province", province.name, "already has a unit!")
 
@@ -300,14 +273,13 @@ def set_province_unit(province: Province, unit_data: Element) -> NoReturn:
         "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides"
     )
     if num_sides == "3":
-        unit = Army(player, province)
+        unit = Unit(UnitType.ARMY, player, province)
     elif num_sides == "6":
-        unit = Fleet(player, province)
+        unit = Unit(UnitType.FLEET, player, province)
     else:
-        print("Number of sides on unit", num_sides, "does not match any unit types.")
-        unit = None
+        raise RuntimeError(f"Unit has {num_sides} sides which does not match any unit definition.")
 
-    province.set_unit(unit)
+    province.unit = unit
 
 
 def initialize_units_assisted(provinces: Mapping[str, Province], units_data: List[Element]) -> NoReturn:
@@ -384,7 +356,7 @@ def initialize_province_resident_data(
 
 # Returns province adjacency set
 def get_adjacencies(provinces: Set[Province]) -> Set[Tuple[str, str]]:
-    # TODO: (MAP) fix adjacencies, currently points are obtained inaccurately
+    # TODO: (MAP) fix adjacencies, currently points are obtained inaccurately: can compare x/y extremes on provinces with SVG
     # cKDTree is great, but it doesn't intelligently exclude clearly impossible cases of which we will have many
     coordinates = {}
     for province in provinces:
