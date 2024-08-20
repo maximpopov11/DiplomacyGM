@@ -33,6 +33,7 @@ class Province:
         self.half_core: Player | None = None
         self.owner: Player | None = owner
         self.unit: Unit | None = unit
+        self.dislodged_unit: Unit | None = None
 
         # these will be set shortly after initialization
         self.adjacent: set[Province] = set()

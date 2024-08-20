@@ -22,12 +22,17 @@ class Adjudicator:
 
         start_config: dict[str, list[dict[str, str]]] = translation.get_start_config(self.board)
         self.pydip_players: dict[str, PydipPlayer] = translation.get_players(
-            self.board.players, self.pydip_map, start_config
+            self.board.players,
+            self.pydip_map,
+            start_config,
         )
 
         self.pydip_units: dict[str, set[PydipUnit]] = translation.get_units(self.board)
-        # TODO: (DB) instead of storing the retreat map in the DB, could translation figure out how to build it?
-        self.retreat_map: dict[PydipPlayer, dict[PydipUnit, str]] | None = None
+        self.retreat_map: dict[PydipPlayer, dict[PydipUnit, set[str]]] = translation.generate_retreats_map(
+            self.pydip_players,
+            self.pydip_units,
+            self.board.provinces,
+        )
         self.pydip_commands: list[PydipCommand] = translation.get_commands(
             self.board,
             self.pydip_players,

@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from pydip.map.map import Map as PydipMap, OwnershipMap, SupplyCenterMap
 from pydip.player.command.adjustment_command import AdjustmentCreateCommand, AdjustmentDisbandCommand
 from pydip.player.command.command import (
@@ -114,11 +116,27 @@ def _get_unit_type(unit_type: UnitType) -> PydipUnitType:
         raise ValueError(f"Illegal unit type {unit_type}.")
 
 
+def generate_retreats_map(
+    pydip_players: dict[str, PydipPlayer],
+    pydip_units: dict[str, set[PydipUnit]],
+    provinces: set[Province],
+) -> dict[PydipPlayer, dict[PydipUnit, set[str]]]:
+    names_to_provinces: dict[str, Province] = {province.name: province for province in provinces}
+    retreats_map = defaultdict()
+    for pydip_player in pydip_players:
+        for pydip_unit in pydip_units[pydip_player]:
+            province_name = pydip_unit.position
+            dislodged_unit = names_to_provinces[province_name].dislodged_unit
+            if dislodged_unit:
+                retreats_map[pydip_unit] = dislodged_unit.retreat_options
+    return retreats_map
+
+
 def get_commands(
     board: Board,
     pydip_players: dict[str, PydipPlayer],
     pydip_units: dict[str, set[PydipUnit]],
-    retreats_map: dict[PydipPlayer, dict[PydipUnit, str]],
+    retreats_map: dict[PydipPlayer, dict[PydipUnit, set[str]]],
     pydip_map: PydipMap,
 ) -> list[PydipCommand]:
     # TODO: (ALPHA) support core
@@ -156,15 +174,15 @@ def get_commands(
         if isinstance(order, Hold):
             commands.append(HoldCommand(pydip_player, unit))
         elif isinstance(order, Move):
-            commands.append(MoveCommand(pydip_player, unit, order.destination))
+            commands.append(MoveCommand(pydip_player, unit, order.destination.name))
         elif isinstance(order, ConvoyMove):
-            commands.append(ConvoyMoveCommand(pydip_player, unit, order.destination))
+            commands.append(ConvoyMoveCommand(pydip_player, unit, order.destination.name))
         elif isinstance(order, ConvoyTransport):
-            commands.append(ConvoyTransportCommand(pydip_player, unit, source_unit, order.destination))
+            commands.append(ConvoyTransportCommand(pydip_player, unit, source_unit, order.destination.name))
         elif isinstance(order, Support):
-            commands.append(SupportCommand(pydip_player, unit, source_unit, order.destination))
+            commands.append(SupportCommand(pydip_player, unit, source_unit, order.destination.name))
         elif isinstance(order, RetreatMove):
-            commands.append(RetreatMoveCommand(retreats_map, pydip_player, unit, order.destination))
+            commands.append(RetreatMoveCommand(retreats_map, pydip_player, unit, order.destination.name))
         elif isinstance(order, RetreatDisband):
             commands.append(RetreatDisbandCommand(retreats_map, pydip_player, unit))
         elif isinstance(order, Build):
