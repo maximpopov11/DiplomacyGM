@@ -27,7 +27,7 @@ from diplomacy.persistence.order import (
     Build,
 )
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.province import Province
+from diplomacy.persistence.province import Province, ProvinceType
 from diplomacy.persistence.unit import UnitType
 
 
@@ -35,18 +35,17 @@ def get_territory_descriptors(provinces: set[Province]) -> list[dict[str, any]]:
     territory_descriptors = []
     for province in provinces:
         coasts = []
-        if not province.coasts:
-            coasts.append({"name": f"{province.name} coast"})
-        else:
+        if province.coasts:
             for coast in province.coasts:
                 coasts.append({"name": coast.name})
 
-        territory_descriptors.append(
-            {
-                "name": province.name,
-                "coasts": coasts,
-            }
-        )
+        descriptor = {"name": province.name}
+        # land provinces should have coasts set (empty for landlocked)
+        # sea provinces should not have coasts set at all
+        if province.type == ProvinceType.LAND or province.type == ProvinceType.ISLAND:
+            descriptor["coasts"] = coasts
+
+        territory_descriptors.append(descriptor)
     return territory_descriptors
 
 
