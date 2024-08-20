@@ -84,13 +84,8 @@ def get_scoreboard(ctx: commands.Context, manager: Manager) -> str:
     if not is_gm_channel(ctx.channel):
         raise PermissionError("You cannot get the scoreboard in a non-GM channel.")
 
-    build_counts = []
-    for player in manager.get_board(ctx.guild.id).players:
-        build_counts.append((player.name, len(player.centers) - len(player.units)))
-    build_counts = sorted(build_counts, key=lambda counts: counts[1])
-
     response = ""
-    for player, count in build_counts:
+    for player, count in manager.get_board(ctx.guild.id).get_build_counts():
         response += f"{player} {count}\n"
 
     return response

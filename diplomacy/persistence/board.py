@@ -32,3 +32,10 @@ class Board:
                 self.unit_orders[order.unit] = order
             else:
                 self.build_orders.add(order)
+
+    def get_build_counts(self) -> list[tuple[str, int]]:
+        build_counts = []
+        for player in self.players:
+            build_counts.append((player.name, len(player.centers) - len(player.units)))
+        build_counts = sorted(build_counts, key=lambda counts: counts[1])
+        return build_counts

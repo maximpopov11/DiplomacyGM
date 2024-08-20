@@ -50,9 +50,8 @@ def get_territory_descriptors(provinces: set[Province]) -> list[dict[str, any]]:
 
 
 def get_adjacencies(provinces: set[Province]) -> list[tuple[str, str]]:
-    # TODO: this will find land/sea adjacencies in the first block, we need to not allow that
     # we need to guarantee that there are no duplicates
-    adjacencies: set[tuple] = set()
+    adjacencies: set[tuple[str, str]] = set()
     for province in provinces:
         # land/land and sea/sea adjacencies
         for province2 in province.adjacent:
@@ -69,14 +68,13 @@ def get_adjacencies(provinces: set[Province]) -> list[tuple[str, str]]:
     return list(adjacencies)
 
 
-# pydip wants unit province and type info for each player
 def get_start_config(board: Board) -> dict[str, list[dict[str, str]]]:
     start_config = {}
     for player in board.players:
         player_config = []
         for unit in player.units:
             mapping = {
-                "territory_name": board.get_province(unit).name,
+                "territory_name": unit.province.name,
                 "unit_type": _get_unit_type(unit.unit_type),
             }
             player_config.append(mapping)
@@ -100,12 +98,10 @@ def get_players(
 def get_units(board: Board) -> dict[str, set[PydipUnit]]:
     pydip_units = {}
     for province in board.provinces:
-        unit = board.get_unit(province)
+        unit = province.unit
         if unit:
-            player = board.get_player(unit)
-            unit = board.get_unit(province)
             unit_type = _get_unit_type(unit.unit_type)
-            pydip_units.setdefault(player.name, set()).add(PydipUnit(unit_type, province.name))
+            pydip_units.setdefault(unit.player.name, set()).add(PydipUnit(unit_type, province.name))
     return pydip_units
 
 
@@ -130,31 +126,26 @@ def get_commands(
     for order in board.get_orders():
         unit = None
         if isinstance(order, UnitOrder):
-            player = order.unit.player
-            pydip_player = pydip_players[player.name]
+            pydip_player = pydip_players[order.unit.player.name]
             player_units = pydip_units[pydip_player.name]
 
             for pydip_unit in player_units:
-                province = order.unit.province
-                if pydip_unit.position == province.name:
+                if pydip_unit.position == order.unit.province.name:
                     unit = pydip_unit
             if unit is None:
                 raise ValueError(f"Ordered unit with id {id(unit)} not found when connecting to adjudication library.")
         elif isinstance(order, Build):
-            player = order.province.owner
-            pydip_player = pydip_players[player.name]
+            pydip_player = pydip_players[order.province.owner.name]
         else:
             raise ValueError(f"Illegal order type: {order.__class__}")
 
         source_unit = None
         if isinstance(order, ComplexOrder):
-            player_2 = order.source.player
-            pydip_player2 = pydip_players[player_2.name]
+            pydip_player2 = pydip_players[order.source.player.name]
             player2_units = pydip_units[pydip_player2.name]
 
             for player2_unit in player2_units:
-                province = order.source.province
-                if player2_unit.position == province.name:
+                if player2_unit.position == order.source.province.name:
                     source_unit = player2_unit
             if source_unit is None:
                 raise ValueError(
@@ -183,7 +174,7 @@ def get_commands(
         elif isinstance(order, Disband):
             commands.append(AdjustmentDisbandCommand(pydip_player, unit))
         else:
-            raise ValueError(f"Order type {order.__class__} is not legal for order:", order)
+            raise ValueError(f"Order type {order.__class__} is not legal in {order}:")
 
     return commands
 
@@ -197,22 +188,17 @@ def get_ownership_map(pydip_map: PydipMap, board: Board) -> OwnershipMap:
         if province.has_supply_center:
             supply_centers.add(province.name)
             if province.core:
-                player = board.get_owner(province)
-                home_territories.setdefault(player, set()).add(province.name)
-                player = board.get_owner(province)
+                player = province.owner
+                home_territories.setdefault(player.name, set()).add(province.name)
                 if player:
-                    owned_territories.setdefault(player, set()).add(province.name)
+                    owned_territories.setdefault(player.name, set()).add(province.name)
 
     supply_map = SupplyCenterMap(pydip_map, supply_centers)
     return OwnershipMap(supply_map, owned_territories, home_territories)
 
 
-# TODO: command already does this, do we want a board function for it?
 def get_adjustment_counts(board: Board) -> dict[str, int]:
     adjustment_counts = {}
-    for player in board.players:
-        provinces = player.centers
-        num_centers = sum(province.has_supply_center for province in provinces)
-        num_units = len(player.units)
-        adjustment_counts[player.name] = num_centers - num_units
+    for player, count in board.get_build_counts():
+        adjustment_counts[player] = count
     return adjustment_counts
