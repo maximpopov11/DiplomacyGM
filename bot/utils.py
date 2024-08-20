@@ -1,15 +1,13 @@
-from typing import Optional
-
 from discord.ext import commands
 
-from config import *
-from diplomacy.persistence.adjudicator import Adjudicator
-from diplomacy.player import Player
+from bot.config import gm_roles, gm_channels, player_channel_suffix
+from diplomacy.persistence.manager import Manager
+from diplomacy.persistence.player import Player
 
 
 def is_gm(author: commands.Context.author) -> bool:
     for role in author.roles:
-        if role.name in gms:
+        if role.name in gm_roles:
             return True
     return False
 
@@ -18,17 +16,11 @@ def is_gm_channel(channel: commands.Context.channel) -> bool:
     return channel.name in gm_channels
 
 
-def is_player(author: commands.Context.author) -> bool:
-    return get_player(author) is not None
-
-
-def get_player(
-    author: commands.Context.author, adjudicator: Adjudicator
-) -> Optional[Player]:
+def get_player(author: commands.Context.author, manager: Manager, server_id: int) -> Player | None:
     for role in author.roles:
-        player = adjudicator.get_player(role.name)
-        if player is not None:
-            return player
+        for player in manager.get_board(server_id).players:
+            if player.name == role.name:
+                return player
     return None
 
 
