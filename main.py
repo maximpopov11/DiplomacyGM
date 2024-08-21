@@ -1,8 +1,8 @@
-from diplomacy.map_parser.vector.vector import parse
+from diplomacy.map_parser.vector.vector import Parser
 
 # bot.run()
 
-parse()
+Parser().parse()
 
 # TODO: priorities: (MAP), (DB), (ALPHA), (BETA)
 

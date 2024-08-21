@@ -21,9 +21,9 @@ from diplomacy.persistence.unit import UnitType, Unit
 # TODO: (MAP) cheat on x-wrap, high seas/sands, complicated coasts (pyongyang), canals (cairo, cons)
 
 
-class parser:
+class Parser:
     def __init__(self):
-        # TODO: (BETA)  clean this up, be consistent in formatting
+        # TODO: (BETA) consistent in bracket formatting
         self.NAMESPACE: dict[str, str] = {
             "inkscape": "{http://www.inkscape.org/namespaces/inkscape}",
             "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd",
@@ -310,7 +310,7 @@ def move_coordinate(
 
 
 # Returns the coordinates of the translation transform in the given element
-def _get_translation_coordinates(element: Element) -> tuple[float | None, float | None]:
+def _get_translation_coordinates(element: Element) -> tuple[float, float]:
     transform = element.get("transform")
     if not transform:
         return None, None
@@ -327,7 +327,7 @@ def _get_translation_coordinates(element: Element) -> tuple[float | None, float 
 def initialize_province_resident_data(
     provinces: set[Province],
     resident_dataset: list[Element],
-    get_coordinates: Callable[[Element], tuple[float | None, float | None]],
+    get_coordinates: Callable[[Element], tuple[float, float]],
     function: Callable[[Province, Element], None],
 ) -> None:
     resident_dataset = set(resident_dataset)
