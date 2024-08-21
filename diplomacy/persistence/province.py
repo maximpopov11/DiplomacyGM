@@ -48,11 +48,11 @@ class Province:
             # seas don't have coasts
             return set()
 
-        sea_provinces = self.adjacent.copy()
-        for province in sea_provinces:
+        sea_provinces: set[Province] = set()
+        for province in self.adjacent:
             # Islands do not break coasts
-            if province.type != ProvinceType.SEA and province.type != ProvinceType.ISLAND:
-                sea_provinces.remove(province)
+            if province.type == ProvinceType.SEA or province.type == ProvinceType.ISLAND:
+                sea_provinces.add(province)
 
         if len(sea_provinces) == 0:
             # this is not a coastal province
@@ -61,13 +61,19 @@ class Province:
         coast_sets: list[set[Province]] = []
         while sea_provinces:
             coast_set: set[Province] = set()
-            to_parse: list[Province] = [sea_provinces.pop()]
+            to_parse: list[Province] = [next(iter(sea_provinces))]
             while to_parse:
                 province = to_parse.pop()
-                coast_set.add(province)
                 sea_provinces.remove(province)
+                coast_set.add(province)
                 for adjacent in province.adjacent:
-                    to_parse.append(adjacent)
+                    if (
+                        adjacent in self.adjacent
+                        and adjacent.type is not ProvinceType.LAND
+                        and adjacent not in coast_set
+                        and adjacent not in to_parse
+                    ):
+                        to_parse.append(adjacent)
             coast_sets.append(coast_set)
 
         for i, coast_set in enumerate(coast_sets):

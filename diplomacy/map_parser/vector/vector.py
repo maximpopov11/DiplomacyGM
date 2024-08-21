@@ -75,11 +75,10 @@ class Parser:
             self._initialize_supply_centers(provinces, self.centers_data)
 
         # set units
-        # TODO: (MAP) uncomment
-        # if UNIT_PROVINCES_LABELED:
-        #     self._initialize_units_assisted(names_to_provinces, self.units_data)
-        # else:
-        #     self._initialize_units(provinces, self.units_data)
+        if UNIT_PROVINCES_LABELED:
+            self._initialize_units_assisted(names_to_provinces, self.units_data)
+        else:
+            self._initialize_units(provinces, self.units_data)
 
         # set adjacencies
         # TODO: (BETA) province adjacency margin somtimes too high or too low, base it case by case on province size?
@@ -90,6 +89,7 @@ class Parser:
             province1.adjacent.add(province2)
             province2.adjacent.add(province1)
 
+        # TODO: (MAP) bug in getting coasts ex. Panama because we think Bay of Panama and Colon Ridge are adjacent
         # set coasts
         for province in provinces:
             province.set_coasts()
@@ -167,7 +167,7 @@ class Parser:
                 current_index += expected_arguments
 
             # TODO: (MAP) create province
-            province = Province(None, province_coordinates, province_type, False, set(), None, None, None, None)
+            province = Province(None, province_coordinates, province_type, False, set(), set(), None, None, None)
 
             if PROVINCE_FILLS_LABELED:
                 name = province_data.get(f"{self.NAMESPACE.get('inkscape')}label")
