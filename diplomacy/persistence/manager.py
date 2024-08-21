@@ -48,6 +48,7 @@ class Manager:
         moves_map = mapper.get_moves_map(None)
         results_map = mapper.get_results_map()
         # TODO: (DB) update board, moves map, results map at server id at turn in db
+        # TODO: (DB) when updating board, update SVG so it can be reread if needed
         # TODO: (DB) protect against malicious inputs (ex. orders) like drop table
         # TODO: (MAP) return both moves and results map
         raise RuntimeError("Adjudication map return not yet implemented.")

@@ -16,9 +16,12 @@ if __name__ == "__main__":
     province2 = Province("province 2", [], ProvinceType.LAND, True, None, None, None)
     province3 = Province("province 3", [], ProvinceType.LAND, True, None, None, None)
 
-    province1.set_adjacent({province2, province3})
-    province2.set_adjacent({province1, province3})
-    province3.set_adjacent({province1, province2})
+    province1.adjacent.add(province2)
+    province1.adjacent.add(province3)
+    province2.adjacent.add(province1)
+    province2.adjacent.add(province3)
+    province3.adjacent.add(province1)
+    province3.adjacent.add(province2)
 
     unit1 = Unit(UnitType.ARMY, player1, province1)
     unit2 = Unit(UnitType.ARMY, player1, province2)

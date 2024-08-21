@@ -21,6 +21,8 @@ class Province:
         coordinates: list[tuple[float, float]],
         province_type: ProvinceType,
         has_supply_center: bool,
+        adjacent: set[Province],
+        coasts: set[Coast],
         core: Player | None,
         owner: Player | None,
         unit: Unit | None,
@@ -29,18 +31,13 @@ class Province:
         self.coordinates: list[tuple[float, float]] = coordinates
         self.type: ProvinceType = province_type
         self.has_supply_center: bool = has_supply_center
+        self.adjacent: set[Province] = adjacent
+        self.coasts: set[Coast] = coasts
         self.core: Player | None = core
         self.half_core: Player | None = None
         self.owner: Player | None = owner
         self.unit: Unit | None = unit
         self.dislodged_unit: Unit | None = None
-
-        # these will be set shortly after initialization
-        self.adjacent: set[Province] = set()
-        self.coasts: set[Coast] = set()
-
-    def set_adjacent(self, provinces: set[Province]) -> None:
-        self.adjacent = provinces
 
     def set_coasts(self):
         """This should only be called once all province adjacencies have been set."""

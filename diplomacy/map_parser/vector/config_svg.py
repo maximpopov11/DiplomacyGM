@@ -7,15 +7,15 @@ SVG_PATH: str = "assets/imperial_diplomacy.svg"
 # the group represents. Replace the strings below with the "..." contents of id="...".
 
 # Layer group in SVG containing land province color fills
-LAND_PROVINCE_FILL_LAYER_ID: str = "layer6"
+LAND_PROVINCE_LAYER_ID: str = "layer6"
 # Layer group in SVG containing island rings
 ISLAND_RING_LAYER_ID: str = "layer9"
 # Layer group in SVG containing island province color fills
 ISLAND_FILL_PLAYER_ID: str = "layer11"
 # Layer group in SVG containing island province borders
-ISLAND_PROVINCE_BORDER_LAYER_ID: str = "layer5"
+ISLAND_PROVINCE_LAYER_ID: str = "layer5"
 # Layer group in SVG containing sea province borders
-SEA_PROVINCE_BORDER_LAYER_ID: str = "layer2"
+SEA_PROVINCE_LAYER_ID: str = "layer2"
 # Layer group in SVG containing province names
 PROVINCE_NAMES_LAYER_ID: str = "layer1"
 # Layer group in SVG containing supply centers
