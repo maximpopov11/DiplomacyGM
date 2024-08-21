@@ -41,7 +41,7 @@ class Parser:
     def parse(self) -> Board:
         # TODO: (MAP) create players, provinces, & units
         players = set()
-        for name, color in players_to_colors:
+        for name, color in players_to_colors.items():
             players.add(Player(name, color, None, None))
 
         provinces = self._get_provinces()
@@ -75,12 +75,14 @@ class Parser:
             self._initialize_supply_centers(provinces, self.centers_data)
 
         # set units
-        if UNIT_PROVINCES_LABELED:
-            self._initialize_units_assisted(names_to_provinces, self.units_data)
-        else:
-            self._initialize_units(provinces, self.units_data)
+        # TODO: (MAP) uncomment
+        # if UNIT_PROVINCES_LABELED:
+        #     self._initialize_units_assisted(names_to_provinces, self.units_data)
+        # else:
+        #     self._initialize_units(provinces, self.units_data)
 
         # set adjacencies
+        # TODO: (BETA) province adjacency margin somtimes too high or too low, base it case by case on province size?
         adjacencies = _get_adjacencies(provinces)
         for name1, name2 in adjacencies:
             province1 = names_to_provinces[name1]
@@ -165,7 +167,7 @@ class Parser:
                 current_index += expected_arguments
 
             # TODO: (MAP) create province
-            province = Province(province_coordinates, province_type)
+            province = Province(None, province_coordinates, province_type, False, set(), None, None, None, None)
 
             if PROVINCE_FILLS_LABELED:
                 name = province_data.get(f"{self.NAMESPACE.get('inkscape')}label")
@@ -243,6 +245,7 @@ class Parser:
     def _initialize_units_assisted(self, provinces: dict[str, Province], units_data: list[Element]) -> None:
         for unit_data in units_data:
             province_name = unit_data.get(f"{self.NAMESPACE.get('inkscape')}label")
+            # TODO: (MAP): hardcode the coast and don't error on it
             province = provinces.get(province_name)
             if not province:
                 raise RuntimeError(f"Cannot place unit in non-existent province: {province_name}")

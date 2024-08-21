@@ -32,4 +32,4 @@ UNIT_PROVINCES_LABELED: bool = True
 
 # Margin of error for distance between province border points. If two province borders have a point within distance of
 # this value in both x and y values, they will be considered adjacent.
-PROVINCE_BORDER_MARGIN: int = 1
+PROVINCE_BORDER_MARGIN: float = 5

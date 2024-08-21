@@ -3,6 +3,7 @@ players_to_colors: dict[str, str] = {
     "Ajuuran": "587ba7",
     "Athapasca": "e95a94",
     "Austria": "a17555",
+    "Aymara": "9a2f56",
     "Ayutthaya": "9d84ae",
     "England": "f94455",
     "France": "66a2e3",

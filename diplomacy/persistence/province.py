@@ -39,6 +39,9 @@ class Province:
         self.unit: Unit | None = unit
         self.dislodged_unit: Unit | None = None
 
+    def __str__(self):
+        return self.name
+
     def set_coasts(self):
         """This should only be called once all province adjacencies have been set."""
         if self.type == ProvinceType.SEA:
