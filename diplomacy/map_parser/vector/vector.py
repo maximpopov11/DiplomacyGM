@@ -174,7 +174,7 @@ class Parser:
 
             name = None
             if PROVINCE_FILLS_LABELED:
-                name = province_data.get(f"{self.NAMESPACE.get('inkscape')}label")
+                name = self._get_province_name(province_data)
 
             # TODO: (MAP) create province
             province = Province(name, province_coordinates, province_type, False, set(), set(), None, None, None)
@@ -183,9 +183,8 @@ class Parser:
         return provinces
 
     def _initialize_province_owners(self, provinces_data) -> None:
-        # TODO: (MAP) util funcs for getting SVG data
         for province_data in provinces_data:
-            name = province_data.get(f"{self.NAMESPACE.get('inkscape')}label")
+            name = self._get_province_name(province_data)
             style = province_data.get("style").split(";")
             for value in style:
                 prefix = "fill:#"
@@ -209,7 +208,7 @@ class Parser:
 
     def _initialize_supply_centers_assisted(self) -> None:
         for center_data in self.centers_data:
-            province_name = center_data.get(f"{self.NAMESPACE.get('inkscape')}label")
+            province_name = self._get_province_name(center_data)
             province = self.name_to_province[province_name]
             if province.has_supply_center:
                 raise RuntimeError(f"{province_name} already has a supply center")
@@ -260,7 +259,7 @@ class Parser:
 
     def _initialize_units_assisted(self) -> None:
         for unit_data in self.units_data:
-            province_name = unit_data.get(f"{self.NAMESPACE.get('inkscape')}label")
+            province_name = self._get_province_name(unit_data)
             # TODO: (MAP): hardcode the coast and don't error on it
             province = self.name_to_province[province_name]
             self._set_province_unit(province, unit_data)
@@ -278,6 +277,9 @@ class Parser:
             )
 
         initialize_province_resident_data(provinces, self.units_data, get_coordinates, self._set_province_unit)
+
+    def _get_province_name(self, province_data: Element) -> str:
+        return province_data.get(f"{self.NAMESPACE.get('inkscape')}label")
 
 
 # returns:
