@@ -1,4 +1,6 @@
-players_to_colors: dict[str, str] = {
+NEUTRAL = "c6b7ab"
+
+player_to_color: dict[str, str] = {
     "Abyssinia": "a88080",
     "Ajuuran": "587ba7",
     "Athapasca": "e95a94",

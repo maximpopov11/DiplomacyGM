@@ -20,3 +20,6 @@ class Unit:
         self.province: Province = province
         "retreat_options is None when not dislodged and {} when dislodged without retreat options"
         self.retreat_options: set[Province] | None = None
+
+    def __str__(self):
+        return f"{self.unit_type.__class__} {self.player} {self.province}"

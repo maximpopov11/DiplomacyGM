@@ -13,3 +13,6 @@ class Player:
         self.color: str = color
         self.centers: set[Province] = centers
         self.units: set[Unit] = units
+
+    def __str__(self):
+        return self.name

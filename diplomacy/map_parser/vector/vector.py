@@ -1,5 +1,4 @@
 import re
-import sys
 from typing import Callable
 from xml.etree.ElementTree import Element
 
@@ -8,7 +7,7 @@ from lxml import etree
 from scipy.spatial import cKDTree
 from shapely.geometry import Point, Polygon
 
-from diplomacy.map_parser.vector.config_player import players_to_colors
+from diplomacy.map_parser.vector.config_player import player_to_color, NEUTRAL
 from diplomacy.map_parser.vector.config_svg import *
 from diplomacy.map_parser.vector.utils import extract_value
 from diplomacy.persistence.board import Board
@@ -33,16 +32,23 @@ class Parser:
         map_data = etree.parse(SVG_PATH)
         self.land_data: list[Element] = map_data.xpath(f'//*[@id="{LAND_PROVINCE_LAYER_ID}"]')[0].getchildren()
         self.island_data: list[Element] = map_data.xpath(f'//*[@id="{ISLAND_PROVINCE_LAYER_ID}"]')[0].getchildren()
+        self.island_fill_data: list[Element] = map_data.xpath(f'//*[@id="{ISLAND_FILL_PLAYER_ID}"]')[0].getchildren()
         self.sea_data: list[Element] = map_data.xpath(f'//*[@id="{SEA_PROVINCE_LAYER_ID}"]')[0].getchildren()
         self.names_data: list[Element] = map_data.xpath(f'//*[@id="{PROVINCE_NAMES_LAYER_ID}"]')[0].getchildren()
         self.centers_data: list[Element] = map_data.xpath(f'//*[@id="{SUPPLY_CENTER_LAYER_ID}"]')[0].getchildren()
         self.units_data: list[Element] = map_data.xpath(f'//*[@id="{UNITS_LAYER_ID}"]')[0].getchildren()
 
+        self.name_to_province: dict[str, Province] = {}
+        self.color_to_player: dict[str, Player | None] = {}
+
     def parse(self) -> Board:
         # TODO: (MAP) create players, provinces, & units
         players = set()
-        for name, color in players_to_colors.items():
-            players.add(Player(name, color, None, None))
+        for name, color in player_to_color.items():
+            player = Player(name, color, None, None)
+            players.add(player)
+            self.color_to_player[color] = player
+        self.color_to_player[NEUTRAL] = None
 
         provinces = self._get_provinces()
 
@@ -57,35 +63,36 @@ class Parser:
 
     def _get_provinces(self) -> set[Province]:
         # TODO: (BETA) get names/centers/units without aid labeling and test equality against aid labeling
-        # TODO: (MAP) set owner
         # set coordinates and names
         provinces: set[Province] = self._get_province_coordinates()
         if not PROVINCE_FILLS_LABELED:
-            self._initialize_province_names(provinces, self.names_data)
+            self._initialize_province_names(provinces)
 
-        names_to_provinces = {}
         for province in provinces:
-            names_to_provinces[province.name] = province
+            self.name_to_province[province.name] = province
+
+        self._initialize_province_owners(self.land_data)
+        self._initialize_province_owners(self.island_fill_data)
 
         # TODO: (MAP) set core
         # set supply centers
         if CENTER_PROVINCES_LABELED:
-            self._initialize_supply_centers_assisted(names_to_provinces, self.centers_data)
+            self._initialize_supply_centers_assisted()
         else:
-            self._initialize_supply_centers(provinces, self.centers_data)
+            self._initialize_supply_centers(provinces)
 
         # set units
         if UNIT_PROVINCES_LABELED:
-            self._initialize_units_assisted(names_to_provinces, self.units_data)
+            self._initialize_units_assisted()
         else:
-            self._initialize_units(provinces, self.units_data)
+            self._initialize_units(provinces)
 
         # set adjacencies
         # TODO: (BETA) province adjacency margin somtimes too high or too low, base it case by case on province size?
         adjacencies = _get_adjacencies(provinces)
         for name1, name2 in adjacencies:
-            province1 = names_to_provinces[name1]
-            province2 = names_to_provinces[name2]
+            province1 = self.name_to_province[name1]
+            province2 = self.name_to_province[name2]
             province1.adjacent.add(province2)
             province2.adjacent.add(province1)
 
@@ -115,7 +122,7 @@ class Parser:
         for province_data in provinces_data:
             path_string = province_data.get("d")
             if not path_string:
-                raise RuntimeError("Province has no path data. Maybe it's not actually a province?")
+                raise RuntimeError("Province path data not found")
             path: list[str] = path_string.split()
 
             province_coordinates = []
@@ -153,8 +160,7 @@ class Parser:
                     current_index += 1
 
                 if len(path) < (current_index + expected_arguments):
-                    print(f"Ran out of arguments for {command}", file=sys.stderr)
-                    break
+                    raise RuntimeError(f"Ran out of arguments for {command}")
 
                 args = [
                     (float(coord_string.split(",")[0]), float(coord_string.split(",")[-1]))
@@ -166,18 +172,31 @@ class Parser:
                 province_coordinates.append(former_coordinate)
                 current_index += expected_arguments
 
-            # TODO: (MAP) create province
-            province = Province(None, province_coordinates, province_type, False, set(), set(), None, None, None)
-
+            name = None
             if PROVINCE_FILLS_LABELED:
                 name = province_data.get(f"{self.NAMESPACE.get('inkscape')}label")
-                province.name = name
+
+            # TODO: (MAP) create province
+            province = Province(name, province_coordinates, province_type, False, set(), set(), None, None, None)
 
             provinces.add(province)
         return provinces
 
+    def _initialize_province_owners(self, provinces_data) -> None:
+        # TODO: (MAP) util funcs for getting SVG data
+        for province_data in provinces_data:
+            name = province_data.get(f"{self.NAMESPACE.get('inkscape')}label")
+            style = province_data.get("style").split(";")
+            for value in style:
+                prefix = "fill:#"
+                if value.startswith(prefix):
+                    color = value[len(prefix) :]
+                    owner = self.color_to_player[color]
+                    self.name_to_province[name].owner = owner
+                    break
+
     # Sets province names given the names layer
-    def _initialize_province_names(self, provinces: set[Province], names_data: list[Element]) -> None:
+    def _initialize_province_names(self, provinces: set[Province]) -> None:
         def get_coordinates(name_data: Element) -> tuple[float, float]:
             return float(name_data.get("x")), float(name_data.get("y"))
 
@@ -186,21 +205,18 @@ class Parser:
                 raise RuntimeError(f"Province already has name: {province.name}")
             province.name = name_data.findall(".//svg:tspan", namespaces=self.NAMESPACE)[0].text
 
-        initialize_province_resident_data(provinces, names_data, get_coordinates, set_province_name)
+        initialize_province_resident_data(provinces, self.names_data, get_coordinates, set_province_name)
 
-    def _initialize_supply_centers_assisted(self, provinces: dict[str, Province], centers_data: list[Element]) -> None:
-        for center_data in centers_data:
+    def _initialize_supply_centers_assisted(self) -> None:
+        for center_data in self.centers_data:
             province_name = center_data.get(f"{self.NAMESPACE.get('inkscape')}label")
-            province = provinces.get(province_name)
-            if not province:
-                raise RuntimeError(f"Cannot place center in non-existent province: {province_name}")
-            else:
-                if province.has_supply_center:
-                    raise RuntimeError(f"{province_name} already has a supply center")
-                province.has_supply_center = True
+            province = self.name_to_province[province_name]
+            if province.has_supply_center:
+                raise RuntimeError(f"{province_name} already has a supply center")
+            province.has_supply_center = True
 
     # Sets province supply center values
-    def _initialize_supply_centers(self, provinces: set[Province], centers_data: list[Element]) -> None:
+    def _initialize_supply_centers(self, provinces: set[Province]) -> None:
 
         def get_coordinates(supply_center_data: Element) -> tuple[float | None, float | None]:
             circles = supply_center_data.findall(".//svg:circle", namespaces=self.NAMESPACE)
@@ -219,7 +235,7 @@ class Parser:
                 raise RuntimeError(f"{province.name} already has a supply center")
             province.has_supply_center = True
 
-        initialize_province_resident_data(provinces, centers_data, get_coordinates, set_province_supply_center)
+        initialize_province_resident_data(provinces, self.centers_data, get_coordinates, set_province_supply_center)
 
     def _set_province_unit(self, province: Province, unit_data: Element) -> None:
         if province.unit:
@@ -242,18 +258,15 @@ class Parser:
 
         province.unit = unit
 
-    def _initialize_units_assisted(self, provinces: dict[str, Province], units_data: list[Element]) -> None:
-        for unit_data in units_data:
+    def _initialize_units_assisted(self) -> None:
+        for unit_data in self.units_data:
             province_name = unit_data.get(f"{self.NAMESPACE.get('inkscape')}label")
             # TODO: (MAP): hardcode the coast and don't error on it
-            province = provinces.get(province_name)
-            if not province:
-                raise RuntimeError(f"Cannot place unit in non-existent province: {province_name}")
-            else:
-                self._set_province_unit(province, unit_data)
+            province = self.name_to_province[province_name]
+            self._set_province_unit(province, unit_data)
 
     # Sets province unit values
-    def _initialize_units(self, provinces: set[Province], units_data: list[Element]) -> None:
+    def _initialize_units(self, provinces: set[Province]) -> None:
         def get_coordinates(unit_data: Element) -> tuple[float | None, float | None]:
             base_coordinates = (
                 unit_data.findall(".//svg:path", namespaces=self.NAMESPACE)[0].get("d").split()[1].split(",")
@@ -264,7 +277,7 @@ class Parser:
                 float(base_coordinates[1]) + translation_coordinates[1],
             )
 
-        initialize_province_resident_data(provinces, units_data, get_coordinates, self._set_province_unit)
+        initialize_province_resident_data(provinces, self.units_data, get_coordinates, self._set_province_unit)
 
 
 # returns:
@@ -290,11 +303,9 @@ def _parse_path_command(
     elif command == "v":
         return base_coordinate, move_coordinate(former_coordinate, args[0], ignore_x=True)
     elif command == "z":
-        print("SVG command z should not be followed by any coordinates", file=sys.stderr)
-        return base_coordinate, former_coordinate
+        raise RuntimeError("SVG command z should not be followed by any coordinates")
     else:
-        print("Unknown SVG path command:", command, file=sys.stderr)
-        return base_coordinate, former_coordinate
+        raise RuntimeError(f"Unknown SVG path command: {command}")
 
 
 def move_coordinate(
