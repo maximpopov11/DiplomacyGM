@@ -103,22 +103,21 @@ class Parser:
 
         cheat_parsing.create_high_seas_and_sands(provinces, self.name_to_province)
 
-        # TODO: (MAP) assert all provinces have all attributes set
-
         return provinces
 
     def _get_province_coordinates(self) -> set[Province]:
-        land_provinces = self._create_provinces_type(self.land_data, ProvinceType.LAND)
-        island_provinces = self._create_provinces_type(self.island_data, ProvinceType.ISLAND)
-        sea_provinces = self._create_provinces_type(self.sea_data, ProvinceType.SEA)
+        # TODO: (BETA) don't hardcode translation
+        land_provinces = self._create_provinces_type(self.land_data, ProvinceType.LAND, (0.55420435, 18.5))
+        island_provinces = self._create_provinces_type(self.island_data, ProvinceType.ISLAND, (0, 0))
+        sea_provinces = self._create_provinces_type(self.sea_data, ProvinceType.SEA, (0, 0))
         return land_provinces.union(island_provinces).union(sea_provinces)
 
     # TODO: (BETA) can a library do all of this for us? more safety from needing to support wild SVG legal syntax
-    # TODO: (MAP) manage the layer transform (always translate?), hardcode for now?
     def _create_provinces_type(
         self,
         provinces_data: list[Element],
         province_type: ProvinceType,
+        translation: tuple[float, float],
     ) -> set[Province]:
         provinces = set()
         for province_data in provinces_data:
