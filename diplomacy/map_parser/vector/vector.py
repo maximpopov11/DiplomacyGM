@@ -36,15 +36,16 @@ class Parser:
         self.centers_data: list[Element] = map_data.xpath(f'//*[@id="{SUPPLY_CENTER_LAYER_ID}"]')[0].getchildren()
         self.units_data: list[Element] = map_data.xpath(f'//*[@id="{UNITS_LAYER_ID}"]')[0].getchildren()
 
-        self.name_to_province: dict[str, Province] = {}
         self.color_to_player: dict[str, Player | None] = {}
+        self.name_to_player: dict[str, Player] = {}
+        self.name_to_province: dict[str, Province] = {}
 
     def parse(self) -> Board:
-        # TODO: (MAP) create players, provinces, & units
         players = set()
         for name, color in player_to_color.items():
-            player = Player(name, color, None, None)
+            player = Player(name, color, set(), set())
             players.add(player)
+            self.name_to_player[name] = player
             self.color_to_player[color] = player
 
         self.color_to_player[NEUTRAL] = None
@@ -177,7 +178,6 @@ class Parser:
             if PROVINCE_FILLS_LABELED:
                 name = self._get_province_name(province_data)
 
-            # TODO: (MAP) create province
             province = Province(name, province_coordinates, province_type, False, set(), set(), None, None, None)
 
             provinces.add(province)
@@ -208,6 +208,10 @@ class Parser:
             if province.has_supply_center:
                 raise RuntimeError(f"{name} already has a supply center")
             province.has_supply_center = True
+
+            owner = province.owner
+            if owner:
+                owner.centers.add(province)
 
             # TODO: (BETA): we cheat assume core = owner if exists because capital center symbols work different
             core = province.owner
@@ -242,10 +246,11 @@ class Parser:
         if province.unit:
             raise RuntimeError(f"{province.name} already has a unit")
 
-        player = extract_value(
+        player_name = extract_value(
             unit_data.findall(".//svg:path", namespaces=self.NAMESPACE)[0].get("style"),
             "fill",
         )
+        player = self.name_to_player[player_name]
 
         num_sides = unit_data.findall(".//svg:path", namespaces=self.NAMESPACE)[0].get(
             "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides"
@@ -258,6 +263,7 @@ class Parser:
             raise RuntimeError(f"Unit has {num_sides} sides which does not match any unit definition.")
 
         province.unit = unit
+        unit.player.units.add(unit)
         return unit
 
     def _initialize_units_assisted(self) -> None:
