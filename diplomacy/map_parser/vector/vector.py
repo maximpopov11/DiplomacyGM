@@ -239,7 +239,7 @@ class Parser:
 
         initialize_province_resident_data(provinces, self.centers_data, get_coordinates, set_province_supply_center)
 
-    def _set_province_unit(self, province: Province, unit_data: Element) -> None:
+    def _set_province_unit(self, province: Province, unit_data: Element) -> Unit:
         if province.unit:
             raise RuntimeError(f"{province.name} already has a unit")
 
@@ -259,13 +259,27 @@ class Parser:
             raise RuntimeError(f"Unit has {num_sides} sides which does not match any unit definition.")
 
         province.unit = unit
+        return unit
 
     def _initialize_units_assisted(self) -> None:
         for unit_data in self.units_data:
             province_name = self._get_province_name(unit_data)
-            # TODO: (MAP): hardcode the coast and don't error on it
+
+            # manage coasts
+            coast_suffix: str | None = None
+            coast_names = {" nc", " sc", " ec", " wc"}
+            for coast_name in coast_names:
+                if province_name[len(province_name) - 3 :] == coast_name:
+                    province_name = province_name[: len(province_name) - 3]
+                    coast_suffix = coast_name
+
             province = self.name_to_province[province_name]
-            self._set_province_unit(province, unit_data)
+            unit = self._set_province_unit(province, unit_data)
+
+            if coast_suffix:
+                unit.coast = next(
+                    (coast for coast in province.coasts if coast.name == province_name + coast_suffix), None
+                )
 
     # Sets province unit values
     def _initialize_units(self, provinces: set[Province]) -> None:
