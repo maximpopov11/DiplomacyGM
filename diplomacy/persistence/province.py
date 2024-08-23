@@ -3,6 +3,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import TYPE_CHECKING
 
+from diplomacy.map_parser.vector.cheat_parsing import CHEAT_COASTS
+
 if TYPE_CHECKING:
     from diplomacy.persistence.player import Player
     from diplomacy.persistence.unit import Unit
@@ -58,23 +60,27 @@ class Province:
             # this is not a coastal province
             return set()
 
+        # TODO: (BETA) don't hardcode coasts
         coast_sets: list[set[Province]] = []
-        while sea_provinces:
-            coast_set: set[Province] = set()
-            to_parse: list[Province] = [next(iter(sea_provinces))]
-            while to_parse:
-                province = to_parse.pop()
-                sea_provinces.remove(province)
-                coast_set.add(province)
-                for adjacent in province.adjacent:
-                    if (
-                        adjacent in self.adjacent
-                        and adjacent.type is not ProvinceType.LAND
-                        and adjacent not in coast_set
-                        and adjacent not in to_parse
-                    ):
-                        to_parse.append(adjacent)
-            coast_sets.append(coast_set)
+        if CHEAT_COASTS:
+            coast_sets.append(sea_provinces)
+        else:
+            while sea_provinces:
+                coast_set: set[Province] = set()
+                to_parse: list[Province] = [next(iter(sea_provinces))]
+                while to_parse:
+                    province = to_parse.pop()
+                    sea_provinces.remove(province)
+                    coast_set.add(province)
+                    for adjacent in province.adjacent:
+                        if (
+                            adjacent in self.adjacent
+                            and adjacent.type is not ProvinceType.LAND
+                            and adjacent not in coast_set
+                            and adjacent not in to_parse
+                        ):
+                            to_parse.append(adjacent)
+                coast_sets.append(coast_set)
 
         for i, coast_set in enumerate(coast_sets):
             name = f"{self.name} coast #{i}"

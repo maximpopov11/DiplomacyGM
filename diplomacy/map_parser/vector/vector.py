@@ -7,6 +7,7 @@ from lxml import etree
 from scipy.spatial import cKDTree
 from shapely.geometry import Point, Polygon
 
+from diplomacy.map_parser.vector import cheat_parsing
 from diplomacy.map_parser.vector.config_player import player_to_color, NEUTRAL, BLANK_CENTER
 from diplomacy.map_parser.vector.config_svg import *
 from diplomacy.map_parser.vector.utils import extract_value, get_player
@@ -15,9 +16,6 @@ from diplomacy.persistence.phase import spring_moves
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, ProvinceType
 from diplomacy.persistence.unit import UnitType, Unit
-
-
-# TODO: (MAP) cheat on x-wrap, high seas/sands, complicated coasts (pyongyang), canals (cairo, cons)
 
 
 class Parser:
@@ -97,10 +95,13 @@ class Parser:
             province1.adjacent.add(province2)
             province2.adjacent.add(province1)
 
-        # TODO: (MAP) bug in getting coasts ex. Panama because we think Bay of Panama and Colon Ridge are adjacent
         # set coasts
         for province in provinces:
             province.set_coasts()
+        cheat_parsing.set_coasts(self.name_to_province)
+        cheat_parsing.set_canals(self.name_to_province)
+
+        cheat_parsing.create_high_seas_and_sands(provinces, self.name_to_province)
 
         # TODO: (MAP) assert all provinces have all attributes set
 
