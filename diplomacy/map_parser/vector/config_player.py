@@ -1,4 +1,5 @@
 NEUTRAL = "c6b7ab"
+BLANK_CENTER = "ffffff"
 
 player_to_color: dict[str, str] = {
     "Abyssinia": "a88080",

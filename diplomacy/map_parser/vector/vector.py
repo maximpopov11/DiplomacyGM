@@ -7,9 +7,9 @@ from lxml import etree
 from scipy.spatial import cKDTree
 from shapely.geometry import Point, Polygon
 
-from diplomacy.map_parser.vector.config_player import player_to_color, NEUTRAL
+from diplomacy.map_parser.vector.config_player import player_to_color, NEUTRAL, BLANK_CENTER
 from diplomacy.map_parser.vector.config_svg import *
-from diplomacy.map_parser.vector.utils import extract_value
+from diplomacy.map_parser.vector.utils import extract_value, get_player
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.phase import spring_moves
 from diplomacy.persistence.player import Player
@@ -48,7 +48,9 @@ class Parser:
             player = Player(name, color, None, None)
             players.add(player)
             self.color_to_player[color] = player
+
         self.color_to_player[NEUTRAL] = None
+        self.color_to_player[BLANK_CENTER] = None
 
         provinces = self._get_provinces()
 
@@ -74,7 +76,6 @@ class Parser:
         self._initialize_province_owners(self.land_data)
         self._initialize_province_owners(self.island_fill_data)
 
-        # TODO: (MAP) set core
         # set supply centers
         if CENTER_PROVINCES_LABELED:
             self._initialize_supply_centers_assisted()
@@ -185,14 +186,7 @@ class Parser:
     def _initialize_province_owners(self, provinces_data) -> None:
         for province_data in provinces_data:
             name = self._get_province_name(province_data)
-            style = province_data.get("style").split(";")
-            for value in style:
-                prefix = "fill:#"
-                if value.startswith(prefix):
-                    color = value[len(prefix) :]
-                    owner = self.color_to_player[color]
-                    self.name_to_province[name].owner = owner
-                    break
+            self.name_to_province[name].owner = get_player(province_data, self.color_to_player)
 
     # Sets province names given the names layer
     def _initialize_province_names(self, provinces: set[Province]) -> None:
@@ -208,11 +202,19 @@ class Parser:
 
     def _initialize_supply_centers_assisted(self) -> None:
         for center_data in self.centers_data:
-            province_name = self._get_province_name(center_data)
-            province = self.name_to_province[province_name]
+            name = self._get_province_name(center_data)
+            province = self.name_to_province[name]
+
             if province.has_supply_center:
-                raise RuntimeError(f"{province_name} already has a supply center")
+                raise RuntimeError(f"{name} already has a supply center")
             province.has_supply_center = True
+
+            # TODO: (BETA): we cheat assume core = owner if exists because capital center symbols work different
+            core = province.owner
+            if not core:
+                core_data = center_data.findall(".//svg:circle", namespaces=self.NAMESPACE)[1]
+                core = get_player(core_data, self.color_to_player)
+            province.core = core
 
     # Sets province supply center values
     def _initialize_supply_centers(self, provinces: set[Province]) -> None:

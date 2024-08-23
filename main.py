@@ -12,6 +12,7 @@ Parser().parse()
 # TODO: (ALPHA) if anything is slow, we can cache a lot of things locally
 # TODO: (ALPHA) update readme (how to use bot)
 # TODO: (ALPHA) conduct testing: test solo, test group, live game test
+# TODO: (ALPHA) me only command for editing all game map state without permanence restriction (ex. province adjacency)
 
 # TODO: (BETA) add requirements.txt
 # TODO: (BETA) clean up configs
