@@ -90,3 +90,6 @@ class Coast:
         """name should be "<province_name> coast #<x>" with unique <x> for each coast in this province"""
         self.name: str = name
         self.adjacent_seas: set[Province] = adjacent_seas
+
+    def __str__(self):
+        return self.name

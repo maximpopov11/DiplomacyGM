@@ -57,7 +57,6 @@ class Parser:
             if unit:
                 units.add(unit)
 
-        # TODO: (MAP) assert all province/player/unit values look correct
         return Board(players, provinces, units, {}, set(), spring_moves)
 
     def _get_provinces(self) -> set[Province]:
@@ -69,21 +68,6 @@ class Parser:
 
         for province in provinces:
             self.name_to_province[province.name] = province
-
-        self._initialize_province_owners(self.land_data)
-        self._initialize_province_owners(self.island_fill_data)
-
-        # set supply centers
-        if CENTER_PROVINCES_LABELED:
-            self._initialize_supply_centers_assisted()
-        else:
-            self._initialize_supply_centers(provinces)
-
-        # set units
-        if UNIT_PROVINCES_LABELED:
-            self._initialize_units_assisted()
-        else:
-            self._initialize_units(provinces)
 
         # set adjacencies
         # TODO: (BETA) province adjacency margin somtimes too high or too low, base it case by case on province size?
@@ -101,6 +85,21 @@ class Parser:
         cheat_parsing.set_canals(self.name_to_province)
 
         cheat_parsing.create_high_seas_and_sands(provinces, self.name_to_province)
+
+        self._initialize_province_owners(self.land_data)
+        self._initialize_province_owners(self.island_fill_data)
+
+        # set supply centers
+        if CENTER_PROVINCES_LABELED:
+            self._initialize_supply_centers_assisted()
+        else:
+            self._initialize_supply_centers(provinces)
+
+        # set units
+        if UNIT_PROVINCES_LABELED:
+            self._initialize_units_assisted()
+        else:
+            self._initialize_units(provinces)
 
         return provinces
 
@@ -280,18 +279,19 @@ class Parser:
 
             # manage coasts
             coast_suffix: str | None = None
-            coast_names = {" nc", " sc", " ec", " wc"}
+            coast_names = {" (nc)", " (sc)", " (ec)", " (wc)"}
             for coast_name in coast_names:
-                if province_name[len(province_name) - 3 :] == coast_name:
-                    province_name = province_name[: len(province_name) - 3]
-                    coast_suffix = coast_name
+                if province_name[len(province_name) - 5 :] == coast_name:
+                    province_name = province_name[: len(province_name) - 5]
+                    coast_suffix = coast_name[2:4]
+                    break
 
             province = self.name_to_province[province_name]
             unit = self._set_province_unit(province, unit_data)
 
             if coast_suffix:
                 unit.coast = next(
-                    (coast for coast in province.coasts if coast.name == province_name + coast_suffix), None
+                    (coast for coast in province.coasts if coast.name == f"{province_name} {coast_suffix}"), None
                 )
 
     # Sets province unit values

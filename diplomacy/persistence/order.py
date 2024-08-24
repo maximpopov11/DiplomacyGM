@@ -13,13 +13,13 @@ if TYPE_CHECKING:
 
 
 class Order:
-    def __init__(self):
-        pass
+    def __init__(self, player: Player):
+        self.player = player
 
 
 class UnitOrder(Order):
     def __init__(self, unit: Unit):
-        super().__init__()
+        super().__init__(unit.player)
         self.unit: Unit = unit
 
 
@@ -80,7 +80,7 @@ class RetreatDisband(UnitOrder):
 
 class Build(Order):
     def __init__(self, province: Province, unit_type: UnitType):
-        super().__init__()
+        super().__init__(province.owner)
         self.province: Province = province
         self.unit_type: UnitType = unit_type
 
@@ -93,7 +93,7 @@ class Disband(UnitOrder):
 def parse(message: str, player_restriction: Player | None, manager: Manager, server_id: int) -> str:
     board = manager.get_board(server_id)
 
-    valid: list[Order] = set()
+    valid: list[Order] = []
     invalid: list[tuple[str, Exception]] = []
     orders = str.splitlines(message)
     for order in orders:

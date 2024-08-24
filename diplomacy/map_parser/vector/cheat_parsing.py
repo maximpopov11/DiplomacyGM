@@ -32,10 +32,10 @@ def create_high_seas_and_sands(provinces: set[Province], name_to_province: dict[
             name_to_province["SAO3"],
             name_to_province["SAO4"],
             name_to_province["SAO5"],
-            name_to_province["Saragosso Sea"],
+            name_to_province["Saragasso Sea"],
             name_to_province["Bermuda"],
             name_to_province["Massachusetts Bay"],
-            name_to_province["St. Marguerite Bay"],
+            name_to_province["St. Marguerite Baie"],
             name_to_province["Strait of Belle Isle"],
             name_to_province["Labrador Sea"],
         },
@@ -65,7 +65,7 @@ def create_high_seas_and_sands(provinces: set[Province], name_to_province: dict[
             name_to_province["Mauritsstad"],
             name_to_province["St. Marcos Bay"],
             name_to_province["Guiana Current"],
-            name_to_province["Saragosso Sea"],
+            name_to_province["Saragasso Sea"],
         },
     )
     _set_adjacencies(
@@ -99,8 +99,8 @@ def create_high_seas_and_sands(provinces: set[Province], name_to_province: dict[
             name_to_province["Chukchi Sea"],
             name_to_province["North Equatorial Current"],
             name_to_province["Hawai'i"],
-            name_to_province["Belanga Ridge"],
-            name_to_province["Guatamala Basin"],
+            name_to_province["Berlanga Ridge"],
+            name_to_province["Guatemala Basin"],
             name_to_province["SPO1"],
             name_to_province["SPO2"],
             name_to_province["SPO3"],
@@ -167,11 +167,21 @@ def _set_adjacencies(
     num: int,
     adjacent_provinces: set[Province],
 ) -> None:
+    slots: list[Province] = []
     for i in range(1, num + 1):
-        province = name_to_province[name + str(i)]
+        slot = name_to_province[name + str(i)]
+        slots.append(slot)
+
+    for slot in slots:
         for adjacent in adjacent_provinces:
-            province.adjacent.add(adjacent)
-            adjacent.adjacent.add(province)
+            slot.adjacent.add(adjacent)
+            adjacent.adjacent.add(slot)
+
+        # should be adjacent to the other spaces in the high seas/sands
+        for slot2 in slots:
+            if slot != slot2:
+                slot.adjacent.add(slot2)
+                # the reciprocating adjacency will be added in another loop iteration
 
 
 def _create_high_province(
@@ -297,7 +307,7 @@ def set_coasts(name_to_province: dict[str, Province]) -> None:
                 name_to_province["Adriatic Sea"],
             },
             "wc": {
-                name_to_province["Liguirian Sea"],
+                name_to_province["Ligurian Sea"],
                 name_to_province["Tyrrhenian Sea"],
             },
         },
@@ -336,6 +346,7 @@ def set_canals(name_to_province: dict[str, Province]) -> None:
 
 
 def _set_coasts(province: Province, name_to_adjacent: dict[str, set[Province]]):
-    for name, adjacent in name_to_adjacent:
+    province.coasts = set()
+    for name, adjacent in name_to_adjacent.items():
         coast = Coast(f"{province.name} {name}", adjacent)
         province.coasts.add(coast)
