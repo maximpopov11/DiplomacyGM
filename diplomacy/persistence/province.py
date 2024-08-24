@@ -3,8 +3,6 @@ from __future__ import annotations
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from diplomacy.map_parser.vector.cheat_parsing import CHEAT_COASTS
-
 if TYPE_CHECKING:
     from diplomacy.persistence.player import Player
     from diplomacy.persistence.unit import Unit
@@ -62,7 +60,7 @@ class Province:
 
         # TODO: (BETA) don't hardcode coasts
         coast_sets: list[set[Province]] = []
-        if CHEAT_COASTS:
+        if True:
             coast_sets.append(sea_provinces)
         else:
             while sea_provinces:

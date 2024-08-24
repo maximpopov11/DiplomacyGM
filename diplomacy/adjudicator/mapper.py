@@ -1,3 +1,5 @@
+import svgwrite
+
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.player import Player
 
@@ -7,6 +9,11 @@ class Mapper:
         self.board: Board = board
 
     def get_moves_map(self, player_restriction: Player | None) -> str:
+        drawing = svgwrite.Drawing("test.svg")
+        cx, cy, r = 100, 100, 50
+        drawing.add(drawing.circle(center=(cx, cy), r=r, fill="red"))
+        drawing.save()
+
         # TODO: (MAP) check player restriction (to limit what orders are drawn)
         # TODO: (MAP) copy SVG
         # TODO: (MAP) draw orders

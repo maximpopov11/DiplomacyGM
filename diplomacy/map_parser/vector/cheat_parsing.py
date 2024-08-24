@@ -4,8 +4,6 @@ from diplomacy.persistence.province import Province, Coast, ProvinceType
 # TODO: (BETA) don't use any of the cheats
 # We are not yet perfect when parsing the map. This file is a temporary hard-coded cheat to get around that.
 
-CHEAT_COASTS = True
-
 
 # Create high seas and sands provinces
 def create_high_seas_and_sands(provinces: set[Province], name_to_province: dict[str, Province]) -> None:
