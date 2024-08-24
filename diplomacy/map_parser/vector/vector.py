@@ -10,7 +10,7 @@ from shapely.geometry import Point, Polygon
 from diplomacy.map_parser.vector import cheat_parsing
 from diplomacy.map_parser.vector.config_player import player_to_color, NEUTRAL, BLANK_CENTER
 from diplomacy.map_parser.vector.config_svg import *
-from diplomacy.map_parser.vector.utils import extract_value, get_player
+from diplomacy.map_parser.vector.utils import get_player
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.phase import spring_moves
 from diplomacy.persistence.player import Player
@@ -37,7 +37,6 @@ class Parser:
         self.units_data: list[Element] = map_data.xpath(f'//*[@id="{UNITS_LAYER_ID}"]')[0].getchildren()
 
         self.color_to_player: dict[str, Player | None] = {}
-        self.name_to_player: dict[str, Player] = {}
         self.name_to_province: dict[str, Province] = {}
 
     def parse(self) -> Board:
@@ -45,7 +44,6 @@ class Parser:
         for name, color in player_to_color.items():
             player = Player(name, color, set(), set())
             players.add(player)
-            self.name_to_player[name] = player
             self.color_to_player[color] = player
 
         self.color_to_player[NEUTRAL] = None
@@ -246,22 +244,32 @@ class Parser:
         if province.unit:
             raise RuntimeError(f"{province.name} already has a unit")
 
-        player_name = extract_value(
-            unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get("style"),
-            "fill",
+        x: str = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get(
+            "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cx"
         )
-        player = self.name_to_player[player_name]
+        y: str = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get(
+            "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cy"
+        )
+        r: str = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get(
+            "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}r2"
+        )
+        coordinate: tuple[float, float] = (float(x), float(y))
+        radius = float(r)
 
         num_sides = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get(
             "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides"
         )
         if num_sides == "3":
-            unit = Unit(UnitType.ARMY, player, province)
+            unit_type = UnitType.ARMY
         elif num_sides == "6":
-            unit = Unit(UnitType.FLEET, player, province)
+            unit_type = UnitType.FLEET
         else:
             raise RuntimeError(f"Unit has {num_sides} sides which does not match any unit definition.")
 
+        color_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
+        player = get_player(color_data, self.color_to_player)
+
+        unit = Unit(coordinate, radius, unit_type, player, province)
         province.unit = unit
         unit.player.units.add(unit)
         return unit

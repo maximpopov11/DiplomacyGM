@@ -14,7 +14,17 @@ class UnitType(Enum):
 
 
 class Unit:
-    def __init__(self, unit_type: UnitType, player: Player, province: Province):
+    def __init__(
+        self,
+        coordinate: tuple[float, float],
+        radius: float,
+        unit_type: UnitType,
+        player: Player,
+        province: Province,
+    ):
+        self.coordinate: tuple[float, float] = coordinate
+        self.radius: float = radius
+
         self.unit_type: UnitType = unit_type
         self.player: Player = player
         self.province: Province = province
