@@ -1,5 +1,6 @@
-import svgwrite
+from lxml import etree
 
+from diplomacy.map_parser.vector.config_svg import SVG_PATH
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.player import Player
 
@@ -9,10 +10,19 @@ class Mapper:
         self.board: Board = board
 
     def get_moves_map(self, player_restriction: Player | None) -> str:
-        drawing = svgwrite.Drawing("test.svg")
-        cx, cy, r = 100, 100, 50
-        drawing.add(drawing.circle(center=(cx, cy), r=r, fill="red"))
-        drawing.save()
+        map_data = etree.parse(SVG_PATH)
+        element = map_data.getroot()
+        circle = etree.Element(
+            "circle",
+            {
+                "cx": "1000",  # X-coordinate of the center
+                "cy": "1000",  # Y-coordinate of the center
+                "r": "1000",  # Radius
+                "fill": "red",  # Fill color
+            },
+        )
+        element.append(circle)
+        map_data.write("modified.svg")
 
         # TODO: (MAP) check player restriction (to limit what orders are drawn)
         # TODO: (MAP) copy SVG

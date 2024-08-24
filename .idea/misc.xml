@@ -5,7 +5,7 @@
     <option name="enabledOnReformat" value="true" />
     <option name="enabledOnSave" value="true" />
     <option name="pathToExecutable" value="$USER_HOME$/anaconda3/bin/black" />
-    <option name="sdkName" value="Python 3.9 (DiplomacyGM)" />
+    <option name="sdkName" value="Python 3.12 (DiplomacyGM)" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 (DiplomacyGM)" project-jdk-type="Python SDK" />
   <component name="PyCharmProfessionalAdvertiser">

@@ -17,16 +17,16 @@ from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, ProvinceType
 from diplomacy.persistence.unit import UnitType, Unit
 
+# TODO: (BETA) consistent in bracket formatting
+NAMESPACE: dict[str, str] = {
+    "inkscape": "{http://www.inkscape.org/namespaces/inkscape}",
+    "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd",
+    "svg": "http://www.w3.org/2000/svg",
+}
+
 
 class Parser:
     def __init__(self):
-        # TODO: (BETA) consistent in bracket formatting
-        self.NAMESPACE: dict[str, str] = {
-            "inkscape": "{http://www.inkscape.org/namespaces/inkscape}",
-            "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd",
-            "svg": "http://www.w3.org/2000/svg",
-        }
-
         map_data = etree.parse(SVG_PATH)
         self.land_data: list[Element] = map_data.xpath(f'//*[@id="{LAND_PROVINCE_LAYER_ID}"]')[0].getchildren()
         self.island_data: list[Element] = map_data.xpath(f'//*[@id="{ISLAND_PROVINCE_LAYER_ID}"]')[0].getchildren()
@@ -196,7 +196,7 @@ class Parser:
         def set_province_name(province: Province, name_data: Element) -> None:
             if province.name is not None:
                 raise RuntimeError(f"Province already has name: {province.name}")
-            province.name = name_data.findall(".//svg:tspan", namespaces=self.NAMESPACE)[0].text
+            province.name = name_data.findall(".//svg:tspan", namespaces=NAMESPACE)[0].text
 
         initialize_province_resident_data(provinces, self.names_data, get_coordinates, set_province_name)
 
@@ -216,7 +216,7 @@ class Parser:
             # TODO: (BETA): we cheat assume core = owner if exists because capital center symbols work different
             core = province.owner
             if not core:
-                core_data = center_data.findall(".//svg:circle", namespaces=self.NAMESPACE)[1]
+                core_data = center_data.findall(".//svg:circle", namespaces=NAMESPACE)[1]
                 core = get_player(core_data, self.color_to_player)
             province.core = core
 
@@ -224,7 +224,7 @@ class Parser:
     def _initialize_supply_centers(self, provinces: set[Province]) -> None:
 
         def get_coordinates(supply_center_data: Element) -> tuple[float | None, float | None]:
-            circles = supply_center_data.findall(".//svg:circle", namespaces=self.NAMESPACE)
+            circles = supply_center_data.findall(".//svg:circle", namespaces=NAMESPACE)
             if not circles:
                 return None, None
             circle = circles[0]
@@ -247,12 +247,12 @@ class Parser:
             raise RuntimeError(f"{province.name} already has a unit")
 
         player_name = extract_value(
-            unit_data.findall(".//svg:path", namespaces=self.NAMESPACE)[0].get("style"),
+            unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get("style"),
             "fill",
         )
         player = self.name_to_player[player_name]
 
-        num_sides = unit_data.findall(".//svg:path", namespaces=self.NAMESPACE)[0].get(
+        num_sides = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get(
             "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides"
         )
         if num_sides == "3":
@@ -289,9 +289,7 @@ class Parser:
     # Sets province unit values
     def _initialize_units(self, provinces: set[Province]) -> None:
         def get_coordinates(unit_data: Element) -> tuple[float | None, float | None]:
-            base_coordinates = (
-                unit_data.findall(".//svg:path", namespaces=self.NAMESPACE)[0].get("d").split()[1].split(",")
-            )
+            base_coordinates = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get("d").split()[1].split(",")
             translation_coordinates = _get_translation_coordinates(unit_data)
             return (
                 float(base_coordinates[0]) + translation_coordinates[0],
@@ -301,7 +299,7 @@ class Parser:
         initialize_province_resident_data(provinces, self.units_data, get_coordinates, self._set_province_unit)
 
     def _get_province_name(self, province_data: Element) -> str:
-        return province_data.get(f"{self.NAMESPACE.get('inkscape')}label")
+        return province_data.get(f"{NAMESPACE.get('inkscape')}label")
 
 
 # returns:
