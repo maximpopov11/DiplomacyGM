@@ -3,7 +3,7 @@ from diplomacy.map_parser.vector.vector import Parser
 
 # bot.run()
 
-Parser().parse()
+# Parser().parse()
 
 Mapper(None).get_moves_map(None)
 
