@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from diplomacy.persistence.phase import is_moves_phase, is_retreats_phase, is_adjustments_phase
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.province import Province
+from diplomacy.persistence.province import Province, Location, Coast
 from diplomacy.persistence.unit import Unit, UnitType
 
 if TYPE_CHECKING:
@@ -42,35 +42,35 @@ class Core(UnitOrder):
 
 
 class Move(UnitOrder):
-    def __init__(self, unit: Unit, destination: Province):
+    def __init__(self, unit: Unit, destination: Location):
         super().__init__(unit)
-        self.destination: Province = destination
+        self.destination: Location = destination
 
 
 class ConvoyMove(UnitOrder):
-    def __init__(self, unit: Unit, destination: Province):
+    def __init__(self, unit: Unit, destination: Location):
         super().__init__(unit)
-        self.destination: Province = destination
+        self.destination: Location = destination
 
 
 class ConvoyTransport(ComplexOrder):
-    def __init__(self, unit: Unit, source: Unit, destination: Province):
+    def __init__(self, unit: Unit, source: Unit, destination: Location):
         assert unit.unit_type == UnitType.FLEET, "Convoying unit must be a fleet."
         assert source.unit_type == UnitType.ARMY, "Convoyed unit must be an army."
         super().__init__(unit, source)
-        self.destination: Province = destination
+        self.destination: Location = destination
 
 
 class Support(ComplexOrder):
-    def __init__(self, unit: Unit, source: Unit, destination: Province):
+    def __init__(self, unit: Unit, source: Unit, destination: Location):
         super().__init__(unit, source)
-        self.destination: Province = destination
+        self.destination: Location = destination
 
 
 class RetreatMove(UnitOrder):
-    def __init__(self, unit: Unit, destination: Province):
+    def __init__(self, unit: Unit, destination: Location):
         super().__init__(unit)
-        self.destination: Province = destination
+        self.destination: Location = destination
 
 
 class RetreatDisband(UnitOrder):
@@ -79,9 +79,9 @@ class RetreatDisband(UnitOrder):
 
 
 class Build(Order):
-    def __init__(self, province: Province, unit_type: UnitType):
+    def __init__(self, province: Location, unit_type: UnitType):
         super().__init__(province.owner)
-        self.province: Province = province
+        self.province: Location = province
         self.unit_type: UnitType = unit_type
 
 
@@ -143,25 +143,25 @@ order_dict = {
 def _parse_order(order: str, player_restriction: Player, board: Board) -> Order:
     order = order.lower()
 
-    parsed_provinces = _parse_provinces(order, board.provinces)
-    province0 = parsed_provinces[0]
-    province1 = parsed_provinces[1]
-    province2 = parsed_provinces[2]
+    parsed_locations = _parse_locations(order, board.provinces)
+    location0 = parsed_locations[0]
+    location1 = parsed_locations[1]
+    location2 = parsed_locations[2]
 
-    unit1 = province0.unit
+    unit1 = _get_unit(location0)
     if not unit1:
-        raise RuntimeError(f"There is no unit in {province0.name}.")
-    unit2 = province1.unit
+        raise RuntimeError(f"There is no unit in {location0.name}.")
+    unit2 = _get_unit(location1)
 
     player = unit1.player
     if player_restriction is not None and player != player_restriction:
         raise PermissionError(
-            f"You, {player_restriction.name}, do not have permissions to order the unit in {province0.name} which "
+            f"You, {player_restriction.name}, do not have permissions to order the unit in {location0.name} which "
             f"belongs to {player.name}"
         )
 
     if "via" in order and "convoy" in order:
-        return ConvoyMove(unit1, province1)
+        return ConvoyMove(unit1, location1)
 
     if is_moves_phase(board.phase):
         for keyword in hold:
@@ -174,19 +174,19 @@ def _parse_order(order: str, player_restriction: Player, board: Board) -> Order:
 
         for keyword in move:
             if keyword in order:
-                return Move(unit1, province1)
+                return Move(unit1, location1)
 
         for keyword in support:
             if keyword in order:
-                return Support(unit1, unit2, province2)
+                return Support(unit1, unit2, location2)
 
         for keyword in convoy:
             if keyword in order:
-                return ConvoyTransport(unit1, unit2, province2)
+                return ConvoyTransport(unit1, unit2, location2)
     elif is_retreats_phase(board.phase):
         for keyword in retreat_move:
             if keyword in order:
-                return RetreatMove(unit1, province1)
+                return RetreatMove(unit1, location1)
 
         for keyword in retreat_disband:
             if keyword in order:
@@ -204,7 +204,7 @@ def _parse_order(order: str, player_restriction: Player, board: Board) -> Order:
                         break
                 if not unit_type:
                     raise ValueError(f"Unit type not found.")
-                return Build(province1, unit_type)
+                return Build(location1, unit_type)
 
         for keyword in disband:
             if keyword in order:
@@ -216,10 +216,39 @@ def _parse_order(order: str, player_restriction: Player, board: Board) -> Order:
 
 
 # TODO: (ALPHA) people will misspell provinces, use a library to find the near hits
-def _parse_provinces(order: str, all_provinces: set[Province]) -> list[Province]:
+def _parse_locations(order: str, all_provinces: set[Province]) -> list[Location]:
     name_to_province = {province.name.lower(): province for province in all_provinces}
-    provinces = []
+
+    locations: list[Location] = []
     for word in order:
         if word in name_to_province:
-            provinces.append(name_to_province[word])
-    return provinces
+            province = name_to_province[word]
+            coast = _get_coast(order, province)
+            if coast:
+                locations.append(coast)
+            else:
+                locations.append(province)
+
+    return locations
+
+
+def _get_coast(order: str, province: Province) -> Coast | None:
+    if "nc" in order or "north coast" in order:
+        return next((coast for coast in province.coasts if coast.name == f"{province.name} nc"), None)
+    elif "sc" in order or "south coast" in order:
+        return next((coast for coast in province.coasts if coast.name == f"{province.name} sc"), None)
+    elif "ec" in order or "east coast" in order:
+        return next((coast for coast in province.coasts if coast.name == f"{province.name} ec"), None)
+    elif "wc" in order or "west coast" in order:
+        return next((coast for coast in province.coasts if coast.name == f"{province.name} wc"), None)
+    else:
+        return None
+
+
+def _get_unit(location: Location) -> Unit | None:
+    if isinstance(location, Province):
+        return location.unit
+    elif isinstance(location, Coast):
+        return location.province.unit
+    else:
+        raise RuntimeError(f"Location is neither a province nor a coast: {location.__class__}")

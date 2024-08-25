@@ -362,5 +362,5 @@ def set_canals(name_to_province: dict[str, Province]) -> None:
 def _set_coasts(province: Province, name_to_adjacent: dict[str, set[Province]]):
     province.coasts = set()
     for name, adjacent in name_to_adjacent.items():
-        coast = Coast(f"{province.name} {name}", None, None, adjacent)
+        coast = Coast(f"{province.name} {name}", None, None, None, adjacent, province)
         province.coasts.add(coast)

@@ -8,13 +8,27 @@ if TYPE_CHECKING:
     from diplomacy.persistence.unit import Unit
 
 
+class Location:
+    def __init__(
+        self,
+        name: str,
+        primary_unit_coordinate: tuple[float, float],
+        retreat_unit_coordinate: tuple[float, float],
+        owner: Player | None,
+    ):
+        self.name: str = name
+        self.primary_unit_coordinate: tuple[float, float] = primary_unit_coordinate
+        self.retreat_unit_coordinate: tuple[float, float] = retreat_unit_coordinate
+        self.owner: Player | None = owner
+
+
 class ProvinceType(Enum):
     LAND = 1
     ISLAND = 2
     SEA = 3
 
 
-class Province:
+class Province(Location):
     def __init__(
         self,
         name: str,
@@ -29,17 +43,14 @@ class Province:
         owner: Player | None,
         unit: Unit | None,
     ):
-        self.name: str = name
+        super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate, owner)
         self.coordinates: list[tuple[float, float]] = coordinates
-        self.primary_unit_coordinate: tuple[float, float] = primary_unit_coordinate
-        self.retreat_unit_coordinate: tuple[float, float] = retreat_unit_coordinate
         self.type: ProvinceType = province_type
         self.has_supply_center: bool = has_supply_center
         self.adjacent: set[Province] = adjacent
         self.coasts: set[Coast] = coasts
         self.core: Player | None = core
         self.half_core: Player | None = None
-        self.owner: Player | None = owner
         self.unit: Unit | None = unit
         self.dislodged_unit: Unit | None = None
 
@@ -86,22 +97,23 @@ class Province:
 
         for i, coast_set in enumerate(coast_sets):
             name = f"{self.name} coast #{i}"
-            self.coasts.add(Coast(name, None, None, coast_set))
+            self.coasts.add(Coast(name, None, None, self.owner, coast_set, self))
 
 
-class Coast:
+class Coast(Location):
     def __init__(
         self,
         name: str,
         primary_unit_coordinate: tuple[float, float],
         retreat_unit_coordinate: tuple[float, float],
+        owner: Player,
         adjacent_seas: set[Province],
+        province: Province,
     ):
         """name should be "<province_name> coast #<x>" with unique <x> for each coast in this province"""
-        self.name: str = name
-        self.primary_unit_coordinate: tuple[float, float] = primary_unit_coordinate
-        self.retreat_unit_coordinate: tuple[float, float] = retreat_unit_coordinate
+        super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate, owner)
         self.adjacent_seas: set[Province] = adjacent_seas
+        self.province: Province = province
 
     def __str__(self):
         return self.name
