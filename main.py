@@ -2,8 +2,11 @@ from diplomacy.adjudicator.mapper import Mapper
 from diplomacy.map_parser.vector.vector import Parser
 from diplomacy.persistence import order
 from diplomacy.persistence.unit import UnitType
+from test.utils import test
 
 # bot.run()
+
+test()
 
 board = Parser().parse()
 

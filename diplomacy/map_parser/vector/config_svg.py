@@ -1,6 +1,8 @@
+from consts import ROOT_DIR
+
 # SVG map path
 # Province border coordinates must be relative to the last coordinate and in the format x,y in the path string.
-SVG_PATH: str = "assets/imperial_diplomacy.svg"
+SVG_PATH: str = f"{ROOT_DIR}/assets/imperial_diplomacy.svg"
 
 # You can find the following in the SVG file. If you are using Inkscape, you will likely find id="..." next to
 # inkscape:groupmode="layer" and inkscape:label="...", the latter of which may describe which of the following (if any)
