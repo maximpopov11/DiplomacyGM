@@ -302,6 +302,7 @@ class Parser:
         initialize_province_resident_data(provinces, self.units_data, get_coordinates, self._set_province_unit)
 
     def _set_phantom_unit_coordinates(self) -> None:
+        # TODO: (MAP) bug: all of our phantom units also have a matrix transform (all the same)
         for primary_data in self.phantom_primary_armies_data:
             # TODO: (BETA) don't hard code the translation
             translation = (0.55420435, 18.5)
