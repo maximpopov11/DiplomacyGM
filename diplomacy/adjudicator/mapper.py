@@ -46,7 +46,7 @@ class Mapper:
 
     def _draw_hold(self, order: Hold) -> None:
         element = self.svg.getroot()
-        drawn_order = etree.Element(
+        drawn_order = _create_element(
             "circle",
             {
                 "cx": order.unit.coordinate[0],
@@ -61,7 +61,7 @@ class Mapper:
 
     def _draw_core(self, order: Core) -> None:
         element = self.svg.getroot()
-        drawn_order = etree.Element(
+        drawn_order = _create_element(
             "rect",
             {
                 "x": order.unit.coordinate[0] - order.unit.radius * 1.2,
@@ -78,7 +78,7 @@ class Mapper:
 
     def _draw_move(self, order: Move | ConvoyMove | RetreatMove) -> None:
         element = self.svg.getroot()
-        drawn_order = etree.Element(
+        drawn_order = _create_element(
             "line",
             {
                 "x1": order.unit.coordinate[0],
@@ -101,7 +101,7 @@ class Mapper:
         x3 = order.destination.primary_unit_coordinate[0]
         y3 = order.destination.primary_unit_coordinate[1]
         path = f"M {x1},{y1} {x2},{y2} {x3},{y3}"
-        drawn_order = etree.Element(
+        drawn_order = _create_element(
             "path",
             {
                 "d": path,
@@ -121,7 +121,7 @@ class Mapper:
         x3 = order.destination.primary_unit_coordinate[0]
         y3 = order.destination.primary_unit_coordinate[1]
         path = f"M {x1},{y1} {x2},{y2} {x3},{y3}"
-        drawn_order = etree.Element(
+        drawn_order = _create_element(
             "path",
             {
                 "d": path,
@@ -134,7 +134,7 @@ class Mapper:
 
     def _draw_build(self, order: Build) -> None:
         element = self.svg.getroot()
-        drawn_order = etree.Element(
+        drawn_order = _create_element(
             "circle",
             {
                 "cx": order.province.primary_unit_coordinate[0],
@@ -149,7 +149,7 @@ class Mapper:
 
     def _draw_disband(self, order: RetreatDisband | Disband) -> None:
         element = self.svg.getroot()
-        drawn_order = etree.Element(
+        drawn_order = _create_element(
             "circle",
             {
                 "cx": order.unit.coordinate[0],
@@ -167,23 +167,28 @@ class Mapper:
         # TODO: (MAP) draw arrowhead for move, convoy, support
         if isinstance(order, Hold):
             self._draw_hold(order)
-        if isinstance(order, Core):
+        elif isinstance(order, Core):
             self._draw_core(order)
-        if isinstance(order, Move):
+        elif isinstance(order, Move):
             self._draw_move(order)
-        if isinstance(order, ConvoyMove):
+        elif isinstance(order, ConvoyMove):
             self._draw_move(order)
-        if isinstance(order, Support):
+        elif isinstance(order, Support):
             self._draw_support(order)
-        if isinstance(order, ConvoyTransport):
+        elif isinstance(order, ConvoyTransport):
             self._draw_convoy(order)
-        if isinstance(order, RetreatMove):
+        elif isinstance(order, RetreatMove):
             self._draw_move(order)
-        if isinstance(order, RetreatDisband):
+        elif isinstance(order, RetreatDisband):
             self._draw_disband(order)
-        if isinstance(order, Build):
+        elif isinstance(order, Build):
             self._draw_build(order)
-        if isinstance(order, Disband):
+        elif isinstance(order, Disband):
             self._draw_disband(order)
         else:
             raise RuntimeError(f"Unknown order type: {order.__class__}")
+
+
+def _create_element(tag: str, attributes: dict[str, any]) -> etree.Element:
+    attributes_str = {key: str(val) for key, val in attributes.items()}
+    return etree.Element(tag, attributes_str)

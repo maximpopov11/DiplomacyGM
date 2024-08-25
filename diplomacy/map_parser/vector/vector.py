@@ -303,22 +303,41 @@ class Parser:
 
     def _set_phantom_unit_coordinates(self) -> None:
         for primary_data in self.phantom_primary_armies_data:
+            # TODO: (BETA) don't hard code the translation
+            translation = (0.55420435, 18.5)
             province = self._get_province(primary_data)
-            province.primary_unit_coordinate = self._get_phantom_unit_coordinate(primary_data)
+            province.primary_unit_coordinate = self._get_phantom_unit_coordinate(primary_data, translation)
         for retreat_data in self.phantom_retreat_armies_data:
+            # TODO: (BETA) don't hard code the translation
+            translation = (0.55420435, 18.5)
             province = self._get_province(retreat_data)
-            province.retreat_unit_coordinate = self._get_phantom_unit_coordinate(retreat_data)
+            province.retreat_unit_coordinate = self._get_phantom_unit_coordinate(retreat_data, translation)
         for primary_data in self.phantom_primary_fleets_data:
+            # This might be a sea province or it might be a land coast
             province_name = self._get_province_name(primary_data)
-            _, coast = self._get_province_and_coast(province_name)
-            coast.primary_unit_coordinate = self._get_phantom_unit_coordinate(primary_data)
+            province, coast = self._get_province_and_coast(province_name)
+            coordinate = self._get_phantom_unit_coordinate(primary_data)
+            if coast:
+                coast.primary_unit_coordinate = coordinate
+            else:
+                province.primary_unit_coordinate = coordinate
         for retreat_data in self.phantom_retreat_fleets_data:
+            # This might be a sea province or it might be a land coast
             province_name = self._get_province_name(retreat_data)
-            _, coast = self._get_province_and_coast(province_name)
-            coast.retreat_unit_coordinate = self._get_phantom_unit_coordinate(retreat_data)
+            province, coast = self._get_province_and_coast(province_name)
+            coordinate = self._get_phantom_unit_coordinate(retreat_data)
+            if coast:
+                coast.retreat_unit_coordinate = coordinate
+            else:
+                province.retreat_unit_coordinate = coordinate
 
-    def _get_phantom_unit_coordinate(self, phantom_data: Element) -> tuple[float, float]:
-        translation = get_translation(phantom_data)
+    def _get_phantom_unit_coordinate(
+        self,
+        phantom_data: Element,
+        layer_translation: tuple[float, float] = (0, 0),
+    ) -> tuple[float, float]:
+        unit_translation = get_translation(phantom_data)
+        translation = (layer_translation[0] + unit_translation[0], layer_translation[1] + unit_translation[1])
         path: Element = phantom_data.find("{http://www.w3.org/2000/svg}path")
         coordinate, _ = _get_unit_coordinates_and_radius(path, translation)
         return coordinate

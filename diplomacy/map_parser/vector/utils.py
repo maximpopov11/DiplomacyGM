@@ -20,9 +20,9 @@ def get_player(element: Element, color_to_player: dict[str, Player]) -> Player:
 def _get_unit_type(unit_data: Element) -> UnitType:
     num_sides = unit_data.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides")
     if num_sides == "3":
-        return UnitType.ARMY
-    elif num_sides == "6":
         return UnitType.FLEET
+    elif num_sides == "6":
+        return UnitType.ARMY
     else:
         raise RuntimeError(f"Unit has {num_sides} sides which does not match any unit definition.")
 
@@ -44,7 +44,9 @@ def get_translation(element: Element) -> tuple[float, float]:
     string = element.get("transform")
     prefix = "translate("
     if not string.startswith(prefix):
-        raise RuntimeError(f"Translation transform expected, got: {string}")
+        # TODO: (ALPHA) debug: translation is matrix not transform in select few cases
+        # raise RuntimeError(f"Translation transform expected, got: {string}")
+        return (0, 0)
 
     string = string[len(prefix) : len(string) - 1]
     nums: list[string] = string.split(",")
