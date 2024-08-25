@@ -193,7 +193,21 @@ def _create_high_province(
 ) -> None:
     high_provinces = []
     for i in range(1, num + 1):
-        high_provinces.append(Province(name + str(i), [], province_type, False, set(), set(), None, None, None))
+        high_provinces.append(
+            Province(
+                name + str(i),
+                [],
+                None,
+                None,
+                province_type,
+                False,
+                set(),
+                set(),
+                None,
+                None,
+                None,
+            )
+        )
 
     provinces.union(high_provinces)
     for province in high_provinces:
@@ -348,5 +362,5 @@ def set_canals(name_to_province: dict[str, Province]) -> None:
 def _set_coasts(province: Province, name_to_adjacent: dict[str, set[Province]]):
     province.coasts = set()
     for name, adjacent in name_to_adjacent.items():
-        coast = Coast(f"{province.name} {name}", adjacent)
+        coast = Coast(f"{province.name} {name}", None, None, adjacent)
         province.coasts.add(coast)

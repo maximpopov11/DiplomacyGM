@@ -19,6 +19,8 @@ class Province:
         self,
         name: str,
         coordinates: list[tuple[float, float]],
+        primary_unit_coordinate: tuple[float, float],
+        retreat_unit_coordinate: tuple[float, float],
         province_type: ProvinceType,
         has_supply_center: bool,
         adjacent: set[Province],
@@ -29,6 +31,8 @@ class Province:
     ):
         self.name: str = name
         self.coordinates: list[tuple[float, float]] = coordinates
+        self.primary_unit_coordinate: tuple[float, float] = primary_unit_coordinate
+        self.retreat_unit_coordinate: tuple[float, float] = retreat_unit_coordinate
         self.type: ProvinceType = province_type
         self.has_supply_center: bool = has_supply_center
         self.adjacent: set[Province] = adjacent
@@ -82,13 +86,21 @@ class Province:
 
         for i, coast_set in enumerate(coast_sets):
             name = f"{self.name} coast #{i}"
-            self.coasts.add(Coast(name, coast_set))
+            self.coasts.add(Coast(name, None, None, coast_set))
 
 
 class Coast:
-    def __init__(self, name: str, adjacent_seas: set[Province]):
+    def __init__(
+        self,
+        name: str,
+        primary_unit_coordinate: tuple[float, float],
+        retreat_unit_coordinate: tuple[float, float],
+        adjacent_seas: set[Province],
+    ):
         """name should be "<province_name> coast #<x>" with unique <x> for each coast in this province"""
         self.name: str = name
+        self.primary_unit_coordinate: tuple[float, float] = primary_unit_coordinate
+        self.retreat_unit_coordinate: tuple[float, float] = retreat_unit_coordinate
         self.adjacent_seas: set[Province] = adjacent_seas
 
     def __str__(self):

@@ -23,6 +23,9 @@ SUPPLY_CENTER_LAYER_ID: str = "layer3"
 # Layer group in SVG containing units
 UNITS_LAYER_ID: str = "layer10"
 
+# Layer group in SVG containing phantom units for optimal unit placements
+PHANTOM_UNIT_LAYER_ID: str = "layer15"
+
 # If the province fills are labeled directly on the SVG we can guarantee 100% accuracy on naming the provinces
 PROVINCE_FILLS_LABELED: bool = True
 # If the center provinces are labeled directly on the SVG we can guarantee 100% accuracy on matching center to province

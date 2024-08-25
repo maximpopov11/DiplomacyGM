@@ -3,9 +3,8 @@ from diplomacy.map_parser.vector.vector import Parser
 
 # bot.run()
 
-Parser().parse()
-
-Mapper(None).get_moves_map(None)
+board = Parser().parse()
+Mapper(board).get_moves_map(None)
 
 # TODO: priorities: (MAP), (DB), (ALPHA), (BETA)
 

@@ -10,12 +10,12 @@ from shapely.geometry import Point, Polygon
 from diplomacy.map_parser.vector import cheat_parsing
 from diplomacy.map_parser.vector.config_player import player_to_color, NEUTRAL, BLANK_CENTER
 from diplomacy.map_parser.vector.config_svg import *
-from diplomacy.map_parser.vector.utils import get_player
+from diplomacy.map_parser.vector.utils import get_player, _get_unit_type, _get_unit_coordinates
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.phase import spring_moves
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.province import Province, ProvinceType
-from diplomacy.persistence.unit import UnitType, Unit
+from diplomacy.persistence.province import Province, ProvinceType, Coast
+from diplomacy.persistence.unit import Unit
 
 # TODO: (BETA) consistent in bracket formatting
 NAMESPACE: dict[str, str] = {
@@ -35,6 +35,7 @@ class Parser:
         self.names_data: list[Element] = map_data.xpath(f'//*[@id="{PROVINCE_NAMES_LAYER_ID}"]')[0].getchildren()
         self.centers_data: list[Element] = map_data.xpath(f'//*[@id="{SUPPLY_CENTER_LAYER_ID}"]')[0].getchildren()
         self.units_data: list[Element] = map_data.xpath(f'//*[@id="{UNITS_LAYER_ID}"]')[0].getchildren()
+        self.phantom_units_data: list[Element] = map_data.xpath(f'//*[@id="{PHANTOM_UNIT_LAYER_ID}"]')[0].getchildren()
 
         self.color_to_player: dict[str, Player | None] = {}
         self.name_to_province: dict[str, Province] = {}
@@ -100,6 +101,9 @@ class Parser:
             self._initialize_units_assisted()
         else:
             self._initialize_units(provinces)
+
+        # set phantom unit coordinates for optimal unit placements
+        self._set_phantom_unit_coordinates()
 
         return provinces
 
@@ -175,7 +179,19 @@ class Parser:
             if PROVINCE_FILLS_LABELED:
                 name = self._get_province_name(province_data)
 
-            province = Province(name, province_coordinates, province_type, False, set(), set(), None, None, None)
+            province = Province(
+                name,
+                province_coordinates,
+                None,
+                None,
+                province_type,
+                False,
+                set(),
+                set(),
+                None,
+                None,
+                None,
+            )
 
             provinces.add(province)
         return provinces
@@ -243,27 +259,8 @@ class Parser:
         if province.unit:
             raise RuntimeError(f"{province.name} already has a unit")
 
-        x: str = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get(
-            "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cx"
-        )
-        y: str = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get(
-            "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cy"
-        )
-        r: str = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get(
-            "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}r2"
-        )
-        coordinate: tuple[float, float] = (float(x), float(y))
-        radius = float(r)
-
-        num_sides = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get(
-            "{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides"
-        )
-        if num_sides == "3":
-            unit_type = UnitType.ARMY
-        elif num_sides == "6":
-            unit_type = UnitType.FLEET
-        else:
-            raise RuntimeError(f"Unit has {num_sides} sides which does not match any unit definition.")
+        coordinate, radius = _get_unit_coordinates(unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0])
+        unit_type = _get_unit_type(unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0])
 
         color_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
         player = get_player(color_data, self.color_to_player)
@@ -276,23 +273,9 @@ class Parser:
     def _initialize_units_assisted(self) -> None:
         for unit_data in self.units_data:
             province_name = self._get_province_name(unit_data)
-
-            # manage coasts
-            coast_suffix: str | None = None
-            coast_names = {" (nc)", " (sc)", " (ec)", " (wc)"}
-            for coast_name in coast_names:
-                if province_name[len(province_name) - 5 :] == coast_name:
-                    province_name = province_name[: len(province_name) - 5]
-                    coast_suffix = coast_name[2:4]
-                    break
-
-            province = self.name_to_province[province_name]
+            province, coast = self._get_coast(province_name)
             unit = self._set_province_unit(province, unit_data)
-
-            if coast_suffix:
-                unit.coast = next(
-                    (coast for coast in province.coasts if coast.name == f"{province_name} {coast_suffix}"), None
-                )
+            unit.coast = coast
 
     # Sets province unit values
     def _initialize_units(self, provinces: set[Province]) -> None:
@@ -306,8 +289,44 @@ class Parser:
 
         initialize_province_resident_data(provinces, self.units_data, get_coordinates, self._set_province_unit)
 
+    # TODO: (MAP) this doesn't get the values correctly because it doesn't know what to read in the SVG right
+    def _set_phantom_unit_coordinates(self) -> None:
+        for phantom_data in self.phantom_units_data:
+            province_name = phantom_data.get(f"{NAMESPACE.get('inkscape')}label")
+            # if not a coast, coast = None
+            province, coast = self._get_coast(province_name)
+
+            # there are always 2 unit positions, the primary and retreat, for either the province or coast in question
+            units_data = phantom_data.findall(".//svg:path", namespaces=NAMESPACE)
+            primary_coordinate, _ = _get_unit_coordinates(units_data[0])
+            retreat_coordinate, _ = _get_unit_coordinates(units_data[1])
+
+            if coast:
+                coast.primary_unit_coordinate = primary_coordinate
+                coast.retreat_unit_coordinate = retreat_coordinate
+            else:
+                province.primary_unit_coordinate = primary_coordinate
+                province.retreat_unit_coordinate = retreat_coordinate
+
     def _get_province_name(self, province_data: Element) -> str:
         return province_data.get(f"{NAMESPACE.get('inkscape')}label")
+
+    def _get_coast(self, province_name: str) -> tuple[Province, Coast | None]:
+        coast_suffix: str | None = None
+        coast_names = {" (nc)", " (sc)", " (ec)", " (wc)"}
+
+        for coast_name in coast_names:
+            if province_name[len(province_name) - 5 :] == coast_name:
+                province_name = province_name[: len(province_name) - 5]
+                coast_suffix = coast_name[2:4]
+                break
+
+        province = self.name_to_province[province_name]
+        coast = None
+        if coast_suffix:
+            coast = next((coast for coast in province.coasts if coast.name == f"{province_name} {coast_suffix}"), None)
+
+        return province, coast
 
 
 # returns:
