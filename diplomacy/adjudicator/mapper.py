@@ -1,3 +1,5 @@
+from xml.etree.ElementTree import ElementTree
+
 from lxml import etree
 
 from diplomacy.map_parser.vector.config_svg import SVG_PATH
@@ -21,7 +23,7 @@ from diplomacy.persistence.player import Player
 class Mapper:
     def __init__(self, board: Board):
         self.board: Board = board
-        self.svg = etree.parse(SVG_PATH)
+        self.svg: ElementTree = etree.parse(SVG_PATH)
 
     def get_moves_map(self, player_restriction: Player | None) -> str:
         for order in self.board.get_orders():
@@ -74,7 +76,6 @@ class Mapper:
         element.append(drawn_order)
 
     def _draw_move(self, order: Move | ConvoyMove | RetreatMove) -> None:
-        # TODO: (MAP) get phantom unit
         # TODO: (MAP) draw arrowhead
         element = self.svg.getroot()
         drawn_order = etree.Element(
@@ -82,8 +83,8 @@ class Mapper:
             {
                 "x1": order.unit.coordinate[0],
                 "y1": order.unit.coordinate[1],
-                "x2": order.destination.phantom_unit[0],
-                "y2": order.destination.phantom_unit.coordinate[1],
+                "x2": order.destination.primary_unit_coordinate[0],
+                "y2": order.destination.primary_unit_coordinate[1],
                 "fill": "none",
                 "stroke": "black",
                 "stroke-width": order.unit.radius / 10,
@@ -100,8 +101,8 @@ class Mapper:
             {
                 "x1": order.unit.coordinate[0],
                 "y1": order.unit.coordinate[1],
-                "x2": order.destination.phantom_unit[0],
-                "y2": order.destination.phantom_unit.coordinate[1],
+                "x2": order.destination.primary_unit_coordinate[0],
+                "y2": order.destination.primary_unit_coordinate[1],
                 "fill": "none",
                 "stroke": "black",
                 "stroke-width": order.unit.radius / 10,
@@ -118,8 +119,8 @@ class Mapper:
             {
                 "x1": order.unit.coordinate[0],
                 "y1": order.unit.coordinate[1],
-                "x2": order.destination.phantom_unit[0],
-                "y2": order.destination.phantom_unit.coordinate[1],
+                "x2": order.destination.primary_unit_coordinate[0],
+                "y2": order.destination.primary_unit_coordinate[1],
                 "fill": "none",
                 "stroke": "black",
                 "stroke-width": order.unit.radius / 10,
@@ -129,17 +130,16 @@ class Mapper:
         element.append(drawn_order)
 
     def _draw_build(self, order: Build) -> None:
-        # TODO: (MAP) get phantom unit
         element = self.svg.getroot()
         drawn_order = etree.Element(
             "circle",
             {
-                "cx": order.province.phantom_unit.coordinate[0],
-                "cy": order.province.phantom_unit.coordinate[1],
-                "r": order.province.phantom_unit.radius + order.province.phantom_unit.radius / 3,
+                "cx": order.province.primary_unit_coordinate[0],
+                "cy": order.province.primary_unit_coordinate[1],
+                "r": 10,
                 "fill": "none",
                 "stroke": "green",
-                "stroke-width": order.province.phantom_unit.radius / 10,
+                "stroke-width": 3,
             },
         )
         element.append(drawn_order)

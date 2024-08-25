@@ -23,8 +23,11 @@ SUPPLY_CENTER_LAYER_ID: str = "layer3"
 # Layer group in SVG containing units
 UNITS_LAYER_ID: str = "layer10"
 
-# Layer group in SVG containing phantom units for optimal unit placements
-PHANTOM_UNIT_LAYER_ID: str = "layer15"
+# Layer groups in SVG containing phantom units for optimal unit placements
+PHANTOM_PRIMARY_ARMY_LAYER_ID: str = "g652"
+PHANTOM_RETREAT_ARMY_LAYER_ID: str = "g2176"
+PHANTOM_PRIMARY_FLEET_LAYER_ID: str = "layer15"
+PHANTOM_RETREAT_FLEET_LAYER_ID: str = "g3300"
 
 # If the province fills are labeled directly on the SVG we can guarantee 100% accuracy on naming the provinces
 PROVINCE_FILLS_LABELED: bool = True
