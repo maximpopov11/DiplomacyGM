@@ -43,6 +43,8 @@ def order(ctx: commands.Context, manager: Manager) -> str:
 
 
 def view_orders(ctx: commands.Context, manager: Manager) -> str:
+    raise RuntimeError("View orders is not yet supported.")
+
     if is_gm(ctx.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot view orders as a GM in a non-GM channel.")
@@ -64,7 +66,8 @@ def adjudicate(ctx: commands.Context, manager: Manager) -> str:
     if not is_gm_channel(ctx.channel):
         raise PermissionError("You cannot adjudicate in a non-GM channel.")
 
-    return manager.adjudicate(ctx.guild.id)
+    manager.adjudicate(ctx.guild.id)
+    return "Adjudication completed successfully."
 
 
 def rollback(ctx: commands.Context, manager: Manager) -> str:
@@ -98,7 +101,7 @@ def edit(ctx: commands.Context, _: Manager) -> str:
     if not is_gm_channel(ctx.channel):
         raise PermissionError("You cannot edit the game state in a non-GM channel.")
 
-    # TODO: (DB) implement edit malleable map state, but not editing constant map features, and return new map
+    # TODO: (ALPHA) implement edit malleable map state, but not editing constant map features, and return new map
     # TODO: (BETA) allow Admins in hub server in bot channel to edit constant map features
     raise RuntimeError("Edit state has not been implemented yet.")
 

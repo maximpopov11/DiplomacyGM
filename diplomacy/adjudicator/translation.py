@@ -139,7 +139,7 @@ def get_commands(
     retreats_map: dict[PydipPlayer, dict[PydipUnit, set[str]]],
     pydip_map: PydipMap,
 ) -> list[PydipCommand]:
-    # TODO: (ALPHA) support core
+    # TODO: (BETA) support core
     commands = []
     for order in board.get_orders():
         unit = None

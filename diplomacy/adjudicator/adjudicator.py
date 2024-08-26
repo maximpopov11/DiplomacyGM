@@ -43,7 +43,7 @@ class Adjudicator:
         self.phase: Phase = self.board.phase
 
     def adjudicate(self) -> Board:
-        # TODO: (ALPHA) update state (ex. unit.province and province.unit), determine pydip results by debug walkthrough
+        # TODO: (ALPHA) update board (ex. unit.province and province.unit), determine pydip results by debug walkthrough
         if phase.is_moves_phase(self.phase):
             result_state: dict[str, dict[PydipUnit, str]] = resolve_turn(self.pydip_map, self.pydip_commands)
         elif phase.is_retreats_phase(self.phase):

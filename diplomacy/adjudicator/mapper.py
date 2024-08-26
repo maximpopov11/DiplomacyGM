@@ -23,29 +23,26 @@ from diplomacy.persistence.player import Player
 class Mapper:
     def __init__(self, board: Board):
         self.board: Board = board
-        self.svg: ElementTree = etree.parse(SVG_PATH)
+        self.moves_svg: ElementTree = etree.parse(SVG_PATH)
+        self.results_svg: ElementTree = etree.parse(SVG_PATH)
         self.stroke_width: int = 2
 
-    def get_moves_map(self, player_restriction: Player | None) -> str:
+    # TODO: (BETA) print svg moves & results files in Discord GM channel
+    # TODO: (DB) let's not have a ton of old files: delete moves & results after output (or don't store at all?)
+    def get_moves_map(self, player_restriction: Player | None) -> None:
         for order in self.board.get_orders():
             if player_restriction and order.player != player_restriction:
                 continue
             self._draw(order)
-        self.svg.write("moves_map.svg")
-        # TODO: (DB) let's not have a ton of old files: delete after putting in DB
-        # TODO: (MAP) return svg
-        raise RuntimeError("Get moves map has not yet been implemented.")
+        self.moves_svg.write("moves_map.svg")
 
-    def get_results_map(self) -> str:
-        # TODO: (MAP) copy SVG
-        # TODO: (MAP) update unit positions (and location labels as a backup)
-        # TODO: (MAP) update province colors (island borders need to get colored in alongside the island fill)
-        # TODO: (MAP) update center (core) colors
-        # TODO: (MAP) return copy SVG
-        raise RuntimeError("Get results map has not yet been implemented.")
+    def get_results_map(self) -> None:
+        self._update_units()
+        self._update_provinces_and_centers()
+        self.moves_svg.write("results_map.svg")
 
     def _draw_hold(self, order: Hold) -> None:
-        element = self.svg.getroot()
+        element = self.moves_svg.getroot()
         drawn_order = _create_element(
             "circle",
             {
@@ -60,7 +57,7 @@ class Mapper:
         element.append(drawn_order)
 
     def _draw_core(self, order: Core) -> None:
-        element = self.svg.getroot()
+        element = self.moves_svg.getroot()
         drawn_order = _create_element(
             "rect",
             {
@@ -77,7 +74,7 @@ class Mapper:
         element.append(drawn_order)
 
     def _draw_move(self, order: Move | ConvoyMove | RetreatMove) -> None:
-        element = self.svg.getroot()
+        element = self.moves_svg.getroot()
         drawn_order = _create_element(
             "line",
             {
@@ -93,7 +90,7 @@ class Mapper:
         element.append(drawn_order)
 
     def _draw_support(self, order: Support) -> None:
-        element = self.svg.getroot()
+        element = self.moves_svg.getroot()
         x1 = order.unit.province.primary_unit_coordinate[0]
         y1 = order.unit.province.primary_unit_coordinate[1]
         x2 = order.source.province.primary_unit_coordinate[0]
@@ -113,7 +110,7 @@ class Mapper:
         element.append(drawn_order)
 
     def _draw_convoy(self, order: ConvoyTransport) -> None:
-        element = self.svg.getroot()
+        element = self.moves_svg.getroot()
         x1 = order.source.province.primary_unit_coordinate[0]
         y1 = order.source.province.primary_unit_coordinate[1]
         x2 = order.unit.province.primary_unit_coordinate[0]
@@ -133,7 +130,7 @@ class Mapper:
         element.append(drawn_order)
 
     def _draw_build(self, order: Build) -> None:
-        element = self.svg.getroot()
+        element = self.moves_svg.getroot()
         drawn_order = _create_element(
             "circle",
             {
@@ -148,7 +145,7 @@ class Mapper:
         element.append(drawn_order)
 
     def _draw_disband(self, order: RetreatDisband | Disband) -> None:
-        element = self.svg.getroot()
+        element = self.moves_svg.getroot()
         drawn_order = _create_element(
             "circle",
             {
@@ -187,6 +184,22 @@ class Mapper:
             self._draw_disband(order)
         else:
             raise RuntimeError(f"Unknown order type: {order.__class__}")
+
+    def _update_provinces_and_centers(self) -> None:
+        for province in self.board.provinces:
+            # TODO: (MAP) implement
+            #  find svg province element, edit fill color (land x1, island x2, sea x0) read off of province
+            #  find svg center element, edit core and half-core fill colors read off of province
+            pass
+
+    def _update_units(self) -> None:
+        units = self.board.units.copy()
+        # TODO: (MAP) implement
+        #  loop over svg unit elements:
+        #    delete those that are not in a province that has a unit
+        #    edit the rest: province label & position taking into account transforms, removing unit from units
+        #  add new svg element for each remaining unit
+        pass
 
 
 def _create_element(tag: str, attributes: dict[str, any]) -> etree.Element:

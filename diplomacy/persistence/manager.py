@@ -1,6 +1,6 @@
 from diplomacy.adjudicator.adjudicator import Adjudicator
 from diplomacy.adjudicator.mapper import Mapper
-from diplomacy.map_parser.vector.vector import parse as parse_board
+from diplomacy.map_parser.vector.vector import Parser
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.order import Order
 from diplomacy.persistence.player import Player
@@ -21,7 +21,7 @@ class Manager:
             raise RuntimeError("A game already exists in this server.")
 
         # TODO: (DB) get board from variant DB
-        self._boards[server_id] = parse_board()
+        self._boards[server_id] = Parser().parse()
 
         # TODO: (DB) return map state
         raise RuntimeError("Game creation has not yet been implemented.")
@@ -37,21 +37,19 @@ class Manager:
         # TODO: (DB) overwrite order for unit in DB
         raise RuntimeError("Add orders to database has not yet been implemented.")
 
-    def get_moves_map(self, server_id: int, player_restriction: Player | None) -> str:
-        return Mapper(self._boards[server_id]).get_moves_map(player_restriction)
+    def get_moves_map(self, server_id: int, player_restriction: Player | None) -> None:
+        Mapper(self._boards[server_id]).get_moves_map(player_restriction)
 
-    def adjudicate(self, server_id: int) -> str:
-        # TODO: (DB) get retreat map from DB
+    def adjudicate(self, server_id: int) -> None:
         board = Adjudicator(self._boards[server_id]).adjudicate()
         self._boards[server_id] = board
         mapper = Mapper(board)
-        moves_map = mapper.get_moves_map(None)
-        results_map = mapper.get_results_map()
+        mapper.get_moves_map(None)
+        mapper.get_results_map()
         # TODO: (DB) update board, moves map, results map at server id at turn in db
         # TODO: (DB) when updating board, update SVG so it can be reread if needed
         # TODO: (DB) protect against malicious inputs (ex. orders) like drop table
-        # TODO: (MAP) return both moves and results map
-        raise RuntimeError("Adjudication map return not yet implemented.")
+        # TODO: (DB) return both moves and results map
 
     def rollback(self) -> str:
         # TODO: (DB) get former turn board & moves map & results map from DB; update board; return maps

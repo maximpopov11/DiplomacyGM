@@ -44,7 +44,7 @@ def get_translation(element: Element) -> tuple[float, float]:
     string = element.get("transform")
     prefix = "translate("
     if not string.startswith(prefix):
-        # TODO: (ALPHA) debug: translation is matrix not transform in select few cases
+        # TODO: (MAP) debug: translation is matrix not transform in select few cases
         # raise RuntimeError(f"Translation transform expected, got: {string}")
         return (0, 0)
 

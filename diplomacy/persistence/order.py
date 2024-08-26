@@ -215,7 +215,7 @@ def _parse_order(order: str, player_restriction: Player, board: Board) -> Order:
     raise ValueError(f"No keywords found that are valid in {board.phase.name}.")
 
 
-# TODO: (ALPHA) people will misspell provinces, use a library to find the near hits
+# TODO: (BETA) people will misspell provinces, use a library to find the near hits
 def _parse_locations(order: str, all_provinces: set[Province]) -> list[Location]:
     name_to_province = {province.name.lower(): province for province in all_provinces}
 
