@@ -96,7 +96,7 @@ class Province(Location):
                 coast_sets.append(coast_set)
 
         for i, coast_set in enumerate(coast_sets):
-            name = f"{self.name} coast #{i}"
+            name = f"{self.name} coast"
             self.coasts.add(Coast(name, None, None, self.owner, coast_set, self))
 
 
@@ -110,10 +110,18 @@ class Coast(Location):
         adjacent_seas: set[Province],
         province: Province,
     ):
-        """name should be "<province_name> coast #<x>" with unique <x> for each coast in this province"""
         super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate, owner)
         self.adjacent_seas: set[Province] = adjacent_seas
         self.province: Province = province
 
     def __str__(self):
         return self.name
+
+    def get_adjacent_coasts(self) -> set[Coast]:
+        # TODO: (BETA) this will generate false positives (e.g. mini province keeping 2 big province coasts apart)
+        adjacent_coasts: set[Coast] = set()
+        for province2 in self.province.adjacent:
+            for coast2 in province2.coasts:
+                if self.adjacent_seas & coast2.adjacent_seas:
+                    adjacent_coasts.add(coast2)
+        return adjacent_coasts

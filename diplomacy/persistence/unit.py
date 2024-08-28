@@ -28,6 +28,7 @@ class Unit:
         self.unit_type: UnitType = unit_type
         self.player: Player = player
         self.province: Province = province
+
         self.coast: Coast | None = None
         "retreat_options is None when not dislodged and {} when dislodged without retreat options"
         self.retreat_options: set[Province] | None = None

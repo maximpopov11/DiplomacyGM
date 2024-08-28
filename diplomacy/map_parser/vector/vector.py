@@ -70,7 +70,7 @@ class Parser:
             if unit:
                 units.add(unit)
 
-        return Board(players, provinces, units, {}, set(), spring_moves)
+        return Board(players, provinces, units, spring_moves)
 
     def _get_provinces(self) -> set[Province]:
         # TODO: (BETA) get names/centers/units without aid labeling and test equality against aid labeling

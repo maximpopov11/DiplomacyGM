@@ -209,7 +209,7 @@ def _create_high_province(
             )
         )
 
-    provinces.union(high_provinces)
+    provinces.update(high_provinces)
     for province in high_provinces:
         name_to_province[province.name] = province
 

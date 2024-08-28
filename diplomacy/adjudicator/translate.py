@@ -36,10 +36,10 @@ from diplomacy.persistence.unit import UnitType
 def get_territory_descriptors(provinces: set[Province]) -> list[dict[str, any]]:
     territory_descriptors = []
     for province in provinces:
-        coasts = []
+        coasts: list[str] = []
         if province.coasts:
             for coast in province.coasts:
-                coasts.append({"name": coast.name})
+                coasts.append(coast.name)
 
         descriptor = {"name": province.name}
         # land provinces should have coasts set (empty for landlocked)
@@ -62,7 +62,7 @@ def get_adjacencies(provinces: set[Province]) -> list[tuple[str, str]]:
 
         # coast/coast and coast/sea adjacencies
         for coast in province.coasts:
-            for coast2 in coast.adjacent_coasts:
+            for coast2 in coast.get_adjacent_coasts():
                 adjacencies.add(tuple(sorted((coast.name, coast2.name))))
             for sea_province in coast.adjacent_seas:
                 adjacencies.add(tuple(sorted((coast.name, sea_province.name))))
@@ -75,9 +75,16 @@ def get_start_config(board: Board) -> dict[str, list[dict[str, str]]]:
     for player in board.players:
         player_config = []
         for unit in player.units:
+            if unit.coast:
+                territory_name = unit.coast.name
+            else:
+                territory_name = unit.province.name
+                if unit.unit_type == UnitType.FLEET:
+                    territory_name = list(unit.province.coasts)[0].name
+
             mapping = {
-                "territory_name": unit.province.name,
-                "unit_type": _get_unit_type(unit.unit_type),
+                "territory_name": territory_name,
+                "unit_type": _get_pydip_unit_type(unit.unit_type),
             }
             player_config.append(mapping)
         start_config[player.name] = player_config
@@ -102,16 +109,25 @@ def get_units(board: Board) -> dict[str, set[PydipUnit]]:
     for province in board.provinces:
         unit = province.unit
         if unit:
-            unit_type = _get_unit_type(unit.unit_type)
+            unit_type = _get_pydip_unit_type(unit.unit_type)
             pydip_units.setdefault(unit.player.name, set()).add(PydipUnit(unit_type, province.name))
     return pydip_units
 
 
-def _get_unit_type(unit_type: UnitType) -> PydipUnitType:
+def _get_pydip_unit_type(unit_type: UnitType) -> PydipUnitType:
     if unit_type == UnitType.ARMY:
         return PydipUnitType.TROOP
     elif unit_type == UnitType.FLEET:
         return PydipUnitType.FLEET
+    else:
+        raise ValueError(f"Illegal unit type {unit_type}.")
+
+
+def _get_native_unit_type(unit_type: PydipUnitType) -> UnitType:
+    if unit_type == PydipUnitType.TROOP:
+        return UnitType.ARMY
+    elif unit_type == PydipUnitType.FLEET:
+        return UnitType.FLEET
     else:
         raise ValueError(f"Illegal unit type {unit_type}.")
 
@@ -187,7 +203,7 @@ def get_commands(
             commands.append(RetreatDisbandCommand(retreats_map, pydip_player, unit))
         elif isinstance(order, Build):
             ownership_map = get_ownership_map(pydip_map, board)
-            new_unit = PydipUnit(_get_unit_type(order.unit_type), order.province.name)
+            new_unit = PydipUnit(_get_pydip_unit_type(order.unit_type), order.province.name)
             commands.append(AdjustmentCreateCommand(ownership_map, pydip_player, new_unit))
         elif isinstance(order, Disband):
             commands.append(AdjustmentDisbandCommand(pydip_player, unit))
@@ -220,3 +236,45 @@ def get_adjustment_counts(board: Board) -> dict[str, int]:
     for player, count in board.get_build_counts():
         adjustment_counts[player] = count
     return adjustment_counts
+
+
+# TODO: (!) put order on unit and default to hold
+def pydip_moves_to_native(board: Board, result_state: dict[str, dict[PydipUnit, set[str]]]) -> Board:
+    _complete_phase(board)
+
+    # result_state = dict[player_name, dict[pydip_unit, set[province_name]]
+    # where pydip_unit is a unit that issued an order or a NEW unit if that unit moved
+    # where set[province_name] is the set of retreat options or None if a unit does not need to retreat
+    # pydip provides us new unit locations without telling us where the units came from, so despite how terrible it is
+    # we delete all of our units and recreate them like what pydip does
+    board.delete_all_units()
+    for player_name, pydip_unit_to_retreats in result_state.items():
+        for pydip_unit, retreat_options_names in pydip_unit_to_retreats.items():
+            unit_type = _get_native_unit_type(pydip_unit.unit_type)
+            player = board.get_player(player_name)
+            # TODO: (!) make province and coast work for coastal units
+            province = board.get_province(pydip_unit.position)
+            coast = None
+            retreat_options: set[Province] | None = None
+            if retreat_options_names:
+                retreat_options: set[Province] = {board.get_province(name) for name in retreat_options_names}
+            board.create_unit(unit_type, player, province, coast, retreat_options)
+
+    return board
+
+
+def pydip_retreats_to_native(board: Board, result_state: None) -> Board:
+    _complete_phase(board)
+    # TODO: (!) implement
+    pass
+
+
+def pydip_adjustments_to_native(board: Board, result_state: None) -> Board:
+    _complete_phase(board)
+    # TODO: (!) implement
+    pass
+
+
+def _complete_phase(board: Board) -> None:
+    board.phase = board.phase.next
+    board.reset_orders()
