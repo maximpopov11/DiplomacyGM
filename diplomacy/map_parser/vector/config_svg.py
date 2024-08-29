@@ -40,3 +40,8 @@ UNIT_PROVINCES_LABELED: bool = True
 # Margin of error for distance between province border points. If two province borders have a point within distance of
 # this value in both x and y values, they will be considered adjacent.
 PROVINCE_BORDER_MARGIN: float = 25
+
+# Order drawing radius: recommended unit radius * 1.5
+RADIUS: float = 10
+# Order drawing stroke width
+STROKE_WIDTH: float = 2

@@ -25,7 +25,6 @@ from diplomacy.persistence.order import (
     RetreatMove,
     RetreatDisband,
     Disband,
-    UnitOrder,
     Build,
 )
 from diplomacy.persistence.player import Player
@@ -157,21 +156,20 @@ def get_commands(
 ) -> list[PydipCommand]:
     # TODO: (BETA) support core
     commands = []
-    for order in board.get_orders():
-        unit = None
-        if isinstance(order, UnitOrder):
-            pydip_player = pydip_players[order.unit.player.name]
-            player_units = pydip_units[pydip_player.name]
 
-            for pydip_unit in player_units:
-                if pydip_unit.position == order.unit.province.name:
-                    unit = pydip_unit
-            if unit is None:
-                raise ValueError(f"Ordered unit with id {id(unit)} not found when connecting to adjudication library.")
-        elif isinstance(order, Build):
-            pydip_player = pydip_players[order.province.owner.name]
-        else:
-            raise ValueError(f"Illegal order type: {order.__class__}")
+    # unit orders
+    for unit in board.units:
+        order = unit.order
+
+        pydip_unit = None
+        pydip_player = pydip_players[unit.player.name]
+        pydip_player_units = pydip_units[pydip_player.name]
+        for pydip_candidate_unit in pydip_player_units:
+            if pydip_candidate_unit.position == unit.province.name:
+                pydip_unit = pydip_candidate_unit
+                break
+        if not pydip_unit:
+            raise RuntimeError(f"Pydip unit not found for unit with id {id(unit)}")
 
         source_unit = None
         if isinstance(order, ComplexOrder):
@@ -183,32 +181,40 @@ def get_commands(
                     source_unit = player2_unit
             if source_unit is None:
                 raise ValueError(
-                    f"Secondary unit in order {order} with id {id(unit)} not found when connecting to adjudication "
+                    f"Secondary unit in order {order} with id {id(pydip_unit)} not found when connecting to adjudication "
                     "library."
                 )
 
         if isinstance(order, Hold):
-            commands.append(HoldCommand(pydip_player, unit))
+            commands.append(HoldCommand(pydip_player, pydip_unit))
         elif isinstance(order, Move):
-            commands.append(MoveCommand(pydip_player, unit, order.destination.name))
+            commands.append(MoveCommand(pydip_player, pydip_unit, order.destination.name))
         elif isinstance(order, ConvoyMove):
-            commands.append(ConvoyMoveCommand(pydip_player, unit, order.destination.name))
+            commands.append(ConvoyMoveCommand(pydip_player, pydip_unit, order.destination.name))
         elif isinstance(order, ConvoyTransport):
-            commands.append(ConvoyTransportCommand(pydip_player, unit, source_unit, order.destination.name))
+            commands.append(ConvoyTransportCommand(pydip_player, pydip_unit, source_unit, order.destination.name))
         elif isinstance(order, Support):
-            commands.append(SupportCommand(pydip_player, unit, source_unit, order.destination.name))
+            commands.append(SupportCommand(pydip_player, pydip_unit, source_unit, order.destination.name))
         elif isinstance(order, RetreatMove):
-            commands.append(RetreatMoveCommand(retreats_map, pydip_player, unit, order.destination.name))
+            commands.append(RetreatMoveCommand(retreats_map, pydip_player, pydip_unit, order.destination.name))
         elif isinstance(order, RetreatDisband):
-            commands.append(RetreatDisbandCommand(retreats_map, pydip_player, unit))
-        elif isinstance(order, Build):
-            ownership_map = get_ownership_map(pydip_map, board)
-            new_unit = PydipUnit(_get_pydip_unit_type(order.unit_type), order.province.name)
-            commands.append(AdjustmentCreateCommand(ownership_map, pydip_player, new_unit))
+            commands.append(RetreatDisbandCommand(retreats_map, pydip_player, pydip_unit))
         elif isinstance(order, Disband):
-            commands.append(AdjustmentDisbandCommand(pydip_player, unit))
+            commands.append(AdjustmentDisbandCommand(pydip_player, pydip_unit))
         else:
             raise ValueError(f"Order type {order.__class__} is not legal in {order}:")
+
+    # build orders
+    for player in board.players:
+        for order in player.build_orders:
+            pydip_player = pydip_players[order.province.owner.name]
+
+            if isinstance(order, Build):
+                ownership_map = get_ownership_map(pydip_map, board)
+                new_unit = PydipUnit(_get_pydip_unit_type(order.unit_type), order.province.name)
+                commands.append(AdjustmentCreateCommand(ownership_map, pydip_player, new_unit))
+            else:
+                raise ValueError(f"Order type {order.__class__} is not legal in {order}:")
 
     return commands
 
@@ -238,9 +244,8 @@ def get_adjustment_counts(board: Board) -> dict[str, int]:
     return adjustment_counts
 
 
-# TODO: (!) put order on unit and default to hold
 def pydip_moves_to_native(board: Board, result_state: dict[str, dict[PydipUnit, set[str]]]) -> Board:
-    _complete_phase(board)
+    board.phase = board.phase.next
 
     # result_state = dict[player_name, dict[pydip_unit, set[province_name]]
     # where pydip_unit is a unit that issued an order or a NEW unit if that unit moved
@@ -264,17 +269,12 @@ def pydip_moves_to_native(board: Board, result_state: dict[str, dict[PydipUnit, 
 
 
 def pydip_retreats_to_native(board: Board, result_state: None) -> Board:
-    _complete_phase(board)
+    board.phase = board.phase.next
     # TODO: (!) implement
     pass
 
 
 def pydip_adjustments_to_native(board: Board, result_state: None) -> Board:
-    _complete_phase(board)
-    # TODO: (!) implement
-    pass
-
-
-def _complete_phase(board: Board) -> None:
     board.phase = board.phase.next
-    board.reset_orders()
+    # TODO: (!) implement, reset build orders
+    pass

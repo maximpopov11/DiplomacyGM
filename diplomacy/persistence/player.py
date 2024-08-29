@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from diplomacy.persistence import order
+
 if TYPE_CHECKING:
     from diplomacy.persistence.province import Province
     from diplomacy.persistence.unit import Unit
@@ -13,6 +15,8 @@ class Player:
         self.color: str = color
         self.centers: set[Province] = centers
         self.units: set[Unit] = units
+
+        self.build_orders: set[order.Build] = set()
 
     def __str__(self):
         return self.name

@@ -277,7 +277,8 @@ class Parser:
         color_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
         player = get_player(color_data, self.color_to_player)
 
-        unit = Unit(coordinate, radius, unit_type, player, province)
+        # TODO: (!) do we not have a coast here yet?
+        unit = Unit(coordinate, radius, unit_type, player, province, None, None)
         province.unit = unit
         unit.player.units.add(unit)
         return unit

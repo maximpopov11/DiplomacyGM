@@ -1,4 +1,3 @@
-from diplomacy.persistence.order import Order, UnitOrder
 from diplomacy.persistence.phase import Phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, Coast
@@ -18,9 +17,6 @@ class Board:
         self.units: set[Unit] = units
         self.phase: Phase = phase
 
-        self.unit_orders: dict[Unit, Order] = {}
-        self.build_orders: set[Order] = set()
-
     # TODO: (BETA) make this efficient
     def get_player(self, name: str) -> Player:
         return next((player for player in self.players if player.name == name), None)
@@ -28,21 +24,6 @@ class Board:
     # TODO: (BETA) make this efficient
     def get_province(self, name: str) -> Province:
         return next((province for province in self.provinces if province.name == name), None)
-
-    def get_orders(self) -> set[Order]:
-        return set(self.unit_orders.values()).union(self.build_orders)
-
-    # TODO: (ALPHA) what if a player wants to change their build order? need to be able to remove build/disband orders
-    def add_orders(self, orders: list[Order]) -> None:
-        for order in orders:
-            if isinstance(order, UnitOrder):
-                self.unit_orders[order.unit] = order
-            else:
-                self.build_orders.add(order)
-
-    def reset_orders(self) -> None:
-        self.unit_orders = {}
-        self.build_orders = set()
 
     def get_build_counts(self) -> list[tuple[str, int]]:
         build_counts = []
@@ -61,10 +42,7 @@ class Board:
     ) -> None:
         # TODO: (!) don't store coordinate in unit b/c pydip makes it hard, just use coordinate in province
         # TODO: (!) have a universal default unit radius in config
-        unit = Unit(None, None, unit_type, player, province)
-        unit.coast = coast
-        unit.retreat_options = retreat_options
-
+        unit = Unit(None, None, unit_type, player, province, coast, retreat_options)
         province.unit = unit
         player.units.add(unit)
         self.units.add(unit)

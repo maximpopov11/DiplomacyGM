@@ -2,7 +2,6 @@ from diplomacy.adjudicator.adjudicator import Adjudicator
 from diplomacy.adjudicator.mapper import Mapper
 from diplomacy.map_parser.vector.vector import Parser
 from diplomacy.persistence.board import Board
-from diplomacy.persistence.order import Order
 from diplomacy.persistence.player import Player
 
 
@@ -31,11 +30,6 @@ class Manager:
         if not board:
             raise RuntimeError("There is no existing game this this server.")
         return board
-
-    def add_orders(self, server_id: int, orders: list[Order]) -> None:
-        self._boards[server_id].add_orders(orders)
-        # TODO: (DB) overwrite order for unit in DB
-        raise RuntimeError("Add orders to database has not yet been implemented.")
 
     def get_moves_map(self, server_id: int, player_restriction: Player | None) -> None:
         Mapper(self._boards[server_id]).get_moves_map(player_restriction)

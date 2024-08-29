@@ -2,10 +2,9 @@ from xml.etree.ElementTree import ElementTree
 
 from lxml import etree
 
-from diplomacy.map_parser.vector.config_svg import SVG_PATH
+from diplomacy.map_parser.vector.config_svg import SVG_PATH, STROKE_WIDTH, RADIUS
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.order import (
-    Order,
     Hold,
     Core,
     ConvoyTransport,
@@ -16,6 +15,7 @@ from diplomacy.persistence.order import (
     Disband,
     Move,
     ConvoyMove,
+    Order,
 )
 from diplomacy.persistence.player import Player
 
@@ -25,15 +25,14 @@ class Mapper:
         self.board: Board = board
         self.moves_svg: ElementTree = etree.parse(SVG_PATH)
         self.results_svg: ElementTree = etree.parse(SVG_PATH)
-        self.stroke_width: int = 2
 
     # TODO: (BETA) print svg moves & results files in Discord GM channel
     # TODO: (DB) let's not have a ton of old files: delete moves & results after output (or don't store at all?)
     def get_moves_map(self, player_restriction: Player | None) -> None:
-        for order in self.board.get_orders():
-            if player_restriction and order.player != player_restriction:
+        for unit in self.board.units:
+            if player_restriction and unit.player != player_restriction:
                 continue
-            self._draw(order)
+            self._draw_order(unit.order, unit.coordinate)
         self.moves_svg.write("moves_map.svg")
 
     def get_results_map(self) -> None:
@@ -41,58 +40,84 @@ class Mapper:
         self._update_provinces_and_centers()
         self.moves_svg.write("results_map.svg")
 
-    def _draw_hold(self, order: Hold) -> None:
+    def _draw_order(self, order: Order, coordinate: tuple[float, float]) -> None:
+        # TODO: (BETA) draw failed moves on adjudication (not player check) in red
+        # TODO: (MAP) draw arrowhead for move, convoy, support
+        if isinstance(order, Hold):
+            self._draw_hold(order, coordinate)
+        elif isinstance(order, Core):
+            self._draw_core(coordinate)
+        elif isinstance(order, Move):
+            self._draw_move(order, coordinate)
+        elif isinstance(order, ConvoyMove):
+            self._draw_move(order, coordinate)
+        elif isinstance(order, Support):
+            self._draw_support(order, coordinate)
+        elif isinstance(order, ConvoyTransport):
+            self._draw_convoy(order, coordinate)
+        elif isinstance(order, RetreatMove):
+            self._draw_move(order, coordinate)
+        elif isinstance(order, RetreatDisband):
+            self._draw_disband(coordinate)
+        elif isinstance(order, Build):
+            self._draw_build(order)
+        elif isinstance(order, Disband):
+            self._draw_disband(coordinate)
+        else:
+            raise RuntimeError(f"Unknown order type: {order.__class__}")
+
+    def _draw_hold(self, order: Hold, coordinate: tuple[float, float]) -> None:
         element = self.moves_svg.getroot()
         drawn_order = _create_element(
             "circle",
             {
-                "cx": order.unit.coordinate[0],
-                "cy": order.unit.coordinate[1],
-                "r": order.unit.radius + order.unit.radius / 3,
+                "cx": coordinate[0],
+                "cy": coordinate[1],
+                "r": RADIUS,
                 "fill": "none",
                 "stroke": "black",
-                "stroke-width": self.stroke_width,
+                "stroke-width": STROKE_WIDTH,
             },
         )
         element.append(drawn_order)
 
-    def _draw_core(self, order: Core) -> None:
+    def _draw_core(self, coordinate: tuple[float, float]) -> None:
         element = self.moves_svg.getroot()
         drawn_order = _create_element(
             "rect",
             {
-                "x": order.unit.coordinate[0] - order.unit.radius * 1.2,
-                "y": order.unit.coordinate[1] - order.unit.radius * 1.2,
-                "width": order.unit.radius + order.unit.radius * 1.2 * 2,
-                "height": order.unit.radius + order.unit.radius * 1.2 * 2,
+                "x": coordinate[0] - RADIUS,
+                "y": coordinate[1] - RADIUS,
+                "width": RADIUS + RADIUS * 1.2 * 2,
+                "height": RADIUS + RADIUS * 1.2 * 2,
                 "fill": "none",
                 "stroke": "green",
-                "stroke-width": self.stroke_width,
+                "stroke-width": STROKE_WIDTH,
                 "transform": "rotate(45 100 100)",
             },
         )
         element.append(drawn_order)
 
-    def _draw_move(self, order: Move | ConvoyMove | RetreatMove) -> None:
+    def _draw_move(self, order: Move | ConvoyMove | RetreatMove, coordinate: tuple[float, float]) -> None:
         element = self.moves_svg.getroot()
         drawn_order = _create_element(
             "line",
             {
-                "x1": order.unit.coordinate[0],
-                "y1": order.unit.coordinate[1],
+                "x1": coordinate[0],
+                "y1": coordinate[1],
                 "x2": order.destination.primary_unit_coordinate[0],
                 "y2": order.destination.primary_unit_coordinate[1],
                 "fill": "none",
                 "stroke": "black",
-                "stroke-width": self.stroke_width,
+                "stroke-width": STROKE_WIDTH,
             },
         )
         element.append(drawn_order)
 
-    def _draw_support(self, order: Support) -> None:
+    def _draw_support(self, order: Support, coordinate: tuple[float, float]) -> None:
         element = self.moves_svg.getroot()
-        x1 = order.unit.province.primary_unit_coordinate[0]
-        y1 = order.unit.province.primary_unit_coordinate[1]
+        x1 = coordinate[0]
+        y1 = coordinate[1]
         x2 = order.source.province.primary_unit_coordinate[0]
         y2 = order.source.province.primary_unit_coordinate[1]
         x3 = order.destination.primary_unit_coordinate[0]
@@ -104,17 +129,17 @@ class Mapper:
                 "d": path,
                 "fill": "none",
                 "stroke": "black",
-                "stroke-width": self.stroke_width,
+                "stroke-width": STROKE_WIDTH,
             },
         )
         element.append(drawn_order)
 
-    def _draw_convoy(self, order: ConvoyTransport) -> None:
+    def _draw_convoy(self, order: ConvoyTransport, coordinate: tuple[float, float]) -> None:
         element = self.moves_svg.getroot()
         x1 = order.source.province.primary_unit_coordinate[0]
         y1 = order.source.province.primary_unit_coordinate[1]
-        x2 = order.unit.province.primary_unit_coordinate[0]
-        y2 = order.unit.province.primary_unit_coordinate[1]
+        x2 = coordinate[0]
+        y2 = coordinate[1]
         x3 = order.destination.primary_unit_coordinate[0]
         y3 = order.destination.primary_unit_coordinate[1]
         path = f"M {x1},{y1} {x2},{y2} {x3},{y3}"
@@ -124,7 +149,7 @@ class Mapper:
                 "d": path,
                 "fill": "none",
                 "stroke": "black",
-                "stroke-width": self.stroke_width,
+                "stroke-width": STROKE_WIDTH,
             },
         )
         element.append(drawn_order)
@@ -139,51 +164,25 @@ class Mapper:
                 "r": 10,
                 "fill": "none",
                 "stroke": "green",
-                "stroke-width": self.stroke_width,
+                "stroke-width": STROKE_WIDTH,
             },
         )
         element.append(drawn_order)
 
-    def _draw_disband(self, order: RetreatDisband | Disband) -> None:
+    def _draw_disband(self, coordinate: tuple[float, float]) -> None:
         element = self.moves_svg.getroot()
         drawn_order = _create_element(
             "circle",
             {
-                "cx": order.unit.coordinate[0],
-                "cy": order.unit.coordinate[1],
-                "r": order.unit.radius + order.unit.radius / 3,
+                "cx": coordinate[0],
+                "cy": coordinate[1],
+                "r": RADIUS,
                 "fill": "none",
                 "stroke": "red",
-                "stroke-width": self.stroke_width,
+                "stroke-width": STROKE_WIDTH,
             },
         )
         element.append(drawn_order)
-
-    def _draw(self, order: Order) -> None:
-        # TODO: (BETA) draw failed moves on adjudication (not player check) in red
-        # TODO: (MAP) draw arrowhead for move, convoy, support
-        if isinstance(order, Hold):
-            self._draw_hold(order)
-        elif isinstance(order, Core):
-            self._draw_core(order)
-        elif isinstance(order, Move):
-            self._draw_move(order)
-        elif isinstance(order, ConvoyMove):
-            self._draw_move(order)
-        elif isinstance(order, Support):
-            self._draw_support(order)
-        elif isinstance(order, ConvoyTransport):
-            self._draw_convoy(order)
-        elif isinstance(order, RetreatMove):
-            self._draw_move(order)
-        elif isinstance(order, RetreatDisband):
-            self._draw_disband(order)
-        elif isinstance(order, Build):
-            self._draw_build(order)
-        elif isinstance(order, Disband):
-            self._draw_disband(order)
-        else:
-            raise RuntimeError(f"Unknown order type: {order.__class__}")
 
     def _update_provinces_and_centers(self) -> None:
         for province in self.board.provinces:

@@ -13,95 +13,108 @@ if TYPE_CHECKING:
 
 
 class Order:
-    def __init__(self, player: Player):
-        self.player = player
+    """Order is a player's game state API."""
+
+    def __init__(self):
+        pass
 
 
+# moves, holds, etc.
 class UnitOrder(Order):
-    def __init__(self, unit: Unit):
-        super().__init__(unit.player)
-        self.unit: Unit = unit
+    """Unit orders are orders that units execute themselves."""
+
+    def __init__(self):
+        super().__init__()
 
 
 class ComplexOrder(UnitOrder):
     """Complex orders are orders that operate on other orders (supports and convoys)."""
 
-    def __init__(self, unit: Unit, source: Unit):
-        super().__init__(unit)
+    def __init__(self, source: Unit):
+        super().__init__()
         self.source: Unit = source
 
 
 class Hold(UnitOrder):
-    def __init__(self, unit: Unit):
-        super().__init__(unit)
+    def __init__(self):
+        super().__init__()
 
 
 class Core(UnitOrder):
-    def __init__(self, unit: Unit):
-        super().__init__(unit)
+    def __init__(self):
+        super().__init__()
 
 
 class Move(UnitOrder):
-    def __init__(self, unit: Unit, destination: Location):
-        super().__init__(unit)
+    def __init__(self, destination: Location):
+        super().__init__()
         self.destination: Location = destination
 
 
 class ConvoyMove(UnitOrder):
-    def __init__(self, unit: Unit, destination: Location):
-        super().__init__(unit)
+    def __init__(self, destination: Location):
+        super().__init__()
         self.destination: Location = destination
 
 
 class ConvoyTransport(ComplexOrder):
-    def __init__(self, unit: Unit, source: Unit, destination: Location):
-        assert unit.unit_type == UnitType.FLEET, "Convoying unit must be a fleet."
-        assert source.unit_type == UnitType.ARMY, "Convoyed unit must be an army."
-        super().__init__(unit, source)
+    def __init__(self, source: Unit, destination: Location):
+        super().__init__(source)
         self.destination: Location = destination
 
 
 class Support(ComplexOrder):
-    def __init__(self, unit: Unit, source: Unit, destination: Location):
-        super().__init__(unit, source)
+    def __init__(self, source: Unit, destination: Location):
+        super().__init__(source)
         self.destination: Location = destination
 
 
 class RetreatMove(UnitOrder):
-    def __init__(self, unit: Unit, destination: Location):
-        super().__init__(unit)
+    def __init__(self, destination: Location):
+        super().__init__()
         self.destination: Location = destination
 
 
 class RetreatDisband(UnitOrder):
-    def __init__(self, unit: Unit):
-        super().__init__(unit)
+    def __init__(self):
+        super().__init__()
 
 
-class Build(Order):
+class PlayerOrder(Order):
+    """Player orders are orders that belong to a player rather than a unit e.g. builds."""
+
+    def __init__(self):
+        super().__init__()
+
+
+class Build(PlayerOrder):
+    """Builds are player orders because the unit does not yet exist."""
+
+    # TODO: (ALPHA) what if a player wants to change their build order? need to be able to remove build/disband orders
     def __init__(self, province: Location, unit_type: UnitType):
-        super().__init__(province.owner)
+        super().__init__()
         self.province: Location = province
         self.unit_type: UnitType = unit_type
 
 
-class Disband(UnitOrder):
-    def __init__(self, unit: Unit):
-        super().__init__(unit)
+class Disband(PlayerOrder):
+    """Disbands are player order because builds are."""
+
+    def __init__(self, province: Location):
+        super().__init__()
+        self.province: Location = province
 
 
 def parse(message: str, player_restriction: Player | None, manager: Manager, server_id: int) -> str:
     board = manager.get_board(server_id)
 
-    valid: list[Order] = []
     invalid: list[tuple[str, Exception]] = []
     orders = str.splitlines(message)
     for order in orders:
         try:
-            valid.append(_parse_order(order, player_restriction, board))
+            _parse_order(order, player_restriction, board)
         except Exception as error:
             invalid.append((order, error))
-    manager.add_orders(server_id, valid)
 
     if invalid:
         response = "The following orders were invalid:"
@@ -140,75 +153,68 @@ order_dict = {
 }
 
 
-def _parse_order(order: str, player_restriction: Player, board: Board) -> Order:
+def _parse_order(order: str, player_restriction: Player, board: Board):
     order = order.lower()
-
     parsed_locations = _parse_locations(order, board.provinces)
-    location0 = parsed_locations[0]
-    location1 = parsed_locations[1]
-    location2 = parsed_locations[2]
+    unit = _get_unit(parsed_locations[0])
+    if not unit:
+        raise RuntimeError(f"There is no unit in {parsed_locations[0].name}.")
 
-    unit1 = _get_unit(location0)
-    if not unit1:
-        raise RuntimeError(f"There is no unit in {location0.name}.")
-    unit2 = _get_unit(location1)
-
-    player = unit1.player
+    player = unit.player
     if player_restriction is not None and player != player_restriction:
         raise PermissionError(
-            f"You, {player_restriction.name}, do not have permissions to order the unit in {location0.name} which "
-            f"belongs to {player.name}"
+            f"You, {player_restriction.name}, do not have permissions to order the unit in {parsed_locations[0].name} "
+            f"which belongs to {player.name}"
         )
 
     if "via" in order and "convoy" in order:
-        return ConvoyMove(unit1, location1)
+        return ConvoyMove(parsed_locations[1])
 
     if is_moves_phase(board.phase):
         for keyword in hold:
             if keyword in order:
-                return Hold(unit1)
+                unit.order = Hold()
+                return
 
         for keyword in core:
             if keyword in order:
-                return Core(unit1)
+                unit.order = Core()
+                return
 
         for keyword in move:
             if keyword in order:
-                return Move(unit1, location1)
+                unit.order = Move(parsed_locations[1])
+                return
 
         for keyword in support:
             if keyword in order:
-                return Support(unit1, unit2, location2)
+                unit.order = Support(_get_unit(parsed_locations[1]), parsed_locations[2])
+                return
 
         for keyword in convoy:
             if keyword in order:
-                return ConvoyTransport(unit1, unit2, location2)
+                unit.order = ConvoyTransport(_get_unit(parsed_locations[1]), parsed_locations[2])
+                return
     elif is_retreats_phase(board.phase):
         for keyword in retreat_move:
             if keyword in order:
-                return RetreatMove(unit1, location1)
+                unit.order = RetreatMove(parsed_locations[1])
+                return
 
         for keyword in retreat_disband:
             if keyword in order:
-                return RetreatDisband(unit1)
+                unit.order = RetreatDisband()
+                return
     elif is_adjustments_phase(board.phase):
         for keyword in build:
             if keyword in order:
-                unit_type = None
-                for word in order:
-                    if word in order_dict[army]:
-                        unit_type = UnitType.ARMY
-                        break
-                    if word in order_dict[fleet]:
-                        unit_type = UnitType.FLEET
-                        break
-                if not unit_type:
-                    raise ValueError(f"Unit type not found.")
-                return Build(location1, unit_type)
+                player.build_orders.add(Build(parsed_locations[0], _get_unit_type(order)))
+                return
 
         for keyword in disband:
             if keyword in order:
-                return Disband(unit1)
+                player.build_orders.add(Disband(parsed_locations[0]))
+                return
     else:
         raise ValueError(f"Internal error: invalid phase: {board.phase.name}")
 
@@ -252,3 +258,13 @@ def _get_unit(location: Location) -> Unit | None:
         return location.province.unit
     else:
         raise RuntimeError(f"Location is neither a province nor a coast: {location.__class__}")
+
+
+def _get_unit_type(order: str) -> UnitType:
+    for word in order:
+        if word in order_dict[army]:
+            return UnitType.ARMY
+        if word in order_dict[fleet]:
+            return UnitType.FLEET
+
+    raise ValueError(f"Unit type not found")
