@@ -267,7 +267,7 @@ class Parser:
 
         initialize_province_resident_data(provinces, self.centers_data, get_coordinates, set_province_supply_center)
 
-    def _set_province_unit(self, province: Province, unit_data: Element) -> Unit:
+    def _set_province_unit(self, province: Province, unit_data: Element, coast: Coast) -> Unit:
         if province.unit:
             raise RuntimeError(f"{province.name} already has a unit")
 
@@ -275,8 +275,7 @@ class Parser:
         color_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
         player = get_player(color_data, self.color_to_player)
 
-        # TODO: (!) do we not have a coast here yet?
-        unit = Unit(unit_type, player, province, None, None)
+        unit = Unit(unit_type, player, province, coast, None)
         province.unit = unit
         unit.player.units.add(unit)
         return unit
@@ -285,8 +284,7 @@ class Parser:
         for unit_data in self.units_data:
             province_name = self._get_province_name(unit_data)
             province, coast = self._get_province_and_coast(province_name)
-            unit = self._set_province_unit(province, unit_data)
-            unit.coast = coast
+            self._set_province_unit(province, unit_data, coast)
 
     # Sets province unit values
     def _initialize_units(self, provinces: set[Province]) -> None:
