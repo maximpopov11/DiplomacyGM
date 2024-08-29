@@ -271,14 +271,12 @@ class Parser:
         if province.unit:
             raise RuntimeError(f"{province.name} already has a unit")
 
-        coordinate, radius = _get_unit_coordinates_and_radius(unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0])
         unit_type = _get_unit_type(unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0])
-
         color_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
         player = get_player(color_data, self.color_to_player)
 
         # TODO: (!) do we not have a coast here yet?
-        unit = Unit(coordinate, radius, unit_type, player, province, None, None)
+        unit = Unit(unit_type, player, province, None, None)
         province.unit = unit
         unit.player.units.add(unit)
         return unit

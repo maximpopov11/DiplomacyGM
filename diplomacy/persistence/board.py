@@ -40,9 +40,7 @@ class Board:
         coast: Coast | None,
         retreat_options: set[Province] | None,
     ) -> None:
-        # TODO: (!) don't store coordinate in unit b/c pydip makes it hard, just use coordinate in province
-        # TODO: (!) have a universal default unit radius in config
-        unit = Unit(None, None, unit_type, player, province, coast, retreat_options)
+        unit = Unit(unit_type, player, province, coast, retreat_options)
         province.unit = unit
         player.units.add(unit)
         self.units.add(unit)

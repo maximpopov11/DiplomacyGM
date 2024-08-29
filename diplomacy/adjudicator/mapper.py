@@ -32,7 +32,9 @@ class Mapper:
         for unit in self.board.units:
             if player_restriction and unit.player != player_restriction:
                 continue
-            self._draw_order(unit.order, unit.coordinate)
+
+            coordinate = unit.get_coordinate()
+            self._draw_order(unit.order, coordinate)
         self.moves_svg.write("moves_map.svg")
 
     def get_results_map(self) -> None:
@@ -44,7 +46,7 @@ class Mapper:
         # TODO: (BETA) draw failed moves on adjudication (not player check) in red
         # TODO: (MAP) draw arrowhead for move, convoy, support
         if isinstance(order, Hold):
-            self._draw_hold(order, coordinate)
+            self._draw_hold(coordinate)
         elif isinstance(order, Core):
             self._draw_core(coordinate)
         elif isinstance(order, Move):
@@ -66,7 +68,7 @@ class Mapper:
         else:
             raise RuntimeError(f"Unknown order type: {order.__class__}")
 
-    def _draw_hold(self, order: Hold, coordinate: tuple[float, float]) -> None:
+    def _draw_hold(self, coordinate: tuple[float, float]) -> None:
         element = self.moves_svg.getroot()
         drawn_order = _create_element(
             "circle",
