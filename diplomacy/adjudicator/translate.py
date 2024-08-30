@@ -206,7 +206,7 @@ def get_commands(
 
     # build orders
     for player in board.players:
-        for order in player.build_orders:
+        for order in player.adjustment_orders:
             pydip_player = pydip_players[order.province.owner.name]
 
             if isinstance(order, Build):
@@ -257,9 +257,7 @@ def pydip_moves_to_native(board: Board, result_state: dict[str, dict[PydipUnit, 
         for pydip_unit, retreat_options_names in pydip_unit_to_retreats.items():
             unit_type = _get_native_unit_type(pydip_unit.unit_type)
             player = board.get_player(player_name)
-            # TODO: (!) make province and coast work for coastal units
-            province = board.get_province(pydip_unit.position)
-            coast = None
+            province, coast = board.parse_location(pydip_unit.position)
             retreat_options: set[Province] | None = None
             if retreat_options_names:
                 retreat_options: set[Province] = {board.get_province(name) for name in retreat_options_names}

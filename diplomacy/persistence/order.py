@@ -137,6 +137,10 @@ disband = "disband"
 core = "core"
 army = "army"
 fleet = "fleet"
+north_coast = "north coast"
+south_coast = "south coast"
+east_coast = "east coast"
+west_coast = "west coast"
 
 order_dict = {
     hold: ["h", "hold", "holds"],
@@ -150,12 +154,16 @@ order_dict = {
     disband: ["d", "disband", "disbands", "drop", "drops", "remove"],
     army: ["a", "army", "cannon"],
     fleet: ["f", "fleet", "boat", "ship"],
+    north_coast: ["nc", "north coast"],
+    south_coast: ["sc", "south coast"],
+    east_coast: ["ec", "east coast"],
+    west_coast: ["wc", "west coast"],
 }
 
 
 def _parse_order(order: str, player_restriction: Player, board: Board):
     order = order.lower()
-    parsed_locations = _parse_locations(order, board.provinces)
+    parsed_locations = _parse_locations(order, board)
     unit = _get_unit(parsed_locations[0])
     if not unit:
         raise RuntimeError(f"There is no unit in {parsed_locations[0].name}.")
@@ -208,12 +216,12 @@ def _parse_order(order: str, player_restriction: Player, board: Board):
     elif is_adjustments_phase(board.phase):
         for keyword in build:
             if keyword in order:
-                player.build_orders.add(Build(parsed_locations[0], _get_unit_type(order)))
+                player.adjustment_orders.add(Build(parsed_locations[0], _get_unit_type(order)))
                 return
 
         for keyword in disband:
             if keyword in order:
-                player.build_orders.add(Disband(parsed_locations[0]))
+                player.adjustment_orders.add(Disband(parsed_locations[0]))
                 return
     else:
         raise ValueError(f"Internal error: invalid phase: {board.phase.name}")
@@ -222,31 +230,50 @@ def _parse_order(order: str, player_restriction: Player, board: Board):
 
 
 # TODO: (BETA) people will misspell provinces, use a library to find the near hits
-def _parse_locations(order: str, all_provinces: set[Province]) -> list[Location]:
-    name_to_province = {province.name.lower(): province for province in all_provinces}
-
+def _parse_locations(order: str, board: Board) -> list[Location]:
     locations: list[Location] = []
-    for word in order:
-        if word in name_to_province:
-            province = name_to_province[word]
-            coast = _get_coast(order, province)
-            if coast:
-                locations.append(coast)
-            else:
-                locations.append(province)
+
+    # province names are sometimes multiple words e.g. "New York" so we need to check all word-unit substrings
+    words = order.split(" ")
+    candidate_names = _get_candidate_names(words)
+    for name in candidate_names:
+        province, coast = board.parse_location(name)
+        if coast:
+            locations.append(coast)
+        elif province:
+            locations.append(province)
 
     return locations
 
 
-def _get_coast(order: str, province: Province) -> Coast | None:
-    if "nc" in order or "north coast" in order:
-        return next((coast for coast in province.coasts if coast.name == f"{province.name} nc"), None)
-    elif "sc" in order or "south coast" in order:
-        return next((coast for coast in province.coasts if coast.name == f"{province.name} sc"), None)
-    elif "ec" in order or "east coast" in order:
-        return next((coast for coast in province.coasts if coast.name == f"{province.name} ec"), None)
-    elif "wc" in order or "west coast" in order:
-        return next((coast for coast in province.coasts if coast.name == f"{province.name} wc"), None)
+# TODO: (ALPHA) this does not find multi-word coast "South Coast" will not be found
+# TODO: (ALPHA) this needs to be tested by something like a "F New York NC - New York South Coast", can copy and dummy
+def _get_candidate_names(words: list[str]) -> list[str]:
+    """Finds all substrings build from words between arbitrary indices i and j. Also includes coast translations."""
+    names = []
+    for i in range(len(words)):
+        for j in range(i, len(words)):
+            name = words[i]
+            for k in range(i + 1, j):
+                word = words[k]
+                name += " " + word
+
+                # if our last word in our candidate name might be a coast, input that as well
+                coast = _get_coast_signature(word)
+                if k == j and coast:
+                    names.append(word + " " + coast)
+    return names
+
+
+def _get_coast_signature(string: str) -> str | None:
+    if string in order_dict[north_coast]:
+        return "nc"
+    elif string in order_dict[south_coast]:
+        return "sc"
+    elif string in order_dict[east_coast]:
+        return "ec"
+    elif string in order_dict[west_coast]:
+        return "wc"
     else:
         return None
 

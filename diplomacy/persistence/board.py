@@ -32,6 +32,21 @@ class Board:
         build_counts = sorted(build_counts, key=lambda counts: counts[1])
         return build_counts
 
+    def parse_location(self, name: str) -> tuple[Province, Coast | None]:
+        # TODO: (BETA) we build this everywhere, let's just have one live on the Board on init
+        name_to_province: dict[str, Province] = {}
+        name_to_coast: dict[str, Coast] = {}
+        for province in self.provinces:
+            name_to_province[province.name] = province
+            for coast in province.coasts:
+                name_to_coast[coast.name] = coast
+
+        coast = name_to_coast.get(name)
+        if coast:
+            return coast.province, coast
+        else:
+            return name_to_province[name], None
+
     def create_unit(
         self,
         unit_type: UnitType,
