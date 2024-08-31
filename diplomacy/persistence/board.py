@@ -32,7 +32,7 @@ class Board:
         build_counts = sorted(build_counts, key=lambda counts: counts[1])
         return build_counts
 
-    def parse_location(self, name: str) -> tuple[Province, Coast | None]:
+    def get_location(self, name: str) -> tuple[Province, Coast | None]:
         # TODO: (BETA) we build this everywhere, let's just have one live on the Board on init
         name_to_province: dict[str, Province] = {}
         name_to_coast: dict[str, Coast] = {}
@@ -56,7 +56,10 @@ class Board:
         retreat_options: set[Province] | None,
     ) -> None:
         unit = Unit(unit_type, player, province, coast, retreat_options)
-        province.unit = unit
+        if retreat_options:
+            province.dislodged_unit = unit
+        else:
+            province.unit = unit
         player.units.add(unit)
         self.units.add(unit)
 

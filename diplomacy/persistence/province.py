@@ -57,6 +57,11 @@ class Province(Location):
     def __str__(self):
         return self.name
 
+    def coast(self) -> Coast:
+        if len(self.coasts) != 1:
+            raise RuntimeError(f"Cannot get coast of a province with num coasts {len(self.coasts)} != 1")
+        return next(coast for coast in self.coasts)
+
     def set_coasts(self):
         """This should only be called once all province adjacencies have been set."""
         if self.type == ProvinceType.SEA:

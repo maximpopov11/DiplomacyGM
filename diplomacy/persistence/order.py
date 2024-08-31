@@ -3,13 +3,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from diplomacy.persistence.phase import is_moves_phase, is_retreats_phase, is_adjustments_phase
-from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, Location, Coast
-from diplomacy.persistence.unit import Unit, UnitType
 
 if TYPE_CHECKING:
     from diplomacy.persistence.board import Board
     from diplomacy.persistence.manager import Manager
+    from diplomacy.persistence.player import Player
+    from diplomacy.persistence.unit import Unit, UnitType
 
 
 class Order:
@@ -83,26 +83,25 @@ class RetreatDisband(UnitOrder):
 class PlayerOrder(Order):
     """Player orders are orders that belong to a player rather than a unit e.g. builds."""
 
-    def __init__(self):
+    def __init__(self, location: Location):
         super().__init__()
+        self.location: Location = location
 
 
 class Build(PlayerOrder):
     """Builds are player orders because the unit does not yet exist."""
 
     # TODO: (ALPHA) what if a player wants to change their build order? need to be able to remove build/disband orders
-    def __init__(self, province: Location, unit_type: UnitType):
-        super().__init__()
-        self.province: Location = province
+    def __init__(self, location: Location, unit_type: UnitType):
+        super().__init__(location)
         self.unit_type: UnitType = unit_type
 
 
 class Disband(PlayerOrder):
     """Disbands are player order because builds are."""
 
-    def __init__(self, province: Location):
-        super().__init__()
-        self.province: Location = province
+    def __init__(self, location: Location):
+        super().__init__(location)
 
 
 def parse(message: str, player_restriction: Player | None, manager: Manager, server_id: int) -> str:
@@ -237,7 +236,7 @@ def _parse_locations(order: str, board: Board) -> list[Location]:
     words = order.split(" ")
     candidate_names = _get_candidate_names(words)
     for name in candidate_names:
-        province, coast = board.parse_location(name)
+        province, coast = board.get_location(name)
         if coast:
             locations.append(coast)
         elif province:

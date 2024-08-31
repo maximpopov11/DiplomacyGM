@@ -12,18 +12,21 @@ def run() -> None:
     # spring moves
     paris = board.get_province("Paris")
     ghent = board.get_province("Ghent")
-    board.unit_orders[paris.unit] = order.Move(paris.unit, ghent)
+    paris.unit.order = order.Move(ghent)
+    _adjudicate(board)
+
+    # spring retreats
     _adjudicate(board)
 
     # fall moves
     amsterdam = board.get_province("Amsterdam")
     utrecht = board.get_province("Utrecht")
-    board.unit_orders[amsterdam.unit] = order.Move(amsterdam.unit, ghent)
-    board.unit_orders[utrecht.unit] = order.Support(utrecht.unit, amsterdam.unit, ghent)
+    amsterdam.unit.order = order.Move(ghent.coast())
+    utrecht.unit.order = order.Support(amsterdam.unit, ghent.coast())
     _adjudicate(board)
 
     # fall retreats
-    board.unit_orders[ghent.unit] = order.RetreatMove(ghent.unit, paris)
+    ghent.dislodged_unit.order = order.RetreatDisband()
     _adjudicate(board)
 
 

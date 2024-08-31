@@ -31,7 +31,7 @@ class Adjudicator:
         self.retreat_map: dict[PydipPlayer, dict[PydipUnit, set[str]]] = translate.generate_retreats_map(
             self.pydip_players,
             self.pydip_units,
-            self.board.provinces,
+            self.board,
         )
         self.pydip_commands: list[PydipCommand] = translate.get_commands(
             self.board,
@@ -51,7 +51,7 @@ class Adjudicator:
         elif phase.is_retreats_phase(self.phase):
             return translate.pydip_retreats_to_native(
                 self.board,
-                resolve_retreats(self.pydip_map, self.pydip_commands),
+                resolve_retreats(self.retreat_map, self.pydip_commands),
             )
         elif phase.is_adjustments_phase(self.phase):
             ownership_map = translate.get_ownership_map(self.pydip_map, self.board)
