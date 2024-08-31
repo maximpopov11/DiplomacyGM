@@ -71,3 +71,14 @@ class Board:
             player.units = set()
 
         self.units = set()
+
+    def delete_dislodged_units(self) -> None:
+        dislodged_units = set()
+        for unit in self.units:
+            if unit.retreat_options:
+                dislodged_units.add(unit)
+
+        for unit in dislodged_units:
+            unit.province.dislodged_unit = None
+            unit.player.units.remove(unit)
+            self.units.remove(unit)

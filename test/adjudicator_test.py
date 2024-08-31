@@ -26,7 +26,7 @@ def run() -> None:
     _adjudicate(board)
 
     # fall retreats
-    ghent.dislodged_unit.order = order.RetreatDisband()
+    ghent.dislodged_unit.order = order.RetreatMove(paris)
     _adjudicate(board)
 
 

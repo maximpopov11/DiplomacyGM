@@ -293,21 +293,23 @@ def pydip_moves_to_native(board: Board, result_state: dict[str, dict[PydipUnit, 
     board.delete_all_units()
     for player_name, pydip_unit_to_retreats in result_state.items():
         for pydip_unit, retreat_options_names in pydip_unit_to_retreats.items():
-            unit_type = _get_native_unit_type(pydip_unit.unit_type)
-            player = board.get_player(player_name)
-            province, coast = board.get_location(pydip_unit.position)
             retreat_options: set[Province] | None = None
             if retreat_options_names:
                 retreat_options: set[Province] = {board.get_province(name) for name in retreat_options_names}
 
-            board.create_unit(unit_type, player, province, coast, retreat_options)
+            _create_unit(board, player_name, pydip_unit, retreat_options)
     return board
 
 
 def pydip_retreats_to_native(board: Board, result_state: dict[str, set[PydipUnit]]) -> Board:
-    # result_state maps player names to a set of pydip units and only contains units that retreated
     board.phase = board.phase.next
-    # TODO: (!) implement: delete retreating units and add our new units from here, DRY with moves
+
+    # result_state maps player names to a set of pydip units and only contains units that retreated
+    # we delete all of our dislodged units and recreate them like what pydip does
+    board.delete_dislodged_units()
+    for player_name, pydip_units in result_state.items():
+        for pydip_unit in pydip_units:
+            _create_unit(board, player_name, pydip_unit, None)
     return board
 
 
@@ -315,3 +317,10 @@ def pydip_adjustments_to_native(board: Board, result_state: None) -> Board:
     board.phase = board.phase.next
     # TODO: (!) implement, reset build order
     return board
+
+
+def _create_unit(board: Board, player_name: str, pydip_unit: PydipUnit, retreat_options: set[Province] | None) -> None:
+    unit_type = _get_native_unit_type(pydip_unit.unit_type)
+    player = board.get_player(player_name)
+    province, coast = board.get_location(pydip_unit.position)
+    board.create_unit(unit_type, player, province, coast, retreat_options)
