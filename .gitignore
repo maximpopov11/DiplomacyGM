@@ -1,3 +1,7 @@
 
 /assets
 bot/_token.py
+
+.idea
+__pychache__/
+*.py[cod]
