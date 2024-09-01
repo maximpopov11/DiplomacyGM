@@ -21,7 +21,7 @@ from diplomacy.persistence.board import Board
 from diplomacy.persistence.phase import spring_moves
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, ProvinceType, Coast
-from diplomacy.persistence.unit import Unit
+from diplomacy.persistence.unit import Unit, UnitType
 
 # TODO: (BETA) all attribute getting should be in utils which we import and call utils.my_unit()
 # TODO: (BETA) consistent in bracket formatting
@@ -274,6 +274,9 @@ class Parser:
         unit_type = _get_unit_type(unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0])
         color_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
         player = get_player(color_data, self.color_to_player)
+        # TODO: (BETA) tech debt: let's pass the coast in instead of only passing in coast when province has multiple
+        if not coast and unit_type == UnitType.FLEET:
+            coast = next((coast for coast in province.coasts), None)
 
         unit = Unit(unit_type, player, province, coast, None)
         province.unit = unit

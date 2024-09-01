@@ -1,6 +1,10 @@
 
 /assets
 bot/_token.py
+*.pyc
+*.iml
+*.xml
+.DS_Store
 
 .idea
 __pychache__/

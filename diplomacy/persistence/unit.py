@@ -3,16 +3,22 @@ from __future__ import annotations
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from diplomacy.persistence import order
+from diplomacy.persistence.order import UnitOrder
 
 if TYPE_CHECKING:
     from diplomacy.persistence.player import Player
-    from diplomacy.persistence.province import Province, Coast
+    from diplomacy.persistence.province import Province, Coast, Location
 
 
 class UnitType(Enum):
     ARMY = 1
     FLEET = 2
+
+
+unit_type_to_name = {
+    UnitType.ARMY: "Army",
+    UnitType.FLEET: "Fleet",
+}
 
 
 class Unit:
@@ -30,11 +36,15 @@ class Unit:
         self.coast: Coast | None = coast
         "retreat_options is None when not dislodged and {} when dislodged without retreat options"
         self.retreat_options: set[Province] | None = retreat_options
-
-        self.order: order.UnitOrder = order.Hold(self)
+        self.order: UnitOrder | None = None
 
     def __str__(self):
-        return f"{self.unit_type.__class__} {self.player} {self.province}"
+        return f"{self.player} {unit_type_to_name[self.unit_type]} {self.get_location()}"
+
+    def get_location(self) -> Location:
+        if self.coast:
+            return self.coast
+        return self.province
 
     def get_coordinate(self) -> tuple[float, float]:
         province = self.province

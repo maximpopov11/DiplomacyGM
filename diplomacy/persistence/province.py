@@ -14,12 +14,13 @@ class Location:
         name: str,
         primary_unit_coordinate: tuple[float, float],
         retreat_unit_coordinate: tuple[float, float],
-        owner: Player | None,
     ):
         self.name: str = name
         self.primary_unit_coordinate: tuple[float, float] = primary_unit_coordinate
         self.retreat_unit_coordinate: tuple[float, float] = retreat_unit_coordinate
-        self.owner: Player | None = owner
+
+    def get_owner(self) -> Player | None:
+        raise NotImplementedError("get_owner should be implemented by Location children, not by Location.")
 
 
 class ProvinceType(Enum):
@@ -43,7 +44,7 @@ class Province(Location):
         owner: Player | None,
         unit: Unit | None,
     ):
-        super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate, owner)
+        super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate)
         self.coordinates: list[tuple[float, float]] = coordinates
         self.type: ProvinceType = province_type
         self.has_supply_center: bool = has_supply_center
@@ -51,11 +52,20 @@ class Province(Location):
         self.coasts: set[Coast] = coasts
         self.core: Player | None = core
         self.half_core: Player | None = None
+        self.owner: Player | None = owner
         self.unit: Unit | None = unit
         self.dislodged_unit: Unit | None = None
 
     def __str__(self):
         return self.name
+
+    def get_owner(self) -> Player | None:
+        return self.owner
+
+    def coast(self) -> Coast:
+        if len(self.coasts) != 1:
+            raise RuntimeError(f"Cannot get coast of a province with num coasts {len(self.coasts)} != 1")
+        return next(coast for coast in self.coasts)
 
     def set_coasts(self):
         """This should only be called once all province adjacencies have been set."""
@@ -97,7 +107,7 @@ class Province(Location):
 
         for i, coast_set in enumerate(coast_sets):
             name = f"{self.name} coast"
-            self.coasts.add(Coast(name, None, None, self.owner, coast_set, self))
+            self.coasts.add(Coast(name, None, None, coast_set, self))
 
 
 class Coast(Location):
@@ -106,16 +116,18 @@ class Coast(Location):
         name: str,
         primary_unit_coordinate: tuple[float, float],
         retreat_unit_coordinate: tuple[float, float],
-        owner: Player,
         adjacent_seas: set[Province],
         province: Province,
     ):
-        super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate, owner)
+        super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate)
         self.adjacent_seas: set[Province] = adjacent_seas
         self.province: Province = province
 
     def __str__(self):
         return self.name
+
+    def get_owner(self) -> Player | None:
+        return self.province.get_owner()
 
     def get_adjacent_coasts(self) -> set[Coast]:
         # TODO: (BETA) this will generate false positives (e.g. mini province keeping 2 big province coasts apart)
