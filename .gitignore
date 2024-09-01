@@ -5,3 +5,4 @@ bot/_token.py
 *.iml
 *.xml
 .DS_Store
+.idea/gitignore
