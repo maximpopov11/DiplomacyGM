@@ -19,7 +19,11 @@ class Location:
         self.name: str = name
         self.primary_unit_coordinate: tuple[float, float] = primary_unit_coordinate
         self.retreat_unit_coordinate: tuple[float, float] = retreat_unit_coordinate
+        # TODO: (!) use get_owner() instead, single source of truth and fixes a bug somewhere
         self.owner: Player | None = owner
+
+    def get_owner(self) -> Player | None:
+        raise NotImplementedError("get_owner should be implemented by Location children, not by Location.")
 
 
 class ProvinceType(Enum):
@@ -56,6 +60,9 @@ class Province(Location):
 
     def __str__(self):
         return self.name
+
+    def get_owner(self) -> Player | None:
+        return self.owner
 
     def coast(self) -> Coast:
         if len(self.coasts) != 1:
@@ -102,7 +109,7 @@ class Province(Location):
 
         for i, coast_set in enumerate(coast_sets):
             name = f"{self.name} coast"
-            self.coasts.add(Coast(name, None, None, self.owner, coast_set, self))
+            self.coasts.add(Coast(name, None, None, coast_set, self))
 
 
 class Coast(Location):
@@ -111,16 +118,18 @@ class Coast(Location):
         name: str,
         primary_unit_coordinate: tuple[float, float],
         retreat_unit_coordinate: tuple[float, float],
-        owner: Player,
         adjacent_seas: set[Province],
         province: Province,
     ):
-        super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate, owner)
+        super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate, province.owner)
         self.adjacent_seas: set[Province] = adjacent_seas
         self.province: Province = province
 
     def __str__(self):
         return self.name
+
+    def get_owner(self) -> Player | None:
+        return self.province.get_owner()
 
     def get_adjacent_coasts(self) -> set[Coast]:
         # TODO: (BETA) this will generate false positives (e.g. mini province keeping 2 big province coasts apart)

@@ -63,6 +63,11 @@ class Board:
         player.units.add(unit)
         self.units.add(unit)
 
+    def delete_unit(self, unit: Unit) -> None:
+        unit.province.unit = None
+        unit.player.units.remove(unit)
+        self.units.remove(unit)
+
     def delete_all_units(self) -> None:
         for unit in self.units:
             unit.province.unit = None

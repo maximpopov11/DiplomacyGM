@@ -27,7 +27,7 @@ from diplomacy.persistence.order import (
     Disband,
     Build,
 )
-from diplomacy.persistence.phase import is_moves_phase
+from diplomacy.persistence.phase import is_moves_phase, fall_retreats
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, ProvinceType
 from diplomacy.persistence.unit import UnitType, Unit
@@ -229,7 +229,7 @@ def get_commands(
     # build orders
     for player in board.players:
         for order in player.adjustment_orders:
-            pydip_player = pydip_players[order.location.owner.name]
+            pydip_player = pydip_players[order.location.get_owner().name]
             if isinstance(order, Build):
                 ownership_map = get_ownership_map(pydip_map, board)
                 new_unit = PydipUnit(_get_pydip_unit_type(order.unit_type), order.location.name)
@@ -267,8 +267,8 @@ def get_ownership_map(pydip_map: PydipMap, board: Board) -> OwnershipMap:
             supply_centers.add(province.name)
             if province.core:
                 player = province.owner
-                home_territories.setdefault(player.name, set()).add(province.name)
                 if player:
+                    home_territories.setdefault(player.name, set()).add(province.name)
                     owned_territories.setdefault(player.name, set()).add(province.name)
 
     supply_map = SupplyCenterMap(pydip_map, supply_centers)
@@ -296,8 +296,14 @@ def pydip_moves_to_native(board: Board, result_state: dict[str, dict[PydipUnit, 
             retreat_options: set[Province] | None = None
             if retreat_options_names:
                 retreat_options: set[Province] = {board.get_province(name) for name in retreat_options_names}
-
             _create_unit(board, player_name, pydip_unit, retreat_options)
+
+    # update non-center province ownership
+    for province in board.provinces:
+        if not province.has_supply_center:
+            if province.unit:
+                province.owner = province.unit.player
+
     return board
 
 
@@ -310,12 +316,43 @@ def pydip_retreats_to_native(board: Board, result_state: dict[str, set[PydipUnit
     for player_name, pydip_units in result_state.items():
         for pydip_unit in pydip_units:
             _create_unit(board, player_name, pydip_unit, None)
+
+    # update province ownership (centers only after Fall retreats)
+    for province in board.provinces:
+        if board.phase == fall_retreats or not province.has_supply_center:
+            if province.unit:
+                province.owner = province.unit.player
+
     return board
 
 
-def pydip_adjustments_to_native(board: Board, result_state: None) -> Board:
+def pydip_adjustments_to_native(board: Board, result_state: dict[str, set[PydipUnit]]) -> Board:
     board.phase = board.phase.next
-    # TODO: (!) implement, reset build order
+
+    # result_state is a dict of player name to the set of all of their units
+    # since units do not move in this phase, we do not need to delete all units like in the other phases
+    # but rather just correct the difference between what we have and what exists in pydip
+
+    location_name_to_unit: dict[str, Unit] = {}
+    for unit in board.units:
+        location_name_to_unit[unit.get_location().name] = unit
+
+    found_units = set()
+    for player_name, pydip_units in result_state.items():
+        for pydip_unit in pydip_units:
+            unit = location_name_to_unit[pydip_unit.position]
+            if not unit:
+                # this is a new unit that was built
+                _create_unit(board, player_name, pydip_unit, None)
+            else:
+                # we found the unit and shouldn't delete it later in this function
+                found_units.add(unit)
+
+    for unit in location_name_to_unit.values():
+        if unit not in found_units:
+            # this is a unit that were disbanded
+            board.delete_unit(unit)
+
     return board
 
 

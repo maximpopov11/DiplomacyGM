@@ -39,9 +39,9 @@ class Unit:
         self.order: UnitOrder | None = None
 
     def __str__(self):
-        return f"{self.player} {unit_type_to_name[self.unit_type]} {self._get_location()}"
+        return f"{self.player} {unit_type_to_name[self.unit_type]} {self.get_location()}"
 
-    def _get_location(self) -> Location:
+    def get_location(self) -> Location:
         if self.coast:
             return self.coast
         return self.province

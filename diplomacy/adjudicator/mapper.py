@@ -38,6 +38,7 @@ class Mapper:
         self.moves_svg.write("moves_map.svg")
 
     def get_results_map(self) -> None:
+        # TODO: (MAP) get state dif or calculate state diff?
         self._update_units()
         self._update_provinces_and_centers()
         self.moves_svg.write("results_map.svg")

@@ -2,6 +2,7 @@ from diplomacy.adjudicator.adjudicator import Adjudicator
 from diplomacy.map_parser.vector import vector
 from diplomacy.persistence import order
 from diplomacy.persistence.board import Board
+from diplomacy.persistence.unit import UnitType
 
 
 # the pydip library is not super clear, so we're going to have some tests around here that let us figure out what's
@@ -27,6 +28,11 @@ def run() -> None:
 
     # fall retreats
     ghent.dislodged_unit.order = order.RetreatMove(paris)
+    _adjudicate(board)
+
+    # builds
+    netherlands = board.get_player("Netherlands")
+    netherlands.adjustment_orders.add(order.Build(amsterdam.coast(), UnitType.FLEET))
     _adjudicate(board)
 
 
