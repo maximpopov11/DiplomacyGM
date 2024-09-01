@@ -14,13 +14,10 @@ class Location:
         name: str,
         primary_unit_coordinate: tuple[float, float],
         retreat_unit_coordinate: tuple[float, float],
-        owner: Player | None,
     ):
         self.name: str = name
         self.primary_unit_coordinate: tuple[float, float] = primary_unit_coordinate
         self.retreat_unit_coordinate: tuple[float, float] = retreat_unit_coordinate
-        # TODO: (!) use get_owner() instead, single source of truth and fixes a bug somewhere
-        self.owner: Player | None = owner
 
     def get_owner(self) -> Player | None:
         raise NotImplementedError("get_owner should be implemented by Location children, not by Location.")
@@ -47,7 +44,7 @@ class Province(Location):
         owner: Player | None,
         unit: Unit | None,
     ):
-        super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate, owner)
+        super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate)
         self.coordinates: list[tuple[float, float]] = coordinates
         self.type: ProvinceType = province_type
         self.has_supply_center: bool = has_supply_center
@@ -121,7 +118,7 @@ class Coast(Location):
         adjacent_seas: set[Province],
         province: Province,
     ):
-        super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate, province.owner)
+        super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate)
         self.adjacent_seas: set[Province] = adjacent_seas
         self.province: Province = province
 
