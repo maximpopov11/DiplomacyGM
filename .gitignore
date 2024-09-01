@@ -2,3 +2,4 @@
 /assets
 bot/_token.py
 *.pyc
+*.xml
