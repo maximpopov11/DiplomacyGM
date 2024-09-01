@@ -5,7 +5,6 @@ from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType
 
 
-# noinspection PyProtectedMember
 def get_svg_element_by_id(svg_root: ElementTree, element_id: str) -> Element:
     return svg_root.xpath(f'//*[@id="{element_id}"]')[0]
 
