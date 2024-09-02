@@ -154,7 +154,7 @@ def generate_retreats_map(
     for pydip_player in pydip_players:
         for pydip_unit in pydip_units[pydip_player]:
             location_name = pydip_unit.position
-            province, _ = board.get_location(location_name)
+            province, _ = board.get_province_and_coast(location_name)
             dislodged_unit = province.dislodged_unit
             if dislodged_unit and dislodged_unit.player.name == pydip_player:
                 # this should only hit on the dislodged unit, not on the primary unit in the province
@@ -351,7 +351,7 @@ def pydip_adjustments_to_native(board: Board, result_state: dict[str, set[PydipU
     for unit in location_name_to_unit.values():
         if unit not in found_units:
             # this is a unit that were disbanded
-            board.delete_unit(unit)
+            board.delete_unit(unit.province)
 
     return board
 
@@ -359,5 +359,5 @@ def pydip_adjustments_to_native(board: Board, result_state: dict[str, set[PydipU
 def _create_unit(board: Board, player_name: str, pydip_unit: PydipUnit, retreat_options: set[Province] | None) -> None:
     unit_type = _get_native_unit_type(pydip_unit.unit_type)
     player = board.get_player(player_name)
-    province, coast = board.get_location(pydip_unit.position)
+    province, coast = board.get_province_and_coast(pydip_unit.position)
     board.create_unit(unit_type, player, province, coast, retreat_options)

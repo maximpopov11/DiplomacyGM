@@ -2,9 +2,10 @@ import random
 
 from discord.ext import commands
 
-from bot.utils import is_gm, is_gm_channel, get_player, is_player_channel
+from bot.parse_edit_state import parse_edit_state
+from bot.parse_order import parse_order
+from bot.utils import is_gm, is_gm_channel, get_player_by_role, is_player_channel
 from diplomacy.persistence.manager import Manager
-from diplomacy.persistence.order import parse as parse_order
 
 ping_text_choices = [
     "proudly states",
@@ -28,21 +29,24 @@ def ping(ctx: commands.Context, _: Manager) -> str:
 
 
 def order(ctx: commands.Context, manager: Manager) -> str:
+    board = manager.get_board(ctx.guild.id)
+
     if is_gm(ctx.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot order as a GM in a non-GM channel.")
-        return parse_order(ctx.message.content, None, manager, ctx.guild.id)
+        return parse_order(ctx.message.content, None, board)
 
-    player = get_player(ctx.author, manager, ctx.guild.id)
+    player = get_player_by_role(ctx.author, manager, ctx.guild.id)
     if player is not None:
         if not is_player_channel(player.name, ctx.channel):
             raise PermissionError("You cannot order as a player outside of your orders channel.")
-        return parse_order(ctx.message.content, player, manager, ctx.guild.id)
+        return parse_order(ctx.message.content, player, board)
 
     raise PermissionError("You cannot order units because you are neither a GM nor a player.")
 
 
 def view_orders(ctx: commands.Context, manager: Manager) -> str:
+    # TODO: (ALPHA) while we don't have a proper view_orders until we have the DB setup, we can print the orders
     raise RuntimeError("View orders is not yet supported.")
 
     if is_gm(ctx.author):
@@ -50,7 +54,7 @@ def view_orders(ctx: commands.Context, manager: Manager) -> str:
             raise PermissionError("You cannot view orders as a GM in a non-GM channel.")
         return manager.get_moves_map(ctx.guild.id, None)
 
-    player = get_player(ctx.author, manager, ctx.guild.id)
+    player = get_player_by_role(ctx.author, manager, ctx.guild.id)
     if player is not None:
         if not is_player_channel(player.name, ctx.channel):
             raise PermissionError("You cannot view orders as a player outside of your orders channel.")
@@ -94,16 +98,15 @@ def get_scoreboard(ctx: commands.Context, manager: Manager) -> str:
     return response
 
 
-def edit(ctx: commands.Context, _: Manager) -> str:
+def edit(ctx: commands.Context, manager: Manager) -> str:
+    # TODO: (BETA) allow Admins in hub server in bot channel to edit constant map features
     if not is_gm(ctx.author):
         raise PermissionError("You cannot edit the game state because you are not a GM.")
 
     if not is_gm_channel(ctx.channel):
         raise PermissionError("You cannot edit the game state in a non-GM channel.")
 
-    # TODO: (ALPHA) implement edit malleable map state, but not editing constant map features, and return new map
-    # TODO: (BETA) allow Admins in hub server in bot channel to edit constant map features
-    raise RuntimeError("Edit state has not been implemented yet.")
+    return parse_edit_state(ctx.message.content, manager.get_board(ctx.guild.id))
 
 
 def create_game(ctx: commands.Context, manager: Manager) -> str:
