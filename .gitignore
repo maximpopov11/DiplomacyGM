@@ -5,3 +5,7 @@ bot/_token.py
 *.iml
 *.xml
 .DS_Store
+
+.idea
+__pychache__/
+*.py[cod]

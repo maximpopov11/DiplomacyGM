@@ -7,25 +7,27 @@ from diplomacy.persistence.unit import UnitType
 def run() -> None:
     board = vector.Parser().parse()
 
-    paris = next((unit for unit in board.units if unit.province.name == "Paris"), None)
-    nantes = next((unit for unit in board.units if unit.province.name == "Nantes"), None)
-    bordeaux = next((unit for unit in board.units if unit.province.name == "Bordeaux"), None)
-    marseille = next((unit for unit in board.units if unit.province.name == "Marseille"), None)
-    dijon = next((unit for unit in board.units if unit.province.name == "Dijon"), None)
-    barcelona = next((unit for unit in board.units if unit.province.name == "Barcelona"), None)
-    orleans = next((province for province in board.provinces if province.name == "Orleans"), None)
-    corse = next((province for province in board.provinces if province.name == "Corse"), None)
-    ghent = next((province for province in board.provinces if province.name == "Ghent"), None)
-    board.unit_orders = {
-        paris: order.Hold(paris),
-        nantes: order.Core(nantes),
-        bordeaux: order.Move(bordeaux, orleans),
-        marseille: order.ConvoyTransport(marseille, dijon, corse),
-        dijon: order.Support(dijon, bordeaux, orleans),
-        barcelona: order.RetreatDisband(barcelona),
-    }
-    board.build_orders = {
-        order.Build(ghent, UnitType.ARMY),
-    }
+    france = board.get_player("France")
+    paris = board.get_province("Paris")
+    nantes = board.get_province("Nantes")
+    bordeaux = board.get_province("Bordeaux")
+    marseille = board.get_province("Marseille")
+    dijon = board.get_province("Dijon")
+    barcelona = board.get_province("Barcelona")
+    orleans = board.get_province("Orleans")
+    corse = board.get_province("Paris")
+    ghent = board.get_province("Ghent")
+
+    paris.unit.order = order.Hold()
+    nantes.unit.order = order.Core()
+    bordeaux.unit.order = order.Move(orleans)
+    marseille.unit.order = order.ConvoyTransport(dijon.unit, corse)
+    dijon.unit.order = order.Support(bordeaux.unit, orleans)
+    barcelona.unit.order = order.RetreatDisband()
+    france.build_orders.add(order.Build(ghent, UnitType.ARMY))
+
+    for unit in board.units:
+        if not unit.order:
+            unit.order = order.Hold()
 
     Mapper(board).get_moves_map(None)

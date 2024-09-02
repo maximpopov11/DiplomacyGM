@@ -32,7 +32,7 @@ def run() -> None:
 
     # builds
     netherlands = board.get_player("Netherlands")
-    netherlands.adjustment_orders.add(order.Build(amsterdam.coast(), UnitType.FLEET))
+    netherlands.build_orders.add(order.Build(amsterdam.coast(), UnitType.FLEET))
     _adjudicate(board)
 
 
