@@ -322,6 +322,7 @@ class Parser:
         )
 
     def _set_phantom_unit_coordinates(self) -> None:
+        # TODO: (MAP) this is almost right, but some (e.g. French Canada) are off in dangerous ways
         army_layer_to_key = [
             (self.phantom_primary_armies_layer, "primary_unit_coordinate"),
             (self.phantom_retreat_armies_layer, "retreat_unit_coordinate"),
