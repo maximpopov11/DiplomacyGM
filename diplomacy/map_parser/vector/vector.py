@@ -10,13 +10,12 @@ from shapely.geometry import Point, Polygon
 from diplomacy.map_parser.vector import cheat_parsing
 from diplomacy.map_parser.vector.config_player import player_to_color, NEUTRAL, BLANK_CENTER
 from diplomacy.map_parser.vector.config_svg import *
+from diplomacy.map_parser.vector.transform import Translation
 from diplomacy.map_parser.vector.utils import (
     get_player,
     _get_unit_type,
     _get_unit_coordinates,
-    get_svg_element_by_id,
-    get_translation_for_element,
-    add_tuples,
+    get_svg_element,
 )
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.phase import spring_moves
@@ -39,18 +38,18 @@ class Parser:
     def __init__(self):
         svg_root = etree.parse(SVG_PATH)
 
-        self.land_layer: Element = get_svg_element_by_id(svg_root, LAND_PROVINCE_LAYER_ID)
-        self.island_layer: Element = get_svg_element_by_id(svg_root, ISLAND_PROVINCE_LAYER_ID)
-        self.island_fill_layer: Element = get_svg_element_by_id(svg_root, ISLAND_FILL_PLAYER_ID)
-        self.sea_layer: Element = get_svg_element_by_id(svg_root, SEA_PROVINCE_LAYER_ID)
-        self.names_layer: Element = get_svg_element_by_id(svg_root, PROVINCE_NAMES_LAYER_ID)
-        self.centers_layer: Element = get_svg_element_by_id(svg_root, SUPPLY_CENTER_LAYER_ID)
-        self.units_layer: Element = get_svg_element_by_id(svg_root, UNITS_LAYER_ID)
+        self.land_layer: Element = get_svg_element(svg_root, LAND_PROVINCE_LAYER_ID)
+        self.island_layer: Element = get_svg_element(svg_root, ISLAND_PROVINCE_LAYER_ID)
+        self.island_fill_layer: Element = get_svg_element(svg_root, ISLAND_FILL_PLAYER_ID)
+        self.sea_layer: Element = get_svg_element(svg_root, SEA_PROVINCE_LAYER_ID)
+        self.names_layer: Element = get_svg_element(svg_root, PROVINCE_NAMES_LAYER_ID)
+        self.centers_layer: Element = get_svg_element(svg_root, SUPPLY_CENTER_LAYER_ID)
+        self.units_layer: Element = get_svg_element(svg_root, UNITS_LAYER_ID)
 
-        self.phantom_primary_armies_layer: Element = get_svg_element_by_id(svg_root, PHANTOM_PRIMARY_ARMY_LAYER_ID)
-        self.phantom_retreat_armies_layer: Element = get_svg_element_by_id(svg_root, PHANTOM_RETREAT_ARMY_LAYER_ID)
-        self.phantom_primary_fleets_layer: Element = get_svg_element_by_id(svg_root, PHANTOM_PRIMARY_FLEET_LAYER_ID)
-        self.phantom_retreat_fleets_layer: Element = get_svg_element_by_id(svg_root, PHANTOM_RETREAT_FLEET_LAYER_ID)
+        self.phantom_primary_armies_layer: Element = get_svg_element(svg_root, PHANTOM_PRIMARY_ARMY_LAYER_ID)
+        self.phantom_retreat_armies_layer: Element = get_svg_element(svg_root, PHANTOM_RETREAT_ARMY_LAYER_ID)
+        self.phantom_primary_fleets_layer: Element = get_svg_element(svg_root, PHANTOM_PRIMARY_FLEET_LAYER_ID)
+        self.phantom_retreat_fleets_layer: Element = get_svg_element(svg_root, PHANTOM_RETREAT_FLEET_LAYER_ID)
 
         self.color_to_player: dict[str, Player | None] = {}
         self.name_to_province: dict[str, Province] = {}
@@ -201,9 +200,9 @@ class Parser:
                 province_coordinates.append(former_coordinate)
                 current_index += expected_arguments
 
-            layer_translation = get_translation_for_element(provinces_layer)
+            layer_translation = Translation(provinces_layer)
             for index, coordinate in enumerate(province_coordinates):
-                province_coordinates[index] = add_tuples(coordinate, layer_translation)
+                province_coordinates[index] = layer_translation.transform(coordinate)
 
             name = None
             if PROVINCE_FILLS_LABELED:
@@ -328,21 +327,21 @@ class Parser:
             (self.phantom_retreat_armies_layer, "retreat_unit_coordinate"),
         ]
         for layer, province_key in army_layer_to_key:
-            layer_translation = get_translation_for_element(self.phantom_primary_armies_layer)
+            layer_translation = Translation(layer)
             for unit_data in layer.getchildren():
-                unit_translation = get_translation_for_element(unit_data)
+                unit_translation = Translation(unit_data)
                 province = self._get_province(unit_data)
                 coordinate = _get_unit_coordinates(unit_data)
-                setattr(province, province_key, add_tuples(coordinate, layer_translation, unit_translation))
+                setattr(province, province_key, unit_translation.transform(layer_translation.transform(coordinate)))
 
         fleet_layer_to_key = [
             (self.phantom_primary_fleets_layer, "primary_unit_coordinate"),
             (self.phantom_retreat_fleets_layer, "retreat_unit_coordinate"),
         ]
         for layer, province_key in fleet_layer_to_key:
-            layer_translation = get_translation_for_element(self.phantom_primary_armies_layer)
+            layer_translation = Translation(layer)
             for unit_data in layer.getchildren():
-                unit_translation = get_translation_for_element(unit_data)
+                unit_translation = Translation(unit_data)
                 # This could either be a sea province or a land coast
                 province_name = self._get_province_name(unit_data)
 
@@ -362,10 +361,11 @@ class Parser:
                         continue
 
                 coordinate = _get_unit_coordinates(unit_data)
+                translated_coordinate = unit_translation.transform(layer_translation.transform(coordinate))
                 if coast:
-                    setattr(coast, province_key, add_tuples(coordinate, layer_translation, unit_translation))
+                    setattr(coast, province_key, translated_coordinate)
                 else:
-                    setattr(province, province_key, add_tuples(coordinate, layer_translation, unit_translation))
+                    setattr(province, province_key, translated_coordinate)
 
     def _get_province_name(self, province_data: Element) -> str:
         return province_data.get(f"{NAMESPACE.get('inkscape')}label")
