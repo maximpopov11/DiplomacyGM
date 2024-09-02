@@ -30,6 +30,7 @@ class Mapper:
     # TODO: (BETA) print svg moves & results files in Discord GM channel
     # TODO: (DB) let's not have a ton of old files: delete moves & results after output (or don't store at all?)
     def get_moves_map(self, player_restriction: Player | None) -> None:
+        # TODO: (MAP) current not getting player orders, get that from board (maybe get all orders at once?)
         for unit in self.board.units:
             if player_restriction and unit.player != player_restriction:
                 continue
