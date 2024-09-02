@@ -12,6 +12,7 @@ mapper_test.run()
 # TODO: (DB) setup DB and test db write & db read
 # TODO: (DB) assert that the DB is backed up (needs to be a current up-to-date backup)
 
+# TODO: (BETA) some files (read vector.py) are really bad, clean them up
 # TODO: (BETA) me only command for editing all game map state without permanence restriction (ex. province adjacency)
 # TODO: (BETA) don't rely on PyDip, it's so much easier to update things when I own all of the code and write it pretty
 # TODO: (BETA) add requirements.txt

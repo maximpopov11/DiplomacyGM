@@ -46,6 +46,7 @@ class Unit:
             return self.coast
         return self.province
 
+    # TODO: (MAP) bug coasts don't have coordinates
     def get_coordinate(self) -> tuple[float, float]:
         province = self.province
         if self.coast:

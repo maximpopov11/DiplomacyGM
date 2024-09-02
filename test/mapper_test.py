@@ -26,4 +26,8 @@ def run() -> None:
     barcelona.unit.order = order.RetreatDisband()
     france.build_orders.add(order.Build(ghent, UnitType.ARMY))
 
+    for unit in board.units:
+        if not unit.order:
+            unit.order = order.Hold()
+
     Mapper(board).get_moves_map(None)

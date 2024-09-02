@@ -19,6 +19,9 @@ def get_translation_for_element(element: Element) -> tuple[float, float]:
 
     translation_match = re.search("^\\s*translate\\((.*),(.*)\\)\\s*", transform_string)
     if not translation_match:
+        # TODO: (MAP) debug
+        return 0, 0
+
         raise RuntimeError(
             f"Could not parse translate string {transform_string} on element with id {element.get("id", None)}",
         )

@@ -24,6 +24,8 @@ from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, ProvinceType, Coast
 from diplomacy.persistence.unit import Unit, UnitType
 
+# TODO: (BETA) I made this file into a monster that is really ugly, let's clean it up!
+
 # TODO: (BETA) all attribute getting should be in utils which we import and call utils.my_unit()
 # TODO: (BETA) consistent in bracket formatting
 NAMESPACE: dict[str, str] = {
@@ -99,6 +101,18 @@ class Parser:
         cheat_parsing.set_canals(self.name_to_province)
 
         cheat_parsing.create_high_seas_and_sands(provinces, self.name_to_province)
+
+        # really bad bandaid code, will fix later
+        # some coasts aren't set because their only coasts are with cheat provinces which are set after coasts are
+        for province in provinces:
+            if len(province.coasts) == 0:
+                sea_provinces = set()
+                for adjacent in province.adjacent:
+                    if adjacent.type != ProvinceType.LAND:
+                        sea_provinces.add(adjacent)
+                if sea_provinces:
+                    name = province.name + " coast"
+                    province.coasts.add(Coast(name, None, None, sea_provinces, province))
 
         self._initialize_province_owners(self.land_layer)
         self._initialize_province_owners(self.island_fill_layer)
@@ -308,7 +322,6 @@ class Parser:
         )
 
     def _set_phantom_unit_coordinates(self) -> None:
-        # TODO: (MAP) bug: all of our phantom units also have a matrix transform (all the same)
         army_layer_to_key = [
             (self.phantom_primary_armies_layer, "primary_unit_coordinate"),
             (self.phantom_retreat_armies_layer, "retreat_unit_coordinate"),
@@ -320,6 +333,7 @@ class Parser:
                 province = self._get_province(unit_data)
                 coordinate = _get_unit_coordinates(unit_data)
                 setattr(province, province_key, add_tuples(coordinate, layer_translation, unit_translation))
+
         fleet_layer_to_key = [
             (self.phantom_primary_fleets_layer, "primary_unit_coordinate"),
             (self.phantom_retreat_fleets_layer, "retreat_unit_coordinate"),
@@ -330,7 +344,17 @@ class Parser:
                 unit_translation = get_translation_for_element(unit_data)
                 # This could either be a sea province or a land coast
                 province_name = self._get_province_name(unit_data)
+
+                # this is me writing bad code to get this out faster, will fix later when we cleanup this file
                 province, coast = self._get_province_and_coast(province_name)
+                is_coastal = False
+                for adjacent in province.adjacent:
+                    if adjacent.type != ProvinceType.LAND:
+                        is_coastal = True
+                        break
+                if not coast and province.type != ProvinceType.SEA and is_coastal:
+                    coast = province.coast()
+
                 coordinate = _get_unit_coordinates(unit_data)
                 if coast:
                     setattr(coast, province_key, add_tuples(coordinate, layer_translation, unit_translation))
