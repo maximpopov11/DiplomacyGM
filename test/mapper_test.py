@@ -30,4 +30,4 @@ def run() -> None:
         if not unit.order:
             unit.order = order.Hold()
 
-    Mapper(board).get_moves_map(None)
+    Mapper(board).draw_moves_map(None)

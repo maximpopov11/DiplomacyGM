@@ -1,4 +1,4 @@
-from xml.etree.ElementTree import ElementTree
+from xml.etree.ElementTree import ElementTree, Element
 
 from lxml import etree
 
@@ -20,16 +20,45 @@ from diplomacy.persistence.order import (
 from diplomacy.persistence.player import Player
 
 
+def _add_arrow_definition_to_svg(svg: ElementTree) -> None:
+    defs: Element = svg.find("{http://www.w3.org/2000/svg}defs")
+    if defs is None:
+        defs = _create_element("defs", {})
+        svg.getroot().append(defs)
+    # TODO: Check if 'arrow' id is already defined in defs
+    arrow_marker: Element = _create_element(
+        "marker",
+        {
+            "id": "arrow",
+            "viewbox": "0 0 3 3",
+            "refX": "1.5",
+            "refY": "1.5",
+            "markerWidth": "3",
+            "markerHeight": "3",
+            "orient": "auto-start-reverse",
+        },
+    )
+    arrow_path: Element = _create_element(
+        "path",
+        {"d": "M 0,0 L 3,1.5 L 0,3 z"},
+    )
+    arrow_marker.append(arrow_path)
+    defs.append(arrow_marker)
+
+
 class Mapper:
     def __init__(self, board: Board):
         self.board: Board = board
         self.moves_svg: ElementTree = etree.parse(SVG_PATH)
         self.results_svg: ElementTree = etree.parse(SVG_PATH)
 
-    # TODO: (MAP) manually assert all phantom coordiantes on provinces and coasts are set
+        _add_arrow_definition_to_svg(self.moves_svg)
+        _add_arrow_definition_to_svg(self.results_svg)
+
+    # TODO: (MAP) manually assert all phantom coordinates on provinces and coasts are set
     # TODO: (BETA) print svg moves & results files in Discord GM channel
     # TODO: (DB) let's not have a ton of old files: delete moves & results after output (or don't store at all?)
-    def get_moves_map(self, player_restriction: Player | None) -> None:
+    def draw_moves_map(self, player_restriction: Player | None) -> None:
         # TODO: (MAP) current not getting player orders, get that from board (maybe get all orders at once?)
         for unit in self.board.units:
             if player_restriction and unit.player != player_restriction:
@@ -39,7 +68,7 @@ class Mapper:
             self._draw_order(unit.order, coordinate)
         self.moves_svg.write("moves_map.svg")
 
-    def get_results_map(self) -> None:
+    def draw_results_map(self) -> None:
         # TODO: (MAP) get state dif or calculate state diff?
         self._update_units()
         self._update_provinces_and_centers()
@@ -105,19 +134,31 @@ class Mapper:
 
     def _draw_move(self, order: Move | ConvoyMove | RetreatMove, coordinate: tuple[float, float]) -> None:
         element = self.moves_svg.getroot()
-        drawn_order = _create_element(
-            "line",
+        mid_point = (
+            (coordinate[0] + order.destination.primary_unit_coordinate[0]) / 2,
+            (coordinate[1] + order.destination.primary_unit_coordinate[1]) / 2,
+        )
+        x_diff = coordinate[0] - order.destination.primary_unit_coordinate[0]
+        y_diff = coordinate[1] - order.destination.primary_unit_coordinate[1]
+        CURVINESS = 0.5  # TODO - move to config
+        # A point lying on the perpendicular bisector of the line that the path should curve toward
+        control_point = (
+            mid_point[0] - (y_diff * CURVINESS),
+            mid_point[1] - (x_diff * CURVINESS),
+        )
+        order_path = _create_element(
+            "path",
             {
-                "x1": coordinate[0],
-                "y1": coordinate[1],
-                "x2": order.destination.primary_unit_coordinate[0],
-                "y2": order.destination.primary_unit_coordinate[1],
+                "d": f"M {coordinate[0]},{coordinate[1]} "
+                + f"Q {control_point[0]},{control_point[1]} "
+                + f"  {order.destination.primary_unit_coordinate[0]},{order.destination.primary_unit_coordinate[1]}",
                 "fill": "none",
-                "stroke": "black",
+                "stroke": "red" if isinstance(order, RetreatMove) else "black",
                 "stroke-width": STROKE_WIDTH,
+                "marker-end": "url(#arrow)",
             },
         )
-        element.append(drawn_order)
+        element.append(order_path)
 
     def _draw_support(self, order: Support, coordinate: tuple[float, float]) -> None:
         element = self.moves_svg.getroot()

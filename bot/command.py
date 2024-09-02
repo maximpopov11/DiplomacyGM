@@ -52,13 +52,13 @@ def view_orders(ctx: commands.Context, manager: Manager) -> str:
     if is_gm(ctx.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot view orders as a GM in a non-GM channel.")
-        return manager.get_moves_map(ctx.guild.id, None)
+        return manager.draw_moves_map(ctx.guild.id, None)
 
     player = get_player_by_role(ctx.author, manager, ctx.guild.id)
     if player is not None:
         if not is_player_channel(player.name, ctx.channel):
             raise PermissionError("You cannot view orders as a player outside of your orders channel.")
-        return manager.get_moves_map(ctx.guild.id, player)
+        return manager.draw_moves_map(ctx.guild.id, player)
 
     raise PermissionError("You cannot view orders because you are neither a GM nor a player.")
 
