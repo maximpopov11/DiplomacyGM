@@ -26,6 +26,7 @@ class Mapper:
         self.moves_svg: ElementTree = etree.parse(SVG_PATH)
         self.results_svg: ElementTree = etree.parse(SVG_PATH)
 
+    # TODO: (MAP) manually assert all phantom coordiantes on provinces and coasts are set
     # TODO: (BETA) print svg moves & results files in Discord GM channel
     # TODO: (DB) let's not have a ton of old files: delete moves & results after output (or don't store at all?)
     def get_moves_map(self, player_restriction: Player | None) -> None:

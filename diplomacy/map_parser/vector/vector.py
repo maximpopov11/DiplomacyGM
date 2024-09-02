@@ -353,7 +353,12 @@ class Parser:
                         is_coastal = True
                         break
                 if not coast and province.type != ProvinceType.SEA and is_coastal:
-                    coast = province.coast()
+                    # bad bandaid: this is probably an extra phantom unit, or maybe it's a primary one?
+                    try:
+                        coast = province.coast()
+                    except Exception:
+                        print("Warning: phantom unit skipped, if drawing some move doesn't work this might be why")
+                        continue
 
                 coordinate = _get_unit_coordinates(unit_data)
                 if coast:
