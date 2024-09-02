@@ -59,8 +59,8 @@ class MatrixTransform(Transform):
                 raise RuntimeError("Matrix transform not found")
 
     def transform(self, point: tuple[float, float]) -> tuple[float, float]:
-        x = self.x_dx * point[0] + self.y_dx * point[1] + self.x_c
-        y = self.x_dy * point[0] + self.y_dy * point[1] + self.y_c
+        x = self.x_dx * point[0] + self.x_dy * point[1] + self.x_c
+        y = self.y_dx * point[0] + self.y_dy * point[1] + self.y_c
         return x, y
 
 
