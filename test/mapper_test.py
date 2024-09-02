@@ -15,7 +15,7 @@ def run() -> None:
     dijon = board.get_province("Dijon")
     barcelona = board.get_province("Barcelona")
     orleans = board.get_province("Orleans")
-    corse = board.get_province("Paris")
+    corse = board.get_province("Corse")
     ghent = board.get_province("Ghent")
 
     paris.unit.order = order.Hold()
