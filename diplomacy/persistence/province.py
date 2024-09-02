@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import abstractmethod
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -19,8 +20,13 @@ class Location:
         self.primary_unit_coordinate: tuple[float, float] = primary_unit_coordinate
         self.retreat_unit_coordinate: tuple[float, float] = retreat_unit_coordinate
 
+    @abstractmethod
     def get_owner(self) -> Player | None:
-        raise NotImplementedError("get_owner should be implemented by Location children, not by Location.")
+        pass
+
+    @abstractmethod
+    def get_unit(self) -> Unit | None:
+        pass
 
 
 class ProvinceType(Enum):
@@ -61,6 +67,9 @@ class Province(Location):
 
     def get_owner(self) -> Player | None:
         return self.owner
+
+    def get_unit(self) -> Unit | None:
+        return self.unit
 
     def coast(self) -> Coast:
         if len(self.coasts) != 1:
@@ -128,6 +137,9 @@ class Coast(Location):
 
     def get_owner(self) -> Player | None:
         return self.province.get_owner()
+
+    def get_unit(self) -> Unit | None:
+        return self.province.get_unit()
 
     def get_adjacent_coasts(self) -> set[Coast]:
         # TODO: (BETA) this will generate false positives (e.g. mini province keeping 2 big province coasts apart)

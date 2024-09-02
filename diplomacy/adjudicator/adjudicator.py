@@ -53,7 +53,7 @@ class Adjudicator:
                 self.board,
                 resolve_retreats(self.retreat_map, self.pydip_commands),
             )
-        elif phase.is_adjustments_phase(self.phase):
+        elif phase.is_builds_phase(self.phase):
             ownership_map = translate.get_ownership_map(self.pydip_map, self.board)
             adjustment_counts = translate.get_adjustment_counts(self.board)
             return translate.pydip_adjustments_to_native(
