@@ -31,15 +31,15 @@ class Manager:
             raise RuntimeError("There is no existing game this this server.")
         return board
 
-    def get_moves_map(self, server_id: int, player_restriction: Player | None) -> None:
-        Mapper(self._boards[server_id]).get_moves_map(player_restriction)
+    def draw_moves_map(self, server_id: int, player_restriction: Player | None) -> None:
+        Mapper(self._boards[server_id]).draw_moves_map(player_restriction)
 
     def adjudicate(self, server_id: int) -> None:
         board = Adjudicator(self._boards[server_id]).adjudicate()
         self._boards[server_id] = board
         mapper = Mapper(board)
-        mapper.get_moves_map(None)
-        mapper.get_results_map()
+        mapper.draw_moves_map(None)
+        mapper.draw_results_map()
         # TODO: (DB) update board, moves map, results map at server id at turn in db
         # TODO: (DB) when updating board, update SVG so it can be reread if needed
         # TODO: (DB) protect against malicious inputs (ex. orders) like drop table
