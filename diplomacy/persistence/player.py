@@ -16,7 +16,7 @@ class Player:
         self.centers: set[Province] = centers
         self.units: set[Unit] = units
 
-        self.adjustment_orders: set[order.PlayerOrder] = set()
+        self.build_orders: set[order.PlayerOrder] = set()
 
     def __str__(self):
         return self.name

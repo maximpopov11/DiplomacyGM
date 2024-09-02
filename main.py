@@ -1,6 +1,6 @@
-from test import adjudicator_test
+from test import mapper_test
 
-adjudicator_test.run()
+mapper_test.run()
 
 # bot.run()
 

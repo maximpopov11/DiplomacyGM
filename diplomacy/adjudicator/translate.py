@@ -228,7 +228,7 @@ def get_commands(
 
     # build orders
     for player in board.players:
-        for order in player.adjustment_orders:
+        for order in player.build_orders:
             pydip_player = pydip_players[order.location.get_owner().name]
             if isinstance(order, Build):
                 ownership_map = get_ownership_map(pydip_map, board)

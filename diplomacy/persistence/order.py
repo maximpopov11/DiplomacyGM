@@ -215,12 +215,12 @@ def _parse_order(order: str, player_restriction: Player, board: Board):
     elif is_adjustments_phase(board.phase):
         for keyword in build:
             if keyword in order:
-                player.adjustment_orders.add(Build(parsed_locations[0], _get_unit_type(order)))
+                player.build_orders.add(Build(parsed_locations[0], _get_unit_type(order)))
                 return
 
         for keyword in disband:
             if keyword in order:
-                player.adjustment_orders.add(Disband(parsed_locations[0]))
+                player.build_orders.add(Disband(parsed_locations[0]))
                 return
     else:
         raise ValueError(f"Internal error: invalid phase: {board.phase.name}")
