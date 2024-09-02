@@ -1,5 +1,4 @@
 import re
-import sys
 from typing import Callable
 from xml.etree.ElementTree import Element
 
@@ -14,7 +13,7 @@ from diplomacy.map_parser.vector.config_svg import *
 from diplomacy.map_parser.vector.utils import (
     get_player,
     _get_unit_type,
-    _get_unit_coordinates_and_radius,
+    _get_unit_coordinates,
     get_svg_element_by_id,
     get_translation_for_element,
     add_tuples,
@@ -319,7 +318,7 @@ class Parser:
             for unit_data in layer.getchildren():
                 unit_translation = get_translation_for_element(unit_data)
                 province = self._get_province(unit_data)
-                coordinate, _ = _get_unit_coordinates_and_radius(unit_data)
+                coordinate = _get_unit_coordinates(unit_data)
                 setattr(province, province_key, add_tuples(coordinate, layer_translation, unit_translation))
         fleet_layer_to_key = [
             (self.phantom_primary_fleets_layer, "primary_unit_coordinate"),
@@ -332,7 +331,7 @@ class Parser:
                 # This could either be a sea province or a land coast
                 province_name = self._get_province_name(unit_data)
                 province, coast = self._get_province_and_coast(province_name)
-                coordinate, _ = _get_unit_coordinates_and_radius(unit_data)
+                coordinate = _get_unit_coordinates(unit_data)
                 if coast:
                     setattr(coast, province_key, add_tuples(coordinate, layer_translation, unit_translation))
                 else:
