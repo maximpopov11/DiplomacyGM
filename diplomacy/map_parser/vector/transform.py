@@ -12,6 +12,14 @@ class Transform:
         pass
 
 
+class EmptyTransform(Transform):
+    def __init__(self, element: Element):
+        super().__init__(element)
+
+    def transform(self, point: tuple[float, float]) -> tuple[float, float]:
+        return point
+
+
 class Translation(Transform):
     def __init__(self, element: Element):
         super().__init__(element)
@@ -54,3 +62,15 @@ class MatrixTransform(Transform):
         x = self.x_dx * point[0] + self.y_dx * point[1] + self.x_c
         y = self.x_dy * point[0] + self.y_dy * point[1] + self.y_c
         return x, y
+
+
+def get_transform(element: Element) -> Transform:
+    transform_string: str | None = element.get("transform", None)
+    if not transform_string:
+        return EmptyTransform(element)
+    elif transform_string.startswith("translate"):
+        return Translation(element)
+    elif transform_string.startswith("matrix"):
+        return MatrixTransform(element)
+    else:
+        raise RuntimeError(f"Unknown transform: {transform_string}")

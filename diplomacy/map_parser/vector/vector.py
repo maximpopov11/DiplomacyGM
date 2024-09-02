@@ -10,7 +10,7 @@ from shapely.geometry import Point, Polygon
 from diplomacy.map_parser.vector import cheat_parsing
 from diplomacy.map_parser.vector.config_player import player_to_color, NEUTRAL, BLANK_CENTER
 from diplomacy.map_parser.vector.config_svg import *
-from diplomacy.map_parser.vector.transform import Translation
+from diplomacy.map_parser.vector.transform import get_transform
 from diplomacy.map_parser.vector.utils import (
     get_player,
     _get_unit_type,
@@ -200,7 +200,7 @@ class Parser:
                 province_coordinates.append(former_coordinate)
                 current_index += expected_arguments
 
-            layer_translation = Translation(provinces_layer)
+            layer_translation = get_transform(provinces_layer)
             for index, coordinate in enumerate(province_coordinates):
                 province_coordinates[index] = layer_translation.transform(coordinate)
 
@@ -327,9 +327,9 @@ class Parser:
             (self.phantom_retreat_armies_layer, "retreat_unit_coordinate"),
         ]
         for layer, province_key in army_layer_to_key:
-            layer_translation = Translation(layer)
+            layer_translation = get_transform(layer)
             for unit_data in layer.getchildren():
-                unit_translation = Translation(unit_data)
+                unit_translation = get_transform(unit_data)
                 province = self._get_province(unit_data)
                 coordinate = _get_unit_coordinates(unit_data)
                 setattr(province, province_key, unit_translation.transform(layer_translation.transform(coordinate)))
@@ -339,9 +339,9 @@ class Parser:
             (self.phantom_retreat_fleets_layer, "retreat_unit_coordinate"),
         ]
         for layer, province_key in fleet_layer_to_key:
-            layer_translation = Translation(layer)
+            layer_translation = get_transform(layer)
             for unit_data in layer.getchildren():
-                unit_translation = Translation(unit_data)
+                unit_translation = get_transform(unit_data)
                 # This could either be a sea province or a land coast
                 province_name = self._get_province_name(unit_data)
 

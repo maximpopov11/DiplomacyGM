@@ -1,6 +1,6 @@
 from xml.etree.ElementTree import Element, ElementTree
 
-from diplomacy.map_parser.vector.transform import MatrixTransform
+from diplomacy.map_parser.vector.transform import MatrixTransform, get_transform
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType
 
@@ -34,4 +34,4 @@ def _get_unit_coordinates(
     path: Element = unit_data.find("{http://www.w3.org/2000/svg}path")
     x = float(path.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cx"))
     y = float(path.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cy"))
-    return MatrixTransform(path).transform((x, y))
+    return get_transform(path).transform((x, y))
