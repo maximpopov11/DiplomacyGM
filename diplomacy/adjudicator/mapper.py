@@ -1,3 +1,4 @@
+import math
 from xml.etree.ElementTree import ElementTree, Element
 
 from lxml import etree
@@ -122,36 +123,23 @@ class Mapper:
             {
                 "x": coordinate[0] - RADIUS,
                 "y": coordinate[1] - RADIUS,
-                "width": RADIUS + RADIUS * 1.2 * 2,
-                "height": RADIUS + RADIUS * 1.2 * 2,
+                "width": RADIUS * 2,
+                "height": RADIUS * 2,
                 "fill": "none",
-                "stroke": "green",
+                "stroke": "black",
                 "stroke-width": STROKE_WIDTH,
-                "transform": "rotate(45 100 100)",
+                "transform": f"rotate(45 {coordinate[0]} {coordinate[1]})",
             },
         )
         element.append(drawn_order)
 
     def _draw_move(self, order: Move | ConvoyMove | RetreatMove, coordinate: tuple[float, float]) -> None:
         element = self.moves_svg.getroot()
-        mid_point = (
-            (coordinate[0] + order.destination.primary_unit_coordinate[0]) / 2,
-            (coordinate[1] + order.destination.primary_unit_coordinate[1]) / 2,
-        )
-        x_diff = coordinate[0] - order.destination.primary_unit_coordinate[0]
-        y_diff = coordinate[1] - order.destination.primary_unit_coordinate[1]
-        CURVINESS = 0.5  # TODO - move to config
-        # A point lying on the perpendicular bisector of the line that the path should curve toward
-        control_point = (
-            mid_point[0] - (y_diff * CURVINESS),
-            mid_point[1] - (x_diff * CURVINESS),
-        )
         order_path = _create_element(
             "path",
             {
                 "d": f"M {coordinate[0]},{coordinate[1]} "
-                + f"Q {control_point[0]},{control_point[1]} "
-                + f"  {order.destination.primary_unit_coordinate[0]},{order.destination.primary_unit_coordinate[1]}",
+                + f"   L {order.destination.primary_unit_coordinate[0]},{order.destination.primary_unit_coordinate[1]}",
                 "fill": "none",
                 "stroke": "red" if isinstance(order, RetreatMove) else "black",
                 "stroke-width": STROKE_WIDTH,
@@ -168,14 +156,16 @@ class Mapper:
         y2 = order.source.province.primary_unit_coordinate[1]
         x3 = order.destination.primary_unit_coordinate[0]
         y3 = order.destination.primary_unit_coordinate[1]
-        path = f"M {x1},{y1} {x2},{y2} {x3},{y3}"
         drawn_order = _create_element(
             "path",
             {
-                "d": path,
+                "d": f"M {x1},{y1} Q {x2},{y2} {x3},{y3}",
                 "fill": "none",
                 "stroke": "black",
+                "stroke-dasharray": "5 5",
                 "stroke-width": STROKE_WIDTH,
+                # FIXME: for support holds, is it source == destination? or destination is None? change if needed
+                "marker-end": "url(#arrow)" if order.source.province == order.destination else "",
             },
         )
         element.append(drawn_order)
@@ -184,18 +174,32 @@ class Mapper:
         element = self.moves_svg.getroot()
         x1 = order.source.province.primary_unit_coordinate[0]
         y1 = order.source.province.primary_unit_coordinate[1]
-        x2 = coordinate[0]
-        y2 = coordinate[1]
-        x3 = order.destination.primary_unit_coordinate[0]
-        y3 = order.destination.primary_unit_coordinate[1]
-        path = f"M {x1},{y1} {x2},{y2} {x3},{y3}"
+
+        source_angle = math.atan(
+            (order.source.province.primary_unit_coordinate[1] - coordinate[1])
+            / (order.source.province.primary_unit_coordinate[0] - coordinate[0])
+        )
+        x2 = coordinate[0] + math.cos(source_angle) * RADIUS
+        y2 = coordinate[1] + math.sin(source_angle) * RADIUS
+
+        destination_angle = math.atan(
+            (order.destination.primary_unit_coordinate[1] - coordinate[1])
+            / (order.destination.primary_unit_coordinate[0] - coordinate[0])
+        )
+        x3 = coordinate[0] + math.cos(destination_angle) * RADIUS
+        y3 = coordinate[1] + math.sin(destination_angle) * RADIUS
+
+        x4 = order.destination.primary_unit_coordinate[0]
+        y4 = order.destination.primary_unit_coordinate[1]
+
         drawn_order = _create_element(
             "path",
             {
-                "d": path,
+                "d": f"M {x1},{y1} L {x2},{y2} A {RADIUS},{RADIUS} 0 0 1 {x3},{y3} L {x4},{y4}",
                 "fill": "none",
                 "stroke": "black",
                 "stroke-width": STROKE_WIDTH,
+                "marker-end": "url(#arrow)",
             },
         )
         element.append(drawn_order)
@@ -205,8 +209,8 @@ class Mapper:
         drawn_order = _create_element(
             "circle",
             {
-                "cx": order.province.primary_unit_coordinate[0],
-                "cy": order.province.primary_unit_coordinate[1],
+                "cx": order.location.primary_unit_coordinate[0],
+                "cy": order.location.primary_unit_coordinate[1],
                 "r": 10,
                 "fill": "none",
                 "stroke": "green",

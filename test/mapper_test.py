@@ -17,6 +17,8 @@ def run() -> None:
     orleans = board.get_province("Orleans")
     corse = board.get_province("Corse")
     ghent = board.get_province("Ghent")
+    oxford = board.get_province("Oxford")
+    london = board.get_province("London")
 
     paris.unit.order = order.Hold()
     nantes.unit.order = order.Core()
@@ -25,6 +27,7 @@ def run() -> None:
     dijon.unit.order = order.Support(bordeaux.unit, orleans)
     barcelona.unit.order = order.RetreatDisband()
     france.build_orders.add(order.Build(ghent, UnitType.ARMY))
+    oxford.unit.order = order.Support(london.unit, london)
 
     for unit in board.units:
         if not unit.order:
