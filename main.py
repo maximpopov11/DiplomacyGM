@@ -1,8 +1,9 @@
+from bot import bot
 from test import mapper_test
 
-mapper_test.run()
+# mapper_test.run()
 
-# bot.run()
+bot.run()
 
 # TODO: priorities: (MAP), (ALPHA), <game happens here>, (DB), (BETA)
 

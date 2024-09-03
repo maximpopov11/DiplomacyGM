@@ -4,6 +4,7 @@ from typing import Callable
 import discord
 from discord.ext import commands
 
+from assets.secrets import __DISCORD_TOKEN
 from bot import command
 from diplomacy.persistence.manager import Manager
 
@@ -36,24 +37,22 @@ async def ping(ctx: discord.ext.commands.Context) -> None:
 # TODO: (BETA) allow personal command dictionary editing
 @bot.command(
     brief="Submits orders:"
-          
-          "There must be one and only one order per line."
-          
-          """All multi-word concepts must be separated by a '_'. 
+    "There must be one and only one order per line."
+    """All multi-word concepts must be separated by a '_'. 
           E.g. 'New York North Coast' should be 'New_York_North_Coast'."""
-          
-          """Convoy moves must be explicitly specified at this time due to adjudication library constraints,
+    """Convoy moves must be explicitly specified at this time due to adjudication library constraints,
            meaning 'A move B' and 'A convoy_move B' are not the same."""
-          
-          """A variety of keywords are supported: e.g. '-', 'move', and 'm' are all supported for a move command. 
+    """A variety of keywords are supported: e.g. '-', 'move', and 'm' are all supported for a move command. 
           If you would like to use something that is not currently supported please inform your GM and we can add it."""
 )
 async def order(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.order, ctx)
 
 
-@bot.command(brief="Outputs your current submitted orders. "
-                   "In the future we will support outputting a sample moves map of your orders.")
+@bot.command(
+    brief="Outputs your current submitted orders. "
+    "In the future we will support outputting a sample moves map of your orders."
+)
 async def view_orders(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.view_orders, ctx)
 
@@ -89,5 +88,6 @@ async def edit(ctx: discord.ext.commands.Context) -> None:
 
 
 def run():
-    token = os.getenv("DISCORD_TOKEN")
+    # token = os.getenv("DISCORD_TOKEN")
+    token = __DISCORD_TOKEN
     bot.run(token)
