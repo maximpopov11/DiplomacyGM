@@ -1,4 +1,5 @@
 from bot.utils import get_phase, get_unit_type, get_keywords
+from diplomacy.adjudicator.mapper import Mapper
 from diplomacy.persistence.board import Board
 
 
@@ -25,9 +26,11 @@ def parse_edit_state(message: str, board: Board) -> str:
         for command in invalid:
             response += f"\n{command[0]} with error: {command[1]}"
     else:
-        response = "Commands validated successfully."
+        response = "Commands validated successfully. Results map updated."
 
-    # TODO: (MAP) implement: return updated map as well (similar problem to return map todo in mapper)
+    # TODO: (DB) return map as the response
+    Mapper(board).draw_results_map()
+
     return response
 
 
