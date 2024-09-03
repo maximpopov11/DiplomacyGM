@@ -13,10 +13,10 @@ whitespace_dict = {
     "_",
 }
 
-_north_coast = "north coast"
-_south_coast = "south coast"
-_east_coast = "east coast"
-_west_coast = "west coast"
+_north_coast = "nc"
+_south_coast = "sc"
+_east_coast = "ec"
+_west_coast = "wc"
 
 coast_dict = {
     _north_coast: ["nc", "north coast"],
@@ -72,21 +72,23 @@ def get_keywords(command: str) -> list[str]:
         for i in range(len(keyword)):
             if keyword[i] in whitespace_dict:
                 keyword = keyword[:i] + " " + keyword[i + 1 :]
+
+    for i in range(len(keywords)):
+        keywords[i] = _manage_coast_signature(keywords[i])
+
     return keywords
 
 
-# TODO: (ALPHA): people want to input coasts in different ways, we should support that by using this on location suffix
-def _get_coast_signature(string: str) -> str | None:
-    if string in coast_dict[_north_coast]:
-        return "nc"
-    elif string in coast_dict[_south_coast]:
-        return "sc"
-    elif string in coast_dict[_east_coast]:
-        return "ec"
-    elif string in coast_dict[_west_coast]:
-        return "wc"
-    else:
-        return None
+def _manage_coast_signature(keyword: str) -> str:
+    for coast_key, coast_val in coast_dict.items():
+        # we want to make sure this was a separate word like "zapotec ec" and not part of a word like "zapotec"
+        suffix = f" {coast_val}"
+        if keyword.endswith(suffix):
+            # remove the suffix
+            keyword = keyword[: len(keyword) - len(suffix)]
+            # replace the suffix with the one we expect
+            new_suffix = f" {coast_key}"
+            keyword += f" {new_suffix}"
 
 
 def get_unit_type(command: str) -> UnitType | None:
