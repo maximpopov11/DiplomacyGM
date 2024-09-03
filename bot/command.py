@@ -3,7 +3,7 @@ import random
 from discord.ext import commands
 
 from bot.parse_edit_state import parse_edit_state
-from bot.parse_order import parse_order
+from bot.parse_order import parse_order, parse_remove_order
 from bot.utils import is_gm, is_gm_channel, get_player_by_role, is_player_channel, get_orders
 from diplomacy.persistence.manager import Manager
 
@@ -43,6 +43,23 @@ def order(ctx: commands.Context, manager: Manager) -> str:
         return parse_order(ctx.message.content, player, board)
 
     raise PermissionError("You cannot order units because you are neither a GM nor a player.")
+
+
+def remove_order(ctx: commands.Context, manager: Manager) -> str:
+    board = manager.get_board(ctx.guild.id)
+
+    if is_gm(ctx.author):
+        if not is_gm_channel(ctx.channel):
+            raise PermissionError("You cannot remove orders as a GM in a non-GM channel.")
+        return parse_remove_order(ctx.message.content, None, board)
+
+    player = get_player_by_role(ctx.author, manager, ctx.guild.id)
+    if player is not None:
+        if not is_player_channel(player.name, ctx.channel):
+            raise PermissionError("You cannot remove orders as a player outside of your orders channel.")
+        return parse_remove_order(ctx.message.content, player, board)
+
+    raise PermissionError("You cannot remove orders because you are neither a GM nor a player.")
 
 
 # TODO: (DB) output orders map

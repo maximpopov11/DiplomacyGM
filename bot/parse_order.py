@@ -49,6 +49,25 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
     return response
 
 
+def parse_remove_order(message: str, player_restriction: Player | None, board: Board) -> str:
+    invalid: list[tuple[str, Exception]] = []
+    commands = str.splitlines(message)
+    for command in commands:
+        try:
+            _parse_remove_order(command, player_restriction, board)
+        except Exception as error:
+            invalid.append((command, error))
+
+    if invalid:
+        response = "The following order removals were invalid:"
+        for command in invalid:
+            response += f"\n{command[0]} with error: {command[1]}"
+    else:
+        response = "Orders removed successfully."
+
+    return response
+
+
 def _parse_order(command: str, player_restriction: Player, board: Board) -> None:
     # TODO: (ALPHA) this will mess with provinces that are capitalized
     command = command.lower()
@@ -79,6 +98,27 @@ def _parse_order(command: str, player_restriction: Player, board: Board) -> None
         _parse_player_order(keywords, player_restriction, board)
     else:
         raise ValueError(f"Unknown phase: {board.phase.name}")
+
+
+def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> None:
+    # TODO: (ALPHA) duplicate from above; this will mess with provinces that are capitalized
+    command = command.lower()
+    keywords: list[str] = get_keywords(command)
+    location = keywords[0]
+    province, _ = board.get_province_and_coast(location)
+
+    unit = province.get_unit()
+    if not unit:
+        raise RuntimeError(f"There is no unit in {location}")
+
+    # assert that the command user is authorized to order this unit
+    player = unit.player
+    if player_restriction is not None and player != player_restriction:
+        raise PermissionError(
+            f"{player_restriction.name} does not control the unit in {location} which belongs to {player.name}"
+        )
+
+    unit.order = None
 
 
 def _parse_unit_order(keywords: list[str], unit: Unit, board: Board) -> None:

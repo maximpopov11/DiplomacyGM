@@ -49,6 +49,14 @@ async def order(ctx: discord.ext.commands.Context) -> None:
 
 
 @bot.command(
+    brief="Removes orders for given units (required for removing builds/disbands). "
+    "There must be one and only one order per line."
+)
+async def remove_order(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.remove_order, ctx)
+
+
+@bot.command(
     brief="Outputs your current submitted orders. "
     "In the future we will support outputting a sample moves map of your orders."
 )

@@ -103,7 +103,6 @@ class RetreatDisband(UnitOrder):
         return f"Disbands"
 
 
-# TODO: (ALPHA) what if a player wants to change their build order? need to be able to remove build/disband orders
 class PlayerOrder(Order):
     """Player orders are orders that belong to a player rather than a unit e.g. builds."""
 
