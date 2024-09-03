@@ -1,9 +1,18 @@
+import copy
 import math
 from xml.etree.ElementTree import ElementTree, Element
 
 from lxml import etree
 
-from diplomacy.map_parser.vector.config_svg import SVG_PATH, STROKE_WIDTH, RADIUS
+from diplomacy.map_parser.vector.config_svg import (
+    SVG_PATH,
+    UNITS_LAYER_ID,
+    STROKE_WIDTH,
+    RADIUS,
+    PHANTOM_PRIMARY_ARMY_LAYER_ID,
+    PHANTOM_PRIMARY_FLEET_LAYER_ID,
+)
+from diplomacy.map_parser.vector.utils import get_svg_element
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.order import (
     Hold,
@@ -19,6 +28,7 @@ from diplomacy.persistence.order import (
     Order,
 )
 from diplomacy.persistence.player import Player
+from diplomacy.persistence.unit import Unit, UnitType
 
 
 def _add_arrow_definition_to_svg(svg: ElementTree) -> None:
@@ -50,34 +60,50 @@ def _add_arrow_definition_to_svg(svg: ElementTree) -> None:
 class Mapper:
     def __init__(self, board: Board):
         self.board: Board = board
-        self.moves_svg: ElementTree = etree.parse(SVG_PATH)
-        self.results_svg: ElementTree = etree.parse(SVG_PATH)
+        self.board_svg: ElementTree = etree.parse(SVG_PATH)
 
-        _add_arrow_definition_to_svg(self.moves_svg)
-        _add_arrow_definition_to_svg(self.results_svg)
+        _add_arrow_definition_to_svg(self.board_svg)
+
+        units_layer: Element = get_svg_element(self.board_svg, UNITS_LAYER_ID)
+        self.board_svg.getroot().remove(units_layer)
+
+        self._draw_units()
+        self._color_provinces_and_centers()
+
+        self._moves_svg = copy.deepcopy(self.board_svg)
 
     # TODO: (MAP) manually assert all phantom coordinates on provinces and coasts are set
     # TODO: (BETA) print svg moves & results files in Discord GM channel
     # TODO: (DB) let's not have a ton of old files: delete moves & results after output (or don't store at all?)
     def draw_moves_map(self, player_restriction: Player | None) -> None:
-        # TODO: (MAP) current not getting player orders, get that from board (maybe get all orders at once?)
+        self._reset_moves_map()
+
         for unit in self.board.units:
             if player_restriction and unit.player != player_restriction:
                 continue
 
             coordinate = unit.get_coordinate()
             self._draw_order(unit.order, coordinate)
-        self.moves_svg.write("moves_map.svg")
 
-    def draw_results_map(self) -> None:
-        # TODO: (MAP) get state dif or calculate state diff?
-        self._update_units()
-        self._update_provinces_and_centers()
-        self.moves_svg.write("results_map.svg")
+        players: set[Player]
+        if player_restriction is None:
+            players = self.board.players
+        else:
+            players = {player_restriction}
+        for player in players:
+            for build_order in player.build_orders:
+                self._draw_order(build_order, build_order.location.primary_unit_coordinate)
+
+        self.board_svg.write(f"{self.board.phase.name}_moves_map.svg")
+
+    def draw_current_map(self) -> None:
+        self.board_svg.write(f"{self.board.phase.name}_map.svg")
+
+    def _reset_moves_map(self):
+        self._moves_svg = copy.deepcopy(self.board_svg)
 
     def _draw_order(self, order: Order, coordinate: tuple[float, float]) -> None:
         # TODO: (BETA) draw failed moves on adjudication (not player check) in red
-        # TODO: (MAP) draw arrowhead for move, convoy, support
         if isinstance(order, Hold):
             self._draw_hold(coordinate)
         elif isinstance(order, Core):
@@ -102,7 +128,7 @@ class Mapper:
             raise RuntimeError(f"Unknown order type: {order.__class__}")
 
     def _draw_hold(self, coordinate: tuple[float, float]) -> None:
-        element = self.moves_svg.getroot()
+        element = self._moves_svg.getroot()
         drawn_order = _create_element(
             "circle",
             {
@@ -117,7 +143,7 @@ class Mapper:
         element.append(drawn_order)
 
     def _draw_core(self, coordinate: tuple[float, float]) -> None:
-        element = self.moves_svg.getroot()
+        element = self._moves_svg.getroot()
         drawn_order = _create_element(
             "rect",
             {
@@ -134,7 +160,7 @@ class Mapper:
         element.append(drawn_order)
 
     def _draw_move(self, order: Move | ConvoyMove | RetreatMove, coordinate: tuple[float, float]) -> None:
-        element = self.moves_svg.getroot()
+        element = self._moves_svg.getroot()
         order_path = _create_element(
             "path",
             {
@@ -149,7 +175,7 @@ class Mapper:
         element.append(order_path)
 
     def _draw_support(self, order: Support, coordinate: tuple[float, float]) -> None:
-        element = self.moves_svg.getroot()
+        element = self._moves_svg.getroot()
         x1 = coordinate[0]
         y1 = coordinate[1]
         x2 = order.source.province.primary_unit_coordinate[0]
@@ -171,7 +197,7 @@ class Mapper:
         element.append(drawn_order)
 
     def _draw_convoy(self, order: ConvoyTransport, coordinate: tuple[float, float]) -> None:
-        element = self.moves_svg.getroot()
+        element = self._moves_svg.getroot()
         x1 = order.source.province.primary_unit_coordinate[0]
         y1 = order.source.province.primary_unit_coordinate[1]
 
@@ -205,7 +231,7 @@ class Mapper:
         element.append(drawn_order)
 
     def _draw_build(self, order: Build) -> None:
-        element = self.moves_svg.getroot()
+        element = self._moves_svg.getroot()
         drawn_order = _create_element(
             "circle",
             {
@@ -220,7 +246,7 @@ class Mapper:
         element.append(drawn_order)
 
     def _draw_disband(self, coordinate: tuple[float, float]) -> None:
-        element = self.moves_svg.getroot()
+        element = self._moves_svg.getroot()
         drawn_order = _create_element(
             "circle",
             {
@@ -234,21 +260,44 @@ class Mapper:
         )
         element.append(drawn_order)
 
-    def _update_provinces_and_centers(self) -> None:
+    def _color_provinces_and_centers(self) -> None:
         for province in self.board.provinces:
             # TODO: (MAP) implement
             #  find svg province element, edit fill color (land x1, island x2, sea x0) read off of province
             #  find svg center element, edit core and half-core fill colors read off of province
             pass
 
-    def _update_units(self) -> None:
-        units = self.board.units.copy()
-        # TODO: (MAP) implement
-        #  loop over svg unit elements:
-        #    delete those that are not in a province that has a unit
-        #    edit the rest: province label & position taking into account transforms, removing unit from units
-        #  add new svg element for each remaining unit
-        pass
+    def _draw_units(self) -> None:
+        for unit in self.board.units:
+            self._draw_unit(unit)
+
+    def _draw_unit(self, unit: Unit):
+        unit_element = self._get_element_for_unit_type(unit.unit_type)
+
+        for path in unit_element.getchildren():
+            if path.get("fill_color") is not None:
+                path.set("fill_color", f"#{unit.player.color}")
+
+        coords: tuple[float, float]
+        if unit == unit.province.dislodged_unit:
+            coords = unit.province.retreat_unit_coordinate
+        else:
+            coords = unit.province.primary_unit_coordinate
+
+        # FIXME: broken af; the `m 2124,658` is still there inside the 'path' so all it does is move
+        #  relative to where it was copied from; need to make it work from 0,0
+        # Also, we should set 'id' to province name to make this easier to debug
+        unit_element.set("transform", f"translate({coords[0]},{coords[1]})")
+
+        self.board_svg.getroot().append(unit_element)
+
+    def _get_element_for_unit_type(self, unit_type) -> Element:
+        # Just copy a random phantom unit
+        if unit_type == UnitType.ARMY:
+            layer: Element = get_svg_element(self.board_svg, PHANTOM_PRIMARY_ARMY_LAYER_ID)
+        else:
+            layer: Element = get_svg_element(self.board_svg, PHANTOM_PRIMARY_FLEET_LAYER_ID)
+        return copy.deepcopy(layer.getchildren()[0])
 
 
 def _create_element(tag: str, attributes: dict[str, any]) -> etree.Element:

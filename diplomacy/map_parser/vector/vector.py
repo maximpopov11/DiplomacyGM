@@ -344,7 +344,7 @@ class Parser:
                 # This could either be a sea province or a land coast
                 province_name = self._get_province_name(unit_data)
 
-                # this is me writing bad code to get this out faster, will fix later when we cleanup this file
+                # this is me writing bad code to get this out faster, will fix later when we clean up this file
                 province, coast = self._get_province_and_coast(province_name)
                 is_coastal = False
                 for adjacent in province.adjacent:
