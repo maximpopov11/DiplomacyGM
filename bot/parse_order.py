@@ -69,7 +69,6 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
 
 
 def _parse_order(command: str, player_restriction: Player, board: Board) -> None:
-    # TODO: (ALPHA) this will mess with provinces that are capitalized
     command = command.lower()
     keywords: list[str] = get_keywords(command)
 
@@ -101,7 +100,6 @@ def _parse_order(command: str, player_restriction: Player, board: Board) -> None
 
 
 def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> None:
-    # TODO: (ALPHA) duplicate from above; this will mess with provinces that are capitalized
     command = command.lower()
     keywords: list[str] = get_keywords(command)
     location = keywords[0]

@@ -20,20 +20,24 @@ class Board:
     # TODO: (BETA) make this efficient
     # TODO: (BETA) discord command parsing gets for all of these will have typos, support get near answers (and warn)
     def get_player(self, name: str) -> Player:
-        return next((player for player in self.players if player.name == name), None)
+        # we ignore capitalization because this is primarily used for user input
+        return next((player for player in self.players if player.name.lower() == name.lower()), None)
 
     # TODO: (BETA) make this efficient
     def get_province(self, name: str) -> Province:
-        return next((province for province in self.provinces if province.name == name), None)
+        # we ignore capitalization because this is primarily used for user input
+        return next((province for province in self.provinces if province.name.lower() == name.lower()), None)
 
     def get_province_and_coast(self, name: str) -> tuple[Province, Coast | None]:
         # TODO: (BETA) we build this everywhere, let's just have one live on the Board on init
+        # we ignore capitalization because this is primarily used for user input
+        name = name.lower()
         name_to_province: dict[str, Province] = {}
         name_to_coast: dict[str, Coast] = {}
         for province in self.provinces:
-            name_to_province[province.name] = province
+            name_to_province[province.name.lower()] = province
             for coast in province.coasts:
-                name_to_coast[coast.name] = coast
+                name_to_coast[coast.name.lower()] = coast
 
         coast = name_to_coast.get(name)
         if coast:
