@@ -16,7 +16,6 @@ bot = commands.Bot(command_prefix=".", intents=intents)
 manager = Manager()
 
 
-# TODO: (ALPHA) all commands should have a tooltip specifying ALL regulations on how to use the command w/ examples
 async def _handle_command(
     function: Callable[[commands.Context, Manager], str], ctx: discord.ext.commands.Context
 ) -> None:
