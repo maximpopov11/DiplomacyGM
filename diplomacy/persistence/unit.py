@@ -16,8 +16,8 @@ class UnitType(Enum):
 
 
 unit_type_to_name = {
-    UnitType.ARMY: "Army",
-    UnitType.FLEET: "Fleet",
+    UnitType.ARMY: "A",
+    UnitType.FLEET: "F",
 }
 
 
@@ -39,7 +39,7 @@ class Unit:
         self.order: UnitOrder | None = None
 
     def __str__(self):
-        return f"{self.player} {unit_type_to_name[self.unit_type]} {self.get_location()}"
+        return f"{unit_type_to_name[self.unit_type]} {self.get_location()}"
 
     def get_location(self) -> Location:
         if self.coast:

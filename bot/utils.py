@@ -2,10 +2,12 @@ from discord.ext import commands
 
 from bot.config import gm_roles, gm_channels, player_channel_suffix
 from diplomacy.persistence import phase
+from diplomacy.persistence.board import Board
 from diplomacy.persistence.manager import Manager
-from diplomacy.persistence.phase import Phase
+from diplomacy.persistence.order import Order
+from diplomacy.persistence.phase import Phase, winter_builds
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.unit import UnitType
+from diplomacy.persistence.unit import UnitType, Unit
 
 whitespace_dict = {
     "_",
@@ -65,11 +67,11 @@ def is_player_channel(player_role: str, channel: commands.Context.channel) -> bo
 def get_keywords(command: str) -> list[str]:
     """Command is split by whitespace with '_' representing whitespace in a concept to be stuck in one word.
     e.g. 'A New_York - Boston' becomes ['A', 'New York', '-', 'Boston']"""
-    keywords = command.split(' ')
+    keywords = command.split(" ")
     for keyword in keywords:
         for i in range(len(keyword)):
             if keyword[i] in whitespace_dict:
-                keyword = keyword[:i] + " " + keyword[i+1:]
+                keyword = keyword[:i] + " " + keyword[i + 1 :]
     return keywords
 
 
@@ -109,3 +111,35 @@ def get_phase(command: str) -> Phase | None:
         return phase.winter_builds
     else:
         return None
+
+
+def get_orders(board: Board, player_restriction: Player | None) -> str:
+    if board.phase == winter_builds:
+        for player in board.players:
+            if not player_restriction or player == player_restriction:
+                response = "Received orders:"
+                for order in player.build_orders:
+                    response += f"\n{order}"
+    else:
+        orders: list[Order] = []
+        missing: list[Unit] = []
+
+        for unit in board.units:
+            if not player_restriction or unit.player == player_restriction:
+                order = unit.order
+                if order:
+                    orders.append(order)
+                else:
+                    missing.append(unit)
+
+        response = ""
+        if missing:
+            response += "Missing orders:"
+            for unit in missing:
+                response += f"\n{unit}"
+            response += "\n"
+        if orders:
+            response += "Submitted orders:"
+            for order in orders:
+                response += f"\n{order}"
+        return response

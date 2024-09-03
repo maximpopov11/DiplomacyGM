@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from diplomacy.persistence.province import Location
 
 if TYPE_CHECKING:
-    from diplomacy.persistence.unit import Unit, UnitType
+    from diplomacy.persistence.unit import Unit, UnitType, unit_type_to_name
 
 
 class Order:
@@ -35,10 +35,16 @@ class Hold(UnitOrder):
     def __init__(self):
         super().__init__()
 
+    def __str__(self):
+        return "Holds"
+
 
 class Core(UnitOrder):
     def __init__(self):
         super().__init__()
+
+    def __str__(self):
+        return "Cores"
 
 
 class Move(UnitOrder):
@@ -46,11 +52,17 @@ class Move(UnitOrder):
         super().__init__()
         self.destination: Location = destination
 
+    def __str__(self):
+        return f"- {self.destination}"
+
 
 class ConvoyMove(UnitOrder):
     def __init__(self, destination: Location):
         super().__init__()
         self.destination: Location = destination
+
+    def __str__(self):
+        return f"Convoys - {self.destination}"
 
 
 class ConvoyTransport(ComplexOrder):
@@ -58,11 +70,20 @@ class ConvoyTransport(ComplexOrder):
         super().__init__(source)
         self.destination: Location = destination
 
+    def __str__(self):
+        return f"Convoys {self.source.province} - {self.destination}"
+
 
 class Support(ComplexOrder):
     def __init__(self, source: Unit, destination: Location):
         super().__init__(source)
         self.destination: Location = destination
+
+    def __str__(self):
+        suffix = "to Hold"
+        if self.source.province != self.destination:
+            suffix = f"- {self.destination}"
+        return f"Supports {self.source.province} {suffix}"
 
 
 class RetreatMove(UnitOrder):
@@ -70,10 +91,16 @@ class RetreatMove(UnitOrder):
         super().__init__()
         self.destination: Location = destination
 
+    def __str__(self):
+        return f"- {self.destination}"
+
 
 class RetreatDisband(UnitOrder):
     def __init__(self):
         super().__init__()
+
+    def __str__(self):
+        return f"Disbands"
 
 
 # TODO: (ALPHA) what if a player wants to change their build order? need to be able to remove build/disband orders
@@ -92,9 +119,15 @@ class Build(PlayerOrder):
         super().__init__(location)
         self.unit_type: UnitType = unit_type
 
+    def __str__(self):
+        return f"Build {unit_type_to_name[self.unit_type]} {self.location}"
+
 
 class Disband(PlayerOrder):
     """Disbands are player order because builds are."""
 
     def __init__(self, location: Location):
         super().__init__(location)
+
+    def __str__(self):
+        return f"Disband {self.location}"

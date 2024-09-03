@@ -4,7 +4,7 @@ from discord.ext import commands
 
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order
-from bot.utils import is_gm, is_gm_channel, get_player_by_role, is_player_channel
+from bot.utils import is_gm, is_gm_channel, get_player_by_role, is_player_channel, get_orders
 from diplomacy.persistence.manager import Manager
 
 ping_text_choices = [
@@ -45,20 +45,20 @@ def order(ctx: commands.Context, manager: Manager) -> str:
     raise PermissionError("You cannot order units because you are neither a GM nor a player.")
 
 
+# TODO: (DB) output orders map
 def view_orders(ctx: commands.Context, manager: Manager) -> str:
-    # TODO: (ALPHA) while we don't have a proper view_orders until we have the DB setup, we can print the orders
-    raise RuntimeError("View orders is not yet supported.")
-
     if is_gm(ctx.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot view orders as a GM in a non-GM channel.")
-        return manager.draw_moves_map(ctx.guild.id, None)
+        return get_orders(manager.get_board(ctx.guild.id), None)
+        # return manager.draw_moves_map(ctx.guild.id, None)
 
     player = get_player_by_role(ctx.author, manager, ctx.guild.id)
     if player is not None:
         if not is_player_channel(player.name, ctx.channel):
             raise PermissionError("You cannot view orders as a player outside of your orders channel.")
-        return manager.draw_moves_map(ctx.guild.id, player)
+        return get_orders(manager.get_board(ctx.guild.id), player)
+        # return manager.draw_moves_map(ctx.guild.id, player)
 
     raise PermissionError("You cannot view orders because you are neither a GM nor a player.")
 
