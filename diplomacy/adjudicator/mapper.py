@@ -96,7 +96,7 @@ class Mapper:
             for build_order in player.build_orders:
                 self._draw_order(build_order, build_order.location.primary_unit_coordinate)
 
-        self.board_svg.write(f"{self.board.phase.name}_moves_map.svg")
+        self._moves_svg.write(f"{self.board.phase.name}_moves_map.svg")
 
     def draw_current_map(self) -> None:
         self.board_svg.write(f"{self.board.phase.name}_map.svg")
