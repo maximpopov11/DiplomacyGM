@@ -452,7 +452,7 @@ def initialize_province_resident_data(
     provinces: set[Province],
     resident_dataset: list[Element],
     get_coordinates: Callable[[Element], tuple[float, float]],
-    function: Callable[[Province, Element], None],
+    resident_data_callback: Callable[[Province, Element], None],
 ) -> None:
     resident_dataset = set(resident_dataset)
     for province in provinces:
@@ -470,7 +470,7 @@ def initialize_province_resident_data(
             point = Point((x, y))
             if polygon.contains(point):
                 found = True
-                function(province, resident_data)
+                resident_data_callback(province, resident_data)
                 remove.add(resident_data)
 
         if not found:

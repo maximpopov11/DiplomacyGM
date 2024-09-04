@@ -27,6 +27,7 @@ def run() -> None:
     dijon.unit.order = order.Support(bordeaux.unit, orleans)
     barcelona.unit.order = order.RetreatDisband()
     france.build_orders.add(order.Build(ghent, UnitType.ARMY))
+    ghent.owner = france
     oxford.unit.order = order.Support(london.unit, london)
 
     for unit in board.units:
