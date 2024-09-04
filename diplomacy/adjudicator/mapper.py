@@ -1,5 +1,6 @@
 import copy
 import math
+import re
 from xml.etree.ElementTree import ElementTree, Element
 
 from lxml import etree
@@ -12,7 +13,8 @@ from diplomacy.map_parser.vector.config_svg import (
     PHANTOM_PRIMARY_ARMY_LAYER_ID,
     PHANTOM_PRIMARY_FLEET_LAYER_ID,
 )
-from diplomacy.map_parser.vector.utils import get_svg_element
+from diplomacy.map_parser.vector.transform import Transform, get_transform, MatrixTransform
+from diplomacy.map_parser.vector.utils import get_svg_element, get_unit_coordinates
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.order import (
     Hold,
@@ -275,19 +277,26 @@ class Mapper:
         unit_element = self._get_element_for_unit_type(unit.unit_type)
 
         for path in unit_element.getchildren():
-            if path.get("fill_color") is not None:
-                path.set("fill_color", f"#{unit.player.color}")
+            if path.get("fill") is not None:
+                path.set("fill", f"#{unit.player.color}")
+            if path.get("style") is not None and "fill" in path.get("style"):
+                style = path.get("style")
+                style = re.sub(r"fill:#[0-9a-fA-F]{6}", f"fill:#{unit.player.color}", style)
+                path.set("style", style)
 
-        coords: tuple[float, float]
+        current_coords = get_unit_coordinates(unit_element)
+
+        desired_coords: tuple[float, float]
         if unit == unit.province.dislodged_unit:
-            coords = unit.province.retreat_unit_coordinate
+            desired_coords = unit.province.retreat_unit_coordinate
         else:
-            coords = unit.province.primary_unit_coordinate
+            desired_coords = unit.province.primary_unit_coordinate
 
-        # FIXME: broken af; the `m 2124,658` is still there inside the 'path' so all it does is move
-        #  relative to where it was copied from; need to make it work from 0,0
-        # Also, we should set 'id' to province name to make this easier to debug
-        unit_element.set("transform", f"translate({coords[0]},{coords[1]})")
+        unit_element.set(
+            "transform", f"translate({desired_coords[0] - current_coords[0]},{desired_coords[1] - current_coords[1]})"
+        )
+        unit_element.set("id", unit.province.name)
+        # Would be nice to set inkscape:label as well but lxml hates it
 
         self.board_svg.getroot().append(unit_element)
 
