@@ -1,11 +1,11 @@
 from bot import bot
 from test import mapper_test
 
-# mapper_test.run()
+mapper_test.run()
 
-bot.run()
+# bot.run()
 
-# TODO: priorities: (MAP), (ALPHA), <game happens here>, (DB), (BETA)
+# TODO: priorities: (MAP), (ALPHA), <game starts here>, (QOL), (DB), (BETA)
 
 # TODO: (ALPHA) update readme (how to use bot)
 # TODO: (ALPHA) conduct testing: test solo, test group, live game test

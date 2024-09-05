@@ -28,6 +28,7 @@ def ping(ctx: commands.Context, _: Manager) -> str:
     return response
 
 
+# TODO: (DB) warning cron when in cloud
 def order(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
 
@@ -101,6 +102,8 @@ def rollback(ctx: commands.Context, manager: Manager) -> str:
     return manager.rollback()
 
 
+# TODO: (QOL) allow players to use this
+# TODO: (QOL) include VSCC calculations
 def get_scoreboard(ctx: commands.Context, manager: Manager) -> str:
     if not is_gm(ctx.author):
         raise PermissionError("You cannot get the scoreboard because you are not a GM.")
