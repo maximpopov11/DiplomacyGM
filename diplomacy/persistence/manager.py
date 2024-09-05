@@ -38,8 +38,10 @@ class Manager:
         board = Adjudicator(self._boards[server_id]).adjudicate()
         self._boards[server_id] = board
         mapper = Mapper(board)
-        mapper.draw_moves_map(None)
-        mapper.draw_results_map()
+        mapper.draw_moves_map(
+            None
+        )  # FIXME: you should draw moves on the previous 'board', get results from the new one
+        mapper.draw_current_map()
         # TODO: (DB) update board, moves map, results map at server id at turn in db
         # TODO: (DB) when updating board, update SVG so it can be reread if needed
         # TODO: (DB) protect against malicious inputs (ex. orders) like drop table

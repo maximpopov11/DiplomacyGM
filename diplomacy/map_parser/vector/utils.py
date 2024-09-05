@@ -28,7 +28,7 @@ def _get_unit_type(unit_data: Element) -> UnitType:
         raise RuntimeError(f"Unit has {num_sides} sides which does not match any unit definition.")
 
 
-def _get_unit_coordinates(
+def get_unit_coordinates(
     unit_data: Element,
 ) -> tuple[float, float]:
     path: Element = unit_data.find("{http://www.w3.org/2000/svg}path")

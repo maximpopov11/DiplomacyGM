@@ -14,7 +14,7 @@ from diplomacy.map_parser.vector.transform import get_transform
 from diplomacy.map_parser.vector.utils import (
     get_player,
     _get_unit_type,
-    _get_unit_coordinates,
+    get_unit_coordinates,
     get_svg_element,
 )
 from diplomacy.persistence.board import Board
@@ -330,7 +330,7 @@ class Parser:
             for unit_data in layer.getchildren():
                 unit_translation = get_transform(unit_data)
                 province = self._get_province(unit_data)
-                coordinate = _get_unit_coordinates(unit_data)
+                coordinate = get_unit_coordinates(unit_data)
                 setattr(province, province_key, unit_translation.transform(layer_translation.transform(coordinate)))
 
         fleet_layer_to_key = [
@@ -344,7 +344,7 @@ class Parser:
                 # This could either be a sea province or a land coast
                 province_name = self._get_province_name(unit_data)
 
-                # this is me writing bad code to get this out faster, will fix later when we cleanup this file
+                # this is me writing bad code to get this out faster, will fix later when we clean up this file
                 province, coast = self._get_province_and_coast(province_name)
                 is_coastal = False
                 for adjacent in province.adjacent:
@@ -359,7 +359,7 @@ class Parser:
                         print("Warning: phantom unit skipped, if drawing some move doesn't work this might be why")
                         continue
 
-                coordinate = _get_unit_coordinates(unit_data)
+                coordinate = get_unit_coordinates(unit_data)
                 translated_coordinate = unit_translation.transform(layer_translation.transform(coordinate))
                 if coast:
                     setattr(coast, province_key, translated_coordinate)
@@ -452,7 +452,7 @@ def initialize_province_resident_data(
     provinces: set[Province],
     resident_dataset: list[Element],
     get_coordinates: Callable[[Element], tuple[float, float]],
-    function: Callable[[Province, Element], None],
+    resident_data_callback: Callable[[Province, Element], None],
 ) -> None:
     resident_dataset = set(resident_dataset)
     for province in provinces:
@@ -470,7 +470,7 @@ def initialize_province_resident_data(
             point = Point((x, y))
             if polygon.contains(point):
                 found = True
-                function(province, resident_data)
+                resident_data_callback(province, resident_data)
                 remove.add(resident_data)
 
         if not found:

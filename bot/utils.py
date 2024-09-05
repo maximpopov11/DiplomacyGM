@@ -19,10 +19,10 @@ _east_coast = "ec"
 _west_coast = "wc"
 
 coast_dict = {
-    _north_coast: ["nc", "north coast"],
-    _south_coast: ["sc", "south coast"],
-    _east_coast: ["ec", "east coast"],
-    _west_coast: ["wc", "west coast"],
+    _north_coast: ["nc", "north coast", "(nc)"],
+    _south_coast: ["sc", "south coast", "(sc)"],
+    _east_coast: ["ec", "east coast", "(ec)"],
+    _west_coast: ["wc", "west coast", "(wc)"],
 }
 
 _army = "army"
@@ -64,6 +64,7 @@ def is_player_channel(player_role: str, channel: commands.Context.channel) -> bo
     return player_channel == channel.name
 
 
+# TODO: (QOL) it'd be great if we don't need the underscores
 def get_keywords(command: str) -> list[str]:
     """Command is split by whitespace with '_' representing whitespace in a concept to be stuck in one word.
     e.g. 'A New_York - Boston' becomes ['A', 'New York', '-', 'Boston']"""
