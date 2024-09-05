@@ -13,6 +13,11 @@ def create_high_seas_and_sands(provinces: set[Province], name_to_province: dict[
     _create_high_province("INO", 5, ProvinceType.SEA, provinces, name_to_province)
     _create_high_province("NPO", 5, ProvinceType.SEA, provinces, name_to_province)
     _create_high_province("SPO", 5, ProvinceType.SEA, provinces, name_to_province)
+    existing_sah = set()
+    for province in provinces:
+        if province.name[:3] == "SAH":  # These get created because they're land tiles, remove them
+            existing_sah.add(province)
+    provinces = provinces - existing_sah
     _create_high_province("SAH", 3, ProvinceType.LAND, provinces, name_to_province)
 
     # set adjacencies
