@@ -1,9 +1,13 @@
+import logging
+
 from diplomacy.adjudicator.adjudicator import Adjudicator
 from diplomacy.adjudicator.mapper import Mapper
 from diplomacy.map_parser.vector.vector import Parser
 from diplomacy.persistence.board import Board
+from diplomacy.persistence.db import database
 from diplomacy.persistence.player import Player
 
+logger = logging.getLogger(__name__)
 
 # TODO: (DB) variants table that holds starting state & map: insert parsed Imp Dip for now
 # TODO: (DB) games table (copy of a variant data, has server ID)
@@ -13,12 +17,15 @@ class Manager:
     """Manager acts as an intermediary between Bot (the Discord API), Board (the board state), the database."""
 
     def __init__(self):
+        # TODO - boards should be loaded from the DB, so you don't have to recreate each time
         self._boards: dict[int, Board] = {}
+        self._connection = database.get_connection()
 
     def create_game(self, server_id: int) -> str:
-        if self._boards[server_id]:
+        if self._boards.get(server_id):
             raise RuntimeError("A game already exists in this server.")
 
+        logger.info(f"Creating new [ImpDip] game in server {server_id}")
         # TODO: (DB) get board from variant DB
         self._boards[server_id] = Parser().parse()
 
@@ -26,7 +33,7 @@ class Manager:
         raise RuntimeError("Game creation has not yet been implemented.")
 
     def get_board(self, server_id: int) -> Board:
-        board = self._boards[server_id]
+        board = self._boards.get(server_id)
         if not board:
             raise RuntimeError("There is no existing game this this server.")
         return board
