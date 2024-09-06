@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS boards (
 CREATE TABLE IF NOT EXISTS players (
     board_id int,
     player_name text,
-    username text,
     color varchar(6),
     PRIMARY KEY (board_id, player_name),
     FOREIGN KEY (board_id) REFERENCES boards (board_id));

@@ -102,10 +102,12 @@ async def edit(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.edit, ctx)
 
 
-# TODO: (DB) support create_game
-# @bot.command(brief="Create a game of Imp Dip and output the map. (there are no other variant options at this time)")
-# async def create_game(ctx: discord.ext.commands.Context) -> None:
-#     await _handle_command(command.create_game, ctx)
+@bot.command(
+    brief="Create a game of Imp Dip and output the map.",
+    description="Create a game of Imp Dip and output the map. (there are no other variant options at this time)",
+)
+async def create_game(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.create_game, ctx)
 
 
 def run():

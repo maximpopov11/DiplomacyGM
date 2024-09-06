@@ -1,11 +1,11 @@
-import sqlite3
 import logging
+import sqlite3
 
 from diplomacy.map_parser.vector.config_svg import SVG_PATH
 from diplomacy.map_parser.vector.vector import Parser
 from diplomacy.persistence.board import Board
-from diplomacy.persistence.player import Player
-from diplomacy.persistence.unit import UnitType
+from diplomacy.persistence.phase import phases
+from diplomacy.persistence.unit import UnitType, Unit
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +13,9 @@ SQL_FILE_PATH = "bot_db.sqlite"
 
 
 class _DatabaseConnection:
-    def __init__(self):
+    def __init__(self, db_file: str = SQL_FILE_PATH):
         try:
-            self._connection = sqlite3.connect(SQL_FILE_PATH)
+            self._connection = sqlite3.connect(db_file)
             logger.info("Connection to SQLite DB successful")
         except IOError as ex:
             logger.error("Could not open SQLite DB", exc_info=ex)
@@ -32,21 +32,89 @@ class _DatabaseConnection:
 
     def get_boards(self) -> dict[int, Board]:
         cursor = self._connection.cursor()
+
         board_data = cursor.execute("SELECT * FROM boards").fetchall()
+        logger.info(f"Loading {len(board_data)} boards from DB")
+        boards = dict()
         for board_row in board_data:
             board_id, svg_file, phase_string = board_row
+            logger.info(f"Loading board with ID {board_id}")
+
+            # TODO - we should eventually store things like coords, adjacencies, etc
+            #  so we don't have to reparse the whole board each time
+            board = Parser().parse()
+            board.phase = next(phase for phase in phases if phase.name == phase_string)
 
             player_data = cursor.execute(
-                "SELECT player_name, username, color FROM players WHERE board_id=?", (board_id,)
+                "SELECT player_name, color FROM players WHERE board_id=?", (board_id,)
             ).fetchall()
-            # TODO: add username to Player constructor, so we can pass it in too
-            players = {Player(player_name, color, set(), set()) for player_name, username, color in player_data}
+            player_info_by_name = {player_name: color for player_name, color in player_data}
+            for player in board.players:
+                if player.name not in player_info_by_name:
+                    logger.warning(f"Couldn't find player {player.name} in DB")
+                    continue
+                color = player_info_by_name[player.name]
+                player.color = color
+                player.units = set()
+                player.centers = set()
+                # TODO - player build orders
 
-            # TODO: finish this
-            pass
+            province_data = cursor.execute(
+                "SELECT province_name, owner, core, half_core FROM provinces WHERE board_id=?", (board_id,)
+            ).fetchall()
+            province_info_by_name = {
+                province_name: (owner, core, half_core) for province_name, owner, core, half_core in province_data
+            }
+            unit_data = cursor.execute(
+                "SELECT location, is_dislodged, owner, is_army FROM units WHERE board_id=?", (board_id,)
+            ).fetchall()
+
+            for province in board.provinces:
+                if province.name not in province_info_by_name:
+                    logger.warning(f"Couldn't find province {province.name} in DB")
+                else:
+                    owner, core, half_core = province_info_by_name[province.name]
+
+                    if owner is not None:
+                        owner_player = board.get_player(owner)
+                        province.owner = owner_player
+
+                        if province.has_supply_center:
+                            owner_player.centers.add(province)
+                    else:
+                        province.owner = None
+
+                    core_player = None
+                    if core is not None:
+                        core_player = board.get_player(core)
+                    province.core = core_player
+
+                    half_core_player = None
+                    if half_core is not None:
+                        half_core_player = board.get_player(half_core)
+                    province.half_core = half_core_player
+                    province.unit = None
+                    province.dislodged_unit = None
+
+            board.units.clear()
+            for unit_info in unit_data:
+                location, is_dislodged, owner, is_army = unit_info
+                province, coast = board.get_province_and_coast(location)
+                owner_player = board.get_player(owner)
+                unit = Unit(UnitType.ARMY if is_army else UnitType.FLEET, owner_player, province, coast, None)
+                # TODO - unit orders
+                if is_dislodged:
+                    province.dislodged_unit = unit
+                else:
+                    province.unit = unit
+                owner_player.units.add(unit)
+                board.units.add(unit)
+
+            boards[board_id] = board
 
         cursor.close()
-        return dict()
+        logger.info("Successfully loaded")
+        return boards
 
     def save_board(self, board_id: int, board: Board):
         # TODO: Check if board already exists
@@ -55,8 +123,8 @@ class _DatabaseConnection:
             "INSERT INTO boards (board_id, map_file, phase) VALUES (?, ?, ?);", (board_id, SVG_PATH, board.phase.name)
         )
         cursor.executemany(
-            "INSERT INTO players (board_id, player_name, username, color) VALUES (?, ?, ?, ?)",
-            [(board_id, player.name, player.username, player.color) for player in board.players],
+            "INSERT INTO players (board_id, player_name, color) VALUES (?, ?, ?)",
+            [(board_id, player.name, player.color) for player in board.players],
         )
         cursor.executemany(
             "INSERT INTO provinces (board_id, province_name, owner, core, half_core) VALUES (?, ?, ?, ?, ?)",
@@ -76,7 +144,7 @@ class _DatabaseConnection:
             [
                 (
                     board_id,
-                    unit.province.name,
+                    unit.coast.name if unit.coast is not None else unit.province.name,
                     unit == unit.province.dislodged_unit,
                     unit.player.name,
                     unit.unit_type == UnitType.ARMY,

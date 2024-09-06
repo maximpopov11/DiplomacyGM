@@ -19,7 +19,7 @@ _disband = "disband"
 _order_dict = {
     _hold: ["h", "hold", "holds"],
     _move: ["-", "->", "to", "m", "move", "moves"],
-    _convoy_move: ["cm", "convoy -", "convoy ->", "convoy to", "convoy m", "convoy move", "convoy moves"],
+    _convoy_move: ["c-", "cm", "convoy -", "convoy ->", "convoy to", "convoy m", "convoy move", "convoy moves"],
     _support: ["s", "support", "supports"],
     _convoy: ["c", "convoy", "convoys"],
     _core: ["core", "cores"],

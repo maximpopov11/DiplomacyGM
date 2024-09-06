@@ -19,6 +19,8 @@ fall_moves.next = fall_retreats
 fall_retreats.next = winter_builds
 winter_builds.next = spring_moves
 
+phases = [spring_moves, spring_retreats, fall_moves, fall_retreats, winter_builds]
+
 
 def is_moves_phase(phase: Phase) -> bool:
     return phase == spring_moves or phase == fall_moves
