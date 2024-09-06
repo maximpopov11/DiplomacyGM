@@ -1,6 +1,7 @@
 from bot.utils import get_unit_type, get_keywords
 from diplomacy.persistence import order
 from diplomacy.persistence.board import Board
+from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.phase import is_moves_phase, is_retreats_phase, is_builds_phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import Unit
@@ -30,14 +31,22 @@ _order_dict = {
 }
 
 
-def parse_order(message: str, player_restriction: Player | None, board: Board) -> str:
+def parse_order(message: str, player_restriction: Player | None, board: Board, board_id: int) -> str:
     invalid: list[tuple[str, Exception]] = []
     commands = str.splitlines(message)
+    updated_units: set[Unit] = set()
     for command in commands:
+        if command.strip() == ".order":
+            continue
         try:
-            _parse_order(command, player_restriction, board)
+            unit = _parse_order(command, player_restriction, board)
+            if unit is not None:
+                updated_units.add(unit)
         except Exception as error:
             invalid.append((command, error))
+
+    database = get_connection()
+    database.save_order_for_units(board_id, list(updated_units))
 
     if invalid:
         response = "The following orders were invalid:"
@@ -68,9 +77,11 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
     return response
 
 
-def _parse_order(command: str, player_restriction: Player, board: Board) -> None:
+def _parse_order(command: str, player_restriction: Player, board: Board) -> Unit | None:
     command = command.lower()
     keywords: list[str] = get_keywords(command)
+    if keywords[0] == ".order":
+        keywords = keywords[1:]
 
     is_unit_order = is_moves_phase(board.phase) or is_retreats_phase(board.phase)
     if is_unit_order:
@@ -93,8 +104,10 @@ def _parse_order(command: str, player_restriction: Player, board: Board) -> None
             )
 
         _parse_unit_order(keywords, unit, board)
+        return unit
     elif is_builds_phase(board.phase):
         _parse_player_order(keywords, player_restriction, board)
+        return None
     else:
         raise ValueError(f"Unknown phase: {board.phase.name}")
 

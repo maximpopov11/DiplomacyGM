@@ -38,13 +38,13 @@ def order(ctx: commands.Context, manager: Manager) -> str:
     if is_gm(ctx.message.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot order as a GM in a non-GM channel.")
-        return parse_order(ctx.message.content, None, board)
+        return parse_order(ctx.message.content, None, board, ctx.guild.id)
 
     player = get_player_by_role(ctx.message.author, manager, ctx.guild.id)
     if player is not None:
         if not is_player_channel(player.name, ctx.channel):
             raise PermissionError("You cannot order as a player outside of your orders channel.")
-        return parse_order(ctx.message.content, player, board)
+        return parse_order(ctx.message.content, player, board, ctx.guild.id)
 
     raise PermissionError("You cannot order units because you are neither a GM nor a player.")
 
