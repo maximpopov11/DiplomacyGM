@@ -1,3 +1,4 @@
+import logging
 import random
 
 from discord.ext import commands
@@ -6,6 +7,8 @@ from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
 from bot.utils import is_gm, is_gm_channel, get_player_by_role, is_player_channel, get_orders
 from diplomacy.persistence.manager import Manager
+
+logger = logging.getLogger(__name__)
 
 ping_text_choices = [
     "proudly states",

@@ -1,17 +1,30 @@
-from bot import bot
-from test import mapper_test
+import logging
+import os
 
-mapper_test.run()
+# from bot import bot
+
+log_level = logging.getLevelNamesMapping().get(os.getenv("log_level", "INFO"))
+if not log_level:
+    log_level = logging.INFO
+logging.basicConfig(level=log_level)
+# from test import mapper_test
+
+# mapper_test.run()
 
 # bot.run()
 
-# TODO: priorities: (MAP), (ALPHA), <game starts here>, (QOL), (DB), (BETA)
+from test import db_test
+
+db_test.run()
+
+# TODO: priorities: (MAP), (ALPHA), <game starts here>, (QOL), <re-organize TODOs/FIXMEs>, (DB), (BETA)
 
 # TODO: (ALPHA) update readme (how to use bot)
 # TODO: (ALPHA) conduct testing: test solo, test group, live game test
 
 # TODO: (DB) setup DB and test db write & db read
 # TODO: (DB) assert that the DB is backed up (needs to be a current up-to-date backup)
+# TODO: (DB) ensure resiliency to all errors & log
 
 # TODO: (BETA) some files (read vector.py) are really bad, clean them up
 # TODO: (BETA): import by file instead of by thing in file?
