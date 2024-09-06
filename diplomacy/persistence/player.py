@@ -12,7 +12,6 @@ if TYPE_CHECKING:
 class Player:
     def __init__(self, name: str, color: str, centers: set[Province], units: set[Unit]):
         self.name: str = name
-        self.username: str | None = None
         self.color: str = color
         self.centers: set[Province] = centers
         self.units: set[Unit] = units
