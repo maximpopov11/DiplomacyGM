@@ -95,8 +95,17 @@ async def scoreboard(ctx: discord.ext.commands.Context) -> None:
 
 @bot.command(
     brief="Edits the game state and outputs the results map.",
-    description="Edits the game state and outputs the results map. "
-    "Note: you cannot edit immalleable map state (eg. province adjacency).",
+    description="""Edits the game state and outputs the results map. 
+    There must be one and only one command per line.
+    Note: you cannot edit immalleable map state (eg. province adjacency).
+    The following are the supported sub-commands:
+    * set_phase {spring, fall, winter} {moves, retreats, builds}
+    * set_core <province_name> <player_name>
+    * set_half_core <province_name> <player_name>
+    * set_province_owner <province_name> <player_name>
+    * create_unit {A, F} <player_name> <province_name>
+    * delete_unit <province_name>
+    * move_unit <province_name> <province_name>""",
 )
 async def edit(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.edit, ctx)
