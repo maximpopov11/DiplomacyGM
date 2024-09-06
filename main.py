@@ -1,9 +1,7 @@
 import logging
 import os
 
-from bot import bot
-from diplomacy.map_parser.vector.vector import Parser
-from diplomacy.persistence.db.database import get_connection
+# from bot import bot
 
 log_level = logging.getLevelNamesMapping().get(os.getenv("log_level", "INFO"))
 if not log_level:
@@ -15,11 +13,9 @@ logging.basicConfig(level=log_level)
 
 # bot.run()
 
-database = get_connection()
-print(database.get_boards())
-board_parser = Parser()
-board = board_parser.parse()
-database.save_board(0, board)
+from test import db_test
+
+db_test.run()
 
 # TODO: priorities: (MAP), (ALPHA), <game starts here>, (QOL), (DB), (BETA)
 
