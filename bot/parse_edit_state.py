@@ -3,13 +3,13 @@ from diplomacy.adjudicator.mapper import Mapper
 from diplomacy.persistence.board import Board
 
 
-_set_phase_str = "set_phase"
-_set_core_str = "set_core"
-_set_half_core_str = "set_half_core"
-_set_province_owner_str = "set_province_owner"
-_create_unit_str = "create_unit"
-_delete_unit_str = "delete_unit"
-_move_unit_str = "move_unit"
+_set_phase_str = "set phase"
+_set_core_str = "set core"
+_set_half_core_str = "set half core"
+_set_province_owner_str = "set province owner"
+_create_unit_str = "create unit"
+_delete_unit_str = "delete unit"
+_move_unit_str = "move unit"
 
 
 def parse_edit_state(message: str, board: Board) -> str:
@@ -29,7 +29,7 @@ def parse_edit_state(message: str, board: Board) -> str:
         response = "Commands validated successfully. Results map updated."
 
     # TODO: (DB) return map as the response
-    Mapper(board).draw_results_map()
+    Mapper(board).draw_current_map()
 
     return response
 
@@ -77,6 +77,7 @@ def _set_province_half_core(keywords: list[str], board: Board) -> None:
 def _set_province_owner(keywords: list[str], board: Board) -> None:
     province = board.get_province(keywords[0])
     player = board.get_player(keywords[1])
+    board.change_owner(province, player)
     province.owner = player
 
 

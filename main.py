@@ -13,9 +13,9 @@ logging.basicConfig(level=log_level)
 
 # bot.run()
 
-from test import db_test
+from test import db_test, functional_test
 
-db_test.run()
+functional_test.run()
 
 # TODO: priorities: (MAP), (ALPHA), <game starts here>, (QOL), <re-organize TODOs/FIXMEs>, (DB), (BETA)
 

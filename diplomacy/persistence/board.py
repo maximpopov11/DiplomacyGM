@@ -58,6 +58,14 @@ class Board:
         build_counts = sorted(build_counts, key=lambda counts: counts[1])
         return build_counts
 
+    def change_owner(self, province: Province, player: Player):
+        if province.has_supply_center:
+            if province.owner:
+                province.owner.centers.remove(province)
+            if player:
+                player.centers.add(province)
+        province.owner = player
+
     def create_unit(
         self,
         unit_type: UnitType,

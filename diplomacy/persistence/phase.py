@@ -6,6 +6,9 @@ class Phase:
         self.name = name
         self.next = None
 
+    def __str__(self):
+        return self.name
+
 
 spring_moves = Phase("Spring Moves")
 spring_retreats = Phase("Spring Retreats")

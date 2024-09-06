@@ -22,15 +22,15 @@ async def _handle_command(
     function: Callable[[commands.Context, Manager], str], ctx: discord.ext.commands.Context
 ) -> None:
     try:
-        logger.debug(f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.author.name}) - '{ctx.message.content}'")
+        logger.debug(f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}'")
         response = function(ctx, manager)
         logger.debug(
-            f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.author.name}) - '{ctx.message.content}' -> \n{response}"
+            f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{response}"
         )
         await ctx.channel.send(response)
     except Exception as e:
         logger.error(
-            f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.author.name}) "
+            f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) "
             f"invoking '{getattr(function, "__name__", "Unknown")}': {repr(e)}"
         )
         logger.debug("", exc_info=e)

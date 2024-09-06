@@ -69,10 +69,10 @@ def get_keywords(command: str) -> list[str]:
     """Command is split by whitespace with '_' representing whitespace in a concept to be stuck in one word.
     e.g. 'A New_York - Boston' becomes ['A', 'New York', '-', 'Boston']"""
     keywords = command.split(" ")
-    for keyword in keywords:
-        for i in range(len(keyword)):
-            if keyword[i] in whitespace_dict:
-                keyword = keyword[:i] + " " + keyword[i + 1 :]
+    for i in range(len(keywords)):
+        for j in range(len(keywords[i])):
+            if keywords[i][j] in whitespace_dict:
+                keywords[i] = keywords[i][:j] + " " + keywords[i][j + 1 :]
 
     for i in range(len(keywords)):
         keywords[i] = _manage_coast_signature(keywords[i])
@@ -90,6 +90,7 @@ def _manage_coast_signature(keyword: str) -> str:
             # replace the suffix with the one we expect
             new_suffix = f" {coast_key}"
             keyword += f" {new_suffix}"
+    return keyword
 
 
 def get_unit_type(command: str) -> UnitType | None:

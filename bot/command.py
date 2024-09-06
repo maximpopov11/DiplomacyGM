@@ -35,12 +35,12 @@ def ping(ctx: commands.Context, _: Manager) -> str:
 def order(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
 
-    if is_gm(ctx.author):
+    if is_gm(ctx.message.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot order as a GM in a non-GM channel.")
         return parse_order(ctx.message.content, None, board)
 
-    player = get_player_by_role(ctx.author, manager, ctx.guild.id)
+    player = get_player_by_role(ctx.message.author, manager, ctx.guild.id)
     if player is not None:
         if not is_player_channel(player.name, ctx.channel):
             raise PermissionError("You cannot order as a player outside of your orders channel.")
@@ -52,12 +52,12 @@ def order(ctx: commands.Context, manager: Manager) -> str:
 def remove_order(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
 
-    if is_gm(ctx.author):
+    if is_gm(ctx.message.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot remove orders as a GM in a non-GM channel.")
         return parse_remove_order(ctx.message.content, None, board)
 
-    player = get_player_by_role(ctx.author, manager, ctx.guild.id)
+    player = get_player_by_role(ctx.message.author, manager, ctx.guild.id)
     if player is not None:
         if not is_player_channel(player.name, ctx.channel):
             raise PermissionError("You cannot remove orders as a player outside of your orders channel.")
@@ -68,13 +68,13 @@ def remove_order(ctx: commands.Context, manager: Manager) -> str:
 
 # TODO: (DB) output orders map
 def view_orders(ctx: commands.Context, manager: Manager) -> str:
-    if is_gm(ctx.author):
+    if is_gm(ctx.message.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot view orders as a GM in a non-GM channel.")
         return get_orders(manager.get_board(ctx.guild.id), None)
         # return manager.draw_moves_map(ctx.guild.id, None)
 
-    player = get_player_by_role(ctx.author, manager, ctx.guild.id)
+    player = get_player_by_role(ctx.message.author, manager, ctx.guild.id)
     if player is not None:
         if not is_player_channel(player.name, ctx.channel):
             raise PermissionError("You cannot view orders as a player outside of your orders channel.")
@@ -85,7 +85,7 @@ def view_orders(ctx: commands.Context, manager: Manager) -> str:
 
 
 def adjudicate(ctx: commands.Context, manager: Manager) -> str:
-    if not is_gm(ctx.author):
+    if not is_gm(ctx.message.author):
         raise PermissionError("You cannot adjudicate because you are not a GM.")
 
     if not is_gm_channel(ctx.channel):
@@ -96,7 +96,7 @@ def adjudicate(ctx: commands.Context, manager: Manager) -> str:
 
 
 def rollback(ctx: commands.Context, manager: Manager) -> str:
-    if not is_gm(ctx.author):
+    if not is_gm(ctx.message.author):
         raise PermissionError("You cannot rollback because you are not a GM.")
 
     if not is_gm_channel(ctx.channel):
@@ -108,7 +108,7 @@ def rollback(ctx: commands.Context, manager: Manager) -> str:
 # TODO: (QOL) allow players to use this
 # TODO: (QOL) include VSCC calculations
 def get_scoreboard(ctx: commands.Context, manager: Manager) -> str:
-    if not is_gm(ctx.author):
+    if not is_gm(ctx.message.author):
         raise PermissionError("You cannot get the scoreboard because you are not a GM.")
 
     if not is_gm_channel(ctx.channel):
@@ -123,7 +123,7 @@ def get_scoreboard(ctx: commands.Context, manager: Manager) -> str:
 
 def edit(ctx: commands.Context, manager: Manager) -> str:
     # TODO: (BETA) allow Admins in hub server in bot channel to edit constant map features
-    if not is_gm(ctx.author):
+    if not is_gm(ctx.message.author):
         raise PermissionError("You cannot edit the game state because you are not a GM.")
 
     if not is_gm_channel(ctx.channel):
@@ -133,7 +133,7 @@ def edit(ctx: commands.Context, manager: Manager) -> str:
 
 
 def create_game(ctx: commands.Context, manager: Manager) -> str:
-    if not is_gm(ctx.author):
+    if not is_gm(ctx.message.author):
         raise PermissionError("You cannot create the game because you are not a GM.")
 
     if not is_gm_channel(ctx.channel):
