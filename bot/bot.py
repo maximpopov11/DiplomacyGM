@@ -95,7 +95,7 @@ async def adjudicate(ctx: discord.ext.commands.Context) -> None:
 #     await _handle_command(command.rollback, ctx)
 
 
-@bot.command(brief="Outputs the scoreboard.")
+@bot.command(brief="Outputs the scoreboard.", description="Outputs the scoreboard.")
 async def scoreboard(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.get_scoreboard, ctx)
 
