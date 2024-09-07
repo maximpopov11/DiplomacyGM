@@ -193,7 +193,7 @@ def get_commands(
                 pydip_unit = pydip_candidate_unit
                 break
         if not pydip_unit:
-            raise RuntimeError(f"Pydip unit not found for unit with id {id(unit)}")
+            raise RuntimeError(f"Pydip unit not found for {unit}")
 
         source_unit = None
         if isinstance(order, ComplexOrder):
