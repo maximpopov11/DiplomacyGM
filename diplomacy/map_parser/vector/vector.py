@@ -493,20 +493,20 @@ def _get_adjacencies(provinces: set[Province]) -> set[tuple[str, str]]:
     for province_1, coordinates_1 in coordinates.items():
         tree_1 = cKDTree(np.array(coordinates_1["x_sort"]))
 
-        x1_min = coordinates_1["x_sort"][0][0]
-        x1_max = coordinates_1["x_sort"][-1][0]
-        y1_min = coordinates_1["y_sort"][0][1]
-        y1_max = coordinates_1["y_sort"][-1][1]
+        x1_min = coordinates_1["x_sort"][0][0] - PROVINCE_BORDER_MARGIN
+        x1_max = coordinates_1["x_sort"][-1][0] + PROVINCE_BORDER_MARGIN
+        y1_min = coordinates_1["y_sort"][0][1] - PROVINCE_BORDER_MARGIN
+        y1_max = coordinates_1["y_sort"][-1][1] + PROVINCE_BORDER_MARGIN
 
         for province_2, coordinates_2 in coordinates.items():
             if province_1 >= province_2:
                 # check each pair once, don't check self-self
                 continue
 
-            x2_min = coordinates_2["x_sort"][0][0]
-            x2_max = coordinates_2["x_sort"][-1][0]
-            y2_min = coordinates_2["y_sort"][0][1]
-            y2_max = coordinates_2["y_sort"][-1][1]
+            x2_min = coordinates_2["x_sort"][0][0] - PROVINCE_BORDER_MARGIN
+            x2_max = coordinates_2["x_sort"][-1][0] + PROVINCE_BORDER_MARGIN
+            y2_min = coordinates_2["y_sort"][0][1] - PROVINCE_BORDER_MARGIN
+            y2_max = coordinates_2["y_sort"][-1][1] + PROVINCE_BORDER_MARGIN
 
             if x1_min > x2_max or x1_max < x2_min:
                 # out of x-scope
