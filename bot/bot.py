@@ -19,22 +19,26 @@ manager = Manager()
 
 
 async def _handle_command(
-    function: Callable[[commands.Context, Manager], str], ctx: discord.ext.commands.Context
+    function: Callable[[commands.Context, Manager], tuple[str, str | None]],
+    ctx: discord.ext.commands.Context,
 ) -> None:
     try:
         logger.debug(f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}'")
-        response = function(ctx, manager)
+        response, file_name = function(ctx, manager)
         logger.debug(
             f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{response}"
         )
-        while len(response) > 2000:
-            # Try to find an even line break in order to split the message on
+        while 2000 < len(response):
+            # Try to find an even line break to split the message on
             cutoff = response.rfind("\n", 0, 2000)
             if cutoff == -1:
                 cutoff = 2000
             await ctx.channel.send(response[:cutoff].strip())
             response = response[cutoff:].strip()
-        await ctx.channel.send(response)
+        if file_name is not None:
+            await ctx.channel.send(response, file=discord.File(file_name))
+        else:
+            await ctx.channel.send(response)
     except Exception as e:
         logger.error(
             f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) "
@@ -106,7 +110,7 @@ async def scoreboard(ctx: discord.ext.commands.Context) -> None:
     There must be one and only one command per line.
     Note: you cannot edit immalleable map state (eg. province adjacency).
     The following are the supported sub-commands:
-    * set_phase {spring, fall, winter} {moves, retreats, builds}
+    * set_phase {spring, fall, winter}_{moves, retreats, builds}
     * set_core <province_name> <player_name>
     * set_half_core <province_name> <player_name>
     * set_province_owner <province_name> <player_name>

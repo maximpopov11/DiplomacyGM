@@ -38,8 +38,8 @@ class Manager:
             raise RuntimeError("There is no existing game this this server.")
         return board
 
-    def draw_moves_map(self, server_id: int, player_restriction: Player | None) -> None:
-        Mapper(self._boards[server_id]).draw_moves_map(player_restriction)
+    def draw_moves_map(self, server_id: int, player_restriction: Player | None) -> str:
+        return Mapper(self._boards[server_id]).draw_moves_map(player_restriction)
 
     def adjudicate(self, server_id: int) -> None:
         mapper = Mapper(self._boards[server_id])

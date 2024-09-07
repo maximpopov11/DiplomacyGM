@@ -4,6 +4,7 @@ import math
 import re
 import sys
 from xml.etree.ElementTree import ElementTree, Element
+from cairosvg import svg2png
 
 from lxml import etree
 
@@ -98,7 +99,7 @@ class Mapper:
     # TODO: (!) manually assert all phantom coordinates on provinces and coasts are set, fix if not
     # TODO: (BETA) print svg moves & results files in Discord GM channel
     # TODO: (DB) let's not have a ton of old files: delete moves & results after output (or don't store at all?)
-    def draw_moves_map(self, player_restriction: Player | None) -> None:
+    def draw_moves_map(self, player_restriction: Player | None) -> str:
         self._reset_moves_map()
 
         for unit in self.board.units:
@@ -117,7 +118,12 @@ class Mapper:
             for build_order in player.build_orders:
                 self._draw_order(build_order, build_order.location.primary_unit_coordinate)
 
-        self._moves_svg.write(f"{self.board.phase.name}_moves_map.svg")
+        svg_file_name = f"{self.board.phase.name}_moves_map.svg"
+        png_file_name = f"{self.board.phase.name}_moves_map.png"
+        self._moves_svg.write(svg_file_name)
+        with open(svg_file_name) as svg_file:
+            svg2png(file_obj=svg_file, write_to=png_file_name)
+        return png_file_name
 
     def draw_current_map(self) -> None:
         self.board_svg.write(f"{self.board.phase.name}_map.svg")
