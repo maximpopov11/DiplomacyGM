@@ -68,6 +68,8 @@ def test_order() -> None:
 
 
 def test_remove_order() -> None:
+    manager = Manager()
+
     # set phase to Winter, France requires disband
     gm_context = mock.context(
         _GUILD,
@@ -75,22 +77,19 @@ def test_remove_order() -> None:
         _GM_ROLE,
         "set_phase winter_builds" "\n" "set_province_owner Paris none",
     )
-    manager = Manager()
     starting_count = len(manager.get_board(_GUILD).get_player("France").centers)
     response = command.edit(gm_context, manager)
     assert "error" not in response
     assert len(manager.get_board(_GUILD).get_player("France").centers) == starting_count - 1
 
     # set order
-    player_context = mock.context(_GUILD, "france-orders", "france", """disband Marseille""")
-    manager = Manager()
+    player_context = mock.context(_GUILD, "france-orders", "France", """disband Marseille""")
     response = command.order(player_context, manager)
     assert "error" not in response
     assert manager.get_board(_GUILD).get_player("France").build_orders
 
     # remove order
-    player_context = mock.context(_GUILD, "france-orders", "france", """Marseille""")
-    manager = Manager()
+    player_context = mock.context(_GUILD, "france-orders", "France", """Marseille""")
     response = command.remove_order(player_context, manager)
     assert "error" not in response
     assert not manager.get_board(_GUILD).get_player("France").build_orders
