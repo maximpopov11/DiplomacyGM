@@ -36,7 +36,6 @@ class Adjudicator:
         self.pydip_commands: list[PydipCommand] = translate.get_commands(
             self.board,
             self.pydip_players,
-            self.pydip_units,
             self.retreat_map,
             self.pydip_map,
         )

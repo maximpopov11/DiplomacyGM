@@ -167,7 +167,6 @@ def generate_retreats_map(
 def get_commands(
     board: Board,
     pydip_players: dict[str, PydipPlayer],
-    pydip_units: dict[str, set[PydipUnit]],
     retreats_map: dict[PydipPlayer, dict[PydipUnit, set[str]]],
     pydip_map: PydipMap,
 ) -> list[PydipCommand]:
@@ -189,8 +188,7 @@ def get_commands(
 
         pydip_unit = None
         pydip_player = pydip_players[unit.player.name]
-        pydip_player_units = pydip_units[pydip_player.name]
-        for pydip_candidate_unit in pydip_player_units:
+        for pydip_candidate_unit in pydip_player.units:
             if _location_match(pydip_candidate_unit, unit):
                 pydip_unit = pydip_candidate_unit
                 break
@@ -200,9 +198,7 @@ def get_commands(
         source_unit = None
         if isinstance(order, ComplexOrder):
             pydip_player2 = pydip_players[order.source.player.name]
-            player2_units = pydip_units[pydip_player2.name]
-
-            for player2_unit in player2_units:
+            for player2_unit in pydip_player2.units:
                 if _location_match(player2_unit, order.source):
                     source_unit = player2_unit
             if source_unit is None:
@@ -238,8 +234,7 @@ def get_commands(
             elif isinstance(order, Disband):
                 pydip_unit = None
                 pydip_player = pydip_players[player.name]
-                pydip_player_units = pydip_units[pydip_player.name]
-                for pydip_candidate_unit in pydip_player_units:
+                for pydip_candidate_unit in pydip_player.units:
                     if pydip_candidate_unit.position == order.location.name:
                         pydip_unit = pydip_candidate_unit
                         break
