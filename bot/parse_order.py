@@ -62,6 +62,8 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
     invalid: list[tuple[str, Exception]] = []
     commands = str.splitlines(message)
     for command in commands:
+        if command.strip() == ".order":
+            continue
         try:
             _parse_remove_order(command, player_restriction, board)
         except Exception as error:
