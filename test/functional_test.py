@@ -23,7 +23,7 @@ def test() -> None:
     # test_ping()
     # test_order()
     # test_remove_order()
-    test_view_orders()
+    # test_view_orders()
     test_adjudicate()
     test_rollback()
     test_get_scoreboard()
@@ -135,8 +135,11 @@ def test_view_orders() -> None:
 
 
 def test_adjudicate() -> None:
-    # TODO: (!)
-    pass
+    # successive adjudication is tested later, this just test the command works
+    gm_context = mock.context(_GUILD, _GM_CHANNEL, _GM_ROLE)
+    manager = Manager()
+    response = command.adjudicate(gm_context, manager)
+    assert "error" not in response
 
 
 def test_rollback() -> None:

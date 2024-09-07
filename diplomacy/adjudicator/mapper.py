@@ -21,6 +21,7 @@ from diplomacy.map_parser.vector.config_svg import (
 )
 from diplomacy.map_parser.vector.utils import get_svg_element, get_unit_coordinates
 from diplomacy.persistence.board import Board
+from diplomacy.persistence.db.database import logger
 from diplomacy.persistence.order import (
     Hold,
     Core,
@@ -147,7 +148,8 @@ class Mapper:
         elif isinstance(order, Disband):
             self._draw_disband(coordinate)
         else:
-            raise RuntimeError(f"Unknown order type: {order.__class__}")
+            self._draw_hold(coordinate)
+            logger.info(f"None order found: hold drawn. Coordinates: {coordinate}")
 
     def _draw_hold(self, coordinate: tuple[float, float]) -> None:
         element = self._moves_svg.getroot()
