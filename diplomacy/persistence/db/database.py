@@ -4,7 +4,18 @@ import sqlite3
 from diplomacy.map_parser.vector.config_svg import SVG_PATH
 from diplomacy.map_parser.vector.vector import Parser
 from diplomacy.persistence.board import Board
+from diplomacy.persistence.order import (
+    Core,
+    Hold,
+    ConvoyMove,
+    Move,
+    Support,
+    ConvoyTransport,
+    RetreatDisband,
+    RetreatMove,
+)
 from diplomacy.persistence.phase import phases
+from diplomacy.persistence.province import Province
 from diplomacy.persistence.unit import UnitType, Unit
 
 logger = logging.getLogger(__name__)
@@ -66,7 +77,8 @@ class _DatabaseConnection:
                 province_name: (owner, core, half_core) for province_name, owner, core, half_core in province_data
             }
             unit_data = cursor.execute(
-                "SELECT location, is_dislodged, owner, is_army FROM units WHERE board_id=?", (board_id,)
+                "SELECT location, is_dislodged, owner, is_army, order_type, order_destination, order_source FROM units WHERE board_id=?",
+                (board_id,),
             ).fetchall()
 
             for province in board.provinces:
@@ -98,17 +110,53 @@ class _DatabaseConnection:
 
             board.units.clear()
             for unit_info in unit_data:
-                location, is_dislodged, owner, is_army = unit_info
+                location, is_dislodged, owner, is_army, order_type, order_destination, order_source = unit_info
                 province, coast = board.get_province_and_coast(location)
                 owner_player = board.get_player(owner)
                 unit = Unit(UnitType.ARMY if is_army else UnitType.FLEET, owner_player, province, coast, None)
-                # TODO - unit orders
                 if is_dislodged:
                     province.dislodged_unit = unit
                 else:
                     province.unit = unit
                 owner_player.units.add(unit)
                 board.units.add(unit)
+            # AAAAA We shouldn't be having to loop twice; why is ComplexOrder.source a Unit? Turn it into a province or something
+            # Currently we have to loop twice because it's a unit and we need to have all the units set up before parsing orders because of it
+            for unit_info in unit_data:
+                location, is_dislodged, owner, is_army, order_type, order_destination, order_source = unit_info
+                if order_type is not None:
+                    order_classes = [
+                        Hold,
+                        Core,
+                        Move,
+                        ConvoyMove,
+                        ConvoyTransport,
+                        Support,
+                        RetreatMove,
+                        RetreatDisband,
+                    ]
+                    order_class = next(_class for _class in order_classes if _class.__name__ == order_type)
+                    destination_province = None
+                    if order_destination is not None:
+                        destination_province = board.get_province(order_destination)
+                    source_unit = None
+                    if order_source is not None:
+                        source_province = board.get_province(order_source)
+                        source_unit = source_province.unit
+                    if order_class in [Hold, Core, RetreatDisband]:
+                        order = order_class()
+                    elif order_class in [Move, ConvoyMove, RetreatMove]:
+                        order = order_class(destination=destination_province)
+                    elif order_class in [Support, ConvoyTransport]:
+                        order = order_class(destination=destination_province, source=source_unit)
+                    else:
+                        raise ValueError(f"Could not parse {order_class}")
+
+                    province, coast = board.get_province_and_coast(location)
+                    if is_dislodged:
+                        province.dislodged_unit.order = order
+                    else:
+                        province.unit.order = order
 
             boards[board_id] = board
 
@@ -139,8 +187,9 @@ class _DatabaseConnection:
                 for province in board.provinces
             ],
         )
+        # TODO - this is hacky
         cursor.executemany(
-            "INSERT INTO units (board_id, location, is_dislodged, owner, is_army) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO units (board_id, location, is_dislodged, owner, is_army, order_type, order_destination, order_source) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (
                     board_id,
@@ -148,8 +197,30 @@ class _DatabaseConnection:
                     unit == unit.province.dislodged_unit,
                     unit.player.name,
                     unit.unit_type == UnitType.ARMY,
+                    unit.order.__class__.__name__ if unit.order is not None else None,
+                    getattr(getattr(unit.order, "destination"), "name") if unit.order is not None else None,
+                    getattr(getattr(unit.order, "source"), "name") if unit.order is not None else None,
                 )
                 for unit in board.units
+            ],
+        )
+        cursor.close()
+        self._connection.commit()
+
+    def save_order_for_units(self, board_id: int, units: list[Unit]):
+        cursor = self._connection.cursor()
+        cursor.executemany(
+            "UPDATE units SET order_type=?, order_destination=?, order_source=? WHERE board_id=? and location=? and is_dislodged=?",
+            [
+                (
+                    unit.order.__class__.__name__ if unit.order is not None else None,
+                    getattr(getattr(unit.order, "destination", None), "name", None) if unit.order is not None else None,
+                    getattr(getattr(unit.order, "source", None), "name", None) if unit.order is not None else None,
+                    board_id,
+                    unit.province.name,
+                    unit.province.dislodged_unit == unit,
+                )
+                for unit in units
             ],
         )
         cursor.close()

@@ -27,11 +27,18 @@ async def _handle_command(
         logger.debug(
             f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{response}"
         )
+        while len(response) > 2000:
+            # Try to find an even line break in order to split the message on
+            cutoff = response.rfind("\n", 0, 2000)
+            if cutoff == -1:
+                cutoff = 2000
+            await ctx.channel.send(response[:cutoff].strip())
+            response = response[cutoff:].strip()
         await ctx.channel.send(response)
     except Exception as e:
         logger.error(
             f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) "
-            f"invoking '{getattr(function, "__name__", "Unknown")}': {repr(e)}"
+            f"invoking '{getattr(function, '__name__', 'Unknown')}': {repr(e)}"
         )
         logger.debug("", exc_info=e)
         await ctx.channel.send("Command errored: " + str(e))

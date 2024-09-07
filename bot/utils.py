@@ -122,28 +122,27 @@ def get_orders(board: Board, player_restriction: Player | None) -> str:
         for player in board.players:
             if not player_restriction or player == player_restriction:
                 response = "Received orders:"
-                for order in player.build_orders:
-                    response += f"\n{order}"
+                for unit in player.build_orders:
+                    response += f"\n{unit}"
     else:
-        orders: list[Order] = []
+        has_orders: list[Unit] = []
         missing: list[Unit] = []
 
         for unit in board.units:
             if not player_restriction or unit.player == player_restriction:
-                order = unit.order
-                if order:
-                    orders.append(order)
+                if unit.order:
+                    has_orders.append(unit)
                 else:
                     missing.append(unit)
 
         response = ""
         if missing:
             response += "Missing orders:"
-            for unit in missing:
+            for unit in sorted(missing, key=lambda _unit: _unit.province.name):
                 response += f"\n{unit}"
             response += "\n"
-        if orders:
+        if has_orders:
             response += "Submitted orders:"
-            for order in orders:
-                response += f"\n{order}"
+            for unit in sorted(has_orders, key=lambda _unit: _unit.province.name):
+                response += f"\n{unit} {unit.order}"
         return response

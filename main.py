@@ -1,7 +1,7 @@
 import logging
 import os
 
-# from bot import bot
+from bot import bot
 
 log_level = logging.getLevelNamesMapping().get(os.getenv("log_level", "INFO"))
 if not log_level:
@@ -11,11 +11,11 @@ logging.basicConfig(level=log_level)
 
 # mapper_test.run()
 
-# bot.run()
+bot.run()
 
-from test import db_test, functional_test
+# from test import db_test, functional_test
 
-functional_test.run()
+# functional_test.run()
 
 # TODO: priorities: (MAP), (ALPHA), <game starts here>, (QOL), <re-organize TODOs/FIXMEs>, (DB), (BETA)
 
