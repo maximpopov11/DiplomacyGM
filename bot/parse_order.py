@@ -62,7 +62,7 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
     invalid: list[tuple[str, Exception]] = []
     commands = str.splitlines(message)
     for command in commands:
-        if command.strip() == ".order":
+        if command.strip() == ".remove_order":
             continue
         try:
             _parse_remove_order(command, player_restriction, board)
@@ -120,18 +120,32 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
     location = keywords[0]
     province, _ = board.get_province_and_coast(location)
 
+    # remove unit order
     unit = province.get_unit()
-    if not unit:
-        raise RuntimeError(f"There is no unit in {location}")
+    if unit:
+        # remove unit's order
+        # assert that the command user is authorized to order this unit
+        player = unit.player
+        if player_restriction is not None and player != player_restriction:
+            raise PermissionError(
+                f"{player_restriction.name} does not control the unit in {location} which belongs to {player.name}"
+            )
+        unit.order = None
+    else:
+        # remove build order
+        player = province.owner
+        if player_restriction is not None and player != player_restriction:
+            raise PermissionError(
+                f"{player_restriction.name} does not control the unit in {location} which belongs to {player.name}"
+            )
 
-    # assert that the command user is authorized to order this unit
-    player = unit.player
-    if player_restriction is not None and player != player_restriction:
-        raise PermissionError(
-            f"{player_restriction.name} does not control the unit in {location} which belongs to {player.name}"
-        )
-
-    unit.order = None
+        remove_order = None
+        for build_order in player.build_orders:
+            if build_order.location == province:
+                remove_order = build_order
+                break
+        if remove_order:
+            player.build_orders.remove(remove_order)
 
 
 def _parse_unit_order(keywords: list[str], unit: Unit, board: Board) -> None:
