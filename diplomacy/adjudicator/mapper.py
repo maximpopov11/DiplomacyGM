@@ -4,7 +4,6 @@ import math
 import re
 import sys
 from xml.etree.ElementTree import ElementTree, Element
-from cairosvg import svg2png
 
 from lxml import etree
 
@@ -119,11 +118,7 @@ class Mapper:
                 self._draw_order(build_order, build_order.location.primary_unit_coordinate)
 
         svg_file_name = f"{self.board.phase.name}_moves_map.svg"
-        png_file_name = f"{self.board.phase.name}_moves_map.png"
-        self._moves_svg.write(svg_file_name)
-        with open(svg_file_name) as svg_file:
-            svg2png(file_obj=svg_file, write_to=png_file_name)
-        return png_file_name
+        return svg_file_name
 
     def draw_current_map(self) -> None:
         self.board_svg.write(f"{self.board.phase.name}_map.svg")

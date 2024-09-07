@@ -58,16 +58,22 @@ def parse_order(message: str, player_restriction: Player | None, board: Board, b
     return response
 
 
-def parse_remove_order(message: str, player_restriction: Player | None, board: Board) -> str:
+def parse_remove_order(message: str, player_restriction: Player | None, board: Board, board_id: int) -> str:
     invalid: list[tuple[str, Exception]] = []
     commands = str.splitlines(message)
+    updated_units: set[Unit] = set()
     for command in commands:
         if command.strip() == ".remove_order":
             continue
         try:
-            _parse_remove_order(command, player_restriction, board)
+            unit = _parse_remove_order(command, player_restriction, board)
+            if unit is not None:
+                updated_units.add(unit)
         except Exception as error:
             invalid.append((command, error))
+
+    database = get_connection()
+    database.save_order_for_units(board_id, list(updated_units))
 
     if invalid:
         response = "The following order removals were invalid:"
@@ -114,7 +120,7 @@ def _parse_order(command: str, player_restriction: Player, board: Board) -> Unit
         raise ValueError(f"Unknown phase: {board.phase.name}")
 
 
-def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> None:
+def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> Unit | None:
     command = command.lower()
     keywords: list[str] = get_keywords(command)
     location = keywords[0]
@@ -137,6 +143,7 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
                 break
         if remove_order:
             player.build_orders.remove(remove_order)
+        return None
     else:
         # remove unit's order
         # assert that the command user is authorized to order this unit
@@ -146,6 +153,7 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
                 f"{player_restriction.name} does not control the unit in {location} which belongs to {player.name}"
             )
         unit.order = None
+        return unit
 
 
 def _parse_unit_order(keywords: list[str], unit: Unit, board: Board) -> None:

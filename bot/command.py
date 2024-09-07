@@ -55,19 +55,19 @@ def remove_order(ctx: commands.Context, manager: Manager) -> tuple[str, str | No
     if is_gm(ctx.message.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot remove orders as a GM in a non-GM channel.")
-        return parse_remove_order(ctx.message.content, None, board), None
+        return parse_remove_order(ctx.message.content, None, board, ctx.guild.id), None
 
     player = get_player_by_role(ctx.message.author, manager, ctx.guild.id)
     if player is not None:
         if not is_player_channel(player.name, ctx.channel):
             raise PermissionError("You cannot remove orders as a player outside of your orders channel.")
-        return parse_remove_order(ctx.message.content, player, board), None
+        return parse_remove_order(ctx.message.content, player, board, ctx.guild.id), None
 
     raise PermissionError("You cannot remove orders because you are neither a GM nor a player.")
 
 
 # TODO: (!) output orders map BUT create something like .orders_log to see it in text like it is here
-def view_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str]:
+def view_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     if is_gm(ctx.message.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot view orders as a GM in a non-GM channel.")
@@ -78,8 +78,8 @@ def view_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str]:
     if player is not None:
         if not is_player_channel(player.name, ctx.channel):
             raise PermissionError("You cannot view orders as a player outside of your orders channel.")
-        file_name = manager.draw_moves_map(ctx.guild.id, player)
-        return get_orders(manager.get_board(ctx.guild.id), player), file_name
+        # file_name = manager.draw_moves_map(ctx.guild.id, player)
+        return get_orders(manager.get_board(ctx.guild.id), player), None
 
     raise PermissionError("You cannot view orders because you are neither a GM nor a player.")
 
