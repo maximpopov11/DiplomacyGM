@@ -118,6 +118,7 @@ class Mapper:
                 self._draw_order(build_order, build_order.location.primary_unit_coordinate)
 
         svg_file_name = f"{self.board.phase.name}_moves_map.svg"
+        self._moves_svg.write(svg_file_name)
         return svg_file_name
 
     def draw_current_map(self) -> None:
