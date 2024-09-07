@@ -79,7 +79,8 @@ def get_start_config(board: Board) -> dict[str, list[dict[str, str]]]:
                 territory_name = unit.coast.name
             else:
                 territory_name = unit.province.name
-                if unit.unit_type == UnitType.FLEET:
+                # TODO: (BETA) bad bandaid: fleets on normal land should always have coast set but no time to check now
+                if unit.unit_type == UnitType.FLEET and unit.province.coasts:
                     territory_name = list(unit.province.coasts)[0].name
 
             mapping = {
