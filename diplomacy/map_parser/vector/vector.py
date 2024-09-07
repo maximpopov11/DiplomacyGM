@@ -104,7 +104,7 @@ class Parser:
         # really bad bandaid code, will fix later
         # some coasts aren't set because their only coasts are with cheat provinces which are set after coasts are
         for province in provinces:
-            if len(province.coasts) == 0:
+            if province.type != ProvinceType.SEA and len(province.coasts) == 0:
                 sea_provinces = set()
                 for adjacent in province.adjacent:
                     if adjacent.type != ProvinceType.LAND:
