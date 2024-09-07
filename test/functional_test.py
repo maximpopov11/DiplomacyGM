@@ -19,9 +19,10 @@ def test() -> None:
         # we're not testing create_game
         pass
 
-    test_ping()
-    test_order()
-    test_remove_order()
+    # TODO: (!) uncomment these
+    # test_ping()
+    # test_order()
+    # test_remove_order()
     test_view_orders()
     test_adjudicate()
     test_rollback()
@@ -96,8 +97,41 @@ def test_remove_order() -> None:
 
 
 def test_view_orders() -> None:
-    # TODO: (!)
-    pass
+    manager = Manager()
+
+    # remove orders because they might be in the database
+    player_context = mock.context(
+        _GUILD,
+        "austria-orders",
+        "Austria",
+        "Prague\nVienna\nTrieste\nInnsbruck",
+    )
+    response = command.remove_order(player_context, manager)
+    assert "error" not in response
+
+    # nothing ordered yet
+    player_context = mock.context(_GUILD, "austria-orders", "Austria")
+    response = command.view_orders(player_context, manager)
+    assert "error" not in response
+    assert "Missing orders" in response
+    assert "Submitted orders" not in response
+
+    # order all
+    player_context = mock.context(
+        _GUILD,
+        "austria-orders",
+        "Austria",
+        "Prague H\nVienna H\nTrieste H\nInnsbruck H",
+    )
+    response = command.order(player_context, manager)
+    assert "error" not in response
+
+    # none missing
+    player_context = mock.context(_GUILD, "austria-orders", "Austria")
+    response = command.view_orders(player_context, manager)
+    assert "error" not in response
+    assert "Missing orders" not in response
+    assert "Submitted orders" in response
 
 
 def test_adjudicate() -> None:

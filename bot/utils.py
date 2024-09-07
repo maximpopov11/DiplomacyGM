@@ -94,11 +94,10 @@ def _manage_coast_signature(keyword: str) -> str:
 
 
 def get_unit_type(command: str) -> UnitType | None:
-    for word in command:
-        if word in unit_dict[_army]:
-            return UnitType.ARMY
-        if word in unit_dict[_fleet]:
-            return UnitType.FLEET
+    if command in unit_dict[_army]:
+        return UnitType.ARMY
+    if command in unit_dict[_fleet]:
+        return UnitType.FLEET
     return None
 
 
