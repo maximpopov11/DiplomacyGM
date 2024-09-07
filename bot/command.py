@@ -66,7 +66,7 @@ def remove_order(ctx: commands.Context, manager: Manager) -> str:
     raise PermissionError("You cannot remove orders because you are neither a GM nor a player.")
 
 
-# TODO: (DB) output orders map
+# TODO: (!) output orders map BUT create something like .orders_log to see it in text like it is here
 def view_orders(ctx: commands.Context, manager: Manager) -> str:
     if is_gm(ctx.message.author):
         if not is_gm_channel(ctx.channel):
@@ -105,6 +105,7 @@ def rollback(ctx: commands.Context, manager: Manager) -> str:
     return manager.rollback()
 
 
+# TODO: (QOL) this doesn't work right now
 # TODO: (QOL) allow players to use this
 # TODO: (QOL) include VSCC calculations
 def get_scoreboard(ctx: commands.Context, manager: Manager) -> str:

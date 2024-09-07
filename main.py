@@ -17,10 +17,9 @@ bot.run()
 
 # functional_test.run()
 
-# TODO: priorities: (MAP), (ALPHA), <game starts here>, (QOL), <re-organize TODOs/FIXMEs>, (DB), (BETA)
+# TODO: priorities: (!), <game starts here>, (QOL), <re-organize TODOs/FIXMEs>, (DB), (BETA)
 
-# TODO: (ALPHA) update readme (how to use bot)
-# TODO: (ALPHA) conduct testing: test solo, test group, live game test
+# TODO: (QOL) update readme (how to use bot)
 
 # TODO: (DB) setup DB and test db write & db read
 # TODO: (DB) assert that the DB is backed up (needs to be a current up-to-date backup)

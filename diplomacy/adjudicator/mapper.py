@@ -39,7 +39,7 @@ from diplomacy.persistence.province import ProvinceType, Province
 from diplomacy.persistence.unit import Unit, UnitType
 
 
-# TODO: (MAP) decrease line length by arrowhead (if applicable) and unit radius to match up to edge of hold circle
+# TODO: (QOL) decrease line length by arrowhead (if applicable) and unit radius to match up to edge of hold circle
 def _add_arrow_definition_to_svg(svg: ElementTree) -> None:
     defs: Element = svg.find("{http://www.w3.org/2000/svg}defs")
     if defs is None:
@@ -94,7 +94,7 @@ class Mapper:
 
         self._moves_svg = copy.deepcopy(self.board_svg)
 
-    # TODO: (MAP) manually assert all phantom coordinates on provinces and coasts are set
+    # TODO: (!) manually assert all phantom coordinates on provinces and coasts are set, fix if not
     # TODO: (BETA) print svg moves & results files in Discord GM channel
     # TODO: (DB) let's not have a ton of old files: delete moves & results after output (or don't store at all?)
     def draw_moves_map(self, player_restriction: Player | None) -> None:
