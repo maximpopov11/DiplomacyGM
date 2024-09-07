@@ -200,11 +200,11 @@ def _parse_player_order(keywords: list[str], player_restriction: Player, board: 
 
     if command in _order_dict[_build]:
         unit_type = get_unit_type(keywords[2])
-        player_restriction.adjustment_orders.add(order.Build(location, unit_type))
+        player_restriction.build_orders.add(order.Build(location, unit_type))
         return
 
     if command in _order_dict[_disband]:
-        player_restriction.adjustment_orders.add(order.Disband(location))
+        player_restriction.build_orders.add(order.Disband(location))
         return
 
     raise RuntimeError("Build could not be parsed")
