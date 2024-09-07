@@ -122,16 +122,7 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
 
     # remove unit order
     unit = province.get_unit()
-    if unit:
-        # remove unit's order
-        # assert that the command user is authorized to order this unit
-        player = unit.player
-        if player_restriction is not None and player != player_restriction:
-            raise PermissionError(
-                f"{player_restriction.name} does not control the unit in {location} which belongs to {player.name}"
-            )
-        unit.order = None
-    else:
+    if is_builds_phase(board.phase):
         # remove build order
         player = province.owner
         if player_restriction is not None and player != player_restriction:
@@ -146,6 +137,15 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
                 break
         if remove_order:
             player.build_orders.remove(remove_order)
+    else:
+        # remove unit's order
+        # assert that the command user is authorized to order this unit
+        player = unit.player
+        if player_restriction is not None and player != player_restriction:
+            raise PermissionError(
+                f"{player_restriction.name} does not control the unit in {location} which belongs to {player.name}"
+            )
+        unit.order = None
 
 
 def _parse_unit_order(keywords: list[str], unit: Unit, board: Board) -> None:
