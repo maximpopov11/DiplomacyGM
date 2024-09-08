@@ -13,7 +13,7 @@ player_to_color: dict[str, str] = {
     "Inuit": "afc5d8",
     "Kongo": "9f52c4",
     "Mali": "7a9025",
-    "Mapuche-Teheulche": "81889d",
+    "Mapuche-Tehuelche": "81889d",
     "Ming": "cadd7e",
     "Mughal": "ab9f26",
     "Netherlands": "fc9c23",
