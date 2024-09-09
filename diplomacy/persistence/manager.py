@@ -55,5 +55,5 @@ class Manager:
         # TODO: (DB) return both moves and results map
 
     def rollback(self) -> str:
-        # TODO: (DB) get former turn board & moves map & results map from DB; update board; return maps
+        # TODO: (!) get former turn board & moves map & results map from DB; update board; return maps
         raise RuntimeError("Rollback not yet implemented.")
