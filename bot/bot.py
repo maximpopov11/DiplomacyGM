@@ -45,7 +45,7 @@ async def _handle_command(
             f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) "
             f"invoking '{getattr(function, '__name__', 'Unknown')}': {repr(e)}"
         )
-        logger.debug("", exc_info=e)
+        logger.error("", exc_info=e)
         await ctx.channel.send("Command errored: " + str(e))
 
 
