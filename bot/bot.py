@@ -23,6 +23,7 @@ async def _handle_command(
     ctx: discord.ext.commands.Context,
 ) -> None:
     try:
+        # TODO: (!) stack trace on logging failed commands
         logger.debug(f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}'")
         response, file_name = function(ctx, manager)
         logger.debug(
