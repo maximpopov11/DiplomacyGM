@@ -2,6 +2,7 @@ import logging
 import os
 
 from bot import bot
+from test import functional_test
 
 log_level = logging.getLevelNamesMapping().get(os.getenv("log_level", "INFO"))
 if not log_level:
@@ -25,6 +26,7 @@ bot.run()
 # TODO: (DB) assert that the DB is backed up (needs to be a current up-to-date backup)
 # TODO: (DB) ensure resiliency to all errors & log
 
+# TODO: (BETA) sandbox would be great
 # TODO: (BETA) some files (read vector.py) are really bad, clean them up
 # TODO: (BETA): import by file instead of by thing in file?
 # TODO: (BETA) me only command for editing all game map state without permanence restriction (ex. province adjacency)
