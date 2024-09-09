@@ -82,12 +82,19 @@ class Board:
         player.units.add(unit)
         self.units.add(unit)
 
-    def move_unit(self, unit: Unit, new_province: Province) -> None:
+    def move_unit(self, unit: Unit, new_location: Location) -> None:
+        new_province = new_location
+        new_coast = None
+        if isinstance(new_location, Coast):
+            new_province = new_location.province
+            new_coast = new_location
+
         if new_province.unit:
             raise RuntimeError(f"{new_province.name} already has a unit")
         new_province.unit = unit
         unit.province.unit = None
         unit.province = new_province
+        unit.coast = new_coast
 
     def delete_unit(self, province: Province) -> None:
         unit = province.unit

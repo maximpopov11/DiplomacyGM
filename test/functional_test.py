@@ -1,5 +1,6 @@
 from bot import command
 from diplomacy.persistence.manager import Manager
+from diplomacy.persistence.phase import fall_retreats
 from test import mock
 
 # guilds
@@ -24,11 +25,10 @@ def test() -> None:
     # test_order()
     # test_remove_order()
     # test_view_orders()
-    test_adjudicate()
-    test_rollback()
-    test_get_scoreboard()
+    # test_adjudicate()
+    # test_rollback()
+    # test_get_scoreboard()
     test_edit()
-    test_create_game()
     test_coasts()
     test_high_seas_and_sands()
     test_pre_core_builds()
@@ -143,23 +143,41 @@ def test_adjudicate() -> None:
 
 
 def test_rollback() -> None:
-    # TODO: (!)
+    # TODO: (!) await rollback implemented
     pass
 
 
 def test_get_scoreboard() -> None:
-    # TODO: (!)
+    # TODO: (!) await scoreboard fixed
     pass
 
 
 def test_edit() -> None:
-    # TODO: (!)
-    pass
-
-
-def test_create_game() -> None:
-    # TODO: (!)
-    pass
+    # all edit commands
+    gm_context = mock.context(
+        _GUILD,
+        _GM_CHANNEL,
+        _GM_ROLE,
+        "set_phase fall_retreats\n"
+        "set_core Genoa France\n"
+        "set_half_core Rome France\n"
+        "set_province_owner Bremen France\n"
+        "create_unit A France Hesse\n"
+        "delete_unit Marseille\n"
+        "move_unit Nantes Bay_of_Biscay",
+    )
+    manager = Manager()
+    response = command.edit(gm_context, manager)
+    assert "error" not in response
+    board = manager.get_board(_GUILD)
+    assert board.phase == fall_retreats
+    assert board.get_province("Genoa").core == board.get_player("France")
+    assert board.get_province("Rome").half_core == board.get_player("France")
+    assert board.get_province("Bremen").owner == board.get_player("France")
+    assert board.get_province("Hesse").unit.player == board.get_player("France")
+    assert not board.get_province("Marseille").unit
+    assert not board.get_province("Nantes").unit
+    assert board.get_province("Bay of Biscay").unit.player == board.get_player("France")
 
 
 def test_coasts() -> None:
