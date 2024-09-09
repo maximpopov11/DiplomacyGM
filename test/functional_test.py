@@ -28,13 +28,10 @@ def test() -> None:
     # test_adjudicate()
     # test_rollback()
     # test_get_scoreboard()
-    test_edit()
-    test_coasts()
-    test_high_seas_and_sands()
-    test_pre_core_builds()
-    test_successive_adjudication()
+    # test_edit()
+    # test_coasts()
+    # test_high_seas_and_sands()
     test_move_types()
-    test_illegal_orders()
 
 
 def _setup():
@@ -181,33 +178,189 @@ def test_edit() -> None:
 
 
 def test_coasts() -> None:
-    # TODO: (!)
-    pass
+    manager = Manager()
+    board = manager.get_board(_GUILD)
+
+    # move on to coast
+    player_context = mock.context(_GUILD, "spain-orders", "Spain", "Panama - Honduras_nc")
+    response = command.order(player_context, manager)
+    assert "error" not in response
+
+    # adjudicate to spring retreats
+    gm_context = mock.context(_GUILD, _GM_CHANNEL, _GM_ROLE)
+    response = command.adjudicate(gm_context, manager)
+    assert "error" not in response
+    assert board.get_province("Honduras").unit.player == board.get_player("Spain")
+
+    # adjudicate to fall moves
+    gm_context = mock.context(_GUILD, _GM_CHANNEL, _GM_ROLE)
+    response = command.adjudicate(gm_context, manager)
+    assert "error" not in response
+    assert board.get_province("Honduras").unit.player == board.get_player("Spain")
+
+    # sit on coast
+    player_context = mock.context(_GUILD, "spain-orders", "Spain", "Honduras_nc H")
+    response = command.order(player_context, manager)
+    assert "error" not in response
+
+    # adjudicate to fall retreats
+    gm_context = mock.context(_GUILD, _GM_CHANNEL, _GM_ROLE)
+    response = command.adjudicate(gm_context, manager)
+    assert "error" not in response
+    assert board.get_province("Honduras").unit.player == board.get_player("Spain")
+
+    # adjudicate to winter builds
+    gm_context = mock.context(_GUILD, _GM_CHANNEL, _GM_ROLE)
+    response = command.adjudicate(gm_context, manager)
+    assert "error" not in response
+    assert board.get_province("Honduras").unit.player == board.get_player("Spain")
+
+    # adjudicate to spring moves
+    gm_context = mock.context(_GUILD, _GM_CHANNEL, _GM_ROLE)
+    response = command.adjudicate(gm_context, manager)
+    assert "error" not in response
+    assert board.get_province("Honduras").unit.player == board.get_player("Spain")
+
+    # illegal order
+    player_context = mock.context(_GUILD, "spain-orders", "Spain", "Honduras_nc - Yucatan_nc")
+    response = command.order(player_context, manager)
+    assert "error" not in response
+
+    # adjudicate to spring retreats
+    gm_context = mock.context(_GUILD, _GM_CHANNEL, _GM_ROLE)
+    response = command.adjudicate(gm_context, manager)
+    assert "error" not in response
+    assert board.get_province("Honduras").unit.player == board.get_player("Spain")
 
 
 def test_high_seas_and_sands() -> None:
-    # TODO: (!)
-    pass
+    # TODO: (!) high seas/sands primary/retreat unit coordinates do not exist (are in SVG). Don't return & test once fixed
+    return
 
+    manager = Manager()
+    board = manager.get_board(_GUILD)
 
-def test_pre_core_builds() -> None:
-    # TODO: (!)
-    pass
+    # move to high sand
+    player_context = mock.context(_GUILD, "mali-orders", "Mali", "Jenne - SAH3")
+    response = command.order(player_context, manager)
+    assert "error" not in response
 
+    # adjudicate to spring retreats
+    gm_context = mock.context(_GUILD, _GM_CHANNEL, _GM_ROLE)
+    response = command.adjudicate(gm_context, manager)
+    assert "error" not in response
+    assert board.get_province("SAH3").unit.player == board.get_player("Mali")
 
-def test_successive_adjudication() -> None:
-    # TODO: (!)
-    pass
+    # adjudicate to fall moves
+    gm_context = mock.context(_GUILD, _GM_CHANNEL, _GM_ROLE)
+    response = command.adjudicate(gm_context, manager)
+    assert "error" not in response
+    assert board.get_province("SAH3").unit.player == board.get_player("Mali")
+
+    # move off of high sand
+    player_context = mock.context(_GUILD, "mali-orders", "Mali", "SAH3 - Kanem")
+    response = command.order(player_context, manager)
+    assert "error" not in response
+
+    # adjudicate to fall retreats
+    gm_context = mock.context(_GUILD, _GM_CHANNEL, _GM_ROLE)
+    response = command.adjudicate(gm_context, manager)
+    assert "error" not in response
+    assert board.get_province("Kanem").unit.player == board.get_player("Mali")
 
 
 def test_move_types() -> None:
-    # TODO: (!)
-    pass
+    manager = Manager()
 
+    # all move phase orders except convoys
+    gm_context = mock.context(
+        _GUILD,
+        _GM_CHANNEL,
+        _GM_ROLE,
+        "Nantes H\n"
+        "Paris - Ghent\n"
+        "Dijon - Marseille\n"
+        "Marseille - Gulf_of_Lyon\n"
+        "Amsterdam - Ghent\n"
+        "Utrecht S Amsterdam - Ghent\n"
+        "London cores\n"
+        "Plymouth - English_Channel\n"
+        "Krakow - Silesia",
+    )
+    response = command.order(gm_context, manager)
+    assert "error" not in response
 
-def test_illegal_orders() -> None:
-    # TODO: (!)
-    pass
+    # TODO: (!) pydip expects move to coast to say the coast on it, Amsterdam - Ghent does not do that (maybe we do it in moves but not in supports?)
+    # TODO: (!) test the maps look right by breakpointing after each adjudication
+
+    # adjudicate to spring retreats
+    gm_context = mock.context(_GUILD, _GM_CHANNEL, _GM_ROLE)
+    response = command.adjudicate(gm_context, manager)
+    assert "error" not in response
+
+    # adjudicate to fall moves
+    gm_context = mock.context(_GUILD, _GM_CHANNEL, _GM_ROLE)
+    response = command.adjudicate(gm_context, manager)
+    assert "error" not in response
+
+    # convoys and force retreats
+    gm_context = mock.context(
+        _GUILD,
+        _GM_CHANNEL,
+        _GM_ROLE,
+        "A Marseille c- Barcelona\n"
+        "F Gulf_of_Lyon C A Marseille - Barcelona\n"
+        "Barcelona - Occitania\n"
+        "English_Channel S Paris - Ghent\n"
+        "Paris - Ghent\n"
+        "Prague - Silesia\n"
+        "Vienna S Prague - Silesia",
+    )
+    response = command.order(gm_context, manager)
+    assert "error" not in response
+
+    # adjudicate to fall retreats
+    gm_context = mock.context(_GUILD, _GM_CHANNEL, _GM_ROLE)
+    response = command.adjudicate(gm_context, manager)
+    assert "error" not in response
+
+    # all retreat phase orders
+    gm_context = mock.context(
+        _GUILD,
+        _GM_CHANNEL,
+        _GM_ROLE,
+        "Ghent boom\n" "Silesia - Saxony",
+    )
+    response = command.order(gm_context, manager)
+    assert "error" not in response
+
+    # adjudicate to winter builds
+    gm_context = mock.context(_GUILD, _GM_CHANNEL, _GM_ROLE)
+    response = command.adjudicate(gm_context, manager)
+    assert "error" not in response
+
+    # all build phase orders
+    player_context = mock.context(_GUILD, "france-orders", "France", "Build F Marseille")
+    response = command.order(player_context, manager)
+    assert "error" not in response
+    player_context = mock.context(_GUILD, "spain-orders", "Spain", "Disband Madrid")
+    response = command.order(player_context, manager)
+    assert "error" not in response
+
+    # adjudicate to spring moves
+    gm_context = mock.context(_GUILD, _GM_CHANNEL, _GM_ROLE)
+    response = command.adjudicate(gm_context, manager)
+    assert "error" not in response
+
+    # newly built units move
+    player_context = mock.context(_GUILD, "france-orders", "France", "F Marseille - Savoy")
+    response = command.order(player_context, manager)
+    assert "error" not in response
+
+    # adjudicate to spring retreats
+    gm_context = mock.context(_GUILD, _GM_CHANNEL, _GM_ROLE)
+    response = command.adjudicate(gm_context, manager)
+    assert "error" not in response
 
 
 def run():

@@ -44,6 +44,7 @@ _order_dict = {
 }
 
 
+# TODO: (!) illegal orders (wrong phase or doesn't work) should get caught when ordered, not on adjudication
 def parse_order(message: str, player_restriction: Player | None, board: Board, board_id: int) -> str:
     invalid: list[tuple[str, Exception]] = []
     commands = str.splitlines(message)

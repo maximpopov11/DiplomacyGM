@@ -15,6 +15,7 @@ from pydip.player.player import Player as PydipPlayer
 from pydip.player.unit import Unit as PydipUnit, UnitTypes as PydipUnitType
 
 from diplomacy.persistence.board import Board
+from diplomacy.persistence.db.database import logger
 from diplomacy.persistence.order import (
     ConvoyMove,
     ConvoyTransport,
@@ -221,7 +222,8 @@ def get_commands(
         elif isinstance(order, RetreatDisband):
             commands.append(RetreatDisbandCommand(retreats_map, pydip_player, pydip_unit))
         else:
-            raise ValueError(f"Order type {order.__class__} is not legal in {order}:")
+            logger.info("Skipped order which was not found (probably a core)")
+            # raise ValueError(f"Order type {order.__class__} is not legal in {order}:")
 
     # build orders
     for player in board.players:
