@@ -217,7 +217,7 @@ class _DatabaseConnection:
                     getattr(getattr(unit.order, "destination", None), "name", None) if unit.order is not None else None,
                     getattr(getattr(unit.order, "source", None), "name", None) if unit.order is not None else None,
                     board_id,
-                    unit.province.name,
+                    unit.coast.name if unit.coast is not None else unit.province.name,
                     unit.province.dislodged_unit == unit,
                 )
                 for unit in units
