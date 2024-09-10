@@ -5,7 +5,6 @@ from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.phase import is_moves_phase, is_retreats_phase, is_builds_phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import Unit
-from diplomacy.persistence.u
 from lark import Lark, Transformer
 
 
@@ -91,8 +90,8 @@ class TreeToOrder(Transformer):
 
 generator = TreeToOrder()
 
-with open("orders.ebnf", 'r') as f:
-    parser = Lark(f.read())
+with open("bot/orders.ebnf", 'r') as f:
+    parser = Lark(f.read(), start='statement')
 
 def parse_order(message: str, player_restriction: Player | None, board: Board, board_id: int) -> str:
     invalid: list[tuple[str, Exception]] = []
