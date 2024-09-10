@@ -79,4 +79,4 @@ DISCRIPTOR.2 : /[afAF]/ WS
 
 province : PROVINCE (WS PROVINCE) *
 
-PROVINCE : /(?![fFaA]\s)[a-zA-Z\._]+/
+PROVINCE : /(?![fFaA]\s)[a-zA-Z\._']+/
