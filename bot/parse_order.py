@@ -1,10 +1,13 @@
-from bot.utils import get_unit_type, get_keywords
+from bot.utils import get_unit_type, get_keywords, _manage_coast_signature
 from diplomacy.persistence import order
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.phase import is_moves_phase, is_retreats_phase, is_builds_phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import Unit
+from diplomacy.persistence.u
+from lark import Lark, Transformer
+
 
 _hold = "hold"
 _move = "move"
@@ -30,32 +33,107 @@ _order_dict = {
     _disband: ["d", "disband", "disbands", "drop", "drops", "remove"],
 }
 
+class TreeToOrder(Transformer):
+    def set_state(self, board: Board, player_restriction: Player | None):
+        self.board = board
+        self.player_restriction = player_restriction
+
+    def statement(self, statements):
+        return set(statements)
+
+    def province(self, s):
+        name = ' '.join(s).strip()
+        name = _manage_coast_signature(name)
+        return self.board.get_location(name)
+    
+    def unit(self, s) -> Unit:
+        #ignore the fleet/army signifier, if exists
+        name = s[-1].replace('_', ' ')
+        unit = self.board.get_location(s[-1]).get_unit()
+        if self.player_restriction is not None and unit.player != self.player_restriction:
+            raise PermissionError(
+                f"{self.player_restriction.name} does not control the unit in {unit.province.name}, it belongs to {unit.player.name}"
+            )
+        return unit
+
+    # format for all of these is (unit, order)
+
+    def hold_order(self, s):
+        return s[0], order.Hold()
+
+    def core_order(self, s):
+        return s[0], order.Core()
+    
+    def move_order(self, s):
+        return s[0], order.Move(s[-1])
+
+    def convoy_move_order(self, s):
+        return s[0], order.ConvoyMove(s[-1].destination)
+    
+    def convoy_order(self, s):
+        return s[0], order.ConvoyTransport(s[-1][0], s[-1][1])
+
+    def support_order(self, s):
+        if isinstance(s[-1], order.Move):
+            return s[0], order.Support(s[-1][0], s[-1][1].destination)
+        elif isinstance(s[-1], order.Hold):
+            return s[0], order.Support(s[-1][0], self.board.get_location(s[-1][0]))
+    
+    def retreat_order(self, s):
+        return s[0], order.RetreatMove(s[-1])
+    
+    def disband_order(self, s):
+        return s[0], order.RetreatDisband(s[-1])
+    
+    def order(self, order):
+        order[0].order = order[1]
+    
+
+generator = TreeToOrder()
+
+with open("orders.ebnf", 'r') as f:
+    parser = Lark(f.read())
 
 def parse_order(message: str, player_restriction: Player | None, board: Board, board_id: int) -> str:
     invalid: list[tuple[str, Exception]] = []
-    commands = str.splitlines(message)
-    updated_units: set[Unit] = set()
-    for command in commands:
-        if command.strip() == ".order":
-            continue
+    #commands = str.splitlines(message)
+    if is_builds_phase(board.phase):
+        for command in str.splitlines(message):
+            try:
+                _parse_player_order(get_keywords(command))
+            except Exception as error:
+                invalid.append((command, error))
+        if invalid:
+            response = "The following orders were invalid:"
+            for command in invalid:
+                response += f"\n{command[0]} with error: {command[1]}"
+        else:
+            response = "Orders validated successfully."
+
+        database = get_connection()
+        database.save_order_for_units(board_id, list(updated_units))
+
+        return response
+    elif is_moves_phase(board.phase) or is_retreats_phase(board.phase):
+        updated_units: set[Unit] = set()
+        # for command in commands:
+        #     if command.strip() == ".order":
+        #         continue
+        #     try:
+        #         unit = _parse_order(command, player_restriction, board)
+        #         if unit is not None:
+        #             updated_units.add(unit)
+        #     except Exception as error:
+        #         invalid.append((command, error))
         try:
-            unit = _parse_order(command, player_restriction, board)
-            if unit is not None:
-                updated_units.add(unit)
+            generator.set_state(board, player_restriction)
+            cmd = parser.parse(command)
         except Exception as error:
-            invalid.append((command, error))
-
-    database = get_connection()
-    database.save_order_for_units(board_id, list(updated_units))
-
-    if invalid:
-        response = "The following orders were invalid:"
-        for command in invalid:
-            response += f"\n{command[0]} with error: {command[1]}"
+            return str(error)
+        database = get_connection()
+        database.save_order_for_units(board_id, list(updated_units))
     else:
-        response = "Orders validated successfully."
-
-    return response
+        return "The game is in an unknown phase. Something has gone very wrong with the bot. Please report this to a gm"
 
 
 def parse_remove_order(message: str, player_restriction: Player | None, board: Board, board_id: int) -> str:
@@ -85,39 +163,39 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
     return response
 
 
-def _parse_order(command: str, player_restriction: Player, board: Board) -> Unit | None:
-    command = command.lower()
-    keywords: list[str] = get_keywords(command)
-    if keywords[0] == ".order":
-        keywords = keywords[1:]
+# def _parse_order(command: str, player_restriction: Player, board: Board) -> Unit | None:
+#     command = command.lower()
+#     keywords: list[str] = get_keywords(command)
+#     if keywords[0] == ".order":
+#         keywords = keywords[1:]
 
-    is_unit_order = is_moves_phase(board.phase) or is_retreats_phase(board.phase)
-    if is_unit_order:
-        if get_unit_type(keywords[0]):
-            # we can ignore unit type if provided
-            keywords = keywords[1:]
+#     is_unit_order = is_moves_phase(board.phase) or is_retreats_phase(board.phase)
+#     if is_unit_order:
+#         if get_unit_type(keywords[0]):
+#             # we can ignore unit type if provided
+#             keywords = keywords[1:]
 
-        # all unit orders must specify their unit
-        location = board.get_location(keywords[0])
-        unit = location.get_unit()
-        if not unit:
-            raise RuntimeError(f"There is no unit in {location.name}")
-        keywords = keywords[1:]
+#         # all unit orders must specify their unit
+#         location = board.get_location(keywords[0])
+#         unit = location.get_unit()
+#         if not unit:
+#             raise RuntimeError(f"There is no unit in {location.name}")
+#         keywords = keywords[1:]
 
-        # assert that the command user is authorized to order this unit
-        player = unit.player
-        if player_restriction is not None and player != player_restriction:
-            raise PermissionError(
-                f"{player_restriction.name} does not control the unit in {location.name} which belongs to {player.name}"
-            )
+#         # assert that the command user is authorized to order this unit
+#         player = unit.player
+#         if player_restriction is not None and player != player_restriction:
+#             raise PermissionError(
+#                 f"{player_restriction.name} does not control the unit in {location.name} which belongs to {player.name}"
+#             )
 
-        _parse_unit_order(keywords, unit, board)
-        return unit
-    elif is_builds_phase(board.phase):
-        _parse_player_order(keywords, player_restriction, board)
-        return None
-    else:
-        raise ValueError(f"Unknown phase: {board.phase.name}")
+#         _parse_unit_order(keywords, unit, board)
+#         return unit
+#     elif is_builds_phase(board.phase):
+#         _parse_player_order(keywords, player_restriction, board)
+#         return None
+#     else:
+#         raise ValueError(f"Unknown phase: {board.phase.name}")
 
 
 def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> Unit | None:
@@ -156,61 +234,61 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
         return unit
 
 
-def _parse_unit_order(keywords: list[str], unit: Unit, board: Board) -> None:
-    command = keywords[0]
+# def _parse_unit_order(keywords: list[str], unit: Unit, board: Board) -> None:
+#     command = keywords[0]
 
-    # no extra data orders
-    if command in _order_dict[_hold]:
-        unit.order = order.Hold()
-        return
-    if command in _order_dict[_core]:
-        unit.order = order.Core()
-        return
-    if command in _order_dict[_retreat_disband]:
-        unit.order = order.RetreatDisband()
-        return
+#     # no extra data orders
+#     if command in _order_dict[_hold]:
+#         unit.order = order.Hold()
+#         return
+#     if command in _order_dict[_core]:
+#         unit.order = order.Core()
+#         return
+#     if command in _order_dict[_retreat_disband]:
+#         unit.order = order.RetreatDisband()
+#         return
 
-    # all remaining orders require a province next
-    keywords = keywords[1:]
-    location = board.get_location(keywords[0])
+#     # all remaining orders require a province next
+#     keywords = keywords[1:]
+#     location = board.get_location(keywords[0])
 
-    if command in _order_dict[_move]:
-        unit.order = order.Move(location)
-        return
-    if command in _order_dict[_convoy_move]:
-        unit.order = order.ConvoyMove(location)
-        return
-    if command in _order_dict[_retreat_move]:
-        unit.order = order.RetreatMove(location)
-        return
+#     if command in _order_dict[_move]:
+#         unit.order = order.Move(location)
+#         return
+#     if command in _order_dict[_convoy_move]:
+#         unit.order = order.ConvoyMove(location)
+#         return
+#     if command in _order_dict[_retreat_move]:
+#         unit.order = order.RetreatMove(location)
+#         return
 
-    # all remaining orders require more data
-    keywords = keywords[1:]
+#     # all remaining orders require more data
+#     keywords = keywords[1:]
 
-    if command in _order_dict[_support]:
-        if keywords[0] in _order_dict[_hold] or keywords[0] == location:
-            # support hold
-            location2 = location
-        else:
-            # support move
-            if keywords[0] in _order_dict[_move]:
-                # this is irrelevant if provided, we already know this is a support move
-                keywords = keywords[1:]
-            location2 = board.get_location(keywords[0])
+#     if command in _order_dict[_support]:
+#         if keywords[0] in _order_dict[_hold] or keywords[0] == location:
+#             # support hold
+#             location2 = location
+#         else:
+#             # support move
+#             if keywords[0] in _order_dict[_move]:
+#                 # this is irrelevant if provided, we already know this is a support move
+#                 keywords = keywords[1:]
+#             location2 = board.get_location(keywords[0])
 
-        unit.order = order.Support(location.get_unit(), location2)
-        return
+#         unit.order = order.Support(location.get_unit(), location2)
+#         return
 
-    if command in _order_dict[_convoy]:
-        if keywords[0] in _order_dict[_move]:
-            # this is irrelevant if provided
-            keywords = keywords[1:]
-        location2 = board.get_location(keywords[0])
+#     if command in _order_dict[_convoy]:
+#         if keywords[0] in _order_dict[_move]:
+#             # this is irrelevant if provided
+#             keywords = keywords[1:]
+#         location2 = board.get_location(keywords[0])
 
-        unit.order = order.ConvoyTransport(location.get_unit(), location2)
-        return
+#         unit.order = order.ConvoyTransport(location.get_unit(), location2)
+#         return
 
-    raise RuntimeError("Moves/Retreats order could not be parsed")
+#     raise RuntimeError("Moves/Retreats order could not be parsed")
 
 
 def _parse_player_order(keywords: list[str], player_restriction: Player, board: Board) -> None:

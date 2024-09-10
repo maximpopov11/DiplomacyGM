@@ -1,0 +1,82 @@
+%import common.WS
+
+statement: order ("\n" order?) *
+
+order: move_order
+    | hold_order
+    | support_order
+    | convoy_move_order
+    | convoy_order
+    | core_order
+    | retreat_order
+    | disband_order
+    | ".order"
+
+
+move_order: unit WS MOVE WS province
+
+hold_order: unit WS HOLD
+
+support_order: unit WS SUPPORT WS move_order
+
+convoy_move_order: unit WS CONVOY_MOVE WS province
+
+convoy_order: unit WS CONVOY WS move_order
+
+core_order: unit WS CORE
+
+retreat_order: unit WS RETREAT
+
+disband_order: unit WS DISBAND
+
+HOLD.2 : "h"
+       | "hold"
+       | "holds"
+
+MOVE.2 : "-"
+       | "->"
+       | "to"
+       | "m"
+       | "move"
+       | "moves"
+
+CONVOY_MOVE.2 : "c-"
+        | "cm"
+        | "convoy -"
+        | "convoy ->"
+        | "convoy to"
+        | "convoy m"
+        | "convoy move"
+        | "convoy moves"
+
+SUPPORT.2 : "s"
+        | "support"
+        | "supports"
+
+CONVOY.2 : "c"
+        | "convoy"
+        | "convoys"
+
+CORE.2 : "core"
+    | "cores"
+
+RETREAT.2 : MOVE
+          | "r"
+          | "retreat"
+          | "retreats"
+
+DISBAND.2 : "d"
+          | "disband"
+          | "disbands"
+          | "boom"
+          | "explodes"
+          | "dies"
+
+unit : (DISCRIPTOR)? province
+
+
+DISCRIPTOR.2 : /[afAF]/ WS
+
+province : PROVINCE (WS PROVINCE) *
+
+PROVINCE : /(?![fFaA]\s)[a-zA-Z\._]+/
