@@ -369,3 +369,24 @@ def _set_coasts(province: Province, name_to_adjacent: dict[str, set[Province]]):
     for name, adjacent in name_to_adjacent.items():
         coast = Coast(f"{province.name} {name}", None, None, adjacent, province)
         province.coasts.add(coast)
+
+
+def fix_phantom_units(provinces: set[Province]):
+    for province in provinces:
+        if province.name == "Yucatan Channel":
+            province.primary_unit_coordinate = (1028, 952)
+            province.retreat_unit_coordinate = (1039, 921)
+        if province.name == "SAH1":
+            province.primary_unit_coordinate = (2029, 922)
+            province.retreat_unit_coordinate = (2041, 935)
+        if province.name == "SAH2":
+            province.primary_unit_coordinate = (2100, 949)
+            province.retreat_unit_coordinate = (2112, 961)
+        if province.name == "SAH3":
+            province.primary_unit_coordinate = (2129, 1017)
+            province.retreat_unit_coordinate = (2141, 1029)
+        if province.name == "Imerina":
+            province.primary_unit_coordinate = (2632, 1518)
+            province.retreat_unit_coordinate = (2648, 1485)
+            province.coast().primary_unit_coordinate = province.primary_unit_coordinate
+            province.coast().retreat_unit_coordinate = province.retreat_unit_coordinate

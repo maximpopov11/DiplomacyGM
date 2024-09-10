@@ -131,6 +131,9 @@ class Parser:
         # set phantom unit coordinates for optimal unit placements
         self._set_phantom_unit_coordinates()
 
+        # TODO: (BETA) yet another very bad bandaid, no time to fix it the right way
+        cheat_parsing.fix_phantom_units(provinces)
+
         return provinces
 
     def _get_province_coordinates(self) -> set[Province]:

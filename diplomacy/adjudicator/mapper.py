@@ -79,6 +79,7 @@ def color_element(element: Element, color: str):
         element.set("style", style)
 
 
+# TODO: (!) we don't draw half cores
 class Mapper:
     def __init__(self, board: Board):
         self.board: Board = board

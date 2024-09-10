@@ -78,7 +78,6 @@ def _set_province_owner(keywords: list[str], board: Board) -> None:
     province = board.get_province(keywords[0])
     player = board.get_player(keywords[1])
     board.change_owner(province, player)
-    province.owner = player
 
 
 def _create_unit(keywords: list[str], board: Board) -> None:
@@ -96,5 +95,5 @@ def _delete_unit(keywords: list[str], board: Board) -> None:
 def _move_unit(keywords: list[str], board: Board) -> None:
     old_province = board.get_province(keywords[0])
     unit = old_province.unit
-    new_province = board.get_province(keywords[1])
-    board.move_unit(unit, new_province)
+    new_location = board.get_location(keywords[1])
+    board.move_unit(unit, new_location)
