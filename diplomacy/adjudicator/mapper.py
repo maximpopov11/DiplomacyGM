@@ -107,7 +107,10 @@ class Mapper:
                 continue
 
             coordinate = unit.get_coordinate()
-            self._draw_order(unit.order, coordinate)
+            try:
+                self._draw_order(unit.order, coordinate)
+            except:
+                logger.error(f"Drawing move failed for {unit}")
 
         players: set[Player]
         if player_restriction is None:
