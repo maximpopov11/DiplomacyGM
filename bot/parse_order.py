@@ -60,7 +60,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board, b
             invalid.append((command, error))
 
     database = get_connection()
-    database.save_order_for_units(board_id, list(updated_units))
+    database.save_order_for_units(board_id, board.phase.name, list(updated_units))
 
     if invalid:
         response = "The following orders were invalid:"
@@ -87,7 +87,7 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
             invalid.append((command, error))
 
     database = get_connection()
-    database.save_order_for_units(board_id, list(updated_units))
+    database.save_order_for_units(board_id, board.phase.name, list(updated_units))
 
     if invalid:
         response = "The following order removals were invalid:"
