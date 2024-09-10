@@ -125,8 +125,10 @@ class Mapper:
         self._moves_svg.write(svg_file_name)
         return svg_file_name
 
-    def draw_current_map(self) -> None:
-        self.board_svg.write(f"{self.board.phase.name}_map.svg")
+    def draw_current_map(self) -> str:
+        svg_file_name = f"{self.board.phase.name}_map.svg"
+        self.board_svg.write(svg_file_name)
+        return svg_file_name
 
     def _reset_moves_map(self):
         self._moves_svg = copy.deepcopy(self.board_svg)

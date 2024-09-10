@@ -12,7 +12,7 @@ _delete_unit_str = "delete unit"
 _move_unit_str = "move unit"
 
 
-def parse_edit_state(message: str, board: Board) -> str:
+def parse_edit_state(message: str, board: Board) -> tuple[str, str | None]:
     invalid: list[tuple[str, Exception]] = []
     commands = str.splitlines(message)
     for command in commands:
@@ -29,9 +29,9 @@ def parse_edit_state(message: str, board: Board) -> str:
         response = "Commands validated successfully. Results map updated."
 
     # TODO: (DB) return map as the response
-    Mapper(board).draw_current_map()
+    svg_file_name = Mapper(board).draw_current_map()
 
-    return response
+    return response, svg_file_name
 
 
 def _parse_command(command: str, board: Board) -> None:
