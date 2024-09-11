@@ -21,8 +21,21 @@ _disband = "disband"
 
 _order_dict = {
     _hold: ["h", "hold", "holds"],
-    _move: ["-", "->", "to", "m", "move", "moves"],
-    _convoy_move: ["c-", "cm", "convoy -", "convoy ->", "convoy to", "convoy m", "convoy move", "convoy moves"],
+    _move: ["-", "->", ">", "to", "m", "move", "moves", "into"],
+    _convoy_move: [
+        "c-",
+        "c->",
+        "c>",
+        "cm",
+        "convoy -",
+        "convoy ->",
+        "convoy >",
+        "convoy to",
+        "convoy m",
+        "convoy move",
+        "convoy moves",
+        "convoy into",
+    ],
     _support: ["s", "support", "supports"],
     _convoy: ["c", "convoy", "convoys"],
     _core: ["core", "cores"],
@@ -100,6 +113,7 @@ with open("bot/orders.ebnf", 'r') as f:
 movement_parser = Lark(ebnf, start='movement_phase')
 retreats_parser = Lark(ebnf, start='retreat_phase')
 
+# TODO: (!) illegal orders (wrong phase or doesn't work) should get caught when ordered, not on adjudication
 def parse_order(message: str, player_restriction: Player | None, board: Board, board_id: int) -> str:
     invalid: list[tuple[str, Exception]] = []
     #commands = str.splitlines(message)
