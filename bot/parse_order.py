@@ -50,7 +50,10 @@ class TreeToOrder(Transformer):
         self.board = board
         self.player_restriction = player_restriction
 
-    def statement(self, statements):
+    def movement_phase(self, statements):
+        return set([x for x in statements if x != None])
+
+    def retreat_phase(self, statements):
         return set([x for x in statements if x != None])
 
     def province(self, s):
@@ -144,7 +147,6 @@ def parse_order(message: str, player_restriction: Player | None, board: Board, b
             generator.set_state(board, player_restriction)
             cmd = parser.parse(message)
             movement = generator.transform(cmd)
-            print(movement)
         except Exception as error:
            return str(error)
         database = get_connection()
