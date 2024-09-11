@@ -71,8 +71,20 @@ def view_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | Non
     if is_gm(ctx.message.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot view orders as a GM in a non-GM channel.")
-        file_name = manager.draw_moves_map(ctx.guild.id, None)
-        return get_orders(manager.get_board(ctx.guild.id), None), file_name
+
+        try:
+            order_text = get_orders(manager.get_board(ctx.guild.id), None)
+        except:
+            logger.error(f"View_orders text failed in game with id: {ctx.guild.id}")
+            order_text = "view_orders text failed"
+
+        try:
+            file_name = manager.draw_moves_map(ctx.guild.id, None)
+        except:
+            logger.error(f"View_orders map failed in game with id: {ctx.guild.id}")
+            file_name = None
+
+        return order_text, file_name
 
     player = get_player_by_role(ctx.message.author, manager, ctx.guild.id)
     if player is not None:
@@ -91,8 +103,8 @@ def adjudicate(ctx: commands.Context, manager: Manager) -> tuple[str, str | None
     if not is_gm_channel(ctx.channel):
         raise PermissionError("You cannot adjudicate in a non-GM channel.")
 
-    manager.adjudicate(ctx.guild.id)
-    return "Adjudication completed successfully.", None  # TODO return file name
+    svg_file_name = manager.adjudicate(ctx.guild.id)
+    return "Adjudication completed successfully.", svg_file_name  # TODO return file name
 
 
 def rollback(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
@@ -130,7 +142,7 @@ def edit(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     if not is_gm_channel(ctx.channel):
         raise PermissionError("You cannot edit the game state in a non-GM channel.")
 
-    return parse_edit_state(ctx.message.content, manager.get_board(ctx.guild.id)), None
+    return parse_edit_state(ctx.message.content, manager.get_board(ctx.guild.id))
 
 
 def create_game(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:

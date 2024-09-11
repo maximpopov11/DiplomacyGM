@@ -41,13 +41,13 @@ class Manager:
     def draw_moves_map(self, server_id: int, player_restriction: Player | None) -> str:
         return Mapper(self._boards[server_id]).draw_moves_map(player_restriction)
 
-    def adjudicate(self, server_id: int) -> None:
+    def adjudicate(self, server_id: int) -> str:
         mapper = Mapper(self._boards[server_id])
         mapper.draw_moves_map(None)
         new_board = Adjudicator(self._boards[server_id]).adjudicate()
         self._boards[server_id] = new_board
         mapper = Mapper(new_board)
-        mapper.draw_current_map()
+        return mapper.draw_current_map()
         # TODO: (DB) update board, moves map, results map at server id at turn in db
         # TODO: (DB) when updating board, update SVG so it can be reread if needed
         # TODO: (DB) protect against malicious inputs (ex. orders) like drop table
