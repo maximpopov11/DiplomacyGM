@@ -113,8 +113,8 @@ generator = TreeToOrder()
 with open("bot/orders.ebnf", 'r') as f:
     ebnf = f.read()
 
-movement_parser = Lark(ebnf, start='movement_phase')
-retreats_parser = Lark(ebnf, start='retreat_phase')
+movement_parser = Lark(ebnf, start='movement_phase', parser='lalr')
+retreats_parser = Lark(ebnf, start='retreat_phase', parser='lalr')
 
 # TODO: (!) illegal orders (wrong phase or doesn't work) should get caught when ordered, not on adjudication
 def parse_order(message: str, player_restriction: Player | None, board: Board, board_id: int) -> str:
