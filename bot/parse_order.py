@@ -154,7 +154,6 @@ def parse_order(message: str, player_restriction: Player | None, board: Board, b
     else:
         return "The game is in an unknown phase. Something has gone very wrong with the bot. Please report this to a gm"
 
-
 def parse_remove_order(message: str, player_restriction: Player | None, board: Board, board_id: int) -> str:
     invalid: list[tuple[str, Exception]] = []
     commands = str.splitlines(message)
@@ -180,42 +179,6 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
         response = "Orders removed successfully."
 
     return response
-
-
-# def _parse_order(command: str, player_restriction: Player, board: Board) -> Unit | None:
-#     command = command.lower()
-#     keywords: list[str] = get_keywords(command)
-#     if keywords[0] == ".order":
-#         keywords = keywords[1:]
-
-#     is_unit_order = is_moves_phase(board.phase) or is_retreats_phase(board.phase)
-#     if is_unit_order:
-#         if get_unit_type(keywords[0]):
-#             # we can ignore unit type if provided
-#             keywords = keywords[1:]
-
-#         # all unit orders must specify their unit
-#         location = board.get_location(keywords[0])
-#         unit = location.get_unit()
-#         if not unit:
-#             raise RuntimeError(f"There is no unit in {location.name}")
-#         keywords = keywords[1:]
-
-#         # assert that the command user is authorized to order this unit
-#         player = unit.player
-#         if player_restriction is not None and player != player_restriction:
-#             raise PermissionError(
-#                 f"{player_restriction.name} does not control the unit in {location.name} which belongs to {player.name}"
-#             )
-
-#         _parse_unit_order(keywords, unit, board)
-#         return unit
-#     elif is_builds_phase(board.phase):
-#         _parse_player_order(keywords, player_restriction, board)
-#         return None
-#     else:
-#         raise ValueError(f"Unknown phase: {board.phase.name}")
-
 
 def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> Unit | None:
     command = command.lower()
@@ -251,64 +214,6 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
             )
         unit.order = None
         return unit
-
-
-# def _parse_unit_order(keywords: list[str], unit: Unit, board: Board) -> None:
-#     command = keywords[0]
-
-#     # no extra data orders
-#     if command in _order_dict[_hold]:
-#         unit.order = order.Hold()
-#         return
-#     if command in _order_dict[_core]:
-#         unit.order = order.Core()
-#         return
-#     if command in _order_dict[_retreat_disband]:
-#         unit.order = order.RetreatDisband()
-#         return
-
-#     # all remaining orders require a province next
-#     keywords = keywords[1:]
-#     location = board.get_location(keywords[0])
-
-#     if command in _order_dict[_move]:
-#         unit.order = order.Move(location)
-#         return
-#     if command in _order_dict[_convoy_move]:
-#         unit.order = order.ConvoyMove(location)
-#         return
-#     if command in _order_dict[_retreat_move]:
-#         unit.order = order.RetreatMove(location)
-#         return
-
-#     # all remaining orders require more data
-#     keywords = keywords[1:]
-
-#     if command in _order_dict[_support]:
-#         if keywords[0] in _order_dict[_hold] or keywords[0] == location:
-#             # support hold
-#             location2 = location
-#         else:
-#             # support move
-#             if keywords[0] in _order_dict[_move]:
-#                 # this is irrelevant if provided, we already know this is a support move
-#                 keywords = keywords[1:]
-#             location2 = board.get_location(keywords[0])
-
-#         unit.order = order.Support(location.get_unit(), location2)
-#         return
-
-#     if command in _order_dict[_convoy]:
-#         if keywords[0] in _order_dict[_move]:
-#             # this is irrelevant if provided
-#             keywords = keywords[1:]
-#         location2 = board.get_location(keywords[0])
-
-#         unit.order = order.ConvoyTransport(location.get_unit(), location2)
-#         return
-
-#     raise RuntimeError("Moves/Retreats order could not be parsed")
-
 
 def _parse_player_order(keywords: list[str], player_restriction: Player, board: Board) -> None:
     command = keywords[0]
