@@ -38,17 +38,16 @@ class TreeToOrder(Transformer):
         self.player_restriction = player_restriction
 
     def statement(self, statements):
-        return set(statements)
+        return set([x for x in statements if x != None])
 
     def province(self, s):
-        name = ' '.join(s).strip()
+        name = ' '.join(s).replace('_', ' ').strip()
         name = _manage_coast_signature(name)
         return self.board.get_location(name)
     
     def unit(self, s) -> Unit:
         #ignore the fleet/army signifier, if exists
-        name = s[-1].replace('_', ' ')
-        unit = self.board.get_location(s[-1]).get_unit()
+        unit = s[-1].get_unit()
         if self.player_restriction is not None and unit.player != self.player_restriction:
             raise PermissionError(
                 f"{self.player_restriction.name} does not control the unit in {unit.province.name}, it belongs to {unit.player.name}"
@@ -85,13 +84,21 @@ class TreeToOrder(Transformer):
         return s[0], order.RetreatDisband(s[-1])
     
     def order(self, order):
-        order[0].order = order[1]
-    
+        if len(order) == 0:
+            # this line is '.order'
+            return None
+        command, = order
+        unit, order = command
+        unit.order = order
+        return unit
 
 generator = TreeToOrder()
 
 with open("bot/orders.ebnf", 'r') as f:
-    parser = Lark(f.read(), start='statement')
+    ebnf = f.read()
+
+movement_parser = Lark(ebnf, start='movement_phase')
+retreats_parser = Lark(ebnf, start='retreat_phase')
 
 def parse_order(message: str, player_restriction: Player | None, board: Board, board_id: int) -> str:
     invalid: list[tuple[str, Exception]] = []
@@ -114,23 +121,20 @@ def parse_order(message: str, player_restriction: Player | None, board: Board, b
 
         return response
     elif is_moves_phase(board.phase) or is_retreats_phase(board.phase):
+        if is_moves_phase(board.phase):
+            parser = movement_parser
+        else:
+            parser = retreats_parser
         updated_units: set[Unit] = set()
-        # for command in commands:
-        #     if command.strip() == ".order":
-        #         continue
-        #     try:
-        #         unit = _parse_order(command, player_restriction, board)
-        #         if unit is not None:
-        #             updated_units.add(unit)
-        #     except Exception as error:
-        #         invalid.append((command, error))
         try:
             generator.set_state(board, player_restriction)
-            cmd = parser.parse(command)
+            cmd = parser.parse(message)
+            movement = generator.transform(cmd)
+            print(movement)
         except Exception as error:
-            return str(error)
+           return str(error)
         database = get_connection()
-        database.save_order_for_units(board_id, list(updated_units))
+        database.save_order_for_units(board_id, movement)
     else:
         return "The game is in an unknown phase. Something has gone very wrong with the bot. Please report this to a gm"
 

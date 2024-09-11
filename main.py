@@ -3,7 +3,7 @@ import os
 
 from bot import bot
 
-log_level = logging.getLevelNamesMapping().get(os.getenv("log_level", "INFO"))
+log_level = None#logging.getLevelNamesMapping().get(os.getenv("log_level", "INFO"))
 if not log_level:
     log_level = logging.INFO
 logging.basicConfig(level=log_level)

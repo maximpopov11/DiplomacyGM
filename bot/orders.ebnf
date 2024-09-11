@@ -1,6 +1,9 @@
 %import common.WS
 
-statement: order ("\n" order?) *
+movement_phase: order ("\n" order?) *
+
+retreat_phase: retreat ("\n" retreat?) *
+
 
 order: move_order
     | hold_order
@@ -8,9 +11,10 @@ order: move_order
     | convoy_move_order
     | convoy_order
     | core_order
-    | retreat_order
-    | disband_order
     | ".order"
+
+retreat: retreat_order
+       | disband_order
 
 
 move_order: unit WS MOVE WS province
