@@ -36,6 +36,9 @@ def ping(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
 def order(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
 
+    if not board.orders_enabled:
+        return "Orders locked! If you think this is an error, contact a GM.", None
+
     if is_gm(ctx.message.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot order as a GM in a non-GM channel.")
@@ -52,6 +55,9 @@ def order(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
 
 def remove_order(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
+
+    if not board.orders_enabled:
+        return "Orders locked! If you think this is an error, contact a GM.", None
 
     if is_gm(ctx.message.author):
         if not is_gm_channel(ctx.channel):
