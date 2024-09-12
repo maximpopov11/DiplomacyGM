@@ -182,7 +182,7 @@ def enable_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | N
     if not is_gm_channel(ctx.channel):
         raise PermissionError("You cannot create the game in a non-GM channel.")
 
-    board = manager.get_board()
+    board = manager.get_board(ctx.guild.id)
     board.orders_enabled = True
     return "Successful", None
 
@@ -193,7 +193,7 @@ def disable_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | 
     if not is_gm_channel(ctx.channel):
         raise PermissionError("You cannot create the game in a non-GM channel.")
 
-    board = manager.get_board()
+    board = manager.get_board(ctx.guild.id)
     board.orders_enabled = False
     return "Successful", None
 
