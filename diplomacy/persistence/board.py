@@ -16,6 +16,7 @@ class Board:
         self.provinces: set[Province] = provinces
         self.units: set[Unit] = units
         self.phase: Phase = phase
+        self.orders_enabled: bool = True
 
     # TODO: (BETA) make this efficient
     # TODO: (BETA) discord command parsing gets for all of these will have typos, support get near answers (and warn)

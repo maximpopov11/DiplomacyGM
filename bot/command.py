@@ -7,6 +7,7 @@ from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
 from bot.utils import is_gm, is_gm_channel, get_player_by_role, is_player_channel, get_orders
 from diplomacy.persistence.manager import Manager
+from diplomacy.persistence.db.database import get_connection
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +117,20 @@ def rollback(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
 
     return manager.rollback(), None  # TODO return file name
 
+def remove_all(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+    if not is_gm(ctx.message.author):
+        raise PermissionError("You cannot modify all orders because you are not a GM.")
+    if not is_gm_channel(ctx.message.author):
+        raise PermissionError("You cannot remove orders in a non-GM channel.")
+    
+    board = manager.get_board(ctx.guild.id)
+    for unit in board.units:
+        unit.order = None
+
+    database = get_connection()
+    database.save_order_for_units(board.units, ctx.guild.id)
+    return "Successful", None
+
 
 # TODO: (QOL) this doesn't work right now
 # TODO: (QOL) allow players to use this
@@ -153,6 +168,28 @@ def create_game(ctx: commands.Context, manager: Manager) -> tuple[str, str | Non
         raise PermissionError("You cannot create the game in a non-GM channel.")
 
     return manager.create_game(ctx.guild.id), None  # TODO return file name
+
+def enable_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+    if not is_gm(ctx.message.author):
+        raise PermissionError("You cannot create the game because you are not a GM.")
+
+    if not is_gm_channel(ctx.channel):
+        raise PermissionError("You cannot create the game in a non-GM channel.")
+
+    board = manager.get_board()
+    board.orders_enabled = True
+    return "Successful", None
+
+def disable_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+    if not is_gm(ctx.message.author):
+        raise PermissionError("You cannot create the game because you are not a GM.")
+
+    if not is_gm_channel(ctx.channel):
+        raise PermissionError("You cannot create the game in a non-GM channel.")
+
+    board = manager.get_board()
+    board.orders_enabled = False
+    return "Successful", None
 
 
 # TODO: (BETA) implement new command for inputting new variant
