@@ -135,4 +135,7 @@ async def create_game(ctx: discord.ext.commands.Context) -> None:
 def run():
     token = os.getenv("DISCORD_TOKEN")
     # token = __DISCORD_TOKEN
-    bot.run(token)
+    if token:
+        bot.run(token)
+    else:
+        print("The DISCORD_TOKEN enviroment variable is not set")
