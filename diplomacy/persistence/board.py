@@ -17,6 +17,7 @@ class Board:
         self.units: set[Unit] = units
         self.phase: Phase = phase
         self.board_id = 0
+        self.orders_enabled: bool = True
 
     # TODO: (BETA) make this efficient
     # TODO: (BETA) discord command parsing gets for all of these will have typos, support get near answers (and warn)
