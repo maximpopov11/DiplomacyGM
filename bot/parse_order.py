@@ -121,7 +121,7 @@ retreats_parser = Lark(ebnf, start="retreat_phase", parser="earley")
 
 
 # TODO: (!) illegal orders (wrong phase or doesn't work) should get caught when ordered, not on adjudication
-def parse_order(message: str, player_restriction: Player | None, board: Board, board_id: int) -> str:
+def parse_order(message: str, player_restriction: Player | None, board: Board) -> str:
     invalid: list[tuple[str, Exception]] = []
     if is_builds_phase(board.phase):
         for command in str.splitlines(message):
@@ -148,14 +148,14 @@ def parse_order(message: str, player_restriction: Player | None, board: Board, b
         movement = generator.transform(cmd)
 
         database = get_connection()
-        database.save_order_for_units(board_id, board.phase.name, movement)
+        database.save_order_for_units(board, movement)
 
         return "Orders validated successfully"
     else:
         return "The game is in an unknown phase. Something has gone very wrong with the bot. Please report this to a gm"
 
 
-def parse_remove_order(message: str, player_restriction: Player | None, board: Board, board_id: int) -> str:
+def parse_remove_order(message: str, player_restriction: Player | None, board: Board) -> str:
     invalid: list[tuple[str, Exception]] = []
     commands = str.splitlines(message)
     updated_units: set[Unit] = set()
@@ -170,7 +170,7 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
             invalid.append((command, error))
 
     database = get_connection()
-    database.save_order_for_units(board_id, board.phase.name, list(updated_units))
+    database.save_order_for_units(board, list(updated_units))
 
     if invalid:
         response = "The following order removals were invalid:"

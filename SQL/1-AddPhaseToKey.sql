@@ -11,8 +11,9 @@ CREATE TABLE units_tmp AS SELECT * FROM units;
 ALTER TABLE provinces_tmp ADD COLUMN phase text;
 ALTER TABLE units_tmp ADD COLUMN phase text;
 
-UPDATE provinces_tmp SET phase='Spring Moves';
-UPDATE units_tmp SET phase='Spring Moves';
+UPDATE boards_tmp SET phase='0 Spring Moves';
+UPDATE provinces_tmp SET phase='0 Spring Moves';
+UPDATE units_tmp SET phase='0 Spring Moves';
 
 DROP TABLE boards;
 DROP TABLE players;

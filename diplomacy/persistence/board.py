@@ -1,4 +1,4 @@
-from diplomacy.persistence.phase import Phase
+from diplomacy.persistence.phase import Phase, phases
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, Coast, Location
 from diplomacy.persistence.unit import Unit, UnitType
@@ -16,6 +16,7 @@ class Board:
         self.provinces: set[Province] = provinces
         self.units: set[Unit] = units
         self.phase: Phase = phase
+        self.year = 0
         self.board_id = 0
         self.orders_enabled: bool = True
 
@@ -59,6 +60,9 @@ class Board:
             build_counts.append((player.name, len(player.centers) - len(player.units)))
         build_counts = sorted(build_counts, key=lambda counts: counts[1])
         return build_counts
+
+    def get_phase_and_year_string(self):
+        return f"{self.year} {self.phase.name}"
 
     def change_owner(self, province: Province, player: Player):
         if province.has_supply_center:

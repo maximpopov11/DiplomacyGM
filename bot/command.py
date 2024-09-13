@@ -42,13 +42,13 @@ def order(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     if is_gm(ctx.message.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot order as a GM in a non-GM channel.")
-        return parse_order(ctx.message.content, None, board, ctx.guild.id), None
+        return parse_order(ctx.message.content, None, board), None
 
     player = get_player_by_role(ctx.message.author, manager, ctx.guild.id)
     if player is not None:
         if not is_player_channel(player.name, ctx.channel):
             raise PermissionError("You cannot order as a player outside of your orders channel.")
-        return parse_order(ctx.message.content, player, board, ctx.guild.id), None
+        return parse_order(ctx.message.content, player, board), None
 
     raise PermissionError("You cannot order units because you are neither a GM nor a player.")
 
@@ -62,13 +62,13 @@ def remove_order(ctx: commands.Context, manager: Manager) -> tuple[str, str | No
     if is_gm(ctx.message.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot remove orders as a GM in a non-GM channel.")
-        return parse_remove_order(ctx.message.content, None, board, ctx.guild.id), None
+        return parse_remove_order(ctx.message.content, None, board), None
 
     player = get_player_by_role(ctx.message.author, manager, ctx.guild.id)
     if player is not None:
         if not is_player_channel(player.name, ctx.channel):
             raise PermissionError("You cannot remove orders as a player outside of your orders channel.")
-        return parse_remove_order(ctx.message.content, player, board, ctx.guild.id), None
+        return parse_remove_order(ctx.message.content, player, board), None
 
     raise PermissionError("You cannot remove orders because you are neither a GM nor a player.")
 
@@ -123,18 +123,19 @@ def rollback(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
 
     return manager.rollback(), None  # TODO return file name
 
+
 def remove_all(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     if not is_gm(ctx.message.author):
         raise PermissionError("You cannot modify all orders because you are not a GM.")
     if not is_gm_channel(ctx.message.author):
         raise PermissionError("You cannot remove orders in a non-GM channel.")
-    
+
     board = manager.get_board(ctx.guild.id)
     for unit in board.units:
         unit.order = None
 
     database = get_connection()
-    database.save_order_for_units(board.units, ctx.guild.id)
+    database.save_order_for_units(board, board.units)
     return "Successful", None
 
 
@@ -175,6 +176,7 @@ def create_game(ctx: commands.Context, manager: Manager) -> tuple[str, str | Non
 
     return manager.create_game(ctx.guild.id), None  # TODO return file name
 
+
 def enable_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     if not is_gm(ctx.message.author):
         raise PermissionError("You cannot create the game because you are not a GM.")
@@ -185,6 +187,7 @@ def enable_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | N
     board = manager.get_board(ctx.guild.id)
     board.orders_enabled = True
     return "Successful", None
+
 
 def disable_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     if not is_gm(ctx.message.author):

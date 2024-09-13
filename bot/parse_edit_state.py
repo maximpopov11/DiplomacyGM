@@ -64,9 +64,19 @@ def _parse_command(command: str, board: Board) -> None:
 
 
 def _set_phase(keywords: list[str], board: Board) -> None:
+    old_phase_string = board.get_phase_and_year_string()
     board.phase = get_phase(keywords[0])
     get_connection().execute_arbitrary_sql(
-        "UPDATE boards SET phase=? WHERE board_id=?", (board.phase.name, board.board_id)
+        "UPDATE boards SET phase=? WHERE board_id=? and phase=?",
+        (board.get_phase_and_year_string(), board.board_id, old_phase_string),
+    )
+    get_connection().execute_arbitrary_sql(
+        "UPDATE provinces SET phase=? WHERE board_id=? and phase=?",
+        (board.get_phase_and_year_string(), board.board_id, old_phase_string),
+    )
+    get_connection().execute_arbitrary_sql(
+        "UPDATE units SET phase=? WHERE board_id=? and phase=?",
+        (board.get_phase_and_year_string(), board.board_id, old_phase_string),
     )
 
 
