@@ -89,10 +89,10 @@ class TreeToOrder(Transformer):
         return s[0], order.ConvoyTransport(s[-1][0], s[-1][1])
 
     def support_order(self, s):
-        if isinstance(s[-1], order.Move):
+        if isinstance(s[-1][1], order.Move):
             return s[0], order.Support(s[-1][0], s[-1][1].destination)
-        elif isinstance(s[-1], order.Hold):
-            return s[0], order.Support(s[-1][0], self.board.get_location(s[-1][0]))
+        elif isinstance(s[-1][1], order.Hold):
+            return s[0], order.Support(s[-1][0], s[-1][1].get_location())
 
     def retreat_order(self, s):
         return s[0], order.RetreatMove(s[-1])
@@ -142,12 +142,11 @@ def parse_order(message: str, player_restriction: Player | None, board: Board, b
             parser = movement_parser
         else:
             parser = retreats_parser
-        try:
-            generator.set_state(board, player_restriction)
-            cmd = parser.parse(message)
-            movement = generator.transform(cmd)
-        except Exception as error:
-            return str(error)
+
+        generator.set_state(board, player_restriction)
+        cmd = parser.parse(message.lower())
+        movement = generator.transform(cmd)
+
         database = get_connection()
         database.save_order_for_units(board_id, movement)
 
