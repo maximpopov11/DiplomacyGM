@@ -71,7 +71,7 @@ class AdjudicableOrder:
 
     def __str__(self):
         # This could be improved
-        return f"{self.current_province} {self.type} {self.destination_province}"
+        return f"{self.current_province} {self.type} {self.destination_province} [{self.state}:{self.resolution}]"
 
 
 def get_base_province_from_location(location: Location) -> Province:

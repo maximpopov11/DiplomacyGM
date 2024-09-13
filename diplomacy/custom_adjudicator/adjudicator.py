@@ -201,19 +201,6 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
     return False, f"Unknown move type: {order.__class__.__name__}"
 
 
-# class AdjudicationState:
-#     def __init__(self, board: Board):
-#         self.result_board = board
-#         self.failed_or_invalid_units: set[AdjudicationState.MapperInformation] = set()
-#         self.bounced_or_cut_units: set[AdjudicationState.MapperInformation] = set()
-#         self.successful_units: set[AdjudicationState.MapperInformation] = set()
-#
-#     class MapperInformation:
-#         def __init__(self, unit: Unit):
-#             self.location = unit.get_location()
-#             self.order = unit.order
-
-
 class MapperInformation:
     def __init__(self, unit: Unit):
         self.location = unit.get_location()
@@ -266,12 +253,12 @@ class Adjudicator:
             raise RuntimeError("Cannot update board until all orders are resolved!")
 
         for order in self.orders:
-            if order.type == OrderType.CORE and Resolution == Resolution.SUCCEEDS:
+            if order.type == OrderType.CORE and order.resolution == Resolution.SUCCEEDS:
                 if order.source_province.half_core == order.country:
                     order.source_province.core = order.country
                 else:
                     order.source_province.half_core = order.country
-            if order.type == OrderType.MOVE and Resolution == Resolution.SUCCEEDS:
+            if order.type == OrderType.MOVE and order.resolution == Resolution.SUCCEEDS:
                 logger.debug(f"Moving {order.source_province} to {order.destination_province}")
                 if order.source_province.unit == order.base_unit:
                     order.source_province.unit = None
@@ -282,9 +269,10 @@ class Adjudicator:
                 # Dislodge whatever is there
                 order.destination_province.dislodged_unit = order.destination_province.unit
                 # TODO - remove provinces where a bounce occurred from retreat options
-                order.destination_province.dislodged_unit.retreat_options = order.destination_province.adjacent - {
-                    order.source_province
-                }
+                if order.destination_province.dislodged_unit is not None:
+                    order.destination_province.dislodged_unit.retreat_options = order.destination_province.adjacent - {
+                        order.source_province
+                    }
                 # Move us there
                 order.base_unit.province = order.destination_province
                 if isinstance(order.raw_destination, Coast):
@@ -377,8 +365,12 @@ class Adjudicator:
                             # We convoy past them
                             pass
                         else:
+                            if attacked_order.country == order.country:
+                                return Resolution.FAILS
                             orders_to_overcome.add(attacked_order)
                 else:
+                    if attacked_order.country == order.country:
+                        return Resolution.FAILS
                     # Unit hold strength
                     orders_to_overcome.add(attacked_order)
             if not orders_to_overcome:
@@ -414,6 +406,7 @@ class Adjudicator:
             return Resolution.SUCCEEDS
 
     def resolve_order(self, order: AdjudicableOrder) -> Resolution:
+        logger.debug(f"Adjudicating order {order}")
         if order.state == ResolutionState.RESOLVED:
             return order.resolution
 
@@ -494,67 +487,3 @@ class Adjudicator:
                 order.state = ResolutionState.RESOLVED
             else:
                 order.state = ResolutionState.UNRESOLVED
-
-
-# def adjudicate_board(board: Board) -> AdjudicationState:
-#     state = AdjudicationState(copy.deepcopy(board))
-#     for unit in state.result_board.units:
-#         # Replace invalid orders with holds
-#         valid, reason = order_is_valid(unit.get_location(), unit.order, strict_convoys_supports=True)
-#         if not valid:
-#             logger.debug(f"Order for {unit} is invalid because {reason}")
-#             state.failed_or_invalid_units.add(AdjudicationState.MapperInformation(unit))
-#             unit.order = Hold()
-#
-#         destination_province = get_destination_province_from_unit(unit)
-#         if destination_province is None:
-#             continue
-#
-#     return state
-
-
-# SCRAPPED CODE:
-
-#     # Replace cut supports with holds
-#     # TODO - we don't need this right now, so just commenting it out.
-#     #  This code *should* work but we can come back to it later
-#     # for unit in state.result_board.units:
-#     #     if not isinstance(unit.order, Support):
-#     #         continue
-#     #     if unit.province.name not in orders_by_destination:
-#     #         continue
-#     #     orders_to_here = orders_by_destination[unit.province.name]
-#     #     my_destination = get_destination_province_from_unit(unit)
-#     #     for other_unit in orders_to_here:
-#     #         if isinstance(other_unit.order, Move) or isinstance(other_unit.order, ConvoyMove):
-#     #             if other_unit.province != my_destination:
-#     #                 state.bounced_or_cut_units.add(AdjudicationState.MapperInformation(unit))
-#     #                 orders_by_destination[my_destination.name].remove(unit)
-#     #                 unit.order = Hold()
-#     #                 orders_to_here.add(unit)
-#
-#     # Replace dislodged supports with holds
-#     # TODO
-#
-#     for destination_name, units in orders_by_destination.items():
-#         source_support_strength: dict[str, int] = dict()
-#         moves: set[Unit] = set()
-#         for unit in units:
-#             source_province = get_source_province_from_unit(unit)
-#             if isinstance(unit.order, Move) or isinstance(unit.order, ConvoyMove) or isinstance(unit.order, Support):
-#                 if source_province.name not in source_support_strength:
-#                     source_support_strength[source_province.name] = 0
-#                 source_support_strength[source_province.name] += 1
-#             if isinstance(unit.order, Move) or isinstance(unit.order, ConvoyMove):
-#                 moves.add(unit)
-#         largest = set()
-#         largest_strength = 0
-#         for move in moves:
-#             if largest_strength < source_support_strength[move.province.name]:
-#                 largest = {move}
-#                 largest_strength = source_support_strength[move.province.name]
-#             elif largest_strength == source_support_strength[move.province.name]:
-#                 largest.add(move)
-#
-#         if len(largest) == 1:
-#             largest[0]
