@@ -27,6 +27,7 @@ class Manager:
         logger.info(f"Creating new [ImpDip] game in server {server_id}")
         # TODO: (DB) get board from variant DB
         self._boards[server_id] = Parser().parse()
+        self._boards[server_id].board_id = server_id
         self._database.save_board(server_id, self._boards[server_id])
 
         # TODO: (DB) return map state

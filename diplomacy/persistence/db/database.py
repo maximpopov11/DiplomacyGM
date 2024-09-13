@@ -55,6 +55,7 @@ class _DatabaseConnection:
             #  so we don't have to reparse the whole board each time
             board = Parser().parse()
             board.phase = next(phase for phase in phases if phase.name == phase_string)
+            board.board_id = board_id
 
             player_data = cursor.execute(
                 "SELECT player_name, color FROM players WHERE board_id=?", (board_id,)
@@ -231,6 +232,12 @@ class _DatabaseConnection:
                 for unit in units
             ],
         )
+        cursor.close()
+        self._connection.commit()
+
+    def execute_arbitrary_sql(self, sql: str, args: tuple):
+        cursor = self._connection.cursor()
+        cursor.execute(sql, args)
         cursor.close()
         self._connection.commit()
 

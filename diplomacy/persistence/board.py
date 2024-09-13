@@ -16,6 +16,7 @@ class Board:
         self.provinces: set[Province] = provinces
         self.units: set[Unit] = units
         self.phase: Phase = phase
+        self.board_id = 0
         self.orders_enabled: bool = True
 
     # TODO: (BETA) make this efficient
@@ -74,7 +75,7 @@ class Board:
         province: Province,
         coast: Coast | None,
         retreat_options: set[Province] | None,
-    ) -> None:
+    ) -> Unit:
         unit = Unit(unit_type, player, province, coast, retreat_options)
         if retreat_options:
             province.dislodged_unit = unit
@@ -82,8 +83,9 @@ class Board:
             province.unit = unit
         player.units.add(unit)
         self.units.add(unit)
+        return unit
 
-    def move_unit(self, unit: Unit, new_location: Location) -> None:
+    def move_unit(self, unit: Unit, new_location: Location) -> Unit:
         new_province = new_location
         new_coast = None
         if isinstance(new_location, Coast):
@@ -96,12 +98,14 @@ class Board:
         unit.province.unit = None
         unit.province = new_province
         unit.coast = new_coast
+        return unit
 
-    def delete_unit(self, province: Province) -> None:
+    def delete_unit(self, province: Province) -> Unit:
         unit = province.unit
         province.unit = None
         unit.player.units.remove(unit)
         self.units.remove(unit)
+        return unit
 
     def delete_all_units(self) -> None:
         for unit in self.units:
