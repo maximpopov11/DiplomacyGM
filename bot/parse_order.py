@@ -45,24 +45,25 @@ _order_dict = {
     _disband: ["d", "disband", "disbands", "drop", "drops", "remove"],
 }
 
+
 class TreeToOrder(Transformer):
     def set_state(self, board: Board, player_restriction: Player | None):
         self.board = board
         self.player_restriction = player_restriction
 
     def movement_phase(self, statements):
-        return set([x for x in statements if x != None])
+        return set([x for x in statements if isinstance(x, Unit)])
 
     def retreat_phase(self, statements):
         return set([x for x in statements if x != None])
 
     def province(self, s):
-        name = ' '.join(s).replace('_', ' ').strip()
+        name = " ".join(s).replace("_", " ").strip()
         name = _manage_coast_signature(name)
         return self.board.get_location(name)
-    
+
     def unit(self, s) -> Unit:
-        #ignore the fleet/army signifier, if exists
+        # ignore the fleet/army signifier, if exists
         unit = s[-1].get_unit()
         if self.player_restriction is not None and unit.player != self.player_restriction:
             raise PermissionError(
@@ -77,13 +78,13 @@ class TreeToOrder(Transformer):
 
     def core_order(self, s):
         return s[0], order.Core()
-    
+
     def move_order(self, s):
         return s[0], order.Move(s[-1])
 
     def convoy_move_order(self, s):
         return s[0], order.ConvoyMove(s[-1].destination)
-    
+
     def convoy_order(self, s):
         return s[0], order.ConvoyTransport(s[-1][0], s[-1][1])
 
@@ -92,34 +93,36 @@ class TreeToOrder(Transformer):
             return s[0], order.Support(s[-1][0], s[-1][1].destination)
         elif isinstance(s[-1], order.Hold):
             return s[0], order.Support(s[-1][0], self.board.get_location(s[-1][0]))
-    
+
     def retreat_order(self, s):
         return s[0], order.RetreatMove(s[-1])
-    
+
     def disband_order(self, s):
         return s[0], order.RetreatDisband(s[-1])
-    
+
     def order(self, order):
         if len(order) == 0:
             # this line is '.order'
             return None
-        command, = order
+        (command,) = order
         unit, order = command
         unit.order = order
         return unit
 
+
 generator = TreeToOrder()
 
-with open("bot/orders.ebnf", 'r') as f:
+
+with open("bot/orders.ebnf", "r") as f:
     ebnf = f.read()
 
-movement_parser = Lark(ebnf, start='movement_phase', parser='lalr')
-retreats_parser = Lark(ebnf, start='retreat_phase', parser='lalr')
+movement_parser = Lark(ebnf, start="movement_phase", parser="earley")
+retreats_parser = Lark(ebnf, start="retreat_phase", parser="earley")
+
 
 # TODO: (!) illegal orders (wrong phase or doesn't work) should get caught when ordered, not on adjudication
 def parse_order(message: str, player_restriction: Player | None, board: Board, board_id: int) -> str:
     invalid: list[tuple[str, Exception]] = []
-    #commands = str.splitlines(message)
     if is_builds_phase(board.phase):
         for command in str.splitlines(message):
             try:
@@ -133,26 +136,25 @@ def parse_order(message: str, player_restriction: Player | None, board: Board, b
         else:
             response = "Orders validated successfully."
 
-        database = get_connection()
-        database.save_order_for_units(board_id, list(updated_units))
-
         return response
     elif is_moves_phase(board.phase) or is_retreats_phase(board.phase):
         if is_moves_phase(board.phase):
             parser = movement_parser
         else:
             parser = retreats_parser
-        updated_units: set[Unit] = set()
         try:
             generator.set_state(board, player_restriction)
             cmd = parser.parse(message)
             movement = generator.transform(cmd)
         except Exception as error:
-           return str(error)
+            return str(error)
         database = get_connection()
         database.save_order_for_units(board_id, movement)
+
+        return "Orders validated successfully"
     else:
         return "The game is in an unknown phase. Something has gone very wrong with the bot. Please report this to a gm"
+
 
 def parse_remove_order(message: str, player_restriction: Player | None, board: Board, board_id: int) -> str:
     invalid: list[tuple[str, Exception]] = []
@@ -179,6 +181,7 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
         response = "Orders removed successfully."
 
     return response
+
 
 def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> Unit | None:
     command = command.lower()
@@ -214,6 +217,7 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
             )
         unit.order = None
         return unit
+
 
 def _parse_player_order(keywords: list[str], player_restriction: Player, board: Board) -> None:
     command = keywords[0]

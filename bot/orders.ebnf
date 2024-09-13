@@ -1,9 +1,8 @@
 %import common.WS
 
-movement_phase: order ("\n" order?) *
+movement_phase: ".order" WS order ("\n" order) *
 
 retreat_phase: retreat ("\n" retreat?) *
-
 
 order: move_order
     | hold_order
@@ -11,7 +10,6 @@ order: move_order
     | convoy_move_order
     | convoy_order
     | core_order
-    | ".order"
 
 retreat: retreat_order
        | disband_order
@@ -76,10 +74,10 @@ DISBAND.2 : "d"
           | "explodes"
           | "dies"
 
-unit : (DISCRIPTOR)? province
+unit : (DESCRIPTOR)? province
 
 
-DISCRIPTOR.2 : /[afAF]/ WS
+DESCRIPTOR.2 : /[afAF]/ WS
 
 province : PROVINCE (WS PROVINCE) *
 
