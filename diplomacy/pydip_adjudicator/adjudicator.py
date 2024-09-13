@@ -6,7 +6,7 @@ from pydip.turn.adjustment import resolve_adjustment
 from pydip.turn.resolve import resolve_turn
 from pydip.turn.retreat import resolve_retreats
 
-from diplomacy.adjudicator import translate
+from diplomacy.pydip_adjudicator import translate
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.phase import Phase

@@ -138,10 +138,14 @@ class _DatabaseConnection:
                     order_class = next(_class for _class in order_classes if _class.__name__ == order_type)
                     destination_province = None
                     if order_destination is not None:
-                        destination_province = board.get_province(order_destination)
+                        destination_province, destination_coast = board.get_province_and_coast(order_destination)
+                        if destination_coast is not None:
+                            destination_province = destination_coast
                     source_unit = None
                     if order_source is not None:
-                        source_province = board.get_province(order_source)
+                        source_province, source_coast = board.get_province_and_coast(order_source)
+                        if source_coast is not None:
+                            source_province = source_coast
                         source_unit = source_province.unit
                     if order_class in [Hold, Core, RetreatDisband]:
                         order = order_class()
@@ -193,7 +197,7 @@ class _DatabaseConnection:
             [
                 (
                     board_id,
-                    unit.coast.name if unit.coast is not None else unit.province.name,
+                    unit.get_location().name,
                     unit == unit.province.dislodged_unit,
                     unit.player.name,
                     unit.unit_type == UnitType.ARMY,
@@ -215,9 +219,13 @@ class _DatabaseConnection:
                 (
                     unit.order.__class__.__name__ if unit.order is not None else None,
                     getattr(getattr(unit.order, "destination", None), "name", None) if unit.order is not None else None,
-                    getattr(getattr(unit.order, "source", None), "name", None) if unit.order is not None else None,
+                    (
+                        getattr(getattr(getattr(unit.order, "source", None), "province", None), "name", None)
+                        if unit.order is not None
+                        else None
+                    ),
                     board_id,
-                    unit.coast.name if unit.coast is not None else unit.province.name,
+                    unit.get_location().name,
                     unit.province.dislodged_unit == unit,
                 )
                 for unit in units
