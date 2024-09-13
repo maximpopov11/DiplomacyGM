@@ -29,6 +29,7 @@ class Unit:
         province: Province,
         coast: Coast | None,
         retreat_options: set[Province] | None,
+        order: UnitOrder | None = None,
     ):
         self.unit_type: UnitType = unit_type
         self.player: Player = player
@@ -36,7 +37,7 @@ class Unit:
         self.coast: Coast | None = coast
         "retreat_options is None when not dislodged and {} when dislodged without retreat options"
         self.retreat_options: set[Province] | None = retreat_options
-        self.order: UnitOrder | None = None
+        self.order: UnitOrder | None = order
 
     def __str__(self):
         return f"{unit_type_to_name[self.unit_type]} {self.get_location()}"

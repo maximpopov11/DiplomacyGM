@@ -1,4 +1,4 @@
-from diplomacy.adjudicator.adjudicator import Adjudicator
+from diplomacy.pydip_adjudicator.adjudicator import Adjudicator
 from diplomacy.map_parser.vector import vector
 from diplomacy.persistence import order
 from diplomacy.persistence.board import Board

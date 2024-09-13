@@ -1,5 +1,5 @@
 from bot.utils import get_phase, get_unit_type, get_keywords
-from diplomacy.adjudicator.mapper import Mapper
+from diplomacy.custom_adjudicator.mapper import Mapper
 from diplomacy.persistence.board import Board
 
 
