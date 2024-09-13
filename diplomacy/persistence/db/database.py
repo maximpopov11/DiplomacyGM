@@ -48,7 +48,14 @@ class _DatabaseConnection:
         logger.info(f"Loading {len(board_data)} boards from DB")
         boards = dict()
         for board_row in board_data:
-            board_id, svg_file, phase_string = board_row
+            board_id, phase_string, svg_file = board_row
+
+            # TODO - THIS WILL BREAK EVERYTHING ONCE WE HIT WINTER!!
+            #  we need to add year into phases. This is a temporary solution.
+            phase = next(phase for phase in phases if phase.name == phase_string)
+            if (board_id, phase.next.name, svg_file) in board_data:
+                continue
+
             logger.info(f"Loading board with ID {board_id}")
 
             # TODO - we should eventually store things like coords, adjacencies, etc
@@ -72,14 +79,15 @@ class _DatabaseConnection:
                 # TODO - player build orders
 
             province_data = cursor.execute(
-                "SELECT province_name, owner, core, half_core FROM provinces WHERE board_id=?", (board_id,)
+                "SELECT province_name, owner, core, half_core FROM provinces WHERE board_id=? and phase=?",
+                (board_id, phase_string),
             ).fetchall()
             province_info_by_name = {
                 province_name: (owner, core, half_core) for province_name, owner, core, half_core in province_data
             }
             unit_data = cursor.execute(
-                "SELECT location, is_dislodged, owner, is_army, order_type, order_destination, order_source FROM units WHERE board_id=?",
-                (board_id,),
+                "SELECT location, is_dislodged, owner, is_army, order_type, order_destination, order_source FROM units WHERE board_id=? and phase=?",
+                (board_id, phase_string),
             ).fetchall()
 
             for province in board.provinces:
@@ -173,17 +181,18 @@ class _DatabaseConnection:
         # TODO: Check if board already exists
         cursor = self._connection.cursor()
         cursor.execute(
-            "INSERT INTO boards (board_id, map_file, phase) VALUES (?, ?, ?);", (board_id, SVG_PATH, board.phase.name)
+            "INSERT INTO boards (board_id, phase, map_file) VALUES (?, ?, ?);", (board_id, board.phase.name, SVG_PATH)
         )
         cursor.executemany(
             "INSERT INTO players (board_id, player_name, color) VALUES (?, ?, ?)",
             [(board_id, player.name, player.color) for player in board.players],
         )
         cursor.executemany(
-            "INSERT INTO provinces (board_id, province_name, owner, core, half_core) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO provinces (board_id, phase, province_name, owner, core, half_core) VALUES (?, ?, ?, ?, ?, ?)",
             [
                 (
                     board_id,
+                    board.phase.name,
                     province.name,
                     province.owner.name if province.owner else None,
                     province.core.name if province.core else None,
@@ -194,10 +203,11 @@ class _DatabaseConnection:
         )
         # TODO - this is hacky
         cursor.executemany(
-            "INSERT INTO units (board_id, location, is_dislodged, owner, is_army, order_type, order_destination, order_source) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO units (board_id, phase, location, is_dislodged, owner, is_army, order_type, order_destination, order_source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (
                     board_id,
+                    board.phase.name,
                     unit.get_location().name,
                     unit == unit.province.dislodged_unit,
                     unit.player.name,
@@ -212,10 +222,10 @@ class _DatabaseConnection:
         cursor.close()
         self._connection.commit()
 
-    def save_order_for_units(self, board_id: int, units: list[Unit]):
+    def save_order_for_units(self, board_id: int, phase_name: str, units: list[Unit]):
         cursor = self._connection.cursor()
         cursor.executemany(
-            "UPDATE units SET order_type=?, order_destination=?, order_source=? WHERE board_id=? and location=? and is_dislodged=?",
+            "UPDATE units SET order_type=?, order_destination=?, order_source=? WHERE board_id=? and phase=? and location=? and is_dislodged=?",
             [
                 (
                     unit.order.__class__.__name__ if unit.order is not None else None,
@@ -226,6 +236,7 @@ class _DatabaseConnection:
                         else None
                     ),
                     board_id,
+                    phase_name,
                     unit.get_location().name,
                     unit.province.dislodged_unit == unit,
                 )

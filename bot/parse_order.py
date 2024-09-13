@@ -126,7 +126,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board, b
     if is_builds_phase(board.phase):
         for command in str.splitlines(message):
             try:
-                _parse_player_order(get_keywords(command))
+                _parse_player_order(get_keywords(command), player_restriction, board)
             except Exception as error:
                 invalid.append((command, error))
         if invalid:
@@ -148,7 +148,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board, b
         movement = generator.transform(cmd)
 
         database = get_connection()
-        database.save_order_for_units(board_id, movement)
+        database.save_order_for_units(board_id, board.phase.name, movement)
 
         return "Orders validated successfully"
     else:
@@ -170,7 +170,7 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
             invalid.append((command, error))
 
     database = get_connection()
-    database.save_order_for_units(board_id, list(updated_units))
+    database.save_order_for_units(board_id, board.phase.name, list(updated_units))
 
     if invalid:
         response = "The following order removals were invalid:"
