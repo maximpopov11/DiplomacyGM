@@ -1,7 +1,8 @@
 from bot.utils import get_phase, get_unit_type, get_keywords
 from diplomacy.adjudicator.mapper import Mapper
 from diplomacy.persistence.board import Board
-
+from diplomacy.persistence.db.database import get_connection
+from diplomacy.persistence.unit import UnitType
 
 _set_phase_str = "set phase"
 _set_core_str = "set core"
@@ -15,6 +16,8 @@ _move_unit_str = "move unit"
 def parse_edit_state(message: str, board: Board) -> tuple[str, str | None]:
     invalid: list[tuple[str, Exception]] = []
     commands = str.splitlines(message)
+    if commands[0].strip() == ".edit":
+        commands = commands[1:]
     for command in commands:
         try:
             _parse_command(command, board)
@@ -37,6 +40,8 @@ def parse_edit_state(message: str, board: Board) -> tuple[str, str | None]:
 def _parse_command(command: str, board: Board) -> None:
     command = command.lower()
     keywords: list[str] = get_keywords(command)
+    if keywords[0].strip() == ".edit":
+        keywords = keywords[1:]
     command_type = keywords[0]
     keywords = keywords[1:]
 
@@ -60,40 +65,88 @@ def _parse_command(command: str, board: Board) -> None:
 
 def _set_phase(keywords: list[str], board: Board) -> None:
     board.phase = get_phase(keywords[0])
+    get_connection().execute_arbitrary_sql(
+        "UPDATE boards SET phase=? WHERE board_id=?", (board.phase.name, board.board_id)
+    )
 
 
 def _set_province_core(keywords: list[str], board: Board) -> None:
     province = board.get_province(keywords[0])
     player = board.get_player(keywords[1])
     province.core = player
+    get_connection().execute_arbitrary_sql(
+        "UPDATE provinces SET core=? WHERE board_id=? and province_name=?",
+        (player.name, board.board_id, province.name),
+    )
 
 
 def _set_province_half_core(keywords: list[str], board: Board) -> None:
     province = board.get_province(keywords[0])
     player = board.get_player(keywords[1])
     province.half_core = player
+    get_connection().execute_arbitrary_sql(
+        "UPDATE provinces SET half_core=? WHERE board_id=? and province_name=?",
+        (player.name, board.board_id, province.name),
+    )
 
 
 def _set_province_owner(keywords: list[str], board: Board) -> None:
     province = board.get_province(keywords[0])
     player = board.get_player(keywords[1])
     board.change_owner(province, player)
+    get_connection().execute_arbitrary_sql(
+        "UPDATE provinces SET owner=? WHERE board_id=? and province_name=?",
+        (player.name, board.board_id, province.name),
+    )
 
 
 def _create_unit(keywords: list[str], board: Board) -> None:
     unit_type = get_unit_type(keywords[0])
     player = board.get_player(keywords[1])
     province, coast = board.get_province_and_coast(keywords[2])
-    board.create_unit(unit_type, player, province, coast, None)
+    unit = board.create_unit(unit_type, player, province, coast, None)
+    get_connection().execute_arbitrary_sql(
+        "INSERT INTO units (board_id, location, is_dislodged, owner, is_army) "
+        "VALUES (?, ?, ?, ?, ?) "
+        "ON CONFLICT (board_id, location, is_dislodged) DO UPDATE SET owner=?, is_army=?",
+        (
+            board.board_id,
+            unit.get_location().name,
+            False,
+            player.name,
+            unit_type == UnitType.ARMY,
+            player.name,
+            unit_type == UnitType.ARMY,
+        ),
+    )
 
 
 def _delete_unit(keywords: list[str], board: Board) -> None:
     province = board.get_province(keywords[0])
-    board.delete_unit(province)
+    unit = board.delete_unit(province)
+    get_connection().execute_arbitrary_sql(
+        "DELETE FROM units WHERE board_id=? and location=? and is_dislodged=?",
+        (board.board_id, unit.get_location().name, False),
+    )
 
 
 def _move_unit(keywords: list[str], board: Board) -> None:
     old_province = board.get_province(keywords[0])
     unit = old_province.unit
+    old_location = unit.get_location()
     new_location = board.get_location(keywords[1])
     board.move_unit(unit, new_location)
+    get_connection().execute_arbitrary_sql(
+        "DELETE FROM units WHERE board_id=? and location=? and is_dislodged=?",
+        (board.board_id, old_location.name, False),
+    )
+    get_connection().execute_arbitrary_sql(
+        "INSERT INTO units (board_id, location, is_dislodged, owner, is_army) VALUES (?, ?, ?, ?, ?)",
+        (
+            board.board_id,
+            unit.get_location().name,
+            False,
+            unit.player.name,
+            unit.unit_type == UnitType.ARMY,
+        ),
+    )
