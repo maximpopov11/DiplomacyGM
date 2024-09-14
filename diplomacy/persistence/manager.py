@@ -63,7 +63,7 @@ class Manager:
         #  - this is all good
         # TODO: (DB) return both moves and results map
 
-    def rollback(self, server_id: int) -> str:
+    def rollback(self, server_id: int) -> tuple[str, str]:
         logger.info(f"Rolling back in server {server_id}")
         board = self._boards[server_id]
         last_phase = next(phase for phase in phases if phase.next == board.phase)
@@ -78,4 +78,4 @@ class Manager:
         self._database.delete_board(board)
         self._boards[server_id] = old_board
         mapper = Mapper(old_board)
-        return mapper.draw_current_map()
+        return f"Rolled back to {old_board.get_phase_and_year_string()}", mapper.draw_current_map()
