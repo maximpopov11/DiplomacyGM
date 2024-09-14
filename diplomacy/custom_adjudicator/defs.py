@@ -79,4 +79,4 @@ def get_base_province_from_location(location: Location) -> Province:
         return location.province
     if isinstance(location, Province):
         return location
-    raise ValueError("Location should be Coast or Province")
+    raise ValueError(f"Location {location} should be Coast or Province")

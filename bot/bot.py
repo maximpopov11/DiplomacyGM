@@ -54,6 +54,11 @@ async def ping(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.ping, ctx)
 
 
+@bot.command(hidden=True)
+async def bumble(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.bumble, ctx)
+
+
 # TODO: (BETA) allow ambiguous moves/convoys
 # TODO: (BETA) warn move incompatible for supports when supported move not ordered
 # TODO: (BETA) allow personal command dictionary editing
@@ -122,19 +127,25 @@ async def scoreboard(ctx: discord.ext.commands.Context) -> None:
 async def edit(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.edit, ctx)
 
+
 @bot.command(brief="Clears all players orders.")
 async def remove_all(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.remove_all, ctx)
 
-@bot.command(brief="disables orders until .enable_orders is run.",
-             discription="""disables orders until .enable_orders is run.
-             Note: Currently does not persist after the bot is restarted""")
+
+@bot.command(
+    brief="disables orders until .enable_orders is run.",
+    discription="""disables orders until .enable_orders is run.
+             Note: Currently does not persist after the bot is restarted""",
+)
 async def disable_orders(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.disable_orders, ctx)
+
 
 @bot.command(brief="reenables orders")
 async def enable_orders(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.enable_orders, ctx)
+
 
 # TODO: (DB) output the map
 @bot.command(

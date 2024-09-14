@@ -1,3 +1,4 @@
+import itertools
 import logging
 import random
 
@@ -30,6 +31,13 @@ def ping(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
             name = author.name
         response = name + " " + random.choice(ping_text_choices) + content
     return response, None
+
+
+def bumble(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
+    word_of_bumble = random.choice(["".join(perm) for perm in itertools.permutations("bumble")])
+    if word_of_bumble == "bumble":
+        word_of_bumble = "You are the chosen bumble"
+    return f"**{word_of_bumble}**", None
 
 
 # TODO: (DB) warning cron when in cloud

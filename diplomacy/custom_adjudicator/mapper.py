@@ -15,9 +15,10 @@ from diplomacy.map_parser.vector.config_svg import (
     PHANTOM_PRIMARY_ARMY_LAYER_ID,
     PHANTOM_PRIMARY_FLEET_LAYER_ID,
     LAND_PROVINCE_LAYER_ID,
-    ISLAND_FILL_PLAYER_ID,
+    ISLAND_FILL_LAYER_ID,
     NEUTRAL_PROVINCE_COLOR,
     SUPPLY_CENTER_LAYER_ID,
+    ISLAND_RING_LAYER_ID,
 )
 from diplomacy.map_parser.vector.utils import get_svg_element, get_unit_coordinates
 from diplomacy.persistence.board import Board
@@ -68,14 +69,14 @@ def _add_arrow_definition_to_svg(svg: ElementTree) -> None:
 
 
 # move this function somewhere more appropriate?
-def color_element(element: Element, color: str):
+def color_element(element: Element, color: str, key="fill"):
     if len(color) == 6:  # Potentially buggy hack; just assume everything with length 6 is rgb without #
         color = f"#{color}"
-    if element.get("fill") is not None:
-        element.set("fill", color)
-    if element.get("style") is not None and "fill" in element.get("style"):
+    if element.get(key) is not None:
+        element.set(key, color)
+    if element.get("style") is not None and key in element.get("style"):
         style = element.get("style")
-        style = re.sub(r"fill:#[0-9a-fA-F]{6}", f"fill:{color}", style)
+        style = re.sub(key + r":#[0-9a-fA-F]{6}", f"{key}:{color}", style)
         element.set("style", style)
 
 
@@ -295,7 +296,8 @@ class Mapper:
 
     def _color_provinces(self) -> None:
         province_layer = get_svg_element(self.board_svg, LAND_PROVINCE_LAYER_ID)
-        island_fill_layer = get_svg_element(self.board_svg, ISLAND_FILL_PLAYER_ID)
+        island_fill_layer = get_svg_element(self.board_svg, ISLAND_FILL_LAYER_ID)
+        island_ring_layer = get_svg_element(self.board_svg, ISLAND_RING_LAYER_ID)
 
         visited_provinces: set[str] = set()
 
@@ -311,6 +313,19 @@ class Mapper:
             if province.owner:
                 color = province.owner.color
             color_element(province_element, color)
+
+        # Try to combine this with the code above? A lot of repeated stuff here
+        for island_ring in island_ring_layer:
+            try:
+                province = self._get_province_from_element_by_label(island_ring)
+            except ValueError as ex:
+                print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
+                continue
+
+            color = NEUTRAL_PROVINCE_COLOR
+            if province.owner:
+                color = province.owner.color
+            color_element(island_ring, color, key="stroke")
 
         for province in self.board.provinces:
             if province.type == ProvinceType.SEA:

@@ -40,7 +40,7 @@ class Parser:
 
         self.land_layer: Element = get_svg_element(svg_root, LAND_PROVINCE_LAYER_ID)
         self.island_layer: Element = get_svg_element(svg_root, ISLAND_PROVINCE_LAYER_ID)
-        self.island_fill_layer: Element = get_svg_element(svg_root, ISLAND_FILL_PLAYER_ID)
+        self.island_fill_layer: Element = get_svg_element(svg_root, ISLAND_FILL_LAYER_ID)
         self.sea_layer: Element = get_svg_element(svg_root, SEA_PROVINCE_LAYER_ID)
         self.names_layer: Element = get_svg_element(svg_root, PROVINCE_NAMES_LAYER_ID)
         self.centers_layer: Element = get_svg_element(svg_root, SUPPLY_CENTER_LAYER_ID)

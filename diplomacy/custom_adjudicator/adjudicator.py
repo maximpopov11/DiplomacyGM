@@ -1,7 +1,5 @@
 import collections
-import copy
 import logging
-from enum import Enum
 
 from diplomacy.custom_adjudicator.defs import (
     ResolutionState,
@@ -35,7 +33,7 @@ def get_adjacent_provinces(location: Location) -> set[Province]:
         return location.adjacent_seas | {coast.province for coast in location.get_adjacent_coasts()}
     if isinstance(location, Province):
         return location.adjacent
-    raise ValueError("Location should be Coast or Province")
+    raise ValueError(f"Location {location} should be Coast or Province")
 
 
 def get_destination_province_from_unit(unit: Unit) -> Province | None:
@@ -218,7 +216,7 @@ class Adjudicator:
             # Same for convoys
             valid, reason = order_is_valid(unit.get_location(), unit.order, strict_convoys_supports=True)
             if not valid:
-                logger.debug(f"Order for {unit} is invalid because {reason}")
+                logger.info(f"Order for {unit} is invalid because {reason}")
                 self.failed_or_invalid_units.add(MapperInformation(unit))
                 unit.order = Hold()
 
@@ -281,6 +279,8 @@ class Adjudicator:
                 else:
                     order.base_unit.coast = None
                 order.destination_province.unit = order.base_unit
+                if not order.destination_province.has_supply_center or self._board.phase.name.startswith("Fall"):
+                    order.destination_province.owner = order.country
         for unit in self._board.units:
             unit.order = None
 
@@ -407,7 +407,7 @@ class Adjudicator:
             return Resolution.SUCCEEDS
 
     def resolve_order(self, order: AdjudicableOrder) -> Resolution:
-        logger.debug(f"Adjudicating order {order}")
+        # logger.debug(f"Adjudicating order {order}")
         if order.state == ResolutionState.RESOLVED:
             return order.resolution
 
