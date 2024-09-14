@@ -250,7 +250,6 @@ class Adjudicator:
         if not all(order.state == ResolutionState.RESOLVED for order in self.orders):
             raise RuntimeError("Cannot update board until all orders are resolved!")
 
-
         for order in self.orders:
             if order.type == OrderType.CORE and order.resolution == Resolution.SUCCEEDS:
                 if order.source_province.half_core == order.country:
@@ -280,7 +279,7 @@ class Adjudicator:
                     order.base_unit.coast = None
                 order.destination_province.unit = order.base_unit
                 if not order.destination_province.has_supply_center or self._board.phase.name.startswith("Fall"):
-                    order.destination_province.owner = order.country
+                    self._board.change_owner(order.destination_province, order.country)
         for unit in self._board.units:
             unit.order = None
 
