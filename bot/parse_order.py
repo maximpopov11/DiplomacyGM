@@ -126,7 +126,8 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
     if is_builds_phase(board.phase):
         for command in str.splitlines(message):
             try:
-                _parse_player_order(get_keywords(command), player_restriction, board)
+                if command != ".order":
+                    _parse_player_order(get_keywords(command), player_restriction, board)
             except Exception as error:
                 invalid.append((command, error))
         if invalid:
@@ -222,7 +223,7 @@ def _parse_player_order(keywords: list[str], player_restriction: Player, board: 
     command = keywords[0]
     location = board.get_location(keywords[1])
 
-    if location.get_owner() != player_restriction:
+    if player_restriction is not None and location.get_owner() != player_restriction:
         raise PermissionError(f"{player_restriction} does not control {location.name}")
 
     if command in _order_dict[_build]:
