@@ -252,6 +252,7 @@ class Adjudicator:
         if not all(order.state == ResolutionState.RESOLVED for order in self.orders):
             raise RuntimeError("Cannot update board until all orders are resolved!")
 
+
         for order in self.orders:
             if order.type == OrderType.CORE and order.resolution == Resolution.SUCCEEDS:
                 if order.source_province.half_core == order.country:
