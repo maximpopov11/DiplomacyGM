@@ -58,7 +58,7 @@ class TreeToOrder(Transformer):
         return set([x for x in statements if x != None])
 
     def province(self, s):
-        name = " ".join(s).replace("_", " ").strip()
+        name = " ".join(s[::2]).replace("_", " ").strip()
         name = _manage_coast_signature(name)
         return self.board.get_location(name)
 
