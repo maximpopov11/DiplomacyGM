@@ -85,8 +85,8 @@ def _set_province_core(keywords: list[str], board: Board) -> None:
     player = board.get_player(keywords[1])
     province.core = player
     get_connection().execute_arbitrary_sql(
-        "UPDATE provinces SET core=? WHERE board_id=? and province_name=?",
-        (player.name, board.board_id, province.name),
+        "UPDATE provinces SET core=? WHERE board_id=? and phase=? and province_name=?",
+        (player.name, board.board_id, board.get_phase_and_year_string(), province.name),
     )
 
 
@@ -95,8 +95,8 @@ def _set_province_half_core(keywords: list[str], board: Board) -> None:
     player = board.get_player(keywords[1])
     province.half_core = player
     get_connection().execute_arbitrary_sql(
-        "UPDATE provinces SET half_core=? WHERE board_id=? and province_name=?",
-        (player.name, board.board_id, province.name),
+        "UPDATE provinces SET half_core=? WHERE board_id=? and phase=? and province_name=?",
+        (player.name, board.board_id, board.get_phase_and_year_string(), province.name),
     )
 
 
@@ -105,8 +105,8 @@ def _set_province_owner(keywords: list[str], board: Board) -> None:
     player = board.get_player(keywords[1])
     board.change_owner(province, player)
     get_connection().execute_arbitrary_sql(
-        "UPDATE provinces SET owner=? WHERE board_id=? and province_name=?",
-        (player.name, board.board_id, province.name),
+        "UPDATE provinces SET owner=? WHERE board_id=? and phase=? and province_name=?",
+        (player.name, board.board_id, board.get_phase_and_year_string(), province.name),
     )
 
 
@@ -116,11 +116,12 @@ def _create_unit(keywords: list[str], board: Board) -> None:
     province, coast = board.get_province_and_coast(keywords[2])
     unit = board.create_unit(unit_type, player, province, coast, None)
     get_connection().execute_arbitrary_sql(
-        "INSERT INTO units (board_id, location, is_dislodged, owner, is_army) "
-        "VALUES (?, ?, ?, ?, ?) "
-        "ON CONFLICT (board_id, location, is_dislodged) DO UPDATE SET owner=?, is_army=?",
+        "INSERT INTO units (board_id, phase, location, is_dislodged, owner, is_army) "
+        "VALUES (?, ?, ?, ?, ?, ?) "
+        "ON CONFLICT (board_id, phase, location, is_dislodged) DO UPDATE SET owner=?, is_army=?",
         (
             board.board_id,
+            board.get_phase_and_year_string(),
             unit.get_location().name,
             False,
             player.name,
@@ -135,8 +136,8 @@ def _delete_unit(keywords: list[str], board: Board) -> None:
     province = board.get_province(keywords[0])
     unit = board.delete_unit(province)
     get_connection().execute_arbitrary_sql(
-        "DELETE FROM units WHERE board_id=? and location=? and is_dislodged=?",
-        (board.board_id, unit.get_location().name, False),
+        "DELETE FROM units WHERE board_id=? and phase=? and location=? and is_dislodged=?",
+        (board.board_id, board.get_phase_and_year_string(), unit.get_location().name, False),
     )
 
 
@@ -147,13 +148,14 @@ def _move_unit(keywords: list[str], board: Board) -> None:
     new_location = board.get_location(keywords[1])
     board.move_unit(unit, new_location)
     get_connection().execute_arbitrary_sql(
-        "DELETE FROM units WHERE board_id=? and location=? and is_dislodged=?",
-        (board.board_id, old_location.name, False),
+        "DELETE FROM units WHERE board_id=? and phase=? and location=? and is_dislodged=?",
+        (board.board_id, board.get_phase_and_year_string(), old_location.name, False),
     )
     get_connection().execute_arbitrary_sql(
-        "INSERT INTO units (board_id, location, is_dislodged, owner, is_army) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO units (board_id, phase, location, is_dislodged, owner, is_army) VALUES (?, ?, ?, ?, ?, ?)",
         (
             board.board_id,
+            board.get_phase_and_year_string(),
             unit.get_location().name,
             False,
             unit.player.name,
