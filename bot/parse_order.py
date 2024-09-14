@@ -86,7 +86,7 @@ class TreeToOrder(Transformer):
         return s[0], order.ConvoyMove(s[-1].destination)
 
     def convoy_order(self, s):
-        return s[0], order.ConvoyTransport(s[-1][0], s[-1][1])
+        return s[0], order.ConvoyTransport(s[-1][0], s[-1][1].destination)
 
     def support_order(self, s):
         if isinstance(s[-1][1], order.Move):

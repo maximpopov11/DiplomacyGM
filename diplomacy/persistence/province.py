@@ -28,6 +28,9 @@ class Location:
     def get_unit(self) -> Unit | None:
         pass
 
+    def __str__(self):
+        return self.name
+
 
 class ProvinceType(Enum):
     LAND = 1

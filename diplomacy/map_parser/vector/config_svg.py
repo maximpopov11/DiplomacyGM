@@ -11,7 +11,7 @@ LAND_PROVINCE_LAYER_ID: str = "layer6"
 # Layer group in SVG containing island rings
 ISLAND_RING_LAYER_ID: str = "layer9"
 # Layer group in SVG containing island province color fills
-ISLAND_FILL_PLAYER_ID: str = "layer11"
+ISLAND_FILL_LAYER_ID: str = "layer11"
 # Layer group in SVG containing island province borders
 ISLAND_PROVINCE_LAYER_ID: str = "layer5"
 # Layer group in SVG containing sea province borders
