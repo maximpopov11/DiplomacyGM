@@ -208,6 +208,7 @@ def disable_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | 
     board.orders_enabled = False
     return "Successful", None
 
+
 def info(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
     out = "Phase: " + str(board.phase) + "\nOrders are: " + ("Open" if board.orders_enabled else "Locked")
