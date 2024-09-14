@@ -44,9 +44,6 @@ def bumble(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
 def order(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
 
-    if not board.orders_enabled:
-        return "Orders locked! If you think this is an error, contact a GM.", None
-
     if is_gm(ctx.message.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot order as a GM in a non-GM channel.")
@@ -54,6 +51,8 @@ def order(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
 
     player = get_player_by_role(ctx.message.author, manager, ctx.guild.id)
     if player is not None:
+        if not board.orders_enabled:
+            return "Orders locked! If you think this is an error, contact a GM.", None
         if not is_player_channel(player.name, ctx.channel):
             raise PermissionError("You cannot order as a player outside of your orders channel.")
         return parse_order(ctx.message.content, player, board), None
@@ -64,9 +63,6 @@ def order(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
 def remove_order(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
 
-    if not board.orders_enabled:
-        return "Orders locked! If you think this is an error, contact a GM.", None
-
     if is_gm(ctx.message.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot remove orders as a GM in a non-GM channel.")
@@ -74,6 +70,8 @@ def remove_order(ctx: commands.Context, manager: Manager) -> tuple[str, str | No
 
     player = get_player_by_role(ctx.message.author, manager, ctx.guild.id)
     if player is not None:
+        if not board.orders_enabled:
+            return "Orders locked! If you think this is an error, contact a GM.", None
         if not is_player_channel(player.name, ctx.channel):
             raise PermissionError("You cannot remove orders as a player outside of your orders channel.")
         return parse_remove_order(ctx.message.content, player, board), None

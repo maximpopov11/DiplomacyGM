@@ -134,16 +134,16 @@ async def remove_all(ctx: discord.ext.commands.Context) -> None:
 
 
 @bot.command(
-    brief="disables orders until .enable_orders is run.",
+    brief="disables orders until .unlock_orders is run.",
     discription="""disables orders until .enable_orders is run.
              Note: Currently does not persist after the bot is restarted""",
 )
-async def disable_orders(ctx: discord.ext.commands.Context) -> None:
+async def lock_orders(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.disable_orders, ctx)
 
 
 @bot.command(brief="reenables orders")
-async def enable_orders(ctx: discord.ext.commands.Context) -> None:
+async def unlock_orders(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.enable_orders, ctx)
 
 
