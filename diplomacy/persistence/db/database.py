@@ -48,13 +48,25 @@ class _DatabaseConnection:
         logger.info(f"Loading {len(board_data)} boards from DB")
         boards = dict()
         for board_row in board_data:
-            board_id, svg_file, phase_string = board_row
+            board_id, phase_string, svg_file = board_row
+
+            split_index = phase_string.index(" ")
+            year = int(phase_string[:split_index])
+            current_phase = next(phase for phase in phases if phase.name == phase_string[split_index:].strip())
+            next_phase = current_phase.next
+            next_phase_year = year
+            if next_phase.name == "Spring Moves":
+                next_phase_year += 1
+            if (board_id, f"{next_phase_year} {next_phase.name}", svg_file) in board_data:
+                continue
+
             logger.info(f"Loading board with ID {board_id}")
 
             # TODO - we should eventually store things like coords, adjacencies, etc
             #  so we don't have to reparse the whole board each time
             board = Parser().parse()
-            board.phase = next(phase for phase in phases if phase.name == phase_string)
+            board.phase = current_phase
+            board.year = year
             board.board_id = board_id
 
             player_data = cursor.execute(
@@ -72,42 +84,44 @@ class _DatabaseConnection:
                 # TODO - player build orders
 
             province_data = cursor.execute(
-                "SELECT province_name, owner, core, half_core FROM provinces WHERE board_id=?", (board_id,)
+                "SELECT province_name, owner, core, half_core FROM provinces WHERE board_id=? and phase=?",
+                (board_id, phase_string),
             ).fetchall()
             province_info_by_name = {
                 province_name: (owner, core, half_core) for province_name, owner, core, half_core in province_data
             }
             unit_data = cursor.execute(
-                "SELECT location, is_dislodged, owner, is_army, order_type, order_destination, order_source FROM units WHERE board_id=?",
-                (board_id,),
+                "SELECT location, is_dislodged, owner, is_army, order_type, order_destination, order_source FROM units WHERE board_id=? and phase=?",
+                (board_id, phase_string),
             ).fetchall()
 
             for province in board.provinces:
                 if province.name not in province_info_by_name:
                     logger.warning(f"Couldn't find province {province.name} in DB")
+                    continue
+
+                owner, core, half_core = province_info_by_name[province.name]
+
+                if owner is not None:
+                    owner_player = board.get_player(owner)
+                    province.owner = owner_player
+
+                    if province.has_supply_center:
+                        owner_player.centers.add(province)
                 else:
-                    owner, core, half_core = province_info_by_name[province.name]
+                    province.owner = None
 
-                    if owner is not None:
-                        owner_player = board.get_player(owner)
-                        province.owner = owner_player
+                core_player = None
+                if core is not None:
+                    core_player = board.get_player(core)
+                province.core = core_player
 
-                        if province.has_supply_center:
-                            owner_player.centers.add(province)
-                    else:
-                        province.owner = None
-
-                    core_player = None
-                    if core is not None:
-                        core_player = board.get_player(core)
-                    province.core = core_player
-
-                    half_core_player = None
-                    if half_core is not None:
-                        half_core_player = board.get_player(half_core)
-                    province.half_core = half_core_player
-                    province.unit = None
-                    province.dislodged_unit = None
+                half_core_player = None
+                if half_core is not None:
+                    half_core_player = board.get_player(half_core)
+                province.half_core = half_core_player
+                province.unit = None
+                province.dislodged_unit = None
 
             board.units.clear()
             for unit_info in unit_data:
@@ -173,17 +187,19 @@ class _DatabaseConnection:
         # TODO: Check if board already exists
         cursor = self._connection.cursor()
         cursor.execute(
-            "INSERT INTO boards (board_id, map_file, phase) VALUES (?, ?, ?);", (board_id, SVG_PATH, board.phase.name)
+            "INSERT INTO boards (board_id, phase, map_file) VALUES (?, ?, ?);",
+            (board_id, board.get_phase_and_year_string(), SVG_PATH),
         )
         cursor.executemany(
-            "INSERT INTO players (board_id, player_name, color) VALUES (?, ?, ?)",
+            "INSERT INTO players (board_id, player_name, color) VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
             [(board_id, player.name, player.color) for player in board.players],
         )
         cursor.executemany(
-            "INSERT INTO provinces (board_id, province_name, owner, core, half_core) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO provinces (board_id, phase, province_name, owner, core, half_core) VALUES (?, ?, ?, ?, ?, ?)",
             [
                 (
                     board_id,
+                    board.get_phase_and_year_string(),
                     province.name,
                     province.owner.name if province.owner else None,
                     province.core.name if province.core else None,
@@ -194,10 +210,11 @@ class _DatabaseConnection:
         )
         # TODO - this is hacky
         cursor.executemany(
-            "INSERT INTO units (board_id, location, is_dislodged, owner, is_army, order_type, order_destination, order_source) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO units (board_id, phase, location, is_dislodged, owner, is_army, order_type, order_destination, order_source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (
                     board_id,
+                    board.get_phase_and_year_string(),
                     unit.get_location().name,
                     unit == unit.province.dislodged_unit,
                     unit.player.name,
@@ -212,10 +229,10 @@ class _DatabaseConnection:
         cursor.close()
         self._connection.commit()
 
-    def save_order_for_units(self, board_id: int, units: list[Unit]):
+    def save_order_for_units(self, board: Board, units: list[Unit]):
         cursor = self._connection.cursor()
         cursor.executemany(
-            "UPDATE units SET order_type=?, order_destination=?, order_source=? WHERE board_id=? and location=? and is_dislodged=?",
+            "UPDATE units SET order_type=?, order_destination=?, order_source=? WHERE board_id=? and phase=? and location=? and is_dislodged=?",
             [
                 (
                     unit.order.__class__.__name__ if unit.order is not None else None,
@@ -225,7 +242,8 @@ class _DatabaseConnection:
                         if unit.order is not None
                         else None
                     ),
-                    board_id,
+                    board.board_id,
+                    board.get_phase_and_year_string(),
                     unit.get_location().name,
                     unit.province.dislodged_unit == unit,
                 )

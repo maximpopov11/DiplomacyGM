@@ -48,8 +48,12 @@ class Manager:
         adjudicator = Adjudicator(self._boards[server_id])
         # TODO - use adjudicator.orders() (tells you which ones succeeded and failed) to draw a better moves map
         new_board = adjudicator.run()
+        new_board.phase = new_board.phase.next
+        if new_board.phase.name == "Spring Moves":
+            new_board.year += 1
         logger.info("Adjudicator ran successfully")
         self._boards[server_id] = new_board
+        self._database.save_board(server_id, new_board)
         mapper = Mapper(new_board)
         return mapper.draw_current_map()
         # TODO: (DB) update board, moves map, results map at server id at turn in db
