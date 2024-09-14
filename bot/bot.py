@@ -136,6 +136,10 @@ async def disable_orders(ctx: discord.ext.commands.Context) -> None:
 async def enable_orders(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.enable_orders, ctx)
 
+@bot.command(brief="outputs information about the current game")
+async def info(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(commands.info, ctx)
+
 # TODO: (DB) output the map
 @bot.command(
     brief="Create a game of Imp Dip and output the map.",
