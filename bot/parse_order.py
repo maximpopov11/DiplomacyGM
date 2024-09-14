@@ -89,6 +89,8 @@ class TreeToOrder(Transformer):
             return s[0], order.Support(s[-1][0], s[-1][1].destination)
         elif isinstance(s[-1][1], order.Hold):
             return s[0], order.Support(s[-1][0], s[-1][1].get_location())
+        else:
+            raise ValueError("Unknown type of support. Something has broken in the bot. Please report this")
 
     def retreat_order(self, s):
         return s[0], order.RetreatMove(s[-1])
