@@ -55,7 +55,7 @@ class TreeToOrder(Transformer):
         return set([x for x in statements if isinstance(x, Unit)])
 
     def retreat_phase(self, statements):
-        return set([x for x in statements if x != None])
+        return set([x for x in statements if isinstance(x, Unit)])
 
     def province(self, s):
         name = " ".join(s).replace("_", " ").strip()
@@ -98,16 +98,20 @@ class TreeToOrder(Transformer):
         return s[0], order.RetreatMove(s[-1])
 
     def disband_order(self, s):
-        return s[0], order.RetreatDisband(s[-1])
+        return s[0], order.RetreatDisband()
 
     def order(self, order):
-        if len(order) == 0:
-            # this line is '.order'
-            return None
         (command,) = order
         unit, order = command
         unit.order = order
         return unit
+    
+    def retreat(self, order):
+        (command,) = order
+        unit, order = command
+        unit.order = order
+        return unit
+            
 
 
 generator = TreeToOrder()
