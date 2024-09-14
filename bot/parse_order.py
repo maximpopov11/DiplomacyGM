@@ -144,7 +144,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board, b
             parser = retreats_parser
 
         generator.set_state(board, player_restriction)
-        cmd = parser.parse(message.lower())
+        cmd = parser.parse(message.lower() + '\n')
         movement = generator.transform(cmd)
 
         database = get_connection()
