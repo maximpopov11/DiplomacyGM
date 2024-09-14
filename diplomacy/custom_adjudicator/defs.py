@@ -32,7 +32,7 @@ class AdjudicableOrder:
         if unit.order is None:
             raise ValueError(f"Order for unit {unit} is missing")
 
-        self.country = unit.player.name
+        self.country = unit.player
         self.is_army = unit.unit_type == UnitType.ARMY
         self.current_province = unit.province
 
