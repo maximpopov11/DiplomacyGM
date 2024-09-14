@@ -2,7 +2,7 @@
 
 movement_phase: ".order" WS order ("\n" order?) *
 
-retreat_phase: retreat ("\n" retreat?) *
+retreat_phase: ".order" WS retreat ("\n" retreat?) *
 
 order: move_order
     | hold_order
