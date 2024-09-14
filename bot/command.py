@@ -208,6 +208,11 @@ def disable_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | 
     board.orders_enabled = False
     return "Successful", None
 
+def info(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+    board = manager.get_board(ctx.guild.id)
+    out = "Phase: " + str(board.phase) + "\nOrders are: " + ("Open" if board.orders_enabled else "Locked")
+    return out, None
+
 
 # TODO: (BETA) implement new command for inputting new variant
 # TODO: (BETA) implement new command for creating game from variant out of choices (more than just Imp Dip)
