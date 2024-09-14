@@ -98,7 +98,7 @@ class TreeToOrder(Transformer):
         return s[0], order.RetreatMove(s[-1])
 
     def disband_order(self, s):
-        return s[0], order.RetreatDisband(s[-1])
+        return s[0], order.RetreatDisband()
 
     def order(self, order):
         (command,) = order

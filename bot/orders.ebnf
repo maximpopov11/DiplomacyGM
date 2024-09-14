@@ -27,7 +27,7 @@ convoy_order: unit WS CONVOY WS move_order
 
 core_order: unit WS CORE
 
-retreat_order: unit WS RETREAT
+retreat_order: unit WS RETREAT WS province
 
 disband_order: unit WS DISBAND
 
