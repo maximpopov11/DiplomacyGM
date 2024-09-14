@@ -97,7 +97,7 @@ class TreeToOrder(Transformer):
         if isinstance(s[-1][1], order.Move):
             return s[0], order.Support(s[-1][0], s[-1][1].destination)
         elif isinstance(s[-1][1], order.Hold):
-            return s[0], order.Support(s[-1][0], s[-1][1].get_location())
+            return s[0], order.Support(s[-1][0], s[-1][0].get_location())
 
     def retreat_order(self, s):
         return s[0], order.RetreatMove(s[-1])
