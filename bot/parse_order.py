@@ -65,6 +65,11 @@ class TreeToOrder(Transformer):
     def unit(self, s) -> Unit:
         # ignore the fleet/army signifier, if exists
         unit = s[-1].get_unit()
+        if unit is None:
+            raise ValueError(f"No unit in {s[-1]}")
+        if not isinstance(unit, Unit):
+            raise Exception(f"Didn't get a unit or None from get_unit(), please report this")
+
         return unit
 
     # format for all of these is (unit, order)
@@ -88,7 +93,7 @@ class TreeToOrder(Transformer):
         if isinstance(s[-1][1], order.Move):
             return s[0], order.Support(s[-1][0], s[-1][1].destination)
         elif isinstance(s[-1][1], order.Hold):
-            return s[0], order.Support(s[-1][0], s[-1][1].get_location())
+            return s[0], order.Support(s[-1][0], s[-1][0].get_location())
         else:
             raise ValueError("Unknown type of support. Something has broken in the bot. Please report this")
 
@@ -107,13 +112,13 @@ class TreeToOrder(Transformer):
             )
         unit.order = order
         return unit
-    
+
     def retreat(self, order):
         (command,) = order
         unit, order = command
         unit.order = order
         return unit
-            
+
 
 
 generator = TreeToOrder()
