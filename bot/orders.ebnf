@@ -1,8 +1,9 @@
-%import common.WS
+WS: /[ \t]+/
+NL: "\n"
 
-movement_phase: ".order" WS order ("\n" order?) *
+movement_phase: ".order" (WS order?)? (NL (order? WS? NL) *)?
 
-retreat_phase: ".order" WS retreat ("\n" retreat?) *
+retreat_phase: ".order" (WS retreat?)? (NL (retreat? WS? NL) *)?
 
 order: move_order
     | hold_order
