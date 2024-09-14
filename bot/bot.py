@@ -46,7 +46,7 @@ async def _handle_command(
             f"invoking '{getattr(function, '__name__', 'Unknown')}': {repr(e)}"
         )
         logger.error("", exc_info=e)
-        await ctx.channel.send("Command errored: " + str(e))
+        await ctx.channel.send("Command errored: ```" + str(e) + "```")
 
 
 @bot.command(help="Checks bot listens and responds.")

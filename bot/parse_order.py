@@ -58,17 +58,13 @@ class TreeToOrder(Transformer):
         return set([x for x in statements if isinstance(x, Unit)])
 
     def province(self, s):
-        name = " ".join(s).replace("_", " ").strip()
+        name = " ".join(s[::2]).replace("_", " ").strip()
         name = _manage_coast_signature(name)
         return self.board.get_location(name)
 
     def unit(self, s) -> Unit:
         # ignore the fleet/army signifier, if exists
         unit = s[-1].get_unit()
-        if self.player_restriction is not None and unit.player != self.player_restriction:
-            raise PermissionError(
-                f"{self.player_restriction.name} does not control the unit in {unit.province.name}, it belongs to {unit.player.name}"
-            )
         return unit
 
     # format for all of these is (unit, order)
@@ -93,6 +89,8 @@ class TreeToOrder(Transformer):
             return s[0], order.Support(s[-1][0], s[-1][1].destination)
         elif isinstance(s[-1][1], order.Hold):
             return s[0], order.Support(s[-1][0], s[-1][1].get_location())
+        else:
+            raise ValueError("Unknown type of support. Something has broken in the bot. Please report this")
 
     def retreat_order(self, s):
         return s[0], order.RetreatMove(s[-1])
@@ -103,6 +101,10 @@ class TreeToOrder(Transformer):
     def order(self, order):
         (command,) = order
         unit, order = command
+        if self.player_restriction is not None and unit.player != self.player_restriction:
+            raise PermissionError(
+                f"{self.player_restriction.name} does not control the unit in {unit.province.name}, it belongs to {unit.player.name}"
+            )
         unit.order = order
         return unit
     
