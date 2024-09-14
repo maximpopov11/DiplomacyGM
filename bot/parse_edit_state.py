@@ -11,6 +11,7 @@ _set_province_owner_str = "set province owner"
 _create_unit_str = "create unit"
 _delete_unit_str = "delete unit"
 _move_unit_str = "move unit"
+_make_units_claim_provinces_str = "make units claim provinces"
 
 
 def parse_edit_state(message: str, board: Board) -> tuple[str, str | None]:
@@ -59,6 +60,8 @@ def _parse_command(command: str, board: Board) -> None:
         _delete_unit(keywords, board)
     elif command_type == _move_unit_str:
         _move_unit(keywords, board)
+    elif command_type == _make_units_claim_provinces_str:
+        _make_units_claim_provinces(keywords, board)
     else:
         raise RuntimeError(f"No command key phrases found")
 
@@ -162,3 +165,16 @@ def _move_unit(keywords: list[str], board: Board) -> None:
             unit.unit_type == UnitType.ARMY,
         ),
     )
+
+
+def _make_units_claim_provinces(keywords, board):
+    claim_centers = False
+    if keywords:
+        claim_centers = keywords[0].lower() == "true"
+    for unit in board.units:
+        if claim_centers or not unit.province.has_supply_center:
+            unit.province.owner = unit.player
+            get_connection().execute_arbitrary_sql(
+                "UPDATE provinces SET owner=? WHERE board_id=? and phase=? and province_name=?",
+                (unit.player.name, board.board_id, board.get_phase_and_year_string(), unit.province.name),
+            )

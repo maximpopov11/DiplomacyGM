@@ -5,6 +5,7 @@ from diplomacy.custom_adjudicator.mapper import Mapper
 from diplomacy.map_parser.vector.vector import Parser
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db import database
+from diplomacy.persistence.phase import phases
 from diplomacy.persistence.player import Player
 
 logger = logging.getLogger(__name__)
@@ -43,7 +44,7 @@ class Manager:
         return Mapper(self._boards[server_id]).draw_moves_map(player_restriction)
 
     def adjudicate(self, server_id: int) -> str:
-        mapper = Mapper(self._boards[server_id])
+        # mapper = Mapper(self._boards[server_id])
         # mapper.draw_moves_map(None)
         adjudicator = Adjudicator(self._boards[server_id])
         # TODO - use adjudicator.orders() (tells you which ones succeeded and failed) to draw a better moves map
@@ -62,6 +63,19 @@ class Manager:
         #  - this is all good
         # TODO: (DB) return both moves and results map
 
-    def rollback(self) -> str:
-        # TODO: (!) get former turn board & moves map & results map from DB; update board; return maps
-        raise RuntimeError("Rollback not yet implemented.")
+    def rollback(self, server_id: int) -> str:
+        logger.info(f"Rolling back in server {server_id}")
+        board = self._boards[server_id]
+        last_phase = next(phase for phase in phases if phase.next == board.phase)
+        last_phase_year = board.year
+        if board.phase == "Spring Moves":
+            last_phase_year -= 1
+
+        old_board = self._database.get_board(board.board_id, last_phase, last_phase_year)
+        if old_board is None:
+            raise ValueError(f"There is no {last_phase_year} {last_phase.name} board for this server")
+
+        self._database.delete_board(board)
+        self._boards[server_id] = old_board
+        mapper = Mapper(old_board)
+        return mapper.draw_current_map()

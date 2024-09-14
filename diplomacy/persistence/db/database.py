@@ -1,5 +1,6 @@
 import logging
 import sqlite3
+from collections.abc import Iterable
 
 from diplomacy.map_parser.vector.config_svg import SVG_PATH
 from diplomacy.map_parser.vector.vector import Parser
@@ -14,7 +15,7 @@ from diplomacy.persistence.order import (
     RetreatDisband,
     RetreatMove,
 )
-from diplomacy.persistence.phase import phases
+from diplomacy.persistence.phase import phases, Phase
 from diplomacy.persistence.province import Province
 from diplomacy.persistence.unit import UnitType, Unit
 
@@ -60,128 +61,140 @@ class _DatabaseConnection:
             if (board_id, f"{next_phase_year} {next_phase.name}", svg_file) in board_data:
                 continue
 
-            logger.info(f"Loading board with ID {board_id}")
-
-            # TODO - we should eventually store things like coords, adjacencies, etc
-            #  so we don't have to reparse the whole board each time
-            board = Parser().parse()
-            board.phase = current_phase
-            board.year = year
-            board.board_id = board_id
-
-            player_data = cursor.execute(
-                "SELECT player_name, color FROM players WHERE board_id=?", (board_id,)
-            ).fetchall()
-            player_info_by_name = {player_name: color for player_name, color in player_data}
-            for player in board.players:
-                if player.name not in player_info_by_name:
-                    logger.warning(f"Couldn't find player {player.name} in DB")
-                    continue
-                color = player_info_by_name[player.name]
-                player.color = color
-                player.units = set()
-                player.centers = set()
-                # TODO - player build orders
-
-            province_data = cursor.execute(
-                "SELECT province_name, owner, core, half_core FROM provinces WHERE board_id=? and phase=?",
-                (board_id, phase_string),
-            ).fetchall()
-            province_info_by_name = {
-                province_name: (owner, core, half_core) for province_name, owner, core, half_core in province_data
-            }
-            unit_data = cursor.execute(
-                "SELECT location, is_dislodged, owner, is_army, order_type, order_destination, order_source FROM units WHERE board_id=? and phase=?",
-                (board_id, phase_string),
-            ).fetchall()
-
-            for province in board.provinces:
-                if province.name not in province_info_by_name:
-                    logger.warning(f"Couldn't find province {province.name} in DB")
-                    continue
-
-                owner, core, half_core = province_info_by_name[province.name]
-
-                if owner is not None:
-                    owner_player = board.get_player(owner)
-                    province.owner = owner_player
-
-                    if province.has_supply_center:
-                        owner_player.centers.add(province)
-                else:
-                    province.owner = None
-
-                core_player = None
-                if core is not None:
-                    core_player = board.get_player(core)
-                province.core = core_player
-
-                half_core_player = None
-                if half_core is not None:
-                    half_core_player = board.get_player(half_core)
-                province.half_core = half_core_player
-                province.unit = None
-                province.dislodged_unit = None
-
-            board.units.clear()
-            for unit_info in unit_data:
-                location, is_dislodged, owner, is_army, order_type, order_destination, order_source = unit_info
-                province, coast = board.get_province_and_coast(location)
-                owner_player = board.get_player(owner)
-                unit = Unit(UnitType.ARMY if is_army else UnitType.FLEET, owner_player, province, coast, None)
-                if is_dislodged:
-                    province.dislodged_unit = unit
-                else:
-                    province.unit = unit
-                owner_player.units.add(unit)
-                board.units.add(unit)
-            # AAAAA We shouldn't be having to loop twice; why is ComplexOrder.source a Unit? Turn it into a province or something
-            # Currently we have to loop twice because it's a unit and we need to have all the units set up before parsing orders because of it
-            for unit_info in unit_data:
-                location, is_dislodged, owner, is_army, order_type, order_destination, order_source = unit_info
-                if order_type is not None:
-                    order_classes = [
-                        Hold,
-                        Core,
-                        Move,
-                        ConvoyMove,
-                        ConvoyTransport,
-                        Support,
-                        RetreatMove,
-                        RetreatDisband,
-                    ]
-                    order_class = next(_class for _class in order_classes if _class.__name__ == order_type)
-                    destination_province = None
-                    if order_destination is not None:
-                        destination_province, destination_coast = board.get_province_and_coast(order_destination)
-                        if destination_coast is not None:
-                            destination_province = destination_coast
-                    source_unit = None
-                    if order_source is not None:
-                        source_province, source_coast = board.get_province_and_coast(order_source)
-                        if source_coast is not None:
-                            source_province = source_coast
-                        source_unit = source_province.unit
-                    if order_class in [Hold, Core, RetreatDisband]:
-                        order = order_class()
-                    elif order_class in [Move, ConvoyMove, RetreatMove]:
-                        order = order_class(destination=destination_province)
-                    elif order_class in [Support, ConvoyTransport]:
-                        order = order_class(destination=destination_province, source=source_unit)
-                    else:
-                        raise ValueError(f"Could not parse {order_class}")
-
-                    province, coast = board.get_province_and_coast(location)
-                    if is_dislodged:
-                        province.dislodged_unit.order = order
-                    else:
-                        province.unit.order = order
+            board = self._get_board(board_id, current_phase, year, cursor)
 
             boards[board_id] = board
 
         cursor.close()
         logger.info("Successfully loaded")
         return boards
+
+    def get_board(self, board_id: int, phase: Phase, year: int) -> Board | None:
+        cursor = self._connection.cursor()
+
+        board_data = cursor.execute(
+            "SELECT * FROM boards WHERE board_id=? and phase=?", (board_id, f"{year} {phase.name}")
+        ).fetchone()
+        if not board_data:
+            cursor.close()
+            return None
+
+        board = self._get_board(board_id, phase, year, cursor)
+        cursor.close()
+        return board
+
+    def _get_board(self, board_id: int, phase: Phase, year: int, cursor) -> Board:
+        logger.info(f"Loading board with ID {board_id}")
+        # TODO - we should eventually store things like coords, adjacencies, etc
+        #  so we don't have to reparse the whole board each time
+        board = Parser().parse()
+        board.phase = phase
+        board.year = year
+        board.board_id = board_id
+        player_data = cursor.execute("SELECT player_name, color FROM players WHERE board_id=?", (board_id,)).fetchall()
+        player_info_by_name = {player_name: color for player_name, color in player_data}
+        for player in board.players:
+            if player.name not in player_info_by_name:
+                logger.warning(f"Couldn't find player {player.name} in DB")
+                continue
+            color = player_info_by_name[player.name]
+            player.color = color
+            player.units = set()
+            player.centers = set()
+            # TODO - player build orders
+        province_data = cursor.execute(
+            "SELECT province_name, owner, core, half_core FROM provinces WHERE board_id=? and phase=?",
+            (board_id, board.get_phase_and_year_string()),
+        ).fetchall()
+        province_info_by_name = {
+            province_name: (owner, core, half_core) for province_name, owner, core, half_core in province_data
+        }
+        unit_data = cursor.execute(
+            "SELECT location, is_dislodged, owner, is_army, order_type, order_destination, order_source FROM units WHERE board_id=? and phase=?",
+            (board_id, board.get_phase_and_year_string()),
+        ).fetchall()
+        for province in board.provinces:
+            if province.name not in province_info_by_name:
+                logger.warning(f"Couldn't find province {province.name} in DB")
+                continue
+
+            owner, core, half_core = province_info_by_name[province.name]
+
+            if owner is not None:
+                owner_player = board.get_player(owner)
+                province.owner = owner_player
+
+                if province.has_supply_center:
+                    owner_player.centers.add(province)
+            else:
+                province.owner = None
+
+            core_player = None
+            if core is not None:
+                core_player = board.get_player(core)
+            province.core = core_player
+
+            half_core_player = None
+            if half_core is not None:
+                half_core_player = board.get_player(half_core)
+            province.half_core = half_core_player
+            province.unit = None
+            province.dislodged_unit = None
+        board.units.clear()
+        for unit_info in unit_data:
+            location, is_dislodged, owner, is_army, order_type, order_destination, order_source = unit_info
+            province, coast = board.get_province_and_coast(location)
+            owner_player = board.get_player(owner)
+            unit = Unit(UnitType.ARMY if is_army else UnitType.FLEET, owner_player, province, coast, None)
+            if is_dislodged:
+                province.dislodged_unit = unit
+            else:
+                province.unit = unit
+            owner_player.units.add(unit)
+            board.units.add(unit)
+        # AAAAA We shouldn't be having to loop twice; why is ComplexOrder.source a Unit? Turn it into a province or something
+        # Currently we have to loop twice because it's a unit and we need to have all the units set up before parsing orders because of it
+        for unit_info in unit_data:
+            location, is_dislodged, owner, is_army, order_type, order_destination, order_source = unit_info
+            if order_type is not None:
+                order_classes = [
+                    Hold,
+                    Core,
+                    Move,
+                    ConvoyMove,
+                    ConvoyTransport,
+                    Support,
+                    RetreatMove,
+                    RetreatDisband,
+                ]
+                order_class = next(_class for _class in order_classes if _class.__name__ == order_type)
+                destination_province = None
+                if order_destination is not None:
+                    destination_province, destination_coast = board.get_province_and_coast(order_destination)
+                    if destination_coast is not None:
+                        destination_province = destination_coast
+                source_unit = None
+                if order_source is not None:
+                    source_province, source_coast = board.get_province_and_coast(order_source)
+                    if source_coast is not None:
+                        source_province = source_coast
+                    source_unit = source_province.unit
+                if order_class in [Hold, Core, RetreatDisband]:
+                    order = order_class()
+                elif order_class in [Move, ConvoyMove, RetreatMove]:
+                    order = order_class(destination=destination_province)
+                elif order_class in [Support, ConvoyTransport]:
+                    order = order_class(destination=destination_province, source=source_unit)
+                else:
+                    raise ValueError(f"Could not parse {order_class}")
+
+                province, coast = board.get_province_and_coast(location)
+                if is_dislodged:
+                    province.dislodged_unit.order = order
+                else:
+                    province.unit.order = order
+
+        return board
 
     def save_board(self, board_id: int, board: Board):
         # TODO: Check if board already exists
@@ -229,7 +242,7 @@ class _DatabaseConnection:
         cursor.close()
         self._connection.commit()
 
-    def save_order_for_units(self, board: Board, units: list[Unit]):
+    def save_order_for_units(self, board: Board, units: Iterable[Unit]):
         cursor = self._connection.cursor()
         cursor.executemany(
             "UPDATE units SET order_type=?, order_destination=?, order_source=? WHERE board_id=? and phase=? and location=? and is_dislodged=?",
@@ -253,7 +266,22 @@ class _DatabaseConnection:
         cursor.close()
         self._connection.commit()
 
+    def delete_board(self, board: Board):
+        cursor = self._connection.cursor()
+        cursor.execute(
+            "DELETE FROM boards WHERE board_id=? AND phase=?", (board.board_id, board.get_phase_and_year_string())
+        )
+        cursor.execute(
+            "DELETE FROM provinces WHERE board_id=? AND phase=?", (board.board_id, board.get_phase_and_year_string())
+        )
+        cursor.execute(
+            "DELETE FROM units WHERE board_id=? AND phase=?", (board.board_id, board.get_phase_and_year_string())
+        )
+        cursor.close()
+        self._connection.commit()
+
     def execute_arbitrary_sql(self, sql: str, args: tuple):
+        # TODO - everywhere using this should just be made into a method probably? idk
         cursor = self._connection.cursor()
         cursor.execute(sql, args)
         cursor.close()

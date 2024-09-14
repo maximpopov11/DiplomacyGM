@@ -99,10 +99,9 @@ async def adjudicate(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.adjudicate, ctx)
 
 
-# TODO: (DB) support rollback
-# @bot.command(brief="Rolls back to the previous game state and outputs the results map.")
-# async def rollback(ctx: discord.ext.commands.Context) -> None:
-#     await _handle_command(command.rollback, ctx)
+@bot.command(brief="Rolls back to the previous game state and outputs the results map.")
+async def rollback(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.rollback, ctx)
 
 
 @bot.command(brief="Outputs the scoreboard.", description="Outputs the scoreboard.")
@@ -122,7 +121,8 @@ async def scoreboard(ctx: discord.ext.commands.Context) -> None:
     * set_province_owner <province_name> <player_name>
     * create_unit {A, F} <player_name> <province_name>
     * delete_unit <province_name>
-    * move_unit <province_name> <province_name>""",
+    * move_unit <province_name> <province_name>
+    * make_units_claim_provinces {True|(False) - whether or not to claim SCs}""",
 )
 async def edit(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.edit, ctx)

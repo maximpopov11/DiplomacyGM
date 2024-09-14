@@ -129,7 +129,7 @@ def rollback(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     if not is_gm_channel(ctx.channel):
         raise PermissionError("You cannot rollback in a non-GM channel.")
 
-    return manager.rollback(), None  # TODO return file name
+    return manager.rollback(ctx.guild.id), None  # TODO return file name
 
 
 def remove_all(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
