@@ -65,6 +65,11 @@ class TreeToOrder(Transformer):
     def unit(self, s) -> Unit:
         # ignore the fleet/army signifier, if exists
         unit = s[-1].get_unit()
+        if unit is None:
+            raise ValueError(f"No unit in {s[-1]}")
+        if not isinstance(unit, Unit):
+            raise Exception(f"Didn't get a unit or None from get_unit(), please report this")
+        
         if self.player_restriction is not None and unit.player != self.player_restriction:
             raise PermissionError(
                 f"{self.player_restriction.name} does not control the unit in {unit.province.name}, it belongs to {unit.player.name}"
