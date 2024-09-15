@@ -145,7 +145,7 @@ def _delete_unit(keywords: list[str], board: Board) -> None:
 
 def _delete_dislodged_unit(keywords: list[str], board: Board) -> None:
     province = board.get_province(keywords[0])
-    unit = board.delete_unit(province)
+    unit = board.delete_dislodged_unit(province)
     get_connection().execute_arbitrary_sql(
         "DELETE FROM units WHERE board_id=? and phase=? and location=? and is_dislodged=?",
         (board.board_id, board.get_phase_and_year_string(), unit.get_location().name, True),
