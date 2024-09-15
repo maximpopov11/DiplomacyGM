@@ -46,7 +46,7 @@ async def _handle_command(
             f"invoking '{getattr(function, '__name__', 'Unknown')}': {repr(e)}"
         )
         logger.error("", exc_info=e)
-        await ctx.channel.send("Command errored: " + str(e))
+        await ctx.channel.send("Command errored: ```" + str(e) + "```")
 
 
 @bot.command(help="Checks bot listens and responds.")
@@ -99,10 +99,9 @@ async def adjudicate(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.adjudicate, ctx)
 
 
-# TODO: (DB) support rollback
-# @bot.command(brief="Rolls back to the previous game state and outputs the results map.")
-# async def rollback(ctx: discord.ext.commands.Context) -> None:
-#     await _handle_command(command.rollback, ctx)
+@bot.command(brief="Rolls back to the previous game state and outputs the results map.")
+async def rollback(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.rollback, ctx)
 
 
 @bot.command(brief="Outputs the scoreboard.", description="Outputs the scoreboard.")
@@ -122,7 +121,8 @@ async def scoreboard(ctx: discord.ext.commands.Context) -> None:
     * set_province_owner <province_name> <player_name>
     * create_unit {A, F} <player_name> <province_name>
     * delete_unit <province_name>
-    * move_unit <province_name> <province_name>""",
+    * move_unit <province_name> <province_name>
+    * make_units_claim_provinces {True|(False) - whether or not to claim SCs}""",
 )
 async def edit(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.edit, ctx)
@@ -145,6 +145,11 @@ async def lock_orders(ctx: discord.ext.commands.Context) -> None:
 @bot.command(brief="reenables orders")
 async def unlock_orders(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.enable_orders, ctx)
+
+
+@bot.command(brief="outputs information about the current game")
+async def info(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.info, ctx)
 
 
 # TODO: (DB) output the map

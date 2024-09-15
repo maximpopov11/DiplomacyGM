@@ -192,8 +192,10 @@ class Mapper:
         )
         element.append(drawn_order)
 
-    def _draw_move(self, order: Move | ConvoyMove | RetreatMove, coordinate: tuple[float, float]) -> None:
-        element = self._moves_svg.getroot()
+    def _draw_move(
+        self, order: Move | ConvoyMove | RetreatMove, coordinate: tuple[float, float], use_moves_svg=True
+    ) -> None:
+        element = self._moves_svg.getroot() if use_moves_svg else self.board_svg.getroot()
         order_path = _create_element(
             "path",
             {
@@ -279,8 +281,8 @@ class Mapper:
         # TODO: Add a call to draw_unit() here to actually draw the new unit
         element.append(drawn_order)
 
-    def _draw_disband(self, coordinate: tuple[float, float]) -> None:
-        element = self._moves_svg.getroot()
+    def _draw_disband(self, coordinate: tuple[float, float], use_moves_svg=True) -> None:
+        element = self._moves_svg.getroot() if use_moves_svg else self.board_svg.getroot()
         drawn_order = _create_element(
             "circle",
             {
@@ -398,6 +400,9 @@ class Mapper:
 
         self.board_svg.getroot().append(unit_element)
 
+        if unit == unit.province.dislodged_unit:
+            self._draw_retreat_options(unit)
+
     def _get_element_for_unit_type(self, unit_type) -> Element:
         # Just copy a random phantom unit
         if unit_type == UnitType.ARMY:
@@ -405,6 +410,11 @@ class Mapper:
         else:
             layer: Element = get_svg_element(self.board_svg, PHANTOM_PRIMARY_FLEET_LAYER_ID)
         return copy.deepcopy(layer.getchildren()[0])
+
+    def _draw_retreat_options(self, unit):
+        self._draw_disband(unit.province.retreat_unit_coordinate, use_moves_svg=False)
+        # for retreat_province in unit.retreat_options:
+        #     self._draw_move(RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False)
 
 
 def _create_element(tag: str, attributes: dict[str, any]) -> etree.Element:

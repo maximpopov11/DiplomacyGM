@@ -1,8 +1,9 @@
-%import common.WS
+WS: /[ \t]+/
+NL: "\n"
 
-movement_phase: ".order" WS order ("\n" order?) *
+movement_phase: ".order" (WS order?)? (NL (order? WS? NL) *)?
 
-retreat_phase: retreat ("\n" retreat?) *
+retreat_phase: ".order" (WS retreat?)? (NL (retreat? WS? NL) *)?
 
 order: move_order
     | hold_order
@@ -27,9 +28,9 @@ convoy_order: unit WS CONVOY WS move_order
 
 core_order: unit WS CORE
 
-retreat_order: unit WS RETREAT
+retreat_order: retreat_unit WS RETREAT WS province
 
-disband_order: unit WS DISBAND
+disband_order: retreat_unit WS DISBAND
 
 HOLD.2 : "h"
        | "hold"
@@ -76,6 +77,7 @@ DISBAND.2 : "d"
 
 unit : (DESCRIPTOR)? province
 
+retreat_unit : (DESCRIPTOR)? province
 
 DESCRIPTOR.2 : /[afAF]/ WS
 

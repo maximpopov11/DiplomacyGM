@@ -5,7 +5,7 @@ from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.order import Order
-from diplomacy.persistence.phase import Phase, winter_builds
+from diplomacy.persistence.phase import Phase, winter_builds, is_retreats_phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType, Unit
 
@@ -118,16 +118,20 @@ def get_phase(command: str) -> Phase | None:
 
 def get_orders(board: Board, player_restriction: Player | None) -> str:
     if board.phase == winter_builds:
+        response = "Received orders:"
         for player in board.players:
             if not player_restriction or player == player_restriction:
-                response = "Received orders:"
+                response += f"\n__{player.name}__: ({len(player.centers) - len(player.units)} builds)"
                 for unit in player.build_orders:
                     response += f"\n{unit}"
+        return response
     else:
         has_orders: list[Unit] = []
         missing: list[Unit] = []
 
         for unit in board.units:
+            if is_retreats_phase(board.phase) and unit != unit.province.dislodged_unit:
+                continue
             if not player_restriction or unit.player == player_restriction:
                 if unit.order:
                     has_orders.append(unit)
@@ -144,4 +148,6 @@ def get_orders(board: Board, player_restriction: Player | None) -> str:
             response += "Submitted orders:"
             for unit in sorted(has_orders, key=lambda _unit: _unit.province.name):
                 response += f"\n{unit} {unit.order}"
+        if response == "":
+            response = "No units need orders"
         return response

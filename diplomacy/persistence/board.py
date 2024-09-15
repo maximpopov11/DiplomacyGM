@@ -111,6 +111,14 @@ class Board:
         self.units.remove(unit)
         return unit
 
+    def delete_dislodged_unit(self, province: Province) -> Unit:
+        unit = province.dislodged_unit
+        province.dislodged_unit = None
+        unit.player.units.remove(unit)
+        self.units.remove(unit)
+        return unit
+
+
     def delete_all_units(self) -> None:
         for unit in self.units:
             unit.province.unit = None

@@ -68,16 +68,16 @@ def remove_order(player: Player | None, ctx: commands.Context, manager: Manager)
 @perms.player("view orders")
 def view_orders(player: Player | None, ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     try:
-        order_text = get_orders(manager.get_board(ctx.guild.id), player)
-    except:
-        logger.error(f"View_orders text failed in game with id: {ctx.guild.id}")
+        order_text = get_orders(manager.get_board(ctx.guild.id), None)
+    except RuntimeError as err:
+        logger.error(f"View_orders text failed in game with id: {ctx.guild.id}", exc_info=err)
         order_text = "view_orders text failed"
 
     if player is None:
         try:
             file_name = manager.draw_moves_map(ctx.guild.id, None)
-        except:
-            logger.error(f"View_orders map failed in game with id: {ctx.guild.id}")
+        except RuntimeError as err:
+            logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
             file_name = None
         return order_text, file_name
 
@@ -92,7 +92,7 @@ def adjudicate(ctx: commands.Context, manager: Manager) -> tuple[str, str | None
 
 @perms.gm("rollback")
 def rollback(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
-    return manager.rollback(), None  # TODO return file name
+    return manager.rollback(ctx.guild.id)
 
 @perms.gm("remove all orders")
 def remove_all(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
@@ -136,6 +136,12 @@ def disable_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | 
     board = manager.get_board(ctx.guild.id)
     board.orders_enabled = False
     return "Successful", None
+
+
+def info(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+    board = manager.get_board(ctx.guild.id)
+    out = "Phase: " + str(board.phase) + "\nOrders are: " + ("Open" if board.orders_enabled else "Locked")
+    return out, None
 
 
 # TODO: (BETA) implement new command for inputting new variant
