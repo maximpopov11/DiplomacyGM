@@ -95,6 +95,7 @@ def remove_order(ctx: commands.Context, manager: Manager) -> tuple[str, str | No
     raise PermissionError("You cannot remove orders because you are neither a GM nor a player.")
 
 
+# TODO: (QOL) GMs want to be able to see orders for a particular player
 # TODO: (!) output orders map BUT create something like .orders_log to see it in text like it is here
 def view_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     if is_gm(ctx.message.author):
