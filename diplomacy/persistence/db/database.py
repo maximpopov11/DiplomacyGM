@@ -14,8 +14,12 @@ from diplomacy.persistence.order import (
     ConvoyTransport,
     RetreatDisband,
     RetreatMove,
+    Build,
+    Disband,
+    PlayerOrder,
 )
-from diplomacy.persistence.phase import phases, Phase
+from diplomacy.persistence.phase import phases, Phase, winter_builds
+from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province
 from diplomacy.persistence.unit import UnitType, Unit
 
@@ -102,6 +106,23 @@ class _DatabaseConnection:
             player.units = set()
             player.centers = set()
             # TODO - player build orders
+        if phase == winter_builds:
+            builds_data = cursor.execute(
+                "SELECT player, location, is_build, is_army FROM builds WHERE board_id=? and phase=?",
+                (board_id, board.get_phase_and_year_string()),
+            ).fetchall()
+            player_by_name = {player.name: player for player in board.players}
+            for player_name, location, is_build, is_army in builds_data:
+                if player_name not in player_by_name:
+                    logger.warning(f"Unknown player: {player_name}")
+                    continue
+                player = player_by_name[player_name]
+                if is_build:
+                    player_order = Build(board.get_location(location), UnitType.ARMY if is_army else UnitType.FLEET)
+                else:
+                    player_order = Disband(board.get_location(location))
+                player.build_orders.add(player_order)
+
         province_data = cursor.execute(
             "SELECT province_name, owner, core, half_core FROM provinces WHERE board_id=? and phase=?",
             (board_id, board.get_phase_and_year_string()),
@@ -221,6 +242,21 @@ class _DatabaseConnection:
                 for province in board.provinces
             ],
         )
+        cursor.executemany(
+            "INSERT INTO builds (board_id, phase, player, location, is_build, is_army) VALUES (?, ?, ?, ?, ?, ?)",
+            [
+                (
+                    board_id,
+                    board.get_phase_and_year_string(),
+                    player.name,
+                    build_order.location.name,
+                    isinstance(build_order, Build),
+                    getattr(build_order, "unit_type", None) == UnitType.ARMY,
+                )
+                for player in board.players
+                for build_order in player.build_orders
+            ],
+        )
         # TODO - this is hacky
         cursor.executemany(
             "INSERT INTO units (board_id, phase, location, is_dislodged, owner, is_army, order_type, order_destination, order_source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -249,7 +285,8 @@ class _DatabaseConnection:
     def save_order_for_units(self, board: Board, units: Iterable[Unit]):
         cursor = self._connection.cursor()
         cursor.executemany(
-            "UPDATE units SET order_type=?, order_destination=?, order_source=? WHERE board_id=? and phase=? and location=? and is_dislodged=?",
+            "UPDATE units SET order_type=?, order_destination=?, order_source=? "
+            "WHERE board_id=? and phase=? and location=? and is_dislodged=?",
             [
                 (
                     unit.order.__class__.__name__ if unit.order is not None else None,
@@ -265,6 +302,29 @@ class _DatabaseConnection:
                     unit.province.dislodged_unit == unit,
                 )
                 for unit in units
+            ],
+        )
+        cursor.close()
+        self._connection.commit()
+
+    def save_build_orders_for_players(self, board: Board, players: Iterable[Player]):
+        cursor = self._connection.cursor()
+        cursor.executemany(
+            "INSERT INTO builds (board_id, phase, player, location, is_build, is_army) VALUES (?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT (board_id, phase, player, location) DO UPDATE SET is_build=?, is_army=?",
+            [
+                (
+                    board.board_id,
+                    board.get_phase_and_year_string(),
+                    player.name,
+                    build_order.location.name,
+                    isinstance(build_order, Build),
+                    getattr(build_order, "unit_type", None) == UnitType.ARMY,
+                    isinstance(build_order, Build),
+                    getattr(build_order, "unit_type", None) == UnitType.ARMY,
+                )
+                for player in players
+                for build_order in player.build_orders
             ],
         )
         cursor.close()

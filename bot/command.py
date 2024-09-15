@@ -43,6 +43,22 @@ def bumble(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
     return f"**{word_of_bumble}**", None
 
 
+async def botsay(ctx: commands.Context) -> None:
+    if not is_gm(ctx.message.author) and is_gm_channel(ctx.channel):
+        return
+    # noinspection PyTypeChecker
+    if len(ctx.message.channel_mentions) == 0:
+        return
+    channel = ctx.message.channel_mentions[0]
+    content = ctx.message.content
+    content = content.replace(".botsay", "").replace(channel.mention, "").strip()
+    if len(content) == 0:
+        return
+    await ctx.message.add_reaction("👍")
+    logger.info(f"{ctx.message.author.name} asked me to say '{content}' in {channel.name}")
+    await channel.send(content)
+
+
 # TODO: (DB) warning cron when in cloud
 
 @perms.player("order")
@@ -64,19 +80,19 @@ def remove_order(player: Player | None, ctx: commands.Context, manager: Manager)
     return parse_remove_order(ctx.message.content, player, board), None
 
 
+# TODO: (QOL) GMs want to be able to see orders for a particular player
 # TODO: (!) output orders map BUT create something like .orders_log to see it in text like it is here
 @perms.player("view orders")
 def view_orders(player: Player | None, ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     try:
-        order_text = get_orders(manager.get_board(ctx.guild.id), None)
+        order_text = get_orders(manager.get_board(ctx.guild.id), player)
     except RuntimeError as err:
         logger.error(f"View_orders text failed in game with id: {ctx.guild.id}", exc_info=err)
         order_text = "view_orders text failed"
-
     if player is None:
         try:
             file_name = manager.draw_moves_map(ctx.guild.id, None)
-        except RuntimeError as err:
+        except Exception as err:
             logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
             file_name = None
         return order_text, file_name
@@ -93,6 +109,11 @@ def adjudicate(ctx: commands.Context, manager: Manager) -> tuple[str, str | None
 @perms.gm("rollback")
 def rollback(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     return manager.rollback(ctx.guild.id)
+
+<<<<<<< HEAD
+@perms.gm("rollback")
+def reload(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+    return manager.reload(ctx.guild.id)
 
 @perms.gm("remove all orders")
 def remove_all(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:

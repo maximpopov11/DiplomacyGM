@@ -23,7 +23,7 @@ async def _handle_command(
     ctx: discord.ext.commands.Context,
 ) -> None:
     try:
-        # TODO: (!) stack trace on logging failed commands
+        await ctx.message.add_reaction("👍")
         logger.debug(f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}'")
         response, file_name = function(ctx, manager)
         logger.debug(
@@ -43,9 +43,9 @@ async def _handle_command(
     except Exception as e:
         logger.error(
             f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) "
-            f"invoking '{getattr(function, '__name__', 'Unknown')}': {repr(e)}"
+            f"invoking '{getattr(function, '__name__', 'Unknown')}': {repr(e)}",
+            exc_info=e,
         )
-        logger.error("", exc_info=e)
         await ctx.channel.send("Command errored: ```" + str(e) + "```")
 
 
@@ -57,6 +57,11 @@ async def ping(ctx: discord.ext.commands.Context) -> None:
 @bot.command(hidden=True)
 async def bumble(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.bumble, ctx)
+
+
+@bot.command(hidden=True)
+async def botsay(ctx: discord.ext.commands.Context) -> None:
+    await command.botsay(ctx)
 
 
 # TODO: (BETA) allow ambiguous moves/convoys
@@ -99,9 +104,14 @@ async def adjudicate(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.adjudicate, ctx)
 
 
-@bot.command(brief="Rolls back to the previous game state and outputs the results map.")
+@bot.command(brief="Rolls back to the previous game state.")
 async def rollback(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.rollback, ctx)
+
+
+@bot.command(brief="Reloads the current board with what is in the DB")
+async def reload(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.reload, ctx)
 
 
 @bot.command(brief="Outputs the scoreboard.", description="Outputs the scoreboard.")

@@ -41,7 +41,7 @@ class Manager:
         return board
 
     def draw_moves_map(self, server_id: int, player_restriction: Player | None) -> str:
-        return Mapper(self._boards[server_id]).draw_moves_map(player_restriction)
+        return Mapper(self._boards[server_id]).draw_moves_map(self._boards[server_id].phase, player_restriction)
 
     def adjudicate(self, server_id: int) -> str:
         # mapper = Mapper(self._boards[server_id])
@@ -79,3 +79,15 @@ class Manager:
         self._boards[server_id] = old_board
         mapper = Mapper(old_board)
         return f"Rolled back to {old_board.get_phase_and_year_string()}", mapper.draw_current_map()
+
+    def reload(self, server_id: int) -> tuple[str, str]:
+        logger.info(f"Reloading server {server_id}")
+        board = self._boards[server_id]
+
+        loaded_board = self._database.get_board(server_id, board.phase, board.year)
+        if loaded_board is None:
+            raise ValueError(f"There is no {board.year} {board.phase.name} board for this server")
+
+        self._boards[server_id] = loaded_board
+        mapper = Mapper(loaded_board)
+        return f"Reloaded board for phase {loaded_board.get_phase_and_year_string()}", mapper.draw_current_map()

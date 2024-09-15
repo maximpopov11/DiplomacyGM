@@ -6,7 +6,8 @@ from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.phase import is_moves_phase, is_retreats_phase, is_builds_phase
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.unit import Unit
+from diplomacy.persistence.province import Province
+from diplomacy.persistence.unit import Unit, UnitType
 
 _hold = "hold"
 _move = "move"
@@ -144,12 +145,17 @@ retreats_parser = Lark(ebnf, start="retreat_phase", parser="earley")
 def parse_order(message: str, player_restriction: Player | None, board: Board) -> str:
     invalid: list[tuple[str, Exception]] = []
     if is_builds_phase(board.phase):
+        updated_players: set[Player] = set()
         for command in str.splitlines(message):
             try:
                 if command != ".order":
-                    _parse_player_order(get_keywords(command.lower()), player_restriction, board)
+                    updated_players.add(_parse_player_order(get_keywords(command.lower()), player_restriction, board))
             except Exception as error:
                 invalid.append((command, error))
+
+        database = get_connection()
+        database.save_build_orders_for_players(board, updated_players)
+
         if invalid:
             response = "The following orders were invalid:"
             for command in invalid:
@@ -241,7 +247,7 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
         return unit
 
 
-def _parse_player_order(keywords: list[str], player_restriction: Player | None, board: Board) -> None:
+def _parse_player_order(keywords: list[str], player_restriction: Player | None, board: Board) -> Player:
     if keywords[0] == ".order":
         keywords = keywords[1:]
     command = keywords[0]
@@ -265,11 +271,22 @@ def _parse_player_order(keywords: list[str], player_restriction: Player | None, 
 
     if command in _order_dict[_build]:
         unit_type = get_unit_type(keywords[2])
-        player.build_orders.add(order.Build(location, unit_type))
-        return
+        if unit_type == UnitType.FLEET:
+            if isinstance(location, Province):
+                location = location.coast()
+        player_order = order.Build(location, unit_type)
+        # This is jank. Probably bad practice? PlayerOrder class implements __eq__ to only check location
+        # So basically we have to remove the other equivalent one if it's in there and add ourselves
+        if player_order in player.build_orders:
+            player.build_orders.remove(player_order)
+        player.build_orders.add(player_order)
+        return player
 
     if command in _order_dict[_disband]:
-        player.build_orders.add(order.Disband(location))
-        return
+        player_order = order.Disband(location)
+        if player_order in player.build_orders:
+            player.build_orders.remove(player_order)
+        player.build_orders.add(player_order)
+        return player
 
     raise RuntimeError("Build could not be parsed")

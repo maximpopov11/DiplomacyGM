@@ -35,9 +35,11 @@ from diplomacy.persistence.order import (
     Move,
     ConvoyMove,
     Order,
+    PlayerOrder,
 )
+from diplomacy.persistence.phase import Phase, is_builds_phase, is_retreats_phase
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.province import ProvinceType, Province
+from diplomacy.persistence.province import ProvinceType, Province, Coast
 from diplomacy.persistence.unit import Unit, UnitType
 
 
@@ -100,27 +102,30 @@ class Mapper:
     # TODO: (!) manually assert all phantom coordinates on provinces and coasts are set, fix if not
     # TODO: (BETA) print svg moves & results files in Discord GM channel
     # TODO: (DB) let's not have a ton of old files: delete moves & results after output (or don't store at all?)
-    def draw_moves_map(self, player_restriction: Player | None) -> str:
+    def draw_moves_map(self, phase: Phase, player_restriction: Player | None) -> str:
         self._reset_moves_map()
 
-        for unit in self.board.units:
-            if player_restriction and unit.player != player_restriction:
-                continue
+        if not is_builds_phase(phase):
+            for unit in self.board.units:
+                if player_restriction and unit.player != player_restriction:
+                    continue
+                if is_retreats_phase(phase) and unit.province.dislodged_unit != unit:
+                    continue
 
-            coordinate = unit.get_coordinate()
-            try:
-                self._draw_order(unit.order, coordinate)
-            except:
-                logger.error(f"Drawing move failed for {unit}")
-
-        players: set[Player]
-        if player_restriction is None:
-            players = self.board.players
+                coordinate = unit.get_coordinate()
+                try:
+                    self._draw_order(unit.order, coordinate)
+                except Exception as err:
+                    logger.error(f"Drawing move failed for {unit}", exc_info=err)
         else:
-            players = {player_restriction}
-        for player in players:
-            for build_order in player.build_orders:
-                self._draw_order(build_order, build_order.location.primary_unit_coordinate)
+            players: set[Player]
+            if player_restriction is None:
+                players = self.board.players
+            else:
+                players = {player_restriction}
+            for player in players:
+                for build_order in player.build_orders:
+                    self._draw_player_order(player, build_order)
 
         svg_file_name = f"{self.board.phase.name}_moves_map.svg"
         self._moves_svg.write(svg_file_name)
@@ -152,13 +157,20 @@ class Mapper:
             self._draw_move(order, coordinate)
         elif isinstance(order, RetreatDisband):
             self._draw_disband(coordinate)
-        elif isinstance(order, Build):
-            self._draw_build(order)
-        elif isinstance(order, Disband):
-            self._draw_disband(coordinate)
         else:
             self._draw_hold(coordinate)
-            logger.info(f"None order found: hold drawn. Coordinates: {coordinate}")
+            logger.warning(f"None order found: hold drawn. Coordinates: {coordinate}")
+
+    def _draw_player_order(self, player: Player, order: PlayerOrder):
+        if order.location.primary_unit_coordinate is None:
+            logger.error(f"Coordinate for {order} is invalid!")
+            return
+        if isinstance(order, Build):
+            self._draw_build(player, order)
+        elif isinstance(order, Disband):
+            self._draw_disband(order.location.primary_unit_coordinate)
+        else:
+            logger.error(f"Could not draw player order {order}")
 
     def _draw_hold(self, coordinate: tuple[float, float]) -> None:
         element = self._moves_svg.getroot()
@@ -265,7 +277,7 @@ class Mapper:
         )
         element.append(drawn_order)
 
-    def _draw_build(self, order: Build) -> None:
+    def _draw_build(self, player, order: Build) -> None:
         element = self._moves_svg.getroot()
         drawn_order = _create_element(
             "circle",
@@ -278,7 +290,13 @@ class Mapper:
                 "stroke-width": STROKE_WIDTH,
             },
         )
-        # TODO: Add a call to draw_unit() here to actually draw the new unit
+
+        coast = None
+        province = order.location
+        if isinstance(province, Coast):
+            coast = province
+            province = province.province
+        self._draw_unit(Unit(order.unit_type, player, province, coast, None), use_moves_svg=True)
         element.append(drawn_order)
 
     def _draw_disband(self, coordinate: tuple[float, float], use_moves_svg=True) -> None:
@@ -376,7 +394,7 @@ class Mapper:
         for unit in self.board.units:
             self._draw_unit(unit)
 
-    def _draw_unit(self, unit: Unit):
+    def _draw_unit(self, unit: Unit, use_moves_svg=False):
         unit_element = self._get_element_for_unit_type(unit.unit_type)
 
         for path in unit_element.getchildren():
@@ -398,7 +416,8 @@ class Mapper:
         unit_element.set("id", unit.province.name)
         unit_element.set("{http://www.inkscape.org/namespaces/inkscape}label", unit.province.name)
 
-        self.board_svg.getroot().append(unit_element)
+        root_element = self.board_svg.getroot() if not use_moves_svg else self._moves_svg.getroot()
+        root_element.append(unit_element)
 
         if unit == unit.province.dislodged_unit:
             self._draw_retreat_options(unit)
