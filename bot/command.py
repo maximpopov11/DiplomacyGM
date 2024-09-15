@@ -110,8 +110,7 @@ def adjudicate(ctx: commands.Context, manager: Manager) -> tuple[str, str | None
 def rollback(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     return manager.rollback(ctx.guild.id)
 
-<<<<<<< HEAD
-@perms.gm("rollback")
+@perms.gm("reload")
 def reload(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     return manager.reload(ctx.guild.id)
 
