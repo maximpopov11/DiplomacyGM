@@ -1,6 +1,6 @@
 import logging
 
-from diplomacy.custom_adjudicator.adjudicator import Adjudicator
+from diplomacy.custom_adjudicator.adjudicator import make_adjudicator
 from diplomacy.custom_adjudicator.mapper import Mapper
 from diplomacy.map_parser.vector.vector import Parser
 from diplomacy.persistence.board import Board
@@ -46,7 +46,7 @@ class Manager:
     def adjudicate(self, server_id: int) -> str:
         # mapper = Mapper(self._boards[server_id])
         # mapper.draw_moves_map(None)
-        adjudicator = Adjudicator(self._boards[server_id])
+        adjudicator = make_adjudicator(self._boards[server_id])
         # TODO - use adjudicator.orders() (tells you which ones succeeded and failed) to draw a better moves map
         new_board = adjudicator.run()
         new_board.phase = new_board.phase.next

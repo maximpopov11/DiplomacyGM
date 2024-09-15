@@ -1,3 +1,5 @@
+from lark import Lark, Transformer
+
 from bot.utils import get_unit_type, get_keywords, _manage_coast_signature
 from diplomacy.persistence import order
 from diplomacy.persistence.board import Board
@@ -5,8 +7,6 @@ from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.phase import is_moves_phase, is_retreats_phase, is_builds_phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import Unit
-from lark import Lark, Transformer
-
 
 _hold = "hold"
 _move = "move"
@@ -72,6 +72,16 @@ class TreeToOrder(Transformer):
 
         return unit
 
+    def retreat_unit(self, s) -> Unit:
+        # ignore the fleet/army signifier, if exists
+        unit = s[-1].dislodged_unit
+        if unit is None:
+            raise ValueError(f"No dislodged unit in {s[-1]}")
+        if not isinstance(unit, Unit):
+            raise Exception(f"Didn't get a unit or None from get_unit(), please report this")
+
+        return unit
+
     # format for all of these is (unit, order)
 
     def hold_order(self, s):
@@ -120,7 +130,6 @@ class TreeToOrder(Transformer):
         return unit
 
 
-
 generator = TreeToOrder()
 
 
@@ -156,7 +165,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
             parser = retreats_parser
 
         generator.set_state(board, player_restriction)
-        cmd = parser.parse(message.lower() + '\n')
+        cmd = parser.parse(message.lower() + "\n")
         movement = generator.transform(cmd)
 
         database = get_connection()

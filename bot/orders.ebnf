@@ -28,9 +28,9 @@ convoy_order: unit WS CONVOY WS move_order
 
 core_order: unit WS CORE
 
-retreat_order: unit WS RETREAT WS province
+retreat_order: retreat_unit WS RETREAT WS province
 
-disband_order: unit WS DISBAND
+disband_order: retreat_unit WS DISBAND
 
 HOLD.2 : "h"
        | "hold"
@@ -77,6 +77,7 @@ DISBAND.2 : "d"
 
 unit : (DESCRIPTOR)? province
 
+retreat_unit : (DESCRIPTOR)? province
 
 DESCRIPTOR.2 : /[afAF]/ WS
 

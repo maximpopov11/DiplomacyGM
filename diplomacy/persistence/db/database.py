@@ -233,8 +233,12 @@ class _DatabaseConnection:
                     unit.player.name,
                     unit.unit_type == UnitType.ARMY,
                     unit.order.__class__.__name__ if unit.order is not None else None,
-                    getattr(getattr(unit.order, "destination"), "name") if unit.order is not None else None,
-                    getattr(getattr(unit.order, "source"), "name") if unit.order is not None else None,
+                    getattr(getattr(unit.order, "destination", None), "name", None) if unit.order is not None else None,
+                    (
+                        getattr(getattr(getattr(unit.order, "source", None), "province", None), "name", None)
+                        if unit.order is not None
+                        else None
+                    ),
                 )
                 for unit in board.units
             ],
