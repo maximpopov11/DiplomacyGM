@@ -2,11 +2,12 @@ import itertools
 import logging
 import random
 
+from discord import Guild
 from discord.ext import commands
 
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
-from bot.utils import is_gm, is_gm_channel, get_player_by_role, is_player_channel, get_orders
+from bot.utils import is_gm, is_gm_channel, get_player_by_role, is_player_channel, get_orders, is_admin
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.player import Player
@@ -57,6 +58,21 @@ async def botsay(ctx: commands.Context) -> None:
     await ctx.message.add_reaction("👍")
     logger.info(f"{ctx.message.author.name} asked me to say '{content}' in {channel.name}")
     await channel.send(content)
+
+
+async def announce(ctx: commands.Context, servers: set[Guild | None]) -> None:
+    if not is_admin(ctx.message.author) and is_gm_channel(ctx.channel):
+        return
+    await ctx.message.add_reaction("👍")
+    content = ctx.message.content.removeprefix(".announce").strip()
+    logger.info(f"{ctx.message.author.name} sent announcement '{content}'")
+    for server in servers:
+        if server is None:
+            continue
+        admin_chat_channel = next(channel for channel in server.channels if is_gm_channel(channel))
+        if admin_chat_channel is None:
+            continue
+        await admin_chat_channel.send(f"__Announcement__\n{ctx.message.author.display_name} says:\n{content}")
 
 
 # TODO: (DB) warning cron when in cloud

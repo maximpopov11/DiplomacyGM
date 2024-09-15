@@ -64,6 +64,11 @@ async def botsay(ctx: discord.ext.commands.Context) -> None:
     await command.botsay(ctx)
 
 
+@bot.command(hidden=True)
+async def announce(ctx: discord.ext.commands.Context) -> None:
+    await command.announce(ctx, {bot.get_guild(server_id) for server_id in manager.list_servers()})
+
+
 # TODO: (BETA) allow ambiguous moves/convoys
 # TODO: (BETA) warn move incompatible for supports when supported move not ordered
 # TODO: (BETA) allow personal command dictionary editing
