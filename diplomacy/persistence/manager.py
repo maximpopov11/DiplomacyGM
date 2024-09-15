@@ -19,7 +19,10 @@ class Manager:
 
     def __init__(self):
         self._database = database.get_connection()
-        self._boards = self._database.get_boards()
+        self._boards: dict[int, Board] = self._database.get_boards()
+
+    def list_servers(self) -> set[int]:
+        return set(self._boards.keys())
 
     def create_game(self, server_id: int) -> str:
         if self._boards.get(server_id):

@@ -4,7 +4,6 @@ from bot.config import gm_roles, gm_channels, player_channel_suffix
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.manager import Manager
-from diplomacy.persistence.order import Order
 from diplomacy.persistence.phase import Phase, winter_builds, is_retreats_phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType, Unit
@@ -38,6 +37,10 @@ _spring_retreats = "spring retreats"
 _fall_moves = "fall moves"
 _fall_retreats = "fall retreats"
 _winter_builds = "winter builds"
+
+
+def is_admin(author: commands.Context.author) -> bool:
+    return author.name in ["eebopmasch", "icecream_guy", "_bumble"]
 
 
 def is_gm(author: commands.Context.author) -> bool:
