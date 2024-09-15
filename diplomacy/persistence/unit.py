@@ -3,11 +3,10 @@ from __future__ import annotations
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from diplomacy.persistence.order import UnitOrder
-
 if TYPE_CHECKING:
     from diplomacy.persistence.player import Player
     from diplomacy.persistence.province import Province, Coast, Location
+    from diplomacy.persistence.order import UnitOrder
 
 
 class UnitType(Enum):

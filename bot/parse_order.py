@@ -1,3 +1,5 @@
+from lark import Lark, Transformer
+
 from bot.utils import get_unit_type, get_keywords, _manage_coast_signature
 from diplomacy.persistence import order
 from diplomacy.persistence.board import Board
@@ -5,8 +7,6 @@ from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.phase import is_moves_phase, is_retreats_phase, is_builds_phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import Unit
-from lark import Lark, Transformer
-
 
 _hold = "hold"
 _move = "move"
@@ -55,20 +55,31 @@ class TreeToOrder(Transformer):
         return set([x for x in statements if isinstance(x, Unit)])
 
     def retreat_phase(self, statements):
-        return set([x for x in statements if x != None])
+        return set([x for x in statements if isinstance(x, Unit)])
 
     def province(self, s):
-        name = " ".join(s).replace("_", " ").strip()
+        name = " ".join(s[::2]).replace("_", " ").strip()
         name = _manage_coast_signature(name)
         return self.board.get_location(name)
 
     def unit(self, s) -> Unit:
         # ignore the fleet/army signifier, if exists
         unit = s[-1].get_unit()
-        if self.player_restriction is not None and unit.player != self.player_restriction:
-            raise PermissionError(
-                f"{self.player_restriction.name} does not control the unit in {unit.province.name}, it belongs to {unit.player.name}"
-            )
+        if unit is None:
+            raise ValueError(f"No unit in {s[-1]}")
+        if not isinstance(unit, Unit):
+            raise Exception(f"Didn't get a unit or None from get_unit(), please report this")
+
+        return unit
+
+    def retreat_unit(self, s) -> Unit:
+        # ignore the fleet/army signifier, if exists
+        unit = s[-1].dislodged_unit
+        if unit is None:
+            raise ValueError(f"No dislodged unit in {s[-1]}")
+        if not isinstance(unit, Unit):
+            raise Exception(f"Didn't get a unit or None from get_unit(), please report this")
+
         return unit
 
     # format for all of these is (unit, order)
@@ -92,18 +103,27 @@ class TreeToOrder(Transformer):
         if isinstance(s[-1][1], order.Move):
             return s[0], order.Support(s[-1][0], s[-1][1].destination)
         elif isinstance(s[-1][1], order.Hold):
-            return s[0], order.Support(s[-1][0], s[-1][1].get_location())
+            return s[0], order.Support(s[-1][0], s[-1][0].get_location())
+        else:
+            raise ValueError("Unknown type of support. Something has broken in the bot. Please report this")
 
     def retreat_order(self, s):
         return s[0], order.RetreatMove(s[-1])
 
     def disband_order(self, s):
-        return s[0], order.RetreatDisband(s[-1])
+        return s[0], order.RetreatDisband()
 
     def order(self, order):
-        if len(order) == 0:
-            # this line is '.order'
-            return None
+        (command,) = order
+        unit, order = command
+        if self.player_restriction is not None and unit.player != self.player_restriction:
+            raise PermissionError(
+                f"{self.player_restriction.name} does not control the unit in {unit.province.name}, it belongs to {unit.player.name}"
+            )
+        unit.order = order
+        return unit
+
+    def retreat(self, order):
         (command,) = order
         unit, order = command
         unit.order = order
@@ -126,7 +146,8 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
     if is_builds_phase(board.phase):
         for command in str.splitlines(message):
             try:
-                _parse_player_order(get_keywords(command), player_restriction, board)
+                if command != ".order":
+                    _parse_player_order(get_keywords(command.lower()), player_restriction, board)
             except Exception as error:
                 invalid.append((command, error))
         if invalid:
@@ -144,7 +165,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
             parser = retreats_parser
 
         generator.set_state(board, player_restriction)
-        cmd = parser.parse(message.lower() + '\n')
+        cmd = parser.parse(message.lower() + "\n")
         movement = generator.transform(cmd)
 
         database = get_connection()
@@ -185,6 +206,8 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
 def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> Unit | None:
     command = command.lower()
     keywords: list[str] = get_keywords(command)
+    if keywords[0] == ".remove order":
+        keywords = keywords[1:]
     location = keywords[0]
     province, _ = board.get_province_and_coast(location)
 
@@ -218,20 +241,35 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
         return unit
 
 
-def _parse_player_order(keywords: list[str], player_restriction: Player, board: Board) -> None:
+def _parse_player_order(keywords: list[str], player_restriction: Player | None, board: Board) -> None:
+    if keywords[0] == ".order":
+        keywords = keywords[1:]
     command = keywords[0]
-    location = board.get_location(keywords[1])
+    try:
+        location = board.get_location(keywords[1])
+    except KeyError as original_error:
+        keywords[1], keywords[2] = keywords[2], keywords[1]
+        try:
+            location = board.get_location(keywords[1])
+        except KeyError:
+            raise original_error
 
-    if location.get_owner() != player_restriction:
+    if player_restriction is not None and location.get_owner() != player_restriction:
         raise PermissionError(f"{player_restriction} does not control {location.name}")
+
+    player = player_restriction
+    if player is None:
+        player = location.get_owner()
+    if player is None:
+        raise ValueError(f"{location.name} is not owned by anyone")
 
     if command in _order_dict[_build]:
         unit_type = get_unit_type(keywords[2])
-        player_restriction.build_orders.add(order.Build(location, unit_type))
+        player.build_orders.add(order.Build(location, unit_type))
         return
 
     if command in _order_dict[_disband]:
-        player_restriction.build_orders.add(order.Disband(location))
+        player.build_orders.add(order.Disband(location))
         return
 
     raise RuntimeError("Build could not be parsed")

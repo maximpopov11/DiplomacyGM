@@ -44,9 +44,6 @@ def bumble(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
 def order(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
 
-    if not board.orders_enabled:
-        return "Orders locked! If you think this is an error, contact a GM.", None
-
     if is_gm(ctx.message.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot order as a GM in a non-GM channel.")
@@ -54,6 +51,8 @@ def order(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
 
     player = get_player_by_role(ctx.message.author, manager, ctx.guild.id)
     if player is not None:
+        if not board.orders_enabled:
+            return "Orders locked! If you think this is an error, contact a GM.", None
         if not is_player_channel(player.name, ctx.channel):
             raise PermissionError("You cannot order as a player outside of your orders channel.")
         return parse_order(ctx.message.content, player, board), None
@@ -64,9 +63,6 @@ def order(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
 def remove_order(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
 
-    if not board.orders_enabled:
-        return "Orders locked! If you think this is an error, contact a GM.", None
-
     if is_gm(ctx.message.author):
         if not is_gm_channel(ctx.channel):
             raise PermissionError("You cannot remove orders as a GM in a non-GM channel.")
@@ -74,6 +70,8 @@ def remove_order(ctx: commands.Context, manager: Manager) -> tuple[str, str | No
 
     player = get_player_by_role(ctx.message.author, manager, ctx.guild.id)
     if player is not None:
+        if not board.orders_enabled:
+            return "Orders locked! If you think this is an error, contact a GM.", None
         if not is_player_channel(player.name, ctx.channel):
             raise PermissionError("You cannot remove orders as a player outside of your orders channel.")
         return parse_remove_order(ctx.message.content, player, board), None
@@ -89,14 +87,14 @@ def view_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | Non
 
         try:
             order_text = get_orders(manager.get_board(ctx.guild.id), None)
-        except:
-            logger.error(f"View_orders text failed in game with id: {ctx.guild.id}")
+        except RuntimeError as err:
+            logger.error(f"View_orders text failed in game with id: {ctx.guild.id}", exc_info=err)
             order_text = "view_orders text failed"
 
         try:
             file_name = manager.draw_moves_map(ctx.guild.id, None)
-        except:
-            logger.error(f"View_orders map failed in game with id: {ctx.guild.id}")
+        except RuntimeError as err:
+            logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
             file_name = None
 
         return order_text, file_name
@@ -129,7 +127,7 @@ def rollback(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     if not is_gm_channel(ctx.channel):
         raise PermissionError("You cannot rollback in a non-GM channel.")
 
-    return manager.rollback(), None  # TODO return file name
+    return manager.rollback(ctx.guild.id)
 
 
 def remove_all(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
@@ -207,6 +205,12 @@ def disable_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | 
     board = manager.get_board(ctx.guild.id)
     board.orders_enabled = False
     return "Successful", None
+
+
+def info(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+    board = manager.get_board(ctx.guild.id)
+    out = "Phase: " + str(board.phase) + "\nOrders are: " + ("Open" if board.orders_enabled else "Locked")
+    return out, None
 
 
 # TODO: (BETA) implement new command for inputting new variant
