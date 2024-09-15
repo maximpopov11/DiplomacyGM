@@ -10,6 +10,7 @@ _set_half_core_str = "set half core"
 _set_province_owner_str = "set province owner"
 _create_unit_str = "create unit"
 _delete_unit_str = "delete unit"
+_delete_dislodged_unit_str = "delete dislodged unit"
 _move_unit_str = "move unit"
 _make_units_claim_provinces_str = "make units claim provinces"
 
@@ -62,6 +63,8 @@ def _parse_command(command: str, board: Board) -> None:
         _move_unit(keywords, board)
     elif command_type == _make_units_claim_provinces_str:
         _make_units_claim_provinces(keywords, board)
+    elif command_type == _delete_dislodged_unit_str:
+        _delete_dislodged_unit(keywords, board)
     else:
         raise RuntimeError(f"No command key phrases found")
 
@@ -144,6 +147,14 @@ def _delete_unit(keywords: list[str], board: Board) -> None:
     get_connection().execute_arbitrary_sql(
         "DELETE FROM units WHERE board_id=? and phase=? and location=? and is_dislodged=?",
         (board.board_id, board.get_phase_and_year_string(), unit.get_location().name, False),
+    )
+
+def _delete_dislodged_unit(keywords: list[str], board: Board) -> None:
+    province = board.get_province(keywords[0])
+    unit = board.delete_dislodged_unit(province)
+    get_connection().execute_arbitrary_sql(
+        "DELETE FROM units WHERE board_id=? and phase=? and location=? and is_dislodged=?",
+        (board.board_id, board.get_phase_and_year_string(), unit.get_location().name, True),
     )
 
 
