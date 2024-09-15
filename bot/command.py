@@ -11,7 +11,7 @@ from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.player import Player
 
-import perms
+import bot.perms as perms
 
 logger = logging.getLogger(__name__)
 
@@ -110,8 +110,7 @@ def adjudicate(ctx: commands.Context, manager: Manager) -> tuple[str, str | None
 def rollback(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     return manager.rollback(ctx.guild.id)
 
-<<<<<<< HEAD
-@perms.gm("rollback")
+@perms.gm("reload")
 def reload(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     return manager.reload(ctx.guild.id)
 
