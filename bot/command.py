@@ -87,14 +87,14 @@ def view_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | Non
 
         try:
             order_text = get_orders(manager.get_board(ctx.guild.id), None)
-        except:
-            logger.error(f"View_orders text failed in game with id: {ctx.guild.id}")
+        except RuntimeError as err:
+            logger.error(f"View_orders text failed in game with id: {ctx.guild.id}", exc_info=err)
             order_text = "view_orders text failed"
 
         try:
             file_name = manager.draw_moves_map(ctx.guild.id, None)
-        except:
-            logger.error(f"View_orders map failed in game with id: {ctx.guild.id}")
+        except RuntimeError as err:
+            logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
             file_name = None
 
         return order_text, file_name

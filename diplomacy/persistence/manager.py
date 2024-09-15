@@ -68,7 +68,7 @@ class Manager:
         board = self._boards[server_id]
         last_phase = next(phase for phase in phases if phase.next == board.phase)
         last_phase_year = board.year
-        if board.phase == "Spring Moves":
+        if board.phase.name == "Spring Moves":
             last_phase_year -= 1
 
         old_board = self._database.get_board(board.board_id, last_phase, last_phase_year)

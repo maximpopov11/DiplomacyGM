@@ -147,7 +147,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
         for command in str.splitlines(message):
             try:
                 if command != ".order":
-                    _parse_player_order(get_keywords(command), player_restriction, board)
+                    _parse_player_order(get_keywords(command.lower()), player_restriction, board)
             except Exception as error:
                 invalid.append((command, error))
         if invalid:
@@ -206,6 +206,8 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
 def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> Unit | None:
     command = command.lower()
     keywords: list[str] = get_keywords(command)
+    if keywords[0] == ".remove order":
+        keywords = keywords[1:]
     location = keywords[0]
     province, _ = board.get_province_and_coast(location)
 
@@ -239,20 +241,35 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
         return unit
 
 
-def _parse_player_order(keywords: list[str], player_restriction: Player, board: Board) -> None:
+def _parse_player_order(keywords: list[str], player_restriction: Player | None, board: Board) -> None:
+    if keywords[0] == ".order":
+        keywords = keywords[1:]
     command = keywords[0]
-    location = board.get_location(keywords[1])
+    try:
+        location = board.get_location(keywords[1])
+    except KeyError as original_error:
+        keywords[1], keywords[2] = keywords[2], keywords[1]
+        try:
+            location = board.get_location(keywords[1])
+        except KeyError:
+            raise original_error
 
     if player_restriction is not None and location.get_owner() != player_restriction:
         raise PermissionError(f"{player_restriction} does not control {location.name}")
 
+    player = player_restriction
+    if player is None:
+        player = location.get_owner()
+    if player is None:
+        raise ValueError(f"{location.name} is not owned by anyone")
+
     if command in _order_dict[_build]:
         unit_type = get_unit_type(keywords[2])
-        player_restriction.build_orders.add(order.Build(location, unit_type))
+        player.build_orders.add(order.Build(location, unit_type))
         return
 
     if command in _order_dict[_disband]:
-        player_restriction.build_orders.add(order.Disband(location))
+        player.build_orders.add(order.Disband(location))
         return
 
     raise RuntimeError("Build could not be parsed")
