@@ -111,6 +111,12 @@ class PlayerOrder(Order):
         super().__init__()
         self.location: Location = location
 
+    def __hash__(self):
+        return hash(self.location.name)
+
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and self.location.name == other.location.name
+
 
 class Build(PlayerOrder):
     """Builds are player orders because the unit does not yet exist."""
