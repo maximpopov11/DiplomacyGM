@@ -119,7 +119,7 @@ def get_phase(command: str) -> Phase | None:
 def get_orders(board: Board, player_restriction: Player | None) -> str:
     if board.phase == winter_builds:
         response = "Received orders:"
-        for player in board.players:
+        for player in sorted(board.players, key=lambda sort_player: sort_player.name):
             if not player_restriction or player == player_restriction:
                 response += f"\n__{player.name}__: ({len(player.centers) - len(player.units)} builds)"
                 for unit in player.build_orders:

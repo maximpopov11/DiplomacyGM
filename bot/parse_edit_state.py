@@ -149,6 +149,7 @@ def _delete_unit(keywords: list[str], board: Board) -> None:
         (board.board_id, board.get_phase_and_year_string(), unit.get_location().name, False),
     )
 
+
 def _delete_dislodged_unit(keywords: list[str], board: Board) -> None:
     province = board.get_province(keywords[0])
     unit = board.delete_dislodged_unit(province)

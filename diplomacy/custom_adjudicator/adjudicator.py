@@ -234,18 +234,28 @@ class BuildsAdjudicator(Adjudicator):
                 continue
             for order in player.build_orders:
                 if 0 < available_builds and isinstance(order, Build):
+                    if order.location.primary_unit_coordinate is None:
+                        logger.warning(
+                            f"Skipping {order}; this is probably because someone tried to build an inland fleet"
+                        )
+                        continue
                     coast = None
                     province = order.location
                     if isinstance(province, Coast):
                         coast = province
                         province = province.province
                     if province.unit is not None:
+                        logger.warning(f"Skipping {order}; there is already a unit there")
+                        continue
+                    if not province.has_supply_center or province.core != player:
+                        logger.warning(f"Skipping {order}; tried to build in non-core or non-sc")
                         continue
                     self._board.create_unit(order.unit_type, player, province, coast, None)
                     available_builds -= 1
                 if available_builds < 0 and isinstance(order, Disband):
                     province = get_base_province_from_location(order.location)
                     if province.unit is None:
+                        logger.warning(f"Skipping {order}; there is no unit there to disband")
                         continue
                     self._board.delete_unit(province)
                     available_builds += 1
