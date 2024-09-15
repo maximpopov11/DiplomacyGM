@@ -11,7 +11,7 @@ from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.player import Player
 
-import perms
+import bot.perms as perms
 
 logger = logging.getLogger(__name__)
 
