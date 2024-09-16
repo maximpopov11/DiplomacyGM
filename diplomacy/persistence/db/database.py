@@ -307,7 +307,11 @@ class _DatabaseConnection:
         cursor.close()
         self._connection.commit()
 
-    def save_build_orders_for_players(self, board: Board, players: Iterable[Player]):
+    def save_build_orders_for_players(self, board: Board, player: Player | None):
+        if player is None:
+            players = board.players
+        else:
+            players = {player}
         cursor = self._connection.cursor()
         cursor.executemany(
             "INSERT INTO builds (board_id, phase, player, location, is_build, is_army) VALUES (?, ?, ?, ?, ?, ?) "

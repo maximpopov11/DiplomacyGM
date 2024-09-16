@@ -49,12 +49,12 @@ class Unit:
     def get_coordinate(self) -> tuple[float, float]:
         province = self.province
         if self.coast:
-            if self.retreat_options:
+            if self.retreat_options is not None:
                 return self.coast.retreat_unit_coordinate
             else:
                 return self.coast.primary_unit_coordinate
         else:
-            if self.retreat_options:
+            if self.retreat_options is not None:
                 return province.retreat_unit_coordinate
             else:
                 return province.primary_unit_coordinate
