@@ -127,6 +127,10 @@ class TreeToOrder(Transformer):
     def retreat(self, order):
         (command,) = order
         unit, order = command
+        if self.player_restriction is not None and unit.player != self.player_restriction:
+            raise PermissionError(
+                f"{self.player_restriction.name} does not control the unit in {unit.province.name}, it belongs to {unit.player.name}"
+            )
         unit.order = order
         return unit
 
@@ -145,16 +149,15 @@ retreats_parser = Lark(ebnf, start="retreat_phase", parser="earley")
 def parse_order(message: str, player_restriction: Player | None, board: Board) -> str:
     invalid: list[tuple[str, Exception]] = []
     if is_builds_phase(board.phase):
-        updated_players: set[Player] = set()
         for command in str.splitlines(message):
             try:
-                if command != ".order":
-                    updated_players.add(_parse_player_order(get_keywords(command.lower()), player_restriction, board))
+                if command.strip() != ".order":
+                    _parse_player_order(get_keywords(command.lower()), player_restriction, board)
             except Exception as error:
                 invalid.append((command, error))
 
         database = get_connection()
-        database.save_build_orders_for_players(board, updated_players)
+        database.save_build_orders_for_players(board, player_restriction)
 
         if invalid:
             response = "The following orders were invalid:"
