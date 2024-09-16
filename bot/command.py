@@ -79,19 +79,19 @@ async def announce(ctx: commands.Context, servers: set[Guild | None]) -> None:
 
 @perms.player("order")
 def order(player: Player | None, ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+    board = manager.get_board(ctx.guild.id)
+
     if player and not board.orders_enabled:
             return "Orders locked! If you think this is an error, contact a GM.", None
-
-    board = manager.get_board(ctx.guild.id)
 
     return parse_order(ctx.message.content, player, board), None
 
 @perms.player("remove orders")
 def remove_order(player: Player | None, ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+    board = manager.get_board(ctx.guild.id)
+
     if player and not board.orders_enabled:
             return "Orders locked! If you think this is an error, contact a GM.", None
-
-    board = manager.get_board(ctx.guild.id)
 
     return parse_remove_order(ctx.message.content, player, board), None
 
