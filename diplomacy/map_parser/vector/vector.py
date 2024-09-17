@@ -23,6 +23,8 @@ from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, ProvinceType, Coast
 from diplomacy.persistence.unit import Unit, UnitType
 
+import copy
+
 # TODO: (BETA) I made this file into a monster that is really ugly, let's clean it up!
 
 # TODO: (BETA) all attribute getting should be in utils which we import and call utils.my_unit()
@@ -54,6 +56,9 @@ class Parser:
         self.color_to_player: dict[str, Player | None] = {}
         self.name_to_province: dict[str, Province] = {}
 
+        self.cache_provinces: set[Province] | None = None
+        self.cache_adjacencies: set[tuple[str, str]] | None = None
+
     def parse(self) -> Board:
         players = set()
         for name, color in player_to_color.items():
@@ -74,19 +79,32 @@ class Parser:
 
         return Board(players, provinces, units, spring_moves)
 
+    def read_map(self) -> tuple[set[Province], set[tuple[str, str]]]:
+        if self.cache_provinces is not None:
+            provinces = copy.deepcopy(self.cache_provinces)
+        else:
+            # TODO: (BETA) get names/centers/units without aid labeling and test equality against aid labeling
+            # set coordinates and names
+            provinces: set[Province] = self._get_province_coordinates()
+            if not PROVINCE_FILLS_LABELED:
+                self._initialize_province_names(provinces)
+
+            for province in provinces:
+                self.name_to_province[province.name] = province
+        
+        if self.cache_adjacencies is not None:
+            adjacencies = copy.deepcopy(self.cache_adjacencies)
+        else:
+            # set adjacencies
+            # TODO: (BETA) province adjacency margin somtimes too high or too low, base it case by case on province size?
+            adjacencies = _get_adjacencies(provinces)
+
+        return (provinces, adjacencies)
+
+            
+
     def _get_provinces(self) -> set[Province]:
-        # TODO: (BETA) get names/centers/units without aid labeling and test equality against aid labeling
-        # set coordinates and names
-        provinces: set[Province] = self._get_province_coordinates()
-        if not PROVINCE_FILLS_LABELED:
-            self._initialize_province_names(provinces)
-
-        for province in provinces:
-            self.name_to_province[province.name] = province
-
-        # set adjacencies
-        # TODO: (BETA) province adjacency margin somtimes too high or too low, base it case by case on province size?
-        adjacencies = _get_adjacencies(provinces)
+        provinces, adjacencies = self.read_map()
         for name1, name2 in adjacencies:
             province1 = self.name_to_province[name1]
             province2 = self.name_to_province[name2]

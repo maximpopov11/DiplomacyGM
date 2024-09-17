@@ -20,6 +20,9 @@ class Manager:
     def __init__(self):
         self._database = database.get_connection()
         self._boards: dict[int, Board] = self._database.get_boards()
+        # TODO: have multiple for each variant?
+        # do it like this so that the parser can cache data between board initilizations
+        self.parser = Parser()
 
     def list_servers(self) -> set[int]:
         return set(self._boards.keys())
@@ -30,7 +33,7 @@ class Manager:
 
         logger.info(f"Creating new [ImpDip] game in server {server_id}")
         # TODO: (DB) get board from variant DB
-        self._boards[server_id] = Parser().parse()
+        self._boards[server_id] = self.parser.parse()
         self._boards[server_id].board_id = server_id
         self._database.save_board(server_id, self._boards[server_id])
 
