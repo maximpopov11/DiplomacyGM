@@ -83,9 +83,9 @@ class Parser:
         if self.cache_provinces is None:
             # TODO: (BETA) get names/centers/units without aid labeling and test equality against aid labeling
             # set coordinates and names
-            provinces: set[Province] = self._get_province_coordinates()
+            self.cache_provinces: set[Province] = self._get_province_coordinates()
             if not PROVINCE_FILLS_LABELED:
-                self._initialize_province_names(provinces)
+                self._initialize_province_names(self.cache_provinces)
 
         provinces = copy.deepcopy(self.cache_provinces)
         for province in provinces:
