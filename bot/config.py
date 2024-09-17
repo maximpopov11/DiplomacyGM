@@ -2,6 +2,7 @@
 gm_roles: set[str] = {
     "GM",
     "Heavenly Angel",
+    "Emergency GM",
 }
 
 # Discord channels in which GMs are allowed to use non-public commands (ex. adjudication)
