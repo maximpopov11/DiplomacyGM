@@ -81,7 +81,7 @@ class Support(ComplexOrder):
         self.destination: Location = destination
 
     def __str__(self):
-        suffix = "to Hold"
+        suffix = "Hold"
         if self.source.province != self.destination:
             suffix = f"- {self.destination}"
         return f"Supports {self.source.province} {suffix}"
