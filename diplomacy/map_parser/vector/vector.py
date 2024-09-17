@@ -80,24 +80,22 @@ class Parser:
         return Board(players, provinces, units, spring_moves)
 
     def read_map(self) -> tuple[set[Province], set[tuple[str, str]]]:
-        if self.cache_provinces is not None:
-            provinces = copy.deepcopy(self.cache_provinces)
-        else:
+        if self.cache_provinces is None:
             # TODO: (BETA) get names/centers/units without aid labeling and test equality against aid labeling
             # set coordinates and names
             provinces: set[Province] = self._get_province_coordinates()
             if not PROVINCE_FILLS_LABELED:
                 self._initialize_province_names(provinces)
 
-            for province in provinces:
-                self.name_to_province[province.name] = province
-        
-        if self.cache_adjacencies is not None:
-            adjacencies = copy.deepcopy(self.cache_adjacencies)
-        else:
+        provinces = copy.deepcopy(self.cache_provinces)
+        for province in provinces:
+            self.name_to_province[province.name] = province
+
+        if self.cache_adjacencies is None:
             # set adjacencies
             # TODO: (BETA) province adjacency margin somtimes too high or too low, base it case by case on province size?
-            adjacencies = _get_adjacencies(provinces)
+            self.cache_adjacencies = _get_adjacencies(provinces)
+        adjacencies = copy.deepcopy(self.cache_adjacencies)
 
         return (provinces, adjacencies)
 
