@@ -2,7 +2,7 @@ import logging
 
 from diplomacy.custom_adjudicator.adjudicator import make_adjudicator
 from diplomacy.custom_adjudicator.mapper import Mapper
-from diplomacy.map_parser.vector.vector import Parser
+from diplomacy.map_parser.vector.vector import oneTrueParser
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db import database
 from diplomacy.persistence.phase import phases
@@ -22,7 +22,6 @@ class Manager:
         self._boards: dict[int, Board] = self._database.get_boards()
         # TODO: have multiple for each variant?
         # do it like this so that the parser can cache data between board initilizations
-        self.parser = Parser()
 
     def list_servers(self) -> set[int]:
         return set(self._boards.keys())
@@ -33,7 +32,7 @@ class Manager:
 
         logger.info(f"Creating new [ImpDip] game in server {server_id}")
         # TODO: (DB) get board from variant DB
-        self._boards[server_id] = self.parser.parse()
+        self._boards[server_id] = oneTrueParser.parse()
         self._boards[server_id].board_id = server_id
         self._database.save_board(server_id, self._boards[server_id])
 
