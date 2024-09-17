@@ -3,7 +3,10 @@ import sqlite3
 from collections.abc import Iterable
 
 from diplomacy.map_parser.vector.config_svg import SVG_PATH
-from diplomacy.map_parser.vector.vector import Parser
+
+# TODO: Find a better way to do this
+from diplomacy.map_parser.vector.vector import oneTrueParser
+
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.order import (
     Core,
@@ -91,7 +94,7 @@ class _DatabaseConnection:
         logger.info(f"Loading board with ID {board_id}")
         # TODO - we should eventually store things like coords, adjacencies, etc
         #  so we don't have to reparse the whole board each time
-        board = Parser().parse()
+        board = oneTrueParser.parse()
         board.phase = phase
         board.year = year
         board.board_id = board_id

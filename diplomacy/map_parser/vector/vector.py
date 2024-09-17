@@ -540,3 +540,6 @@ def _get_adjacencies(provinces: set[Province]) -> set[tuple[str, str]]:
                     adjacencies.add((province_1, province_2))
                     continue
     return adjacencies
+
+
+oneTrueParser = Parser()
