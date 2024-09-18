@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from diplomacy.map_parser.vector.config_svg import SVG_PATH
 
 # TODO: Find a better way to do this
+# maybe use a copy from manager?
 from diplomacy.map_parser.vector.vector import oneTrueParser
 
 from diplomacy.persistence.board import Board
@@ -245,6 +246,13 @@ class _DatabaseConnection:
                 for province in board.provinces
             ],
         )
+        logger.warning(" ".join(
+                    board_id,
+                    board.get_phase_and_year_string(),
+                    player.name,
+                    build_order.location.name,
+                    isinstance(build_order, Build),
+                    getattr(build_order, "unit_type", None) == UnitType.ARMY,))
         cursor.executemany(
             "INSERT INTO builds (board_id, phase, player, location, is_build, is_army) VALUES (?, ?, ?, ?, ?, ?)",
             [
@@ -347,6 +355,9 @@ class _DatabaseConnection:
         )
         cursor.execute(
             "DELETE FROM units WHERE board_id=? AND phase=?", (board.board_id, board.get_phase_and_year_string())
+        )
+        cursor.execute(
+            "DELETE FROM builds WHERE board_id=? AND phase=?", (board.board_id, board.get_phase_and_year_string())
         )
         cursor.close()
         self._connection.commit()
