@@ -1,6 +1,7 @@
 from bot.utils import get_phase, get_unit_type, get_keywords
 from diplomacy.custom_adjudicator.mapper import Mapper
 from diplomacy.persistence.board import Board
+from diplomacy.persistence.phase import is_retreats_phase
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.unit import UnitType
 
@@ -9,6 +10,7 @@ _set_core_str = "set core"
 _set_half_core_str = "set half core"
 _set_province_owner_str = "set province owner"
 _create_unit_str = "create unit"
+_create_dislodged_unit_str = "create dislodged unit"
 _delete_unit_str = "delete unit"
 _delete_dislodged_unit_str = "delete dislodged unit"
 _move_unit_str = "move unit"
@@ -57,6 +59,8 @@ def _parse_command(command: str, board: Board) -> None:
         _set_province_owner(keywords, board)
     elif command_type == _create_unit_str:
         _create_unit(keywords, board)
+    elif command_type == _create_dislodged_unit_str:
+        _create_dislodged_unit(keywords, board)   
     elif command_type == _delete_unit_str:
         _delete_unit(keywords, board)
     elif command_type == _move_unit_str:
@@ -139,6 +143,31 @@ def _create_unit(keywords: list[str], board: Board) -> None:
             unit_type == UnitType.ARMY,
         ),
     )
+    
+def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
+	if is_retreats_phase(board.phase):
+		unit_type = get_unit_type(keywords[0])
+		player = board.get_player(keywords[1])
+		province, coast = board.get_province_and_coast(keywords[2])
+		retreat_options = [board.get_province_and_coast(province_or_coast_name) for province_or_coast_name in keywords [3:]]
+		unit = board.create_unit(unit_type, player, province, coast, set(retreat_options))
+		get_connection().execute_arbitrary_sql(
+		"INSERT INTO units (board_id, phase, location, is_dislodged, owner, is_army) "
+		"VALUES (?, ?, ?, ?, ?, ?) "
+		"ON CONFLICT (board_id, phase, location, is_dislodged) DO UPDATE SET owner=?, is_army=?",
+		(
+		    board.board_id,
+		    board.get_phase_and_year_string(),
+		    unit.get_location().name,
+		    True,
+		    player.name,
+		    unit_type == UnitType.ARMY,
+		    player.name,
+		    unit_type == UnitType.ARMY,
+		),
+		)
+	else:
+		raise RuntimeError("Cannot create a dislodged unit in move phase") 
 
 
 def _delete_unit(keywords: list[str], board: Board) -> None:
