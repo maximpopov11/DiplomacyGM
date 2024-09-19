@@ -17,7 +17,7 @@ def player(discription: str="run this command"):
             else:
                 if not is_gm(ctx.message.author):
                     raise PermissionError(f"You cannot {discription} because you are neither a GM nor a player.")
-                player_channel = get_player_by_channel(ctx.channel.name)
+                player_channel = get_player_by_channel(ctx.channel.name, manager, ctx.guild.id)
                 if player_channel is not None:
                     player = player_channel
                 elif not is_gm_channel(ctx.channel):
