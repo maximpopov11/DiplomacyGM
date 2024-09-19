@@ -2,7 +2,7 @@ from typing import Callable
 
 from discord.ext import commands
 from diplomacy.persistence.manager import Manager
-from bot.utils import is_gm, is_gm_channel, get_player_by_role, is_player_channel
+from bot.utils import is_gm, is_gm_channel, get_player_by_role, is_player_channel, get_player_by_channel
 from diplomacy.persistence.player import Player
 
 
@@ -17,7 +17,10 @@ def player(discription: str="run this command"):
             else:
                 if not is_gm(ctx.message.author):
                     raise PermissionError(f"You cannot {discription} because you are neither a GM nor a player.")
-                if not is_gm_channel(ctx.channel):
+                player_channel = get_player_by_channel(ctx.channel.name)
+                if player_channel is not None:
+                    player = player_channel
+                elif not is_gm_channel(ctx.channel):
                     raise PermissionError(f"You cannot {discription} as a GM in a non-GM channel.")
             return function(player, ctx, manager)
         

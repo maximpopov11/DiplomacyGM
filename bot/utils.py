@@ -61,6 +61,18 @@ def get_player_by_role(author: commands.Context.author, manager: Manager, server
                 return player
     return None
 
+def get_player_by_channel(name: str, manager: Manager, server_id: int) -> Player | None:
+    name = name.strip()
+    if not name.endswith(player_channel_suffix):
+        return None
+    name = name[:(len(player_channel_suffix) - 1)]
+    return get_player_by_name(name, manager, server_id)
+
+def get_player_by_name(name: str, manager: Manager, server_id: int) -> Player | None:
+    for player in manager.get_board(server_id).players:
+        if player.name == name.strip():
+            return player
+    return None
 
 def is_player_channel(player_role: str, channel: commands.Context.channel) -> bool:
     player_channel = player_role.lower() + player_channel_suffix
