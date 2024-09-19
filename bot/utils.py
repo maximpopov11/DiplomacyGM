@@ -70,7 +70,7 @@ def get_player_by_channel(name: str, manager: Manager, server_id: int) -> Player
 
 def get_player_by_name(name: str, manager: Manager, server_id: int) -> Player | None:
     for player in manager.get_board(server_id).players:
-        if player.name == name.strip():
+        if player.name.lower() == name.strip().lower():
             return player
     return None
 
