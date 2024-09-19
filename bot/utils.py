@@ -65,7 +65,7 @@ def get_player_by_channel(name: str, manager: Manager, server_id: int) -> Player
     name = name.strip()
     if not name.endswith(player_channel_suffix):
         return None
-    name = name[:(len(player_channel_suffix) - 1)]
+    name = name[:-(len(player_channel_suffix))]
     return get_player_by_name(name, manager, server_id)
 
 def get_player_by_name(name: str, manager: Manager, server_id: int) -> Player | None:
