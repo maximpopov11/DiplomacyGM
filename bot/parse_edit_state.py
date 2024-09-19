@@ -14,6 +14,7 @@ _create_dislodged_unit_str = "create dislodged unit"
 _delete_unit_str = "delete unit"
 _delete_dislodged_unit_str = "delete dislodged unit"
 _move_unit_str = "move unit"
+_dislodge_unit_str = "dislodge unit"
 _make_units_claim_provinces_str = "make units claim provinces"
 
 
@@ -65,6 +66,8 @@ def _parse_command(command: str, board: Board) -> None:
         _delete_unit(keywords, board)
     elif command_type == _move_unit_str:
         _move_unit(keywords, board)
+    elif command_type == _dislodge_unit_str:
+        _dislodge_unit(keywords, board)
     elif command_type == _make_units_claim_provinces_str:
         _make_units_claim_provinces(keywords, board)
     elif command_type == _delete_dislodged_unit_str:
@@ -149,8 +152,8 @@ def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
 		unit_type = get_unit_type(keywords[0])
 		player = board.get_player(keywords[1])
 		province, coast = board.get_province_and_coast(keywords[2])
-		retreat_options = [board.get_province_and_coast(province_or_coast_name) for province_or_coast_name in keywords [3:]]
-		unit = board.create_unit(unit_type, player, province, coast, set(retreat_options))
+		retreat_options = set([board.get_province(province_name) for province_name in keywords [3:]])
+		unit = board.create_unit(unit_type, player, province, coast, retreat_options)
 		get_connection().execute_arbitrary_sql(
 		"INSERT INTO units (board_id, phase, location, is_dislodged, owner, is_army) "
 		"VALUES (?, ?, ?, ?, ?, ?) "
@@ -210,6 +213,23 @@ def _move_unit(keywords: list[str], board: Board) -> None:
         ),
     )
 
+def _dislodge_unit(keywords: list[str], board: Board) -> None:
+	if is_retreats_phase(board.phase):
+		province = board.get_province(keywords[0])
+		if province.dislodged_unit != None:
+			raise RuntimeError("Dislodged unit already exists in province") 
+		unit = province.unit
+		if unit == None:
+			raise RuntimeError("No unit to dislodge in province")
+		retreat_options = set([board.get_province(province_name) for province_name in keywords [1:]])
+		dislodged_unit = board.create_unit(unit.unit_type, unit.player, unit.province, unit.coast, retreat_options)
+		unit = board.delete_unit(province)
+		get_connection().execute_arbitrary_sql(
+		"UPDATE units SET is_dislodged = True where board_id=? and phase=? and location=?",
+		(board.board_id, board.get_phase_and_year_string(), province.name),
+		)
+	else:
+		raise RuntimeError("Cannot create a dislodged unit in move phase") 
 
 def _make_units_claim_provinces(keywords, board):
     claim_centers = False
