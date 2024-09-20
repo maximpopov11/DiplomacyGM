@@ -135,8 +135,10 @@ async def scoreboard(ctx: discord.ext.commands.Context) -> None:
     * set_half_core <province_name> <player_name>
     * set_province_owner <province_name> <player_name>
     * create_unit {A, F} <player_name> <province_name>
+    * create_dislodged_unit {A, F} <player_name> <province_name> <retreat_option1> <retreat_option2>...
     * delete_unit <province_name>
     * move_unit <province_name> <province_name>
+    * dislodge_unit <province_name> <retreat_option1> <retreat_option2>...
     * make_units_claim_provinces {True|(False) - whether or not to claim SCs}""",
 )
 async def edit(ctx: discord.ext.commands.Context) -> None:
