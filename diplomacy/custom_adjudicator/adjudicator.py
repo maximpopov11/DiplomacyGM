@@ -427,8 +427,8 @@ class MovesAdjudicator(Adjudicator):
         if order.type == OrderType.HOLD:
             # Resolution is arbitrary for holds; they don't do anything
             return Resolution.SUCCEEDS
-        elif order.type == OrderType.CORE or order.type == OrderType.SUPPORT:
-            # Both these orders fail if attacked by another nation, even if that order isn't successful
+        elif order.type == OrderType.CORE:
+            # Cores fail if attacked by another nation, even if that order isn't successful
             moves_here = self.moves_by_destination.get(order.current_province.name, set()) - {order}
             for move_here in moves_here:
                 if move_here.country == order.country:
@@ -448,6 +448,29 @@ class MovesAdjudicator(Adjudicator):
                     ):
                         return Resolution.FAILS
             return Resolution.SUCCEEDS
+
+        elif order.type == OrderType.SUPPORT:
+            moves_here = self.moves_by_destination.get(order.current_province.name, set()) - {order}
+            for move_here in moves_here:
+                if move_here.country == order.country:
+                    continue
+                if move_here.current_province == order.destination_province:
+                    continue
+                if not move_here.requires_convoy:
+                    if move_here.current_province != order.destination_province:
+                        return Resolution.FAILS
+                    else:
+                        # If we are being attacked by the place we are supporting against,
+                        # our support only fails if they succeed
+                        if self._resolve_order(move_here) == Resolution.SUCCEEDS:
+                            return Resolution.FAILS
+                else:
+                    if (
+                        self._adjudicate_convoys_for_order(move_here, exclude_province=order.destination_province)
+                        == Resolution.SUCCEEDS
+                    ):
+                        return Resolution.FAILS
+
         elif order.type == OrderType.CONVOY:
             moves_here = self.moves_by_destination.get(order.current_province.name, set())
             for move_here in moves_here:
