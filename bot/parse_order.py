@@ -220,7 +220,7 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
     return response
 
 
-def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> Unit | Province | None:
+def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> Unit | Province:
     command = command.lower()
     keywords: list[str] = get_keywords(command)
     if keywords[0] == ".remove order":
