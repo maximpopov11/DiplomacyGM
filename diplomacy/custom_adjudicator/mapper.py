@@ -159,7 +159,7 @@ class Mapper:
             self._draw_disband(coordinate)
         else:
             self._draw_hold(coordinate)
-            logger.warning(f"None order found: hold drawn. Coordinates: {coordinate}")
+            logger.debug(f"None order found: hold drawn. Coordinates: {coordinate}")
 
     def _draw_player_order(self, player: Player, order: PlayerOrder):
         if order.location.primary_unit_coordinate is None:
