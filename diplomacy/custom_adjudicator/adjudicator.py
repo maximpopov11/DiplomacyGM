@@ -260,6 +260,8 @@ class BuildsAdjudicator(Adjudicator):
                     self._board.delete_unit(province)
                     available_builds += 1
 
+        for player in self._board.players:
+            player.build_orders = set()
         return self._board
 
 
