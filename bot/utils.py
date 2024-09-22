@@ -136,7 +136,7 @@ def get_orders(board: Board, player_restriction: Player | None) -> str:
         response = "Received orders:"
         for player in sorted(board.players, key=lambda sort_player: sort_player.name):
             if not player_restriction or player == player_restriction:
-                response += f"\n__{player.name}__: ({len(player.centers)}) (+{len(player.centers) - len(player.units)})"
+                response += f"\n__{player.name}__: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
                 for unit in player.build_orders:
                     response += f"\n{unit}"
         return response
