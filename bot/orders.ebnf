@@ -18,7 +18,7 @@ retreat: retreat_order
 
 move_order: unit WS MOVE WS province
 
-hold_order: unit WS HOLD
+hold_order: unit (WS HOLD)?
 
 support_order: unit WS SUPPORT WS (move_order | hold_order)
 
