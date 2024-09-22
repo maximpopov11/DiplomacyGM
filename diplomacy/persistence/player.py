@@ -10,11 +10,12 @@ if TYPE_CHECKING:
 
 
 class Player:
-    def __init__(self, name: str, color: str, centers: set[Province], units: set[Unit]):
+    def __init__(self, name: str, color: str, vscc: int, centers: set[Province], units: set[Unit]):
         self.name: str = name
         self.color: str = color
         self.centers: set[Province] = centers
         self.units: set[Unit] = units
+        self.vscc: int = vscc
 
         self.build_orders: set[order.PlayerOrder] = set()
 

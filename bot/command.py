@@ -148,8 +148,8 @@ def remove_all(ctx: commands.Context, manager: Manager) -> tuple[str, str | None
 def get_scoreboard(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
     response = ""
-    for player in sorted(board.players, key=lambda sort_player: sort_player.name):
-        response += f"\n__{player.name}__: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
+    for player in sorted(board.players, key=lambda sort_player: (len(sort_player.centers) / sort_player.vscc), reverse=True):
+        response += f"\n__{player.name}__: {len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
     return response, None
 
 @perms.gm("edit")

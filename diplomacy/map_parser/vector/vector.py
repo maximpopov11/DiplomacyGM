@@ -8,7 +8,7 @@ from scipy.spatial import cKDTree
 from shapely.geometry import Point, Polygon
 
 from diplomacy.map_parser.vector import cheat_parsing
-from diplomacy.map_parser.vector.config_player import player_to_color, NEUTRAL, BLANK_CENTER
+from diplomacy.map_parser.vector.config_player import player_data, NEUTRAL, BLANK_CENTER
 from diplomacy.map_parser.vector.config_svg import *
 from diplomacy.map_parser.vector.transform import get_transform
 from diplomacy.map_parser.vector.utils import (
@@ -61,8 +61,8 @@ class Parser:
 
     def parse(self) -> Board:
         players = set()
-        for name, color in player_to_color.items():
-            player = Player(name, color, set(), set())
+        for name, (color, vscc) in player_data.items():
+            player = Player(name, color, vscc, set(), set())
             players.add(player)
             self.color_to_player[color] = player
 
