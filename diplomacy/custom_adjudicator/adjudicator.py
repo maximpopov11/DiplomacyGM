@@ -321,7 +321,7 @@ class MovesAdjudicator(Adjudicator):
             # Same for convoys
             valid, reason = order_is_valid(unit.get_location(), unit.order, strict_convoys_supports=True)
             if not valid:
-                logger.info(f"Order for {unit} is invalid because {reason}")
+                logger.debug(f"Order for {unit} is invalid because {reason}")
                 if isinstance(unit.order, Move):
                     logger.debug("Retrying move order as ConvoyMove")
                     valid, reason = order_is_valid(
@@ -461,62 +461,48 @@ class MovesAdjudicator(Adjudicator):
             # X -> Z, Y -> Z scenario
             orders_to_overcome = self.moves_by_destination[order.destination_province.name] - {order}
             # X -> Y, Y -> Z scenario
-            order_moving_away = None
+            opponent_strength = 0
+
             if order.destination_province.name in self.orders_by_province:
                 attacked_order = self.orders_by_province[order.destination_province.name]
                 if attacked_order.type == OrderType.MOVE:
                     if attacked_order.destination_province != order.current_province:
-                        order_moving_away = attacked_order
+                        if self._resolve_order(attacked_order) == Resolution.FAILS:
+                            opponent_strength = 1
                     else:
-                        if (
-                            attacked_order.convoys
-                            and self._adjudicate_convoys_for_order(attacked_order) == Resolution.SUCCEEDS
-                        ):
-                            # This unit doesn't hurt us; it can convoy right by
-                            pass
-                        elif order.convoys and self._adjudicate_convoys_for_order(order) == Resolution.SUCCEEDS:
-                            # We convoy past them
+                        # the units don't bounce because at least one of them is convoyed
+                        if (attacked_order.convoys and self._adjudicate_convoys_for_order(attacked_order) == Resolution.SUCCEEDS) or (
+                            order.convoys and self._adjudicate_convoys_for_order(order) == Resolution.SUCCEEDS):
                             pass
                         else:
                             if attacked_order.country == order.country:
                                 return Resolution.FAILS
+                            
                             orders_to_overcome.add(attacked_order)
                 else:
                     if attacked_order.country == order.country:
                         return Resolution.FAILS
                     # Unit hold strength
                     orders_to_overcome.add(attacked_order)
-            if not orders_to_overcome:
-                if not order_moving_away:
-                    return Resolution.SUCCEEDS
-                else:
-                    return self._resolve_order(order_moving_away)
-            max_needed_strength = max(1 + len(order_to_overcome.supports) for order_to_overcome in orders_to_overcome)
-            # See if we can just overcome with our own supports
+            
             current_strength = 1
             for support in order.supports:
                 if self._resolve_order(support) == Resolution.SUCCEEDS:
                     current_strength += 1
-                if max_needed_strength < current_strength:
-                    return Resolution.SUCCEEDS
-            if current_strength == 1 and order_moving_away:
-                if self._resolve_order(order_moving_away) == Resolution.FAILS:
-                    return Resolution.FAILS
-            for order_to_overcome in orders_to_overcome:
-                if 1 + len(order_to_overcome.supports) < current_strength:
-                    # order isn't strong enough to stop us even if all supports succeed; don't need to check
-                    continue
-                if order_to_overcome.requires_convoy and self._adjudicate_convoys_for_order(order_to_overcome):
-                    continue
-                if current_strength == 1:
-                    return Resolution.FAILS
-                enemy_strength = 1
-                for support in order_to_overcome.supports:
+            # count a failed move as a hold that cannot be supported
+
+            for opponent in orders_to_overcome:
+                this_strength = 1
+                for support in opponent.supports:
                     if self._resolve_order(support) == Resolution.SUCCEEDS:
-                        enemy_strength += 1
-                    if current_strength <= enemy_strength:
-                        return Resolution.FAILS
-            return Resolution.SUCCEEDS
+                        this_strength += 1
+                if this_strength > opponent_strength:
+                    opponent_strength = this_strength
+            
+            if current_strength > opponent_strength:
+                return Resolution.SUCCEEDS
+            else:
+                return Resolution.FAILS
 
     def _resolve_order(self, order: AdjudicableOrder) -> Resolution:
         # logger.debug(f"Adjudicating order {order}")
