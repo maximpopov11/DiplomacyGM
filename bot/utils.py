@@ -136,7 +136,7 @@ def get_orders(board: Board, player_restriction: Player | None) -> str:
         response = "Received orders:"
         for player in sorted(board.players, key=lambda sort_player: sort_player.name):
             if not player_restriction or player == player_restriction:
-                response += f"\n__{player.name}__: ({len(player.centers) - len(player.units)} builds)"
+                response += f"\n__{player.name}__: ({len(player.centers)}) (+{len(player.centers) - len(player.units)})"
                 for unit in player.build_orders:
                     response += f"\n{unit}"
         return response
@@ -155,12 +155,11 @@ def get_orders(board: Board, player_restriction: Player | None) -> str:
 
         response = ""
         if missing:
-            response += "Missing orders:"
+            response += "**Missing orders:**\n"
             for unit in sorted(missing, key=lambda _unit: _unit.province.name):
-                response += f"\n{unit}"
-            response += "\n"
+                response += f"{unit}\n"
         if has_orders:
-            response += "Submitted orders:"
+            response += "**Submitted orders:**"
             for unit in sorted(has_orders, key=lambda _unit: _unit.province.name):
                 response += f"\n{unit} {unit.order}"
         if response == "":
