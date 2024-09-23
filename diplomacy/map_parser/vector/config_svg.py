@@ -22,6 +22,8 @@ PROVINCE_NAMES_LAYER_ID: str = "layer1"
 SUPPLY_CENTER_LAYER_ID: str = "layer3"
 # Layer group in SVG containing units
 UNITS_LAYER_ID: str = "layer10"
+# Layer group in SVG containing the date
+SEASON_TITLE_LAYER_ID = "layer4"
 
 # Layer groups in SVG containing phantom units for optimal unit placements
 PHANTOM_PRIMARY_ARMY_LAYER_ID: str = "g652"

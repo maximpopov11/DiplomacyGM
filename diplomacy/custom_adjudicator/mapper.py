@@ -19,6 +19,7 @@ from diplomacy.map_parser.vector.config_svg import (
     NEUTRAL_PROVINCE_COLOR,
     SUPPLY_CENTER_LAYER_ID,
     ISLAND_RING_LAYER_ID,
+    SEASON_TITLE_LAYER_ID
 )
 from diplomacy.map_parser.vector.utils import get_svg_element, get_unit_coordinates
 from diplomacy.persistence.board import Board
@@ -127,14 +128,25 @@ class Mapper:
                 for build_order in player.build_orders:
                     self._draw_player_order(player, build_order)
 
+        self.draw_side_panel()
         svg_file_name = f"{self.board.phase.name}_moves_map.svg"
         self._moves_svg.write(svg_file_name)
         return svg_file_name
 
     def draw_current_map(self) -> str:
+        self.draw_side_panel()
         svg_file_name = f"{self.board.phase.name}_map.svg"
         self.board_svg.write(svg_file_name)
         return svg_file_name
+
+    def get_pretty_date(self) -> str:
+        # TODO: Get the start date from somewhere in the board/in a config file
+        return self.board.phase.name + " " + str(self.board.year + 1642)
+
+    def draw_side_panel(self) -> None:
+        date = get_svg_element(self._moves_svg.getroot(), SEASON_TITLE_LAYER_ID)
+        # TODO: this is hacky; I don't know a better way
+        date[0][0].text = self.get_pretty_date()
 
     def _reset_moves_map(self):
         self._moves_svg = copy.deepcopy(self.board_svg)
