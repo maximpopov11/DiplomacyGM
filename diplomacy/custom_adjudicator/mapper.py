@@ -128,13 +128,13 @@ class Mapper:
                 for build_order in player.build_orders:
                     self._draw_player_order(player, build_order)
 
-        self.draw_side_panel()
+        self.draw_side_panel(self._moves_svg)
         svg_file_name = f"{self.board.phase.name}_moves_map.svg"
         self._moves_svg.write(svg_file_name)
         return svg_file_name
 
     def draw_current_map(self) -> str:
-        self.draw_side_panel()
+        self.draw_side_panel(self.board_svg)
         svg_file_name = f"{self.board.phase.name}_map.svg"
         self.board_svg.write(svg_file_name)
         return svg_file_name
@@ -143,8 +143,8 @@ class Mapper:
         # TODO: Get the start date from somewhere in the board/in a config file
         return self.board.phase.name + " " + str(self.board.year + 1642)
 
-    def draw_side_panel(self) -> None:
-        date = get_svg_element(self._moves_svg.getroot(), SEASON_TITLE_LAYER_ID)
+    def draw_side_panel(self, svg) -> None:
+        date = get_svg_element(svg.getroot(), SEASON_TITLE_LAYER_ID)
         # TODO: this is hacky; I don't know a better way
         date[0][0].text = self.get_pretty_date()
 
