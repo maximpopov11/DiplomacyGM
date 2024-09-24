@@ -470,6 +470,8 @@ class MovesAdjudicator(Adjudicator):
                 if attacked_order.type == OrderType.MOVE:
                     if attacked_order.destination_province != order.current_province:
                         if self._resolve_order(attacked_order) == Resolution.FAILS:
+                            if attacked_order.country == order.country:
+                                return Resolution.FAILS
                             opponent_strength = 1
                     else:
                         # the units don't bounce because at least one of them is convoyed
