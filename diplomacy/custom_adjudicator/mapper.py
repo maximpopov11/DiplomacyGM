@@ -3,6 +3,7 @@ import itertools
 import math
 import re
 import sys
+import numpy as np
 from xml.etree.ElementTree import ElementTree, Element
 
 from lxml import etree
@@ -313,17 +314,27 @@ class Mapper:
 
     def _draw_disband(self, coordinate: tuple[float, float], use_moves_svg=True) -> None:
         element = self._moves_svg.getroot() if use_moves_svg else self.board_svg.getroot()
+        cross_width = STROKE_WIDTH / (2 ** 0.5)
+
+        # two corner and a center point. Rotate and concat them to make the correct object
+        init = np.array([
+            (-RADIUS + cross_width, -RADIUS),
+            (-RADIUS, -RADIUS + cross_width),
+            (-cross_width, 0),
+        ])
+        rotate_90 = np.array([
+            [0, -1],
+            [1, 0]
+        ])
+        points = np.concatenate((init, init @ rotate_90, -init, -init @ rotate_90)) + coordinate
         drawn_order = _create_element(
-            "circle",
+            "polygon",
             {
-                "cx": coordinate[0],
-                "cy": coordinate[1],
-                "r": RADIUS,
-                "fill": "none",
-                "stroke": "red",
-                "stroke-width": STROKE_WIDTH,
+                "points": ' '.join(map(lambda a:','.join(map(str, a)), points)),
+                "fill": "red",
             },
         )
+
         element.append(drawn_order)
 
     def _color_provinces(self) -> None:
