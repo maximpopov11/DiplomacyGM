@@ -181,7 +181,7 @@ class Mapper:
         if isinstance(order, Build):
             self._draw_build(player, order)
         elif isinstance(order, Disband):
-            self._draw_disband(order.location.primary_unit_coordinate)
+            self._draw_force_disband(order.location.primary_unit_coordinate)
         else:
             logger.error(f"Could not draw player order {order}")
 
@@ -313,6 +313,21 @@ class Mapper:
         element.append(drawn_order)
 
     def _draw_disband(self, coordinate: tuple[float, float], use_moves_svg=True) -> None:
+        element = self._moves_svg.getroot() if use_moves_svg else self.board_svg.getroot()
+        drawn_order = _create_element(
+            "circle",
+            {
+                "cx": coordinate[0],
+                "cy": coordinate[1],
+                "r": RADIUS,
+                "fill": "none",
+                "stroke": "red",
+                "stroke-width": STROKE_WIDTH,
+            },
+        )
+        element.append(drawn_order)
+
+    def _draw_force_disband(self, coordinate: tuple[float, float], use_moves_svg=True) -> None:
         element = self._moves_svg.getroot() if use_moves_svg else self.board_svg.getroot()
         cross_width = STROKE_WIDTH / (2 ** 0.5)
 
@@ -454,7 +469,7 @@ class Mapper:
         return copy.deepcopy(layer.getchildren()[0])
 
     def _draw_retreat_options(self, unit):
-        self._draw_disband(unit.province.retreat_unit_coordinate, use_moves_svg=False)
+        self._draw_force_disband(unit.province.retreat_unit_coordinate, use_moves_svg=False)
         # for retreat_province in unit.retreat_options:
         #     self._draw_move(RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False)
 
