@@ -198,7 +198,7 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
             if isinstance(removed, Unit):
                 updated_units.add(removed)
             else:
-            	provinces_with_removed_builds.add(removed)
+                provinces_with_removed_builds.add(removed)
         except Exception as error:
             invalid.append((command, error))
 
@@ -207,7 +207,7 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
     for province in provinces_with_removed_builds:
         database.execute_arbitrary_sql(
         "DELETE FROM builds WHERE board_id=? and phase=? and location=?",
-        (board.board_id, board.get_phase_and_year_string(), province.name,),
+        (board.board_id, board.get_phase_and_year_string(), province),
     	)
 
     if invalid:
@@ -220,13 +220,13 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
     return response
 
 
-def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> Unit | Province:
+def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> Unit | str:
     command = command.lower()
     keywords: list[str] = get_keywords(command)
     if keywords[0] == ".remove order":
         keywords = keywords[1:]
     location = keywords[0]
-    province, _ = board.get_province_and_coast(location)
+    province, coast = board.get_province_and_coast(location)
 
     if is_builds_phase(board.phase):
         # remove build order
@@ -240,19 +240,29 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
             if build_order.location == province:
                 player.build_orders.remove(build_order)
                 break
-            
-        return province
+
+        if coast is None:
+            if province.coasts:
+                return str(province.coast())
+            return province.name
+        else:
+            return province.name + " " + coast.name
     else:
         # remove unit's order
         # assert that the command user is authorized to order this unit
         unit = province.get_unit()
-        player = unit.player
-        if player_restriction is not None and player != player_restriction:
-            raise PermissionError(
-                f"{player_restriction.name} does not control the unit in {location} which belongs to {player.name}"
-            )
-        unit.order = None
-        return unit
+        if unit is not None:
+            player = unit.player
+            if player_restriction is None or player == player_restriction:
+                unit.order = None
+            return unit
+        unit = province.dislodged_unit
+        if unit is not None:
+            player = unit.player
+            if player_restriction is None or player == player_restriction:
+                unit.order = None
+            return unit
+
 
 
 def _parse_player_order(keywords: list[str], player_restriction: Player | None, board: Board) -> Player:
