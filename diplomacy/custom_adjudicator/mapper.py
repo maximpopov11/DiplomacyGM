@@ -113,8 +113,12 @@ class Mapper:
                     continue
                 if is_retreats_phase(phase) and unit.province.dislodged_unit != unit:
                     continue
+                
+                if is_retreats_phase(phase):
+                    coordinate = unit.province.retreat_unit_coordinate
+                else:
+                    coordinate = unit.province.primary_unit_coordinate
 
-                coordinate = unit.get_coordinate()
                 try:
                     self._draw_order(unit.order, coordinate)
                 except Exception as err:
