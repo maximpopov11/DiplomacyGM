@@ -169,7 +169,7 @@ class Mapper:
         elif isinstance(order, RetreatMove):
             self._draw_move(order, coordinate)
         elif isinstance(order, RetreatDisband):
-            self._draw_disband(coordinate)
+            self._draw_force_disband(coordinate)
         else:
             self._draw_hold(coordinate)
             logger.debug(f"None order found: hold drawn. Coordinates: {coordinate}")
@@ -330,11 +330,11 @@ class Mapper:
     def _draw_force_disband(self, coordinate: tuple[float, float], use_moves_svg=True) -> None:
         element = self._moves_svg.getroot() if use_moves_svg else self.board_svg.getroot()
         cross_width = STROKE_WIDTH / (2 ** 0.5)
-
+        square_rad = RADIUS / (2 ** 0.5)
         # two corner and a center point. Rotate and concat them to make the correct object
         init = np.array([
-            (-RADIUS + cross_width, -RADIUS),
-            (-RADIUS, -RADIUS + cross_width),
+            (-square_rad + cross_width, -square_rad),
+            (-square_rad, -square_rad + cross_width),
             (-cross_width, 0),
         ])
         rotate_90 = np.array([
@@ -468,8 +468,11 @@ class Mapper:
             layer: Element = get_svg_element(self.board_svg, PHANTOM_PRIMARY_FLEET_LAYER_ID)
         return copy.deepcopy(layer.getchildren()[0])
 
-    def _draw_retreat_options(self, unit):
-        self._draw_force_disband(unit.province.retreat_unit_coordinate, use_moves_svg=False)
+    def _draw_retreat_options(self, unit : Unit):
+        if not unit.retreat_options:
+            self._draw_force_disband(unit.province.retreat_unit_coordinate, use_moves_svg=False)
+        else:
+            self._draw_disband(unit.province.retreat_unit_coordinate, use_moves_svg=False)
         # for retreat_province in unit.retreat_options:
         #     self._draw_move(RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False)
 
