@@ -262,6 +262,7 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
             if player_restriction is None or player == player_restriction:
                 unit.order = None
             return unit
+        raise Exception(f"You control neither the unit nor dislodged unit in province {province.name}")
 
 
 
