@@ -20,7 +20,7 @@ move_order: unit WS MOVE WS province
 
 hold_order: unit (WS HOLD)?
 
-support_order: unit WS SUPPORT WS (move_order | hold_order)
+support_order: unit WS (SUPPORT WS (move_order | hold_order) | SUPPORT_HOLD WS hold_order)
 
 convoy_move_order: unit WS CONVOY_MOVE WS province
 
@@ -31,6 +31,8 @@ core_order: unit WS CORE
 retreat_order: retreat_unit WS RETREAT WS province
 
 disband_order: retreat_unit WS DISBAND
+
+SUPPORT_HOLD.2 : /(support|supports|s)[ \-_]?(hold|holds|h)/
 
 HOLD.2 : "h"
        | "hold"
