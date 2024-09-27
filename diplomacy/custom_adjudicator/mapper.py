@@ -95,11 +95,17 @@ class Mapper:
         units_layer: Element = get_svg_element(self.board_svg, UNITS_LAYER_ID)
         self.board_svg.getroot().remove(units_layer)
 
+        # TODO: Switch to passing the SVG directly, as that's simpiler (self.svg = draw_units(svg)?)
         self._draw_units()
         self._color_provinces()
         self._color_centers()
+        self.draw_side_panel(self.board_svg)
 
         self._moves_svg = copy.deepcopy(self.board_svg)
+
+        self.state_svg = copy.deepcopy(self.board_svg)
+        
+        self.highlight_retreating_units(self.state_svg)
 
     # TODO: (!) manually assert all phantom coordinates on provinces and coasts are set, fix if not
     # TODO: (BETA) print svg moves & results files in Discord GM channel
@@ -139,9 +145,8 @@ class Mapper:
         return svg_file_name
 
     def draw_current_map(self) -> str:
-        self.draw_side_panel(self.board_svg)
         svg_file_name = f"{self.board.phase.name}_map.svg"
-        self.board_svg.write(svg_file_name)
+        self.state_svg.write(svg_file_name)
         return svg_file_name
 
     def get_pretty_date(self) -> str:
@@ -316,8 +321,8 @@ class Mapper:
         self._draw_unit(Unit(order.unit_type, player, province, coast, None), use_moves_svg=True)
         element.append(drawn_order)
 
-    def _draw_disband(self, coordinate: tuple[float, float], use_moves_svg=True) -> None:
-        element = self._moves_svg.getroot() if use_moves_svg else self.board_svg.getroot()
+    def _draw_disband(self, coordinate: tuple[float, float], svg) -> None:
+        element = svg.getroot()
         drawn_order = _create_element(
             "circle",
             {
@@ -331,8 +336,8 @@ class Mapper:
         )
         element.append(drawn_order)
 
-    def _draw_force_disband(self, coordinate: tuple[float, float], use_moves_svg=True) -> None:
-        element = self._moves_svg.getroot() if use_moves_svg else self.board_svg.getroot()
+    def _draw_force_disband(self, coordinate: tuple[float, float], svg) -> None:
+        element = svg.getroot()
         cross_width = STROKE_WIDTH / (2 ** 0.5)
         square_rad = RADIUS / (2 ** 0.5)
         # two corner and a center point. Rotate and concat them to make the correct object
@@ -461,8 +466,10 @@ class Mapper:
         root_element = self.board_svg.getroot() if not use_moves_svg else self._moves_svg.getroot()
         root_element.append(unit_element)
 
-        if unit == unit.province.dislodged_unit:
-            self._draw_retreat_options(unit)
+    def highlight_retreating_units(self, svg):
+        for unit in self.board.units:
+            if unit == unit.province.dislodged_unit:
+                self._draw_retreat_options(unit, svg)
 
     def _get_element_for_unit_type(self, unit_type) -> Element:
         # Just copy a random phantom unit
@@ -472,11 +479,11 @@ class Mapper:
             layer: Element = get_svg_element(self.board_svg, PHANTOM_PRIMARY_FLEET_LAYER_ID)
         return copy.deepcopy(layer.getchildren()[0])
 
-    def _draw_retreat_options(self, unit : Unit):
-        if not unit.retreat_options:
-            self._draw_force_disband(unit.province.retreat_unit_coordinate, use_moves_svg=False)
-        else:
-            self._draw_disband(unit.province.retreat_unit_coordinate, use_moves_svg=False)
+    def _draw_retreat_options(self, unit: Unit, svg):
+        #if not unit.retreat_options:
+        #    self._draw_force_disband(unit.province.retreat_unit_coordinate, svg)
+        #else:
+        self._draw_disband(unit.province.retreat_unit_coordinate, svg)
         # for retreat_province in unit.retreat_options:
         #     self._draw_move(RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False)
 
