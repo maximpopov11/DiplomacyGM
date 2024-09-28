@@ -19,6 +19,7 @@ bot.run()
 # functional_test.run()
 
 # TODO: priorities: (!), <game starts here>, (QOL), <re-organize TODOs/FIXMEs>, (DB), (BETA)
+# TODO: (!) Make sure Google Cloud doesn't die post-trial
 
 # TODO: (QOL) update readme (how to use bot)
 
