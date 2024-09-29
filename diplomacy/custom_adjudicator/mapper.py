@@ -151,10 +151,10 @@ class Mapper:
                 else:
                     coordinate = unit.province.primary_unit_coordinate
 
-                #try:
-                self._draw_order(unit, coordinate)
-                #except Exception as err:
-                #    logger.error(f"Drawing move failed for {unit}", exc_info=err)
+                try:
+                    self._draw_order(unit, coordinate)
+                except Exception as err:
+                    logger.error(f"Drawing move failed for {unit}", exc_info=err)
         else:
             players: set[Player]
             if player_restriction is None:
