@@ -210,7 +210,7 @@ class Mapper:
         elif isinstance(order, RetreatMove):
             self._draw_move(order, coordinate)
         elif isinstance(order, RetreatDisband):
-            self._draw_force_disband(coordinate)
+            self._draw_force_disband(coordinate, self._moves_svg)
         else:
             self._draw_hold(coordinate)
             logger.debug(f"None order found: hold drawn. Coordinates: {coordinate}")
@@ -222,7 +222,7 @@ class Mapper:
         if isinstance(order, Build):
             self._draw_build(player, order)
         elif isinstance(order, Disband):
-            self._draw_force_disband(order.location.primary_unit_coordinate)
+            self._draw_force_disband(order.location.primary_unit_coordinate, self._moves_svg)
         else:
             logger.error(f"Could not draw player order {order}")
 
