@@ -21,6 +21,13 @@ bot.run()
 # TODO: priorities: (!), <game starts here>, (QOL), <re-organize TODOs/FIXMEs>, (DB), (BETA)
 # TODO: (!) Make sure Google Cloud doesn't die post-trial
 
+# TODO: user asks:
+#  * Less cluttered arrows (not overlapping seems hard), arrowhead earlier, rethink convoy drawing because long convoys
+#  * Invalid/failed moves in red (.adjudicate to return moves and results map and create the latter first)
+#  * Bugs in retreats, dislodges, disbands, ands builds
+#  * Update scoreboard on side of map
+#  * Wraparound provinces should have units show in both
+
 # TODO: (QOL) update readme (how to use bot)
 
 # TODO: (DB) setup DB and test db write & db read
