@@ -164,6 +164,7 @@ def create_high_seas_and_sands(provinces: set[Province], name_to_province: dict[
             name_to_province["Regeibat"],
         },
     )
+    return provinces
 
 
 def _set_adjacencies(

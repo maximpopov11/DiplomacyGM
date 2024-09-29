@@ -44,6 +44,10 @@ from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import ProvinceType, Province, Coast
 from diplomacy.persistence.unit import Unit, UnitType
 
+from diplomacy.custom_adjudicator.defs import (
+    AdjudicableOrder
+)
+
 
 # TODO: (QOL) decrease line length by arrowhead (if applicable) and unit radius to match up to edge of hold circle
 def _add_arrow_definition_to_svg(svg: ElementTree) -> None:
@@ -70,6 +74,28 @@ def _add_arrow_definition_to_svg(svg: ElementTree) -> None:
     )
     arrow_marker.append(arrow_path)
     defs.append(arrow_marker)
+    ball_marker: Element = _create_element(
+        "marker",
+        {
+            "id": "ball",
+            "viewbox": "0 0 3 3",
+            #"refX": "1.5",
+            #"refY": "1.5",
+            "markerWidth": "3",
+            "markerHeight": "3",
+            "orient": "auto-start-reverse",
+        },
+    )
+    ball_def: Element = _create_element(
+        "circle",
+        {
+            "r": "2",
+            "fill": "black"
+        },
+    )
+    ball_marker.append(ball_def)
+    defs.append(ball_marker)
+
 
 
 # move this function somewhere more appropriate?
@@ -125,10 +151,10 @@ class Mapper:
                 else:
                     coordinate = unit.province.primary_unit_coordinate
 
-                try:
-                    self._draw_order(unit.order, coordinate)
-                except Exception as err:
-                    logger.error(f"Drawing move failed for {unit}", exc_info=err)
+                #try:
+                self._draw_order(unit, coordinate)
+                #except Exception as err:
+                #    logger.error(f"Drawing move failed for {unit}", exc_info=err)
         else:
             players: set[Player]
             if player_restriction is None:
@@ -161,20 +187,26 @@ class Mapper:
     def _reset_moves_map(self):
         self._moves_svg = copy.deepcopy(self.board_svg)
 
-    def _draw_order(self, order: Order, coordinate: tuple[float, float]) -> None:
+    def _draw_order(self, unit: Unit, coordinate: tuple[float, float]) -> None:
         # TODO: (BETA) draw failed moves on adjudication (not player check) in red
+        order = unit.order
         if isinstance(order, Hold):
             self._draw_hold(coordinate)
         elif isinstance(order, Core):
             self._draw_core(coordinate)
         elif isinstance(order, Move):
-            self._draw_move(order, coordinate)
-        elif isinstance(order, ConvoyMove):
-            self._draw_move(order, coordinate)
+            adjorder = AdjudicableOrder(unit)
+            if not adjorder.requires_convoy:
+                self._draw_move(order, coordinate)
+            else:
+                self._draw_convoyed_move(unit, coordinate)
+        #elif isinstance(order, ConvoyMove):
+        #    self._draw_move(order, coordinate)
         elif isinstance(order, Support):
             self._draw_support(order, coordinate)
         elif isinstance(order, ConvoyTransport):
-            self._draw_convoy(order, coordinate)
+            #self._draw_convoy(order, coordinate)
+            pass
         elif isinstance(order, RetreatMove):
             self._draw_move(order, coordinate)
         elif isinstance(order, RetreatDisband):
@@ -242,6 +274,66 @@ class Mapper:
             },
         )
         element.append(order_path)
+
+    def _path_helper(self, source: Province, destination: Province, current: Province, already_checked=()) -> list[tuple[Province]]:
+        if current in already_checked:
+            return [()]
+        options = []
+        new_checked = already_checked + (current,)
+        for possibility in current.adjacent:
+            print(f"currently in {current.name}, now checking {possibility.name}")
+            if possibility == destination:
+                options += [(destination,)]
+            if possibility.type == ProvinceType.SEA and possibility.unit is not None and possibility.unit.unit_type == UnitType.FLEET and isinstance(possibility.unit.order, ConvoyTransport) and possibility.unit.order.source.province is source and possibility.unit.order.destination is destination:
+                options += self._path_helper(source, destination, possibility, new_checked)
+        return list(map((lambda t: (current,) + t), options))
+
+    def draw_line(self, start: tuple[float, float], end: tuple[float, float], svg, marker_end="arrow", stroke_color="black"):
+        element = svg.getroot()
+        order_path = _create_element(
+            "path",
+            {
+                "d": f"M {start[0]},{start[1]} "
+                + f"   L {end[0]},{end[1]}",
+                "fill": "none",
+                "stroke": stroke_color,
+                "stroke-width": STROKE_WIDTH,
+                "marker-end": f"url(#{marker_end})",
+            },
+        )
+        element.append(order_path)
+
+
+    def _get_all_paths(self, unit: Unit) -> list[tuple[Province]]:
+        paths = self._path_helper(unit.province, unit.order.destination, unit.province)
+        if paths == [()]:
+            return [(unit.province, unit.order.destination)]
+        return paths
+    
+    #removes unnesseary convoys, for instance [A->B->C & A->C] -> [A->C]
+    def get_shortest_paths(self, args: list[tuple[Province]]):
+        args.sort(key=len)
+        min_subsets = []
+        for s in args:
+            if not any(set(min_subset).issubset(s) for min_subset in min_subsets):
+                min_subsets.append(s)
+
+        return min_subsets
+
+    def _draw_convoyed_move(self, unit: Unit, coordinate: tuple[float, float]):
+        valid_convoys = self._get_all_paths(unit)
+        # TODO: make this a setting
+        if False:
+            if len(valid_convoys):
+                valid_convoys = valid_convoys[0:1]
+        print(list(map((lambda m: list(map((lambda p: p.name), m))), valid_convoys)))
+        # removed until we get adjacencies all figured out
+        #valid_convoys = self.get_shortest_paths(valid_convoys)
+        for path in valid_convoys:
+            lines = zip(path[:-1], path[1:])
+            for line in lines:
+                self.draw_line(line[0].primary_unit_coordinate, line[1].primary_unit_coordinate, self._moves_svg, marker_end="ball")
+        
 
     def _draw_support(self, order: Support, coordinate: tuple[float, float]) -> None:
         element = self._moves_svg.getroot()
