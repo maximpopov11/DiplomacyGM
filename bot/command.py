@@ -144,7 +144,7 @@ def remove_all(ctx: commands.Context, manager: Manager) -> tuple[str, str | None
 # TODO: (QOL) this doesn't work right now
 # TODO: (QOL) allow players to use this
 # TODO: (QOL) include VSCC calculations
-@perms.gm("get scoreboard")
+#@perms.gm("get scoreboard")
 def get_scoreboard(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
     response = ""

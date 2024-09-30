@@ -115,7 +115,7 @@ class Parser:
         cheat_parsing.set_coasts(self.name_to_province)
         cheat_parsing.set_canals(self.name_to_province)
 
-        cheat_parsing.create_high_seas_and_sands(provinces, self.name_to_province)
+        provinces = cheat_parsing.create_high_seas_and_sands(provinces, self.name_to_province)
 
         # really bad bandaid code, will fix later
         # some coasts aren't set because their only coasts are with cheat provinces which are set after coasts are
