@@ -1,5 +1,6 @@
 # Discord roles which are allowed full access to bot commands
 gm_roles: set[str] = {
+    "Admin",
     "GM",
     "Heavenly Angel",
     "Emergency GM",
