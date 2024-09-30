@@ -2,6 +2,8 @@ import re
 from typing import Callable
 from xml.etree.ElementTree import Element
 
+import shapely
+import itertools
 import numpy as np
 from lxml import etree
 from scipy.spatial import cKDTree
@@ -502,43 +504,62 @@ def initialize_province_resident_data(
 # Returns province adjacency set
 def _get_adjacencies(provinces: set[Province]) -> set[tuple[str, str]]:
     # cKDTree is great, but it doesn't intelligently exclude clearly impossible cases of which we will have many
-    coordinates = {}
-    for province in provinces:
-        x_sort = sorted(province.coordinates, key=lambda coordinate: coordinate[0])
-        y_sort = sorted(province.coordinates, key=lambda coordinate: coordinate[1])
-        coordinates[province.name] = {"x_sort": x_sort, "y_sort": y_sort}
 
+    # coordinates = {}
+    # for province in provinces:
+    #     #print(province.type)
+    #     x_sort = sorted(province.coordinates, key=lambda coordinate: coordinate[0])
+    #     y_sort = sorted(province.coordinates, key=lambda coordinate: coordinate[1])
+    #     coordinates[province.name] = {"x_sort": x_sort, "y_sort": y_sort}
+
+    # adjacencies = set()
+    # for province_1, coordinates_1 in coordinates.items():
+    #     tree_1 = cKDTree(np.array(coordinates_1["x_sort"]))
+
+    #     x1_min = coordinates_1["x_sort"][0][0] - PROVINCE_BORDER_MARGIN
+    #     x1_max = coordinates_1["x_sort"][-1][0] + PROVINCE_BORDER_MARGIN
+    #     y1_min = coordinates_1["y_sort"][0][1] - PROVINCE_BORDER_MARGIN
+    #     y1_max = coordinates_1["y_sort"][-1][1] + PROVINCE_BORDER_MARGIN
+
+    #     for province_2, coordinates_2 in coordinates.items():
+    #         if province_1 >= province_2:
+    #             # check each pair once, don't check self-self
+    #             continue
+
+    #         x2_min = coordinates_2["x_sort"][0][0] - PROVINCE_BORDER_MARGIN
+    #         x2_max = coordinates_2["x_sort"][-1][0] + PROVINCE_BORDER_MARGIN
+    #         y2_min = coordinates_2["y_sort"][0][1] - PROVINCE_BORDER_MARGIN
+    #         y2_max = coordinates_2["y_sort"][-1][1] + PROVINCE_BORDER_MARGIN
+
+    #         if x1_min > x2_max or x1_max < x2_min:
+    #             # out of x-scope
+    #             continue
+
+    #         if y1_min > y2_max or y1_max < y2_min:
+    #             # out of y-scope
+    #             continue
+
+    #         for point in coordinates_2["x_sort"]:
+    #             if tree_1.query_ball_point(point, r=PROVINCE_BORDER_MARGIN):
+    #                 adjacencies.add((province_1, province_2))
+    #                 continue
+    
     adjacencies = set()
-    for province_1, coordinates_1 in coordinates.items():
-        tree_1 = cKDTree(np.array(coordinates_1["x_sort"]))
-
-        x1_min = coordinates_1["x_sort"][0][0] - PROVINCE_BORDER_MARGIN
-        x1_max = coordinates_1["x_sort"][-1][0] + PROVINCE_BORDER_MARGIN
-        y1_min = coordinates_1["y_sort"][0][1] - PROVINCE_BORDER_MARGIN
-        y1_max = coordinates_1["y_sort"][-1][1] + PROVINCE_BORDER_MARGIN
-
-        for province_2, coordinates_2 in coordinates.items():
-            if province_1 >= province_2:
-                # check each pair once, don't check self-self
-                continue
-
-            x2_min = coordinates_2["x_sort"][0][0] - PROVINCE_BORDER_MARGIN
-            x2_max = coordinates_2["x_sort"][-1][0] + PROVINCE_BORDER_MARGIN
-            y2_min = coordinates_2["y_sort"][0][1] - PROVINCE_BORDER_MARGIN
-            y2_max = coordinates_2["y_sort"][-1][1] + PROVINCE_BORDER_MARGIN
-
-            if x1_min > x2_max or x1_max < x2_min:
-                # out of x-scope
-                continue
-
-            if y1_min > y2_max or y1_max < y2_min:
-                # out of y-scope
-                continue
-
-            for point in coordinates_2["x_sort"]:
-                if tree_1.query_ball_point(point, r=PROVINCE_BORDER_MARGIN):
-                    adjacencies.add((province_1, province_2))
-                    continue
+    for province1, province2 in itertools.permutations(provinces, 2):
+        if shapely.distance(province1.geometry, province2.geometry) < 2:
+            adjacencies.add((province1.name, province2.name))
+    import matplotlib.pyplot as plt
+    def show(name):
+        var = [x for x in provinces if x.name == name]
+        if len(var) > 1:
+            print("DUPLICATE")
+        var = var[0]
+        plt.plot(*np.array(var.coordinates).T)
+    def show_all():
+        for p in provinces:
+            plt.plot(*np.array(p.coordinates).T)
+    import pdb
+    pdb.set_trace()
     return adjacencies
 
 

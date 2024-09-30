@@ -4,6 +4,8 @@ from abc import abstractmethod
 from enum import Enum
 from typing import TYPE_CHECKING
 
+from shapely import Polygon
+
 if TYPE_CHECKING:
     from diplomacy.persistence.player import Player
     from diplomacy.persistence.unit import Unit
@@ -55,6 +57,7 @@ class Province(Location):
     ):
         super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate)
         self.coordinates: list[tuple[float, float]] = coordinates
+        self.geometry: Polygon = Polygon(self.coordinates)
         self.type: ProvinceType = province_type
         self.has_supply_center: bool = has_supply_center
         self.adjacent: set[Province] = adjacent
