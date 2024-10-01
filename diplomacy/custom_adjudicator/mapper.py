@@ -323,13 +323,7 @@ class Mapper:
         if False:
             if len(valid_convoys):
                 valid_convoys = valid_convoys[0:1]
-<<<<<<< Updated upstream
-        print(list(map((lambda m: list(map((lambda p: p.name), m))), valid_convoys)))
-        # removed until we get adjacencies all figured out
-        # valid_convoys = self.get_shortest_paths(valid_convoys)
-=======
         valid_convoys = self.get_shortest_paths(valid_convoys)
->>>>>>> Stashed changes
         for path in valid_convoys:
             lines = zip(path[:-1], path[1:])
             for line in lines:
