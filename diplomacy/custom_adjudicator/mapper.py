@@ -107,7 +107,7 @@ class Mapper:
     def __init__(self, board: Board):
         self.board: Board = board
         self.board_svg: ElementTree = etree.parse(SVG_PATH)
-
+        self.player_restriction: Player | None = None
         _add_arrow_definition_to_svg(self.board_svg)
 
         units_layer: Element = get_svg_element(self.board_svg, UNITS_LAYER_ID)
@@ -127,7 +127,7 @@ class Mapper:
 
     def draw_moves_map(self, phase: Phase, player_restriction: Player | None) -> str:
         self._reset_moves_map()
-
+        self.player_restriction = player_restriction
         if not is_builds_phase(phase):
             for unit in self.board.units:
                 if player_restriction and unit.player != player_restriction:
@@ -276,6 +276,7 @@ class Mapper:
             if (
                 possibility.type == ProvinceType.SEA
                 and possibility.unit is not None
+                and (self.player_restriction is None or possibility.unit.player == self.player_restriction)
                 and possibility.unit.unit_type == UnitType.FLEET
                 and isinstance(possibility.unit.order, ConvoyTransport)
                 and possibility.unit.order.source.province is source
