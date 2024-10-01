@@ -224,7 +224,7 @@ class Parser:
             layer_translation = get_transform(provinces_layer)
             this_translation = get_transform(province_data)
             for index, coordinate in enumerate(province_coordinates):
-                province_coordinates[index] = this_translation.transform(layer_translation.transform(coordinate))
+                province_coordinates[index] = layer_translation.transform(this_translation.transform(coordinate))
 
             name = None
             if PROVINCE_FILLS_LABELED:
