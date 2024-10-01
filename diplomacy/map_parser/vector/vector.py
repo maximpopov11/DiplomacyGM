@@ -222,13 +222,17 @@ class Parser:
                 current_index += expected_arguments
 
             layer_translation = get_transform(provinces_layer)
+            this_translation = get_transform(province_data)
             for index, coordinate in enumerate(province_coordinates):
-                province_coordinates[index] = layer_translation.transform(coordinate)
+                province_coordinates[index] = this_translation.transform(layer_translation.transform(coordinate))
 
             name = None
             if PROVINCE_FILLS_LABELED:
                 name = self._get_province_name(province_data)
 
+            #print(f"here, layer_translation is {layer_translation}. {name}")
+            # if name == "Gdansk":
+            #     breakpoint()
             province = Province(
                 name,
                 province_coordinates,
@@ -548,18 +552,18 @@ def _get_adjacencies(provinces: set[Province]) -> set[tuple[str, str]]:
     for province1, province2 in itertools.permutations(provinces, 2):
         if shapely.distance(province1.geometry, province2.geometry) < 2:
             adjacencies.add((province1.name, province2.name))
-    import matplotlib.pyplot as plt
-    def show(name):
-        var = [x for x in provinces if x.name == name]
-        if len(var) > 1:
-            print("DUPLICATE")
-        var = var[0]
-        plt.plot(*np.array(var.coordinates).T)
-    def show_all():
-        for p in provinces:
-            plt.plot(*np.array(p.coordinates).T)
-    import pdb
-    pdb.set_trace()
+    # import matplotlib.pyplot as plt
+    # def show(name):
+    #     var = [x for x in provinces if x.name == name]
+    #     if len(var) > 1:
+    #         print("DUPLICATE")
+    #     var = var[0]
+    #     plt.plot(*np.array(var.coordinates).T)
+    # def show_all():
+    #     for p in provinces:
+    #         plt.plot(*np.array(p.coordinates).T)
+    # import pdb
+    # pdb.set_trace()
     return adjacencies
 
 
