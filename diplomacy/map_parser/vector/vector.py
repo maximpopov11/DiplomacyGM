@@ -348,7 +348,7 @@ class Parser:
                 unit_translation = get_transform(unit_data)
                 province = self._get_province(unit_data)
                 coordinate = get_unit_coordinates(unit_data)
-                setattr(province, province_key, unit_translation.transform(layer_translation.transform(coordinate)))
+                setattr(province, province_key, layer_translation.transform(unit_translation.transform(coordinate)))
 
         fleet_layer_to_key = [
             (self.phantom_primary_fleets_layer, "primary_unit_coordinate"),
