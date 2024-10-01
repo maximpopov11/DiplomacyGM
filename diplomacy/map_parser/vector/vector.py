@@ -2,6 +2,8 @@ import re
 from typing import Callable
 from xml.etree.ElementTree import Element
 
+import shapely
+import itertools
 import numpy as np
 from lxml import etree
 from scipy.spatial import cKDTree
@@ -220,8 +222,9 @@ class Parser:
                 current_index += expected_arguments
 
             layer_translation = get_transform(provinces_layer)
+            this_translation = get_transform(province_data)
             for index, coordinate in enumerate(province_coordinates):
-                province_coordinates[index] = layer_translation.transform(coordinate)
+                province_coordinates[index] = layer_translation.transform(this_translation.transform(coordinate))
 
             name = None
             if PROVINCE_FILLS_LABELED:
@@ -501,45 +504,16 @@ def initialize_province_resident_data(
 
 # Returns province adjacency set
 def _get_adjacencies(provinces: set[Province]) -> set[tuple[str, str]]:
-    # cKDTree is great, but it doesn't intelligently exclude clearly impossible cases of which we will have many
-    coordinates = {}
-    for province in provinces:
-        x_sort = sorted(province.coordinates, key=lambda coordinate: coordinate[0])
-        y_sort = sorted(province.coordinates, key=lambda coordinate: coordinate[1])
-        coordinates[province.name] = {"x_sort": x_sort, "y_sort": y_sort}
-
     adjacencies = set()
-    for province_1, coordinates_1 in coordinates.items():
-        tree_1 = cKDTree(np.array(coordinates_1["x_sort"]))
 
-        x1_min = coordinates_1["x_sort"][0][0] - PROVINCE_BORDER_MARGIN
-        x1_max = coordinates_1["x_sort"][-1][0] + PROVINCE_BORDER_MARGIN
-        y1_min = coordinates_1["y_sort"][0][1] - PROVINCE_BORDER_MARGIN
-        y1_max = coordinates_1["y_sort"][-1][1] + PROVINCE_BORDER_MARGIN
-
-        for province_2, coordinates_2 in coordinates.items():
-            if province_1 >= province_2:
-                # check each pair once, don't check self-self
-                continue
-
-            x2_min = coordinates_2["x_sort"][0][0] - PROVINCE_BORDER_MARGIN
-            x2_max = coordinates_2["x_sort"][-1][0] + PROVINCE_BORDER_MARGIN
-            y2_min = coordinates_2["y_sort"][0][1] - PROVINCE_BORDER_MARGIN
-            y2_max = coordinates_2["y_sort"][-1][1] + PROVINCE_BORDER_MARGIN
-
-            if x1_min > x2_max or x1_max < x2_min:
-                # out of x-scope
-                continue
-
-            if y1_min > y2_max or y1_max < y2_min:
-                # out of y-scope
-                continue
-
-            for point in coordinates_2["x_sort"]:
-                if tree_1.query_ball_point(point, r=PROVINCE_BORDER_MARGIN):
-                    adjacencies.add((province_1, province_2))
-                    continue
+    # Permutations bc we don't want to do (A, A)
+    # The first if is so we don't do (A, B) and (B, A)
+    # TODO: find a function that only generates (A, B)
+    for province1, province2 in itertools.permutations(provinces, 2):
+        if province1.name < province2.name:
+            if shapely.distance(province1.geometry, province2.geometry) < PROVINCE_BORDER_MARGIN:
+                adjacencies.add((province1.name, province2.name))
+    
     return adjacencies
-
 
 oneTrueParser = Parser()

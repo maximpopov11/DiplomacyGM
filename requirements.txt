@@ -1,0 +1,7 @@
+numpy
+scipy
+pydip
+shapely
+lark
+lxml
+discord
