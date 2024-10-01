@@ -509,12 +509,6 @@ def _get_adjacencies(provinces: set[Province]) -> set[tuple[str, str]]:
         if shapely.distance(province1.geometry, province2.geometry) < PROVINCE_BORDER_MARGIN:
             adjacencies.add((province1.name, province2.name))
     
-    def show_all():
-        import matplotlib.pyplot as plt
-        for p in provinces:
-            plt.plot(*np.array(p.coordinates).T)
-        plt.gca().invert_yaxis()
-    breakpoint()
     return adjacencies
 
 oneTrueParser = Parser()
