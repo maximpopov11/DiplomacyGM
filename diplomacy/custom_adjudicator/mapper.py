@@ -20,7 +20,7 @@ from diplomacy.map_parser.vector.config_svg import (
     NEUTRAL_PROVINCE_COLOR,
     SUPPLY_CENTER_LAYER_ID,
     ISLAND_RING_LAYER_ID,
-    SEASON_TITLE_LAYER_ID
+    SEASON_TITLE_LAYER_ID,
 )
 from diplomacy.map_parser.vector.utils import get_svg_element, get_unit_coordinates
 from diplomacy.persistence.board import Board
@@ -44,12 +44,9 @@ from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import ProvinceType, Province, Coast
 from diplomacy.persistence.unit import Unit, UnitType
 
-from diplomacy.custom_adjudicator.defs import (
-    AdjudicableOrder
-)
+from diplomacy.custom_adjudicator.defs import AdjudicableOrder
 
 
-# TODO: (QOL) decrease line length by arrowhead (if applicable) and unit radius to match up to edge of hold circle
 def _add_arrow_definition_to_svg(svg: ElementTree) -> None:
     defs: Element = svg.find("{http://www.w3.org/2000/svg}defs")
     if defs is None:
@@ -79,8 +76,8 @@ def _add_arrow_definition_to_svg(svg: ElementTree) -> None:
         {
             "id": "ball",
             "viewbox": "0 0 3 3",
-            #"refX": "1.5",
-            #"refY": "1.5",
+            # "refX": "1.5",
+            # "refY": "1.5",
             "markerWidth": "3",
             "markerHeight": "3",
             "orient": "auto-start-reverse",
@@ -88,14 +85,10 @@ def _add_arrow_definition_to_svg(svg: ElementTree) -> None:
     )
     ball_def: Element = _create_element(
         "circle",
-        {
-            "r": "2",
-            "fill": "black"
-        },
+        {"r": "2", "fill": "black"},
     )
     ball_marker.append(ball_def)
     defs.append(ball_marker)
-
 
 
 # move this function somewhere more appropriate?
@@ -110,7 +103,6 @@ def color_element(element: Element, color: str, key="fill"):
         element.set("style", style)
 
 
-# TODO: (!) we don't draw half cores
 class Mapper:
     def __init__(self, board: Board):
         self.board: Board = board
@@ -130,12 +122,9 @@ class Mapper:
         self._moves_svg = copy.deepcopy(self.board_svg)
 
         self.state_svg = copy.deepcopy(self.board_svg)
-        
+
         self.highlight_retreating_units(self.state_svg)
 
-    # TODO: (!) manually assert all phantom coordinates on provinces and coasts are set, fix if not
-    # TODO: (BETA) print svg moves & results files in Discord GM channel
-    # TODO: (DB) let's not have a ton of old files: delete moves & results after output (or don't store at all?)
     def draw_moves_map(self, phase: Phase, player_restriction: Player | None) -> str:
         self._reset_moves_map()
 
@@ -145,7 +134,7 @@ class Mapper:
                     continue
                 if is_retreats_phase(phase) and unit.province.dislodged_unit != unit:
                     continue
-                
+
                 if is_retreats_phase(phase):
                     coordinate = unit.province.retreat_unit_coordinate
                 else:
@@ -188,7 +177,6 @@ class Mapper:
         self._moves_svg = copy.deepcopy(self.board_svg)
 
     def _draw_order(self, unit: Unit, coordinate: tuple[float, float]) -> None:
-        # TODO: (BETA) draw failed moves on adjudication (not player check) in red
         order = unit.order
         if isinstance(order, Hold):
             self._draw_hold(coordinate)
@@ -200,12 +188,12 @@ class Mapper:
                 self._draw_move(order, coordinate)
             else:
                 self._draw_convoyed_move(unit, coordinate)
-        #elif isinstance(order, ConvoyMove):
+        # elif isinstance(order, ConvoyMove):
         #    self._draw_move(order, coordinate)
         elif isinstance(order, Support):
             self._draw_support(order, coordinate)
         elif isinstance(order, ConvoyTransport):
-            #self._draw_convoy(order, coordinate)
+            # self._draw_convoy(order, coordinate)
             pass
         elif isinstance(order, RetreatMove):
             self._draw_move(order, coordinate)
@@ -275,7 +263,9 @@ class Mapper:
         )
         element.append(order_path)
 
-    def _path_helper(self, source: Province, destination: Province, current: Province, already_checked=()) -> list[tuple[Province]]:
+    def _path_helper(
+        self, source: Province, destination: Province, current: Province, already_checked=()
+    ) -> list[tuple[Province]]:
         if current in already_checked:
             return [()]
         options = []
@@ -284,17 +274,25 @@ class Mapper:
             print(f"currently in {current.name}, now checking {possibility.name}")
             if possibility == destination:
                 options += [(destination,)]
-            if possibility.type == ProvinceType.SEA and possibility.unit is not None and possibility.unit.unit_type == UnitType.FLEET and isinstance(possibility.unit.order, ConvoyTransport) and possibility.unit.order.source.province is source and possibility.unit.order.destination is destination:
+            if (
+                possibility.type == ProvinceType.SEA
+                and possibility.unit is not None
+                and possibility.unit.unit_type == UnitType.FLEET
+                and isinstance(possibility.unit.order, ConvoyTransport)
+                and possibility.unit.order.source.province is source
+                and possibility.unit.order.destination is destination
+            ):
                 options += self._path_helper(source, destination, possibility, new_checked)
         return list(map((lambda t: (current,) + t), options))
 
-    def draw_line(self, start: tuple[float, float], end: tuple[float, float], svg, marker_end="arrow", stroke_color="black"):
+    def draw_line(
+        self, start: tuple[float, float], end: tuple[float, float], svg, marker_end="arrow", stroke_color="black"
+    ):
         element = svg.getroot()
         order_path = _create_element(
             "path",
             {
-                "d": f"M {start[0]},{start[1]} "
-                + f"   L {end[0]},{end[1]}",
+                "d": f"M {start[0]},{start[1]} " + f"   L {end[0]},{end[1]}",
                 "fill": "none",
                 "stroke": stroke_color,
                 "stroke-width": STROKE_WIDTH,
@@ -303,14 +301,13 @@ class Mapper:
         )
         element.append(order_path)
 
-
     def _get_all_paths(self, unit: Unit) -> list[tuple[Province]]:
         paths = self._path_helper(unit.province, unit.order.destination, unit.province)
         if paths == [()]:
             return [(unit.province, unit.order.destination)]
         return paths
-    
-    #removes unnesseary convoys, for instance [A->B->C & A->C] -> [A->C]
+
+    # removes unnesseary convoys, for instance [A->B->C & A->C] -> [A->C]
     def get_shortest_paths(self, args: list[tuple[Province]]):
         args.sort(key=len)
         min_subsets = []
@@ -328,12 +325,13 @@ class Mapper:
                 valid_convoys = valid_convoys[0:1]
         print(list(map((lambda m: list(map((lambda p: p.name), m))), valid_convoys)))
         # removed until we get adjacencies all figured out
-        #valid_convoys = self.get_shortest_paths(valid_convoys)
+        # valid_convoys = self.get_shortest_paths(valid_convoys)
         for path in valid_convoys:
             lines = zip(path[:-1], path[1:])
             for line in lines:
-                self.draw_line(line[0].primary_unit_coordinate, line[1].primary_unit_coordinate, self._moves_svg, marker_end="ball")
-        
+                self.draw_line(
+                    line[0].primary_unit_coordinate, line[1].primary_unit_coordinate, self._moves_svg, marker_end="ball"
+                )
 
     def _draw_support(self, order: Support, coordinate: tuple[float, float]) -> None:
         element = self._moves_svg.getroot()
@@ -351,7 +349,6 @@ class Mapper:
                 "stroke": "black",
                 "stroke-dasharray": "5 5",
                 "stroke-width": STROKE_WIDTH,
-                # FIXME: for support holds, is it source == destination? or destination is None? change if needed
                 "marker-end": "url(#arrow)" if order.source.province == order.destination else "",
             },
         )
@@ -430,23 +427,22 @@ class Mapper:
 
     def _draw_force_disband(self, coordinate: tuple[float, float], svg) -> None:
         element = svg.getroot()
-        cross_width = STROKE_WIDTH / (2 ** 0.5)
-        square_rad = RADIUS / (2 ** 0.5)
+        cross_width = STROKE_WIDTH / (2**0.5)
+        square_rad = RADIUS / (2**0.5)
         # two corner and a center point. Rotate and concat them to make the correct object
-        init = np.array([
-            (-square_rad + cross_width, -square_rad),
-            (-square_rad, -square_rad + cross_width),
-            (-cross_width, 0),
-        ])
-        rotate_90 = np.array([
-            [0, -1],
-            [1, 0]
-        ])
+        init = np.array(
+            [
+                (-square_rad + cross_width, -square_rad),
+                (-square_rad, -square_rad + cross_width),
+                (-cross_width, 0),
+            ]
+        )
+        rotate_90 = np.array([[0, -1], [1, 0]])
         points = np.concatenate((init, init @ rotate_90, -init, -init @ rotate_90)) + coordinate
         drawn_order = _create_element(
             "polygon",
             {
-                "points": ' '.join(map(lambda a:','.join(map(str, a)), points)),
+                "points": " ".join(map(lambda a: ",".join(map(str, a)), points)),
                 "fill": "red",
             },
         )
@@ -572,9 +568,9 @@ class Mapper:
         return copy.deepcopy(layer.getchildren()[0])
 
     def _draw_retreat_options(self, unit: Unit, svg):
-        #if not unit.retreat_options:
+        # if not unit.retreat_options:
         #    self._draw_force_disband(unit.province.retreat_unit_coordinate, svg)
-        #else:
+        # else:
         self._draw_disband(unit.province.retreat_unit_coordinate, svg)
         # for retreat_province in unit.retreat_options:
         #     self._draw_move(RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False)

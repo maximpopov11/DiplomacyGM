@@ -75,29 +75,26 @@ async def announce(ctx: commands.Context, servers: set[Guild | None]) -> None:
         await admin_chat_channel.send(f"__Announcement__\n{ctx.message.author.display_name} says:\n{content}")
 
 
-# TODO: (DB) warning cron when in cloud
-
 @perms.player("order")
 def order(player: Player | None, ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
 
     if player and not board.orders_enabled:
-            return "Orders locked! If you think this is an error, contact a GM.", None
+        return "Orders locked! If you think this is an error, contact a GM.", None
 
     return parse_order(ctx.message.content, player, board), None
+
 
 @perms.player("remove orders")
 def remove_order(player: Player | None, ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
 
     if player and not board.orders_enabled:
-            return "Orders locked! If you think this is an error, contact a GM.", None
+        return "Orders locked! If you think this is an error, contact a GM.", None
 
     return parse_remove_order(ctx.message.content, player, board), None
 
 
-# TODO: (QOL) GMs want to be able to see orders for a particular player
-# TODO: (!) output orders map BUT create something like .orders_log to see it in text like it is here
 @perms.player("view orders")
 def view_orders(player: Player | None, ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     try:
@@ -117,18 +114,22 @@ def view_orders(player: Player | None, ctx: commands.Context, manager: Manager) 
         # file_name = manager.draw_moves_map(ctx.guild.id, player)
         return order_text, None
 
+
 @perms.gm("adjudicate")
 def adjudicate(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     svg_file_name = manager.adjudicate(ctx.guild.id)
-    return "Adjudication completed successfully.", svg_file_name  # TODO return file name
+    return "Adjudication completed successfully.", svg_file_name
+
 
 @perms.gm("rollback")
 def rollback(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     return manager.rollback(ctx.guild.id)
 
+
 @perms.gm("reload")
 def reload(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     return manager.reload(ctx.guild.id)
+
 
 @perms.gm("remove all orders")
 def remove_all(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
@@ -141,31 +142,33 @@ def remove_all(ctx: commands.Context, manager: Manager) -> tuple[str, str | None
     return "Successful", None
 
 
-# TODO: (QOL) this doesn't work right now
-# TODO: (QOL) allow players to use this
-# TODO: (QOL) include VSCC calculations
-#@perms.gm("get scoreboard")
+# @perms.gm("get scoreboard")
 def get_scoreboard(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
     response = ""
-    for player in sorted(board.players, key=lambda sort_player: (len(sort_player.centers) / sort_player.vscc), reverse=True):
+    for player in sorted(
+        board.players, key=lambda sort_player: (len(sort_player.centers) / sort_player.vscc), reverse=True
+    ):
         response += f"\n__{player.name}__: {len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
     return response, None
 
+
 @perms.gm("edit")
 def edit(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
-    # TODO: (BETA) allow Admins in hub server in bot channel to edit constant map features
     return parse_edit_state(ctx.message.content, manager.get_board(ctx.guild.id))
+
 
 @perms.gm("create a game")
 def create_game(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
-    return manager.create_game(ctx.guild.id), None  # TODO return file name
+    return manager.create_game(ctx.guild.id), None
+
 
 @perms.gm("unlock orders")
 def enable_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
     board.orders_enabled = True
     return "Successful", None
+
 
 @perms.gm("lock orders")
 def disable_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
@@ -178,7 +181,3 @@ def info(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
     out = "Phase: " + str(board.phase) + "\nOrders are: " + ("Open" if board.orders_enabled else "Locked")
     return out, None
-
-
-# TODO: (BETA) implement new command for inputting new variant
-# TODO: (BETA) implement new command for creating game from variant out of choices (more than just Imp Dip)

@@ -69,9 +69,6 @@ async def announce(ctx: discord.ext.commands.Context) -> None:
     await command.announce(ctx, {bot.get_guild(server_id) for server_id in manager.list_servers()})
 
 
-# TODO: (BETA) allow ambiguous moves/convoys
-# TODO: (BETA) warn move incompatible for supports when supported move not ordered
-# TODO: (BETA) allow personal command dictionary editing
 @bot.command(
     brief="Submits orders; there must be one and only one order per line.",
     description="""Submits orders: 
@@ -169,7 +166,6 @@ async def info(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.info, ctx)
 
 
-# TODO: (DB) output the map
 @bot.command(
     brief="Create a game of Imp Dip and output the map.",
     description="Create a game of Imp Dip and output the map. (there are no other variant options at this time)",

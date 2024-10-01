@@ -145,7 +145,6 @@ movement_parser = Lark(ebnf, start="movement_phase", parser="earley")
 retreats_parser = Lark(ebnf, start="retreat_phase", parser="earley")
 
 
-# TODO: (!) illegal orders (wrong phase or doesn't work) should get caught when ordered, not on adjudication
 def parse_order(message: str, player_restriction: Player | None, board: Board) -> str:
     invalid: list[tuple[str, Exception]] = []
     if is_builds_phase(board.phase):
@@ -206,9 +205,9 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
     database.save_order_for_units(board, list(updated_units))
     for province in provinces_with_removed_builds:
         database.execute_arbitrary_sql(
-        "DELETE FROM builds WHERE board_id=? and phase=? and location=?",
-        (board.board_id, board.get_phase_and_year_string(), province),
-    	)
+            "DELETE FROM builds WHERE board_id=? and phase=? and location=?",
+            (board.board_id, board.get_phase_and_year_string(), province),
+        )
 
     if invalid:
         response = "The following order removals were invalid:"
@@ -263,7 +262,6 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
                 unit.order = None
             return unit
         raise Exception(f"You control neither the unit nor dislodged unit in province {province.name}")
-
 
 
 def _parse_player_order(keywords: list[str], player_restriction: Player | None, board: Board) -> Player:
