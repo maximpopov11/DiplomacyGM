@@ -271,9 +271,8 @@ class Mapper:
         options = []
         new_checked = already_checked + (current,)
         for possibility in current.adjacent:
-            print(f"currently in {current.name}, now checking {possibility.name}")
             if possibility == destination:
-                return [(destination,)]
+                return [(current, destination,)]
             if (
                 possibility.type == ProvinceType.SEA
                 and possibility.unit is not None
