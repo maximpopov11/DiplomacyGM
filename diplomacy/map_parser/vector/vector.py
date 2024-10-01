@@ -27,7 +27,6 @@ from diplomacy.persistence.unit import Unit, UnitType
 
 import copy
 
-# TODO: (BETA) I made this file into a monster that is really ugly, let's clean it up!
 
 # TODO: (BETA) all attribute getting should be in utils which we import and call utils.my_unit()
 # TODO: (BETA) consistent in bracket formatting
@@ -83,7 +82,6 @@ class Parser:
 
     def read_map(self) -> tuple[set[Province], set[tuple[str, str]]]:
         if self.cache_provinces is None:
-            # TODO: (BETA) get names/centers/units without aid labeling and test equality against aid labeling
             # set coordinates and names
             self.cache_provinces: set[Province] = self._get_province_coordinates()
             if not PROVINCE_FILLS_LABELED:
@@ -95,13 +93,10 @@ class Parser:
 
         if self.cache_adjacencies is None:
             # set adjacencies
-            # TODO: (BETA) province adjacency margin somtimes too high or too low, base it case by case on province size?
             self.cache_adjacencies = _get_adjacencies(provinces)
         adjacencies = copy.deepcopy(self.cache_adjacencies)
 
         return (provinces, adjacencies)
-
-            
 
     def _get_provinces(self) -> set[Province]:
         provinces, adjacencies = self.read_map()
@@ -516,5 +511,6 @@ def _get_adjacencies(provinces: set[Province]) -> set[tuple[str, str]]:
     # plt.gca().invert_yaxis()
     # plt.show()
     return adjacencies
+
 
 oneTrueParser = Parser()

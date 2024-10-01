@@ -10,9 +10,6 @@ from diplomacy.persistence.player import Player
 
 logger = logging.getLogger(__name__)
 
-# TODO: (DB) variants table that holds starting state & map: insert parsed Imp Dip for now
-# TODO: (DB) games table (copy of a variant data, has server ID)
-
 
 class Manager:
     """Manager acts as an intermediary between Bot (the Discord API), Board (the board state), the database."""
@@ -31,12 +28,10 @@ class Manager:
             raise RuntimeError("A game already exists in this server.")
 
         logger.info(f"Creating new [ImpDip] game in server {server_id}")
-        # TODO: (DB) get board from variant DB
         self._boards[server_id] = oneTrueParser.parse()
         self._boards[server_id].board_id = server_id
         self._database.save_board(server_id, self._boards[server_id])
 
-        # TODO: (DB) return map state
         return "ImpDip game created"
 
     def get_board(self, server_id: int) -> Board:
@@ -62,11 +57,6 @@ class Manager:
         self._database.save_board(server_id, new_board)
         mapper = Mapper(new_board)
         return mapper.draw_current_map()
-        # TODO: (DB) update board, moves map, results map at server id at turn in db
-        # TODO: (DB) when updating board, update SVG so it can be reread if needed
-        # TODO: (DB) protect against malicious inputs (ex. orders) like drop table
-        #  - this is all good
-        # TODO: (DB) return both moves and results map
 
     def rollback(self, server_id: int) -> tuple[str, str]:
         logger.info(f"Rolling back in server {server_id}")

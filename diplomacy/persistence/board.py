@@ -20,13 +20,12 @@ class Board:
         self.board_id = 0
         self.orders_enabled: bool = True
 
-    # TODO: (BETA) make this efficient
-    # TODO: (BETA) discord command parsing gets for all of these will have typos, support get near answers (and warn)
+    # TODO: we could have this as a dict ready on the variant
     def get_player(self, name: str) -> Player:
         # we ignore capitalization because this is primarily used for user input
         return next((player for player in self.players if player.name.lower() == name.lower()), None)
 
-    # TODO: (BETA) make this efficient
+    # TODO: we could have this as a dict ready on the variant
     def get_province(self, name: str) -> Province:
         # we ignore capitalization because this is primarily used for user input
         return next((province for province in self.provinces if province.name.lower() == name.lower()), None)
@@ -117,7 +116,6 @@ class Board:
         unit.player.units.remove(unit)
         self.units.remove(unit)
         return unit
-
 
     def delete_all_units(self) -> None:
         for unit in self.units:

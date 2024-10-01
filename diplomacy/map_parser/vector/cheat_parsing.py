@@ -1,7 +1,6 @@
 from diplomacy.persistence.province import Province, Coast, ProvinceType
 
 
-# TODO: (BETA) don't use any of the cheats
 # We are not yet perfect when parsing the map. This file is a temporary hard-coded cheat to get around that.
 
 
