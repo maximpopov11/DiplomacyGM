@@ -41,7 +41,7 @@ UNIT_PROVINCES_LABELED: bool = True
 # TODO: (BETA) with this method we're getting a lot of false positives and maybe some false negatives
 # Margin of error for distance between province border points. If two province borders have a point within distance of
 # this value in both x and y values, they will be considered adjacent.
-PROVINCE_BORDER_MARGIN: float = 1#25
+PROVINCE_BORDER_MARGIN: float = 1
 
 # Neutral/unconquered color
 NEUTRAL_PROVINCE_COLOR = "c6b7ab"
