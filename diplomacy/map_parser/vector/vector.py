@@ -505,9 +505,14 @@ def initialize_province_resident_data(
 # Returns province adjacency set
 def _get_adjacencies(provinces: set[Province]) -> set[tuple[str, str]]:
     adjacencies = set()
+
+    # Permutations bc we don't want to do (A, A)
+    # The first if is so we don't do (A, B) and (B, A)
+    # TODO: find a function that only generates (A, B)
     for province1, province2 in itertools.permutations(provinces, 2):
-        if shapely.distance(province1.geometry, province2.geometry) < PROVINCE_BORDER_MARGIN:
-            adjacencies.add((province1.name, province2.name))
+        if province1.name < province2.name:
+            if shapely.distance(province1.geometry, province2.geometry) < PROVINCE_BORDER_MARGIN:
+                adjacencies.add((province1.name, province2.name))
     
     return adjacencies
 
