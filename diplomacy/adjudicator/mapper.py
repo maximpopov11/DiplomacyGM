@@ -285,14 +285,28 @@ class Mapper:
                 options += self._path_helper(source, destination, possibility, new_checked)
         return list(map((lambda t: (current,) + t), options))
 
-    def draw_line(
-        self, start: tuple[float, float], end: tuple[float, float], svg, marker_end="arrow", stroke_color="black"
-    ):
+    # def draw_line(
+    #     self, start: tuple[float, float], end: tuple[float, float], svg, marker_end="arrow", stroke_color="black"
+    # ):
+    #     element = svg.getroot()
+    #     order_path = _create_element(
+    #         "path",
+    #         {
+    #             "d": f"M {start[0]},{start[1]} " + f"   L {end[0]},{end[1]}",
+    #             "fill": "none",
+    #             "stroke": stroke_color,
+    #             "stroke-width": STROKE_WIDTH,
+    #             "marker-end": f"url(#{marker_end})",
+    #         },
+    #     )
+    #     element.append(order_path)
+
+    def _draw_path(self, d: str, svg, marker_end="arrow", stroke_color="black"):
         element = svg.getroot()
         order_path = _create_element(
             "path",
             {
-                "d": f"M {start[0]},{start[1]} " + f"   L {end[0]},{end[1]}",
+                "d": d,
                 "fill": "none",
                 "stroke": stroke_color,
                 "stroke-width": STROKE_WIDTH,
@@ -325,11 +339,34 @@ class Mapper:
                 valid_convoys = valid_convoys[0:1]
         valid_convoys = self.get_shortest_paths(valid_convoys)
         for path in valid_convoys:
-            lines = zip(path[:-1], path[1:])
-            for line in lines:
-                self.draw_line(
-                    line[0].primary_unit_coordinate, line[1].primary_unit_coordinate, self._moves_svg, marker_end="ball"
-                )
+            # lines = zip(path[:-1], path[1:])
+            # for line in lines:
+            #     self.draw_line(
+            #         line[0].primary_unit_coordinate, line[1].primary_unit_coordinate, self._moves_svg, marker_end="ball"
+            #     )
+            p = np.array(tuple(map((lambda a: a.primary_unit_coordinate), path)))
+
+            def f(point: tuple[float, float]):
+                return ' '.join(map(str, point))
+            
+            def norm(point: tuple[float, float]) -> tuple[float, float]:
+                return point / ((np.sum(point ** 2)) ** .5)
+
+            # given surrounding points, generate a control point
+            def g(point: tuple[tuple[float, float], tuple[float, float], tuple[float, float]]):
+                vec = point[0] - point[2]
+                return norm(vec) * 30 + point[1]
+
+            # this is a bit wierd, because the loop is in-between two values
+            # (S LO)(OP LO)(OP E)
+            s = f"M {f(p[0])} C {f(p[1])}, "
+            for x in range(1, len(p) - 1):
+                s += f"{f(g(p[x-1:x+2]))}, {f(p[x])} S "
+            
+            s += f"{f(p[-2])}, {f(p[-1])}"
+            print(s)
+            self._draw_path(s, self._moves_svg)
+
 
     def _draw_support(self, order: Support, coordinate: tuple[float, float]) -> None:
         element = self._moves_svg.getroot()
