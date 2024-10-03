@@ -1,4 +1,4 @@
-from diplomacy.custom_adjudicator.mapper import Mapper
+from diplomacy.adjudicator.mapper import Mapper
 from diplomacy.map_parser.vector import vector
 from diplomacy.persistence import order
 from diplomacy.persistence.unit import UnitType

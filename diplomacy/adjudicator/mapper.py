@@ -44,7 +44,7 @@ from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import ProvinceType, Province, Coast
 from diplomacy.persistence.unit import Unit, UnitType
 
-from diplomacy.custom_adjudicator.defs import AdjudicableOrder
+from diplomacy.adjudicator.defs import AdjudicableOrder
 
 
 def _add_arrow_definition_to_svg(svg: ElementTree) -> None:

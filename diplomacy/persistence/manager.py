@@ -1,7 +1,7 @@
 import logging
 
-from diplomacy.custom_adjudicator.adjudicator import make_adjudicator
-from diplomacy.custom_adjudicator.mapper import Mapper
+from diplomacy.adjudicator.adjudicator import make_adjudicator
+from diplomacy.adjudicator.mapper import Mapper
 from diplomacy.map_parser.vector.vector import oneTrueParser
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db import database

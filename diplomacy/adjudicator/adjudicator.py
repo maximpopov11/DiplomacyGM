@@ -2,7 +2,7 @@ import abc
 import collections
 import logging
 
-from diplomacy.custom_adjudicator.defs import (
+from diplomacy.adjudicator.defs import (
     ResolutionState,
     Resolution,
     AdjudicableOrder,

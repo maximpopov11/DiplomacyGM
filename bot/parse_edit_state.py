@@ -1,5 +1,5 @@
 from bot.utils import get_phase, get_unit_type, get_keywords
-from diplomacy.custom_adjudicator.mapper import Mapper
+from diplomacy.adjudicator.mapper import Mapper
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.phase import is_retreats_phase
 from diplomacy.persistence.db.database import get_connection
