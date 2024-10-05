@@ -188,13 +188,13 @@ class Mapper:
                 self._draw_move(order, coordinate)
             else:
                 self._draw_convoyed_move(unit, coordinate)
-        # elif isinstance(order, ConvoyMove):
-        #    self._draw_move(order, coordinate)
+        elif isinstance(order, ConvoyMove):
+            logger.warning("Convoy move is depricated; use move instead")
+            self._draw_move(order, coordinate)
         elif isinstance(order, Support):
             self._draw_support(order, coordinate)
         elif isinstance(order, ConvoyTransport):
-            # self._draw_convoy(order, coordinate)
-            pass
+            self._draw_convoy(order, coordinate)
         elif isinstance(order, RetreatMove):
             self._draw_move(order, coordinate)
         elif isinstance(order, RetreatDisband):
@@ -339,11 +339,6 @@ class Mapper:
                 valid_convoys = valid_convoys[0:1]
         valid_convoys = self.get_shortest_paths(valid_convoys)
         for path in valid_convoys:
-            # lines = zip(path[:-1], path[1:])
-            # for line in lines:
-            #     self.draw_line(
-            #         line[0].primary_unit_coordinate, line[1].primary_unit_coordinate, self._moves_svg, marker_end="ball"
-            #     )
             p = np.array(tuple(map((lambda a: a.primary_unit_coordinate), path)))
 
             def f(point: tuple[float, float]):
@@ -354,7 +349,10 @@ class Mapper:
 
             # given surrounding points, generate a control point
             def g(point: tuple[tuple[float, float], tuple[float, float], tuple[float, float]]):
-                vec = point[0] - point[2]
+                centered = point[::2] - point[1]
+
+                # TODO: possible div / 0 if the two convoyed points are in a straight line with the convoyer on one side
+                vec = norm(centered[0]) - norm(centered[1])
                 return norm(vec) * 30 + point[1]
 
             # this is a bit wierd, because the loop is in-between two values
@@ -364,7 +362,6 @@ class Mapper:
                 s += f"{f(g(p[x-1:x+2]))}, {f(p[x])} S "
             
             s += f"{f(p[-2])}, {f(p[-1])}"
-            print(s)
             self._draw_path(s, self._moves_svg)
 
 
@@ -391,37 +388,19 @@ class Mapper:
 
     def _draw_convoy(self, order: ConvoyTransport, coordinate: tuple[float, float]) -> None:
         element = self._moves_svg.getroot()
-        x1 = order.source.province.primary_unit_coordinate[0]
-        y1 = order.source.province.primary_unit_coordinate[1]
-
-        source_angle = math.atan(
-            (order.source.province.primary_unit_coordinate[1] - coordinate[1])
-            / (order.source.province.primary_unit_coordinate[0] - coordinate[0])
-        )
-        x2 = coordinate[0] + math.cos(source_angle) * RADIUS
-        y2 = coordinate[1] + math.sin(source_angle) * RADIUS
-
-        destination_angle = math.atan(
-            (order.destination.primary_unit_coordinate[1] - coordinate[1])
-            / (order.destination.primary_unit_coordinate[0] - coordinate[0])
-        )
-        x3 = coordinate[0] + math.cos(destination_angle) * RADIUS
-        y3 = coordinate[1] + math.sin(destination_angle) * RADIUS
-
-        x4 = order.destination.primary_unit_coordinate[0]
-        y4 = order.destination.primary_unit_coordinate[1]
-
         drawn_order = _create_element(
-            "path",
+            "circle",
             {
-                "d": f"M {x1},{y1} L {x2},{y2} A {RADIUS},{RADIUS} 0 0 1 {x3},{y3} L {x4},{y4}",
+                "cx": coordinate[0],
+                "cy": coordinate[1],
+                "r" : RADIUS / 2,
                 "fill": "none",
                 "stroke": "black",
-                "stroke-width": STROKE_WIDTH,
-                "marker-end": "url(#arrow)",
-            },
+                "stroke-width": STROKE_WIDTH * 2 / 3
+            }
         )
         element.append(drawn_order)
+
 
     def _draw_build(self, player, order: Build) -> None:
         element = self._moves_svg.getroot()
