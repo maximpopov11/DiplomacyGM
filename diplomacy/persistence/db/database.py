@@ -299,8 +299,8 @@ class _DatabaseConnection:
                     unit.get_location().name,
                     retreat_option.name
                 )
-                for retreat_option in unit.retreat_options
                 for unit in board.units if unit.retreat_options is not None
+                for retreat_option in unit.retreat_options
             ]
         )
         cursor.close()
@@ -348,8 +348,8 @@ class _DatabaseConnection:
                     unit.get_location().name,
                     retreat_option.name
                 )
-                for retreat_option in unit.retreat_options
                 for unit in units if unit.retreat_options is not None
+                for retreat_option in unit.retreat_options
             ]
         )
         cursor.close()
