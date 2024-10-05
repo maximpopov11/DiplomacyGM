@@ -170,7 +170,15 @@ class _DatabaseConnection:
             location, is_dislodged, owner, is_army, order_type, order_destination, order_source = unit_info
             province, coast = board.get_province_and_coast(location)
             owner_player = board.get_player(owner)
-            unit = Unit(UnitType.ARMY if is_army else UnitType.FLEET, owner_player, province, coast, None)
+            if is_dislodged:
+                retreat_ops = cursor.execute(
+                    "SELECT retreat_loc FROM retreat_options WHERE board_id=? and phase=? and origin=?",
+                    (board_id, board.get_phase_and_year_string(), location)
+                )
+                retreat_options = set(map(board.get_location, set().union(*retreat_ops)))
+            else:
+                retreat_options = None
+            unit = Unit(UnitType.ARMY if is_army else UnitType.FLEET, owner_player, province, coast, retreat_options)
             if is_dislodged:
                 province.dislodged_unit = unit
             else:
@@ -283,6 +291,18 @@ class _DatabaseConnection:
                 for unit in board.units
             ],
         )
+        cursor.executemany(
+            "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)", [
+                (
+                    board_id,
+                    board.get_phase_and_year_string(),
+                    unit.get_location().name,
+                    retreat_option.name
+                )
+                for retreat_option in unit.retreat_options
+                for unit in board.units if unit.retreat_options is not None
+            ]
+        )
         cursor.close()
         self._connection.commit()
 
@@ -307,6 +327,30 @@ class _DatabaseConnection:
                 )
                 for unit in units
             ],
+        )
+        cursor.executemany(
+            "DELETE FROM retreat_options WHERE board_id=? and phase=? and origin=?",
+            [
+                (
+                    board.board_id,
+                    board.get_phase_and_year_string(),
+                    unit.get_location().name
+                )
+                for unit in units if unit.retreat_options is not None
+            ]
+        )
+        cursor.executemany(
+            "INSERT INTO retreat_options VALUES (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
+            [
+                (
+                    board.board_id,
+                    board.get_phase_and_year_string(),
+                    unit.get_location().name,
+                    retreat_option.name
+                )
+                for retreat_option in unit.retreat_options
+                for unit in units if unit.retreat_options is not None
+            ]
         )
         cursor.close()
         self._connection.commit()
@@ -359,6 +403,12 @@ class _DatabaseConnection:
         # TODO - everywhere using this should just be made into a method probably? idk
         cursor = self._connection.cursor()
         cursor.execute(sql, args)
+        cursor.close()
+        self._connection.commit()
+    
+    def executemany_arbitrary_sql(self, sql: str, args: list[tuple]):
+        cursor = self._connection.cursor()
+        cursor.executemany(sql, args)
         cursor.close()
         self._connection.commit()
 

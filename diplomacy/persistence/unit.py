@@ -34,7 +34,7 @@ class Unit:
         self.player: Player = player
         self.province: Province = province
         self.coast: Coast | None = coast
-        "retreat_options is None when not dislodged and {} when dislodged without retreat options"
+        # retreat_options is None when not dislodged and {} when dislodged without retreat options
         self.retreat_options: set[Province] | None = retreat_options
         self.order: UnitOrder | None = order
 

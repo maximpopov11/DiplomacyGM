@@ -169,6 +169,18 @@ def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
                 unit_type == UnitType.ARMY,
             ),
         )
+        get_connection().executemany_arbitrary_sql(
+            "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
+            [
+                (
+                    board.board_id,
+                    board.get_phase_and_year_string(),
+                    unit.get_location().name,
+                    option.name
+                )
+                for option in retreat_options
+            ]
+        )
     else:
         raise RuntimeError("Cannot create a dislodged unit in move phase")
 
@@ -188,6 +200,10 @@ def _delete_dislodged_unit(keywords: list[str], board: Board) -> None:
     get_connection().execute_arbitrary_sql(
         "DELETE FROM units WHERE board_id=? and phase=? and location=? and is_dislodged=?",
         (board.board_id, board.get_phase_and_year_string(), unit.get_location().name, True),
+    )
+    get_connection().execute_arbitrary_sql(
+        "DELETE FROM retreat_locs WHERE board_id=? and phase=? and origin=?",
+        (board.board_id, board.get_phase_and_year_string(), unit.get_location().name),
     )
 
 
