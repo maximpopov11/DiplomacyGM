@@ -21,6 +21,15 @@ CREATE TABLE IF NOT EXISTS provinces (
     FOREIGN KEY (board_id, owner) REFERENCES players (board_id, player_name),
     FOREIGN KEY (board_id, core) REFERENCES players (board_id, player_name),
     FOREIGN KEY (board_id, half_core) REFERENCES players (board_id, player_name));
+CREATE TABLE IF NOT EXISTS retreat_options (
+    board_id int,
+    phase text,
+    origin text,
+    retreat_loc text,
+    PRIMARY KEY (board_id, phase, origin, retreat_loc),
+    FOREIGN KEY (board_id, phase) REFERENCES boards (board_id, phase);
+    FOREIGN KEY (board_id, phase, origin) REFERENCES provinces (board_id, phase, province_name),
+    FOREIGN KEY (board_id, phase, retreat_loc) REFERENCES provinces (board_id, phase, province_name));
 CREATE TABLE IF NOT EXISTS units (
     board_id int,
     phase text,
@@ -34,7 +43,8 @@ CREATE TABLE IF NOT EXISTS units (
     PRIMARY KEY (board_id, phase, location, is_dislodged),
     FOREIGN KEY (board_id, phase) REFERENCES boards (board_id, phase),
     FOREIGN KEY (board_id, phase, location) REFERENCES provinces (board_id, phase, province_name),
-    FOREIGN KEY (board_id, owner) REFERENCES players (board_id, player_name));
+    FOREIGN KEY (board_id, owner) REFERENCES players (board_id, player_name),
+    FOREIGN KEY (board_id, phase, location) REFERENCES retreat_options (board_id, phase, origin));
 CREATE TABLE IF NOT EXISTS builds(
     board_id int,
     phase text,
