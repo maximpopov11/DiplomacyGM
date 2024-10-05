@@ -395,6 +395,9 @@ class MovesAdjudicator(Adjudicator):
                 order.destination_province.unit = order.base_unit
                 if not order.destination_province.has_supply_center or self._board.phase.name.startswith("Fall"):
                     self._board.change_owner(order.destination_province, order.country)
+        if order.type == OrderType.HOLD and order.resolution == Resolution.SUCCEEDS:
+            if not order.destination_province.has_supply_center or self._board.phase.name.startswith("Fall"):
+                self._board.change_owner(order.destination_province, order.country)
         for unit in self._board.units:
             unit.order = None
 
