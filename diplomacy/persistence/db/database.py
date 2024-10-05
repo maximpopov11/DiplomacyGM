@@ -340,7 +340,7 @@ class _DatabaseConnection:
             ]
         )
         cursor.executemany(
-            "INSERT INTO retreat_options VALUES (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
+            "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
             [
                 (
                     board.board_id,
