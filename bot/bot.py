@@ -8,7 +8,6 @@ from discord.ext import commands
 from bot import command
 from diplomacy.persistence.manager import Manager
 
-# TODO: this should live in a class
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix=".", intents=intents)
@@ -19,7 +18,6 @@ manager = Manager()
 
 @bot.before_invoke
 async def before_any_command(ctx):
-    # TODO: reading the log code is hard, we can make it a lot cleaner
     logger.debug(f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}'")
 
     # mark the message as seen
@@ -28,8 +26,10 @@ async def before_any_command(ctx):
 
 @bot.after_invoke
 async def after_any_command(ctx):
+    logger.debug(
+        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - complete"
+    )
     pass
-    # TODO: log
 
 
 @bot.event
@@ -50,7 +50,6 @@ async def on_command_error(ctx, error):
         await ctx.send(error)
 
 
-# TODO: don't wrap all commands in this, use some on_command feature to do that
 async def _handle_command(
     function: Callable[[commands.Context, Manager], tuple[str, str | None]],
     ctx: discord.ext.commands.Context,
