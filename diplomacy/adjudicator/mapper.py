@@ -654,19 +654,23 @@ WIDTH = 4375
 # returns closest point in a set
 # will wrap horizontally
 def get_closest_loc(possiblities: tuple[tuple[float, float]], coord: tuple[float, float]):
-    possiblities = list(possiblities)
-    crossed_pos = []
-    for p in possiblities:
-        x = p[0]
-        cx = coord[0]
-        if abs(x - cx) > WIDTH / 2:
-            if x > cx:
-                x -= WIDTH
-            else:
-                x += WIDTH
-        crossed_pos += [(x, p[1])]
+    # possiblities = list(possiblities)
+    # crossed_pos = []
+    # for p in possiblities:
+    #     x = p[0]
+    #     cx = coord[0]
+    #     if abs(x - cx) > WIDTH / 2:
+    #         if x > cx:
+    #             x -= WIDTH
+    #         else:
+    #             x += WIDTH
+    #     crossed_pos += [(x, p[1])]
     
+    #crossed_pos = np.array(crossed_pos)
+    
+    # TODO: set up proper rollover, as it can happen for transpacific convoys
     crossed_pos = np.array(crossed_pos)
+
     dists = crossed_pos - possiblities
     short_ind = np.argmin(np.linalg.norm(dists, axis=1))
     return crossed_pos[short_ind].tolist()
