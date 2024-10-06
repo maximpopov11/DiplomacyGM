@@ -41,7 +41,7 @@ from diplomacy.persistence.order import (
 )
 from diplomacy.persistence.phase import Phase, is_builds_phase, is_retreats_phase
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.province import ProvinceType, Province, Coast
+from diplomacy.persistence.province import ProvinceType, Province, Coast, Location
 from diplomacy.persistence.unit import Unit, UnitType
 
 from diplomacy.adjudicator.defs import AdjudicableOrder
@@ -136,12 +136,19 @@ class Mapper:
                     continue
 
                 if is_retreats_phase(phase):
-                    coordinate = unit.get_location().retreat_unit_coordinate
+                    unit_locs = unit.get_location().all_rets
                 else:
-                    coordinate = unit.get_location().primary_unit_coordinate
-
+                    unit_locs = unit.get_location().all_locs
+                
+                # TODO: Maybe there's a better way to handle convoyTransports?
+                if isinstance(unit.order, (RetreatMove, Move, Support, ConvoyTransport)):
+                    new_locs = []
+                    for endpoint in unit.order.destination.all_locs:
+                        new_locs += [get_closest_loc(unit_locs, endpoint)]
+                    unit_locs = new_locs
                 try:
-                    self._draw_order(unit, coordinate)
+                    for loc in unit_locs:
+                        self._draw_order(unit, loc)
                 except Exception as err:
                     logger.error(f"Drawing move failed for {unit}", exc_info=err)
         else:
@@ -244,7 +251,7 @@ class Mapper:
         element.append(drawn_order)
 
     def _draw_move(
-        self, order: Move | ConvoyMove | RetreatMove, coordinate: tuple[float, float], use_moves_svg=True
+        self, order: RetreatMove, coordinate: tuple[float, float], use_moves_svg=True
     ) -> None:
         element = self._moves_svg.getroot() if use_moves_svg else self.board_svg.getroot()
         if order.destination.get_unit():
@@ -313,7 +320,7 @@ class Mapper:
         return paths
 
     # removes unnesseary convoys, for instance [A->B->C & A->C] -> [A->C]
-    def get_shortest_paths(self, args: list[tuple[Province]]):
+    def get_shortest_paths(self, args: list[tuple[Province]]) -> list[tuple[Location]]:
         args.sort(key=len)
         min_subsets = []
         for s in args:
@@ -330,9 +337,17 @@ class Mapper:
                 valid_convoys = valid_convoys[0:1]
         valid_convoys = self.get_shortest_paths(valid_convoys)
         for path in valid_convoys:
-            p = np.array(tuple(map((lambda a: a.primary_unit_coordinate), path)))
+            p = [path[0].primary_unit_coordinate]
+            start = path[0].primary_unit_coordinate
+            for loc in path[1:]:
+                p += [loc_to_point(loc, start)]
+                start = p[-1]
+            
             if path[-1].get_unit():
                 p[-1] = _pull_coordinate(p[-2], p[-1])
+            
+            p = np.array(p)
+
             def f(point: tuple[float, float]):
                 return " ".join(map(str, point))
 
@@ -361,10 +376,10 @@ class Mapper:
         element = self._moves_svg.getroot()
         x1 = coordinate[0]
         y1 = coordinate[1]
-        x2 = order.source.get_location().primary_unit_coordinate[0]
-        y2 = order.source.get_location().primary_unit_coordinate[1]
-        x3 = order.destination.primary_unit_coordinate[0]
-        y3 = order.destination.primary_unit_coordinate[1]
+        v2 = loc_to_point(order.source.get_location(), coordinate)
+        x2, y2 = v2
+        v3 = loc_to_point(order.destination, v2)
+        x3, y3 = v3
         marker_start = ""
         if order.destination.get_unit():
             if order.source.get_location() == order.destination:
@@ -628,3 +643,30 @@ def _pull_coordinate(anchor: tuple[float, float], coordinate: tuple[float, float
 
     scale = pull / distance
     return cx + dx * scale, cy + dy * scale
+
+def loc_to_point(loc: Location, current: tuple[float, float], use_retreats=False):
+    if not use_retreats:
+        return get_closest_loc(loc.all_locs, current)
+    else:
+        return get_closest_loc(loc.all_rets, current)
+
+WIDTH = 4375
+# returns closest point in a set
+# will wrap horizontally
+def get_closest_loc(possiblities: tuple[tuple[float, float]], coord: tuple[float, float]):
+    possiblities = list(possiblities)
+    crossed_pos = []
+    for p in possiblities:
+        x = p[0]
+        cx = coord[0]
+        if abs(x - cx) > WIDTH / 2:
+            if x > cx:
+                x -= WIDTH
+            else:
+                x += WIDTH
+        crossed_pos += [(x, p[1])]
+    
+    crossed_pos = np.array(crossed_pos)
+    dists = crossed_pos - possiblities
+    short_ind = np.argmin(np.linalg.norm(dists, axis=1))
+    return crossed_pos[short_ind].tolist()
