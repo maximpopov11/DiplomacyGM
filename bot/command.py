@@ -5,14 +5,13 @@ import random
 from discord import Guild
 from discord.ext import commands
 
+import bot.perms as perms
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
-from bot.utils import is_gm, is_gm_channel, get_player_by_role, is_player_channel, get_orders, is_admin
-from diplomacy.persistence.manager import Manager
+from bot.utils import is_gm, is_gm_channel, get_orders, is_admin
 from diplomacy.persistence.db.database import get_connection
+from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
-
-import bot.perms as perms
 
 logger = logging.getLogger(__name__)
 
