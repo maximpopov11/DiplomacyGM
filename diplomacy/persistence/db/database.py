@@ -396,6 +396,9 @@ class _DatabaseConnection:
         cursor.execute(
             "DELETE FROM builds WHERE board_id=? AND phase=?", (board.board_id, board.get_phase_and_year_string())
         )
+        cursor.execute(
+            "DELETE FROM retreat_options WHERE board_id=? AND phase=?", (board.board_id, board.get_phase_and_year_string())
+        )
         cursor.close()
         self._connection.commit()
 
