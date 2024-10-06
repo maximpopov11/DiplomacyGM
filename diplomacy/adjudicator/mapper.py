@@ -259,6 +259,7 @@ class Mapper:
                 "fill": "none",
                 "stroke": "red" if isinstance(order, RetreatMove) else "black",
                 "stroke-width": STROKE_WIDTH,
+                "stroke-linecap": "round",
                 "marker-end": "url(#arrow)",
             },
         )
@@ -291,22 +292,6 @@ class Mapper:
                 options += self._path_helper(source, destination, possibility, new_checked)
         return list(map((lambda t: (current,) + t), options))
 
-    # def draw_line(
-    #     self, start: tuple[float, float], end: tuple[float, float], svg, marker_end="arrow", stroke_color="black"
-    # ):
-    #     element = svg.getroot()
-    #     order_path = _create_element(
-    #         "path",
-    #         {
-    #             "d": f"M {start[0]},{start[1]} " + f"   L {end[0]},{end[1]}",
-    #             "fill": "none",
-    #             "stroke": stroke_color,
-    #             "stroke-width": STROKE_WIDTH,
-    #             "marker-end": f"url(#{marker_end})",
-    #         },
-    #     )
-    #     element.append(order_path)
-
     def _draw_path(self, d: str, svg, marker_end="arrow", stroke_color="black"):
         element = svg.getroot()
         order_path = _create_element(
@@ -316,6 +301,7 @@ class Mapper:
                 "fill": "none",
                 "stroke": stroke_color,
                 "stroke-width": STROKE_WIDTH,
+                "stroke-linecap": "round",
                 "marker-end": f"url(#{marker_end})",
             },
         )
@@ -394,6 +380,7 @@ class Mapper:
                 "stroke": "black",
                 "stroke-dasharray": "5 5",
                 "stroke-width": STROKE_WIDTH,
+                "stroke-linecap": "round",
                 "marker-end": f"url(#{'ball' if order.source.get_location() == order.destination else 'arrow'})"
             },
         )
