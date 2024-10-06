@@ -252,6 +252,8 @@ class Mapper:
         element = self._moves_svg.getroot() if use_moves_svg else self.board_svg.getroot()
         if order.destination.get_unit():
             destination = _pull_coordinate(coordinate, order.destination.primary_unit_coordinate)
+        else:
+            destination = order.destination.primary_unit_coordinate
         order_path = _create_element(
             "path",
             {
@@ -361,8 +363,8 @@ class Mapper:
         element = self._moves_svg.getroot()
         x1 = coordinate[0]
         y1 = coordinate[1]
-        x2 = order.source.province.primary_unit_coordinate[0]
-        y2 = order.source.province.primary_unit_coordinate[1]
+        x2 = order.source.get_location().primary_unit_coordinate[0]
+        y2 = order.source.get_location().primary_unit_coordinate[1]
         x3 = order.destination.primary_unit_coordinate[0]
         y3 = order.destination.primary_unit_coordinate[1]
         if order.destination.get_unit():
