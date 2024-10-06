@@ -189,7 +189,7 @@ class Mapper:
             logger.warning("Convoy move is depricated; use move instead")
             self._draw_convoyed_move(unit, coordinate)
         elif isinstance(order, Support):
-            self._draw_support(order, coordinate)
+            self._draw_support(unit, coordinate)
         elif isinstance(order, ConvoyTransport):
             self._draw_convoy(order, coordinate)
         elif isinstance(order, RetreatMove):
@@ -275,7 +275,7 @@ class Mapper:
             if possibility == destination:
                 return [
                     (
-                        current,
+                        current.get_unit().get_location(),
                         destination,
                     )
                 ]
@@ -289,7 +289,7 @@ class Mapper:
                 and possibility.unit.order.destination is destination
             ):
                 options += self._path_helper(source, destination, possibility, new_checked)
-        return list(map((lambda t: (current,) + t), options))
+        return list(map((lambda t: (current.get_unit().get_location(),) + t), options))
 
     def _draw_path(self, d: str, svg, marker_end="arrow", stroke_color="black"):
         element = svg.getroot()
@@ -356,7 +356,8 @@ class Mapper:
             s += f"{f(p[-2])}, {f(p[-1])}"
             self._draw_path(s, self._moves_svg)
 
-    def _draw_support(self, order: Support, coordinate: tuple[float, float]) -> None:
+    def _draw_support(self, unit: Unit, coordinate: tuple[float, float]) -> None:
+        order: Support = unit.order
         element = self._moves_svg.getroot()
         x1 = coordinate[0]
         y1 = coordinate[1]
@@ -364,6 +365,7 @@ class Mapper:
         y2 = order.source.get_location().primary_unit_coordinate[1]
         x3 = order.destination.primary_unit_coordinate[0]
         y3 = order.destination.primary_unit_coordinate[1]
+        marker_start = ""
         if order.destination.get_unit():
             if order.source.get_location() == order.destination:
                 (x3, y3) = _pull_coordinate((x1, y1), (x3, y3), RADIUS)
@@ -371,6 +373,20 @@ class Mapper:
                 (x3, y3) = _pull_coordinate((x2, y2), (x3, y3))
             if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)):
                 self._draw_hold(order.destination.get_unit().get_location().primary_unit_coordinate)
+            # if two units are support-holding each other
+            destorder = order.destination.get_unit().order
+
+            if (isinstance(order.destination.get_unit().order, Support)
+                and destorder.source.get_location() == destorder.destination == unit.get_location()
+                and order.source.get_location() == order.destination):
+                # This check is so we only do it once, so it doesn't overlay
+                # it doesn't matter which one is the origin & which is the dest
+                if id(order.destination.get_unit()) > id(unit):
+                    marker_start = "url(#ball)"
+                    # doesn't matter that v3 has been pulled, as it's still collinear
+                    (x1, y1) = (x2, y2) = _pull_coordinate((x3, y3), (x1, y1), RADIUS)
+                else:
+                    return
         drawn_order = _create_element(
             "path",
             {
@@ -380,6 +396,7 @@ class Mapper:
                 "stroke-dasharray": "5 5",
                 "stroke-width": STROKE_WIDTH,
                 "stroke-linecap": "round",
+                "marker-start": marker_start,
                 "marker-end": f"url(#{'ball' if order.source.get_location() == order.destination else 'arrow'})"
             },
         )
