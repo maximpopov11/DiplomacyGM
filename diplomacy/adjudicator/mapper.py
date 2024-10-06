@@ -183,14 +183,11 @@ class Mapper:
         elif isinstance(order, Core):
             self._draw_core(coordinate)
         elif isinstance(order, Move):
-            adjorder = AdjudicableOrder(unit)
-            if not adjorder.requires_convoy:
-                self._draw_move(order, coordinate)
-            else:
-                self._draw_convoyed_move(unit, coordinate)
+            # moves are just convoyed moves that have no convoys
+            self._draw_convoyed_move(unit, coordinate)
         elif isinstance(order, ConvoyMove):
             logger.warning("Convoy move is depricated; use move instead")
-            self._draw_move(order, coordinate)
+            self._draw_convoyed_move(unit, coordinate)
         elif isinstance(order, Support):
             self._draw_support(order, coordinate)
         elif isinstance(order, ConvoyTransport):
