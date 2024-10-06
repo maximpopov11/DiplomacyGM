@@ -5,11 +5,9 @@ from typing import Callable
 import discord
 from discord.ext import commands
 
-# from assets.secrets import __DISCORD_TOKEN
 from bot import command
 from diplomacy.persistence.manager import Manager
 
-# TODO: (BETA) this should live in a class
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix=".", intents=intents)
@@ -18,35 +16,59 @@ logger = logging.getLogger(__name__)
 manager = Manager()
 
 
+@bot.before_invoke
+async def before_any_command(ctx):
+    logger.debug(f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}'")
+
+    # mark the message as seen
+    await ctx.message.add_reaction("👍")
+
+
+@bot.after_invoke
+async def after_any_command(ctx):
+    logger.debug(
+        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - complete"
+    )
+    pass
+
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        # we shouldn't do anything if the user says something like "..."
+        pass
+    else:
+        logger.error(
+            f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}': {repr(error)}",
+            exc_info=error,
+        )
+
+        # mark the message as failed
+        await ctx.message.add_reaction("❌")
+        await ctx.message.remove_reaction("👍", bot.user)
+
+        await ctx.send(error)
+
+
 async def _handle_command(
     function: Callable[[commands.Context, Manager], tuple[str, str | None]],
     ctx: discord.ext.commands.Context,
 ) -> None:
-    try:
-        await ctx.message.add_reaction("👍")
-        logger.debug(f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}'")
-        response, file_name = function(ctx, manager)
-        logger.debug(
-            f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{response}"
-        )
-        while 2000 < len(response):
-            # Try to find an even line break to split the message on
-            cutoff = response.rfind("\n", 0, 2000)
-            if cutoff == -1:
-                cutoff = 2000
-            await ctx.channel.send(response[:cutoff].strip())
-            response = response[cutoff:].strip()
-        if file_name is not None:
-            await ctx.channel.send(response, file=discord.File(file_name))
-        else:
-            await ctx.channel.send(response)
-    except Exception as e:
-        logger.error(
-            f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) "
-            f"invoking '{getattr(function, '__name__', 'Unknown')}': {repr(e)}",
-            exc_info=e,
-        )
-        await ctx.channel.send("Command errored: ```" + str(e) + "```")
+    response, file_name = function(ctx, manager)
+    logger.debug(
+        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{response}"
+    )
+    while 2000 < len(response):
+        # Try to find an even line break to split the message on
+        cutoff = response.rfind("\n", 0, 2000)
+        if cutoff == -1:
+            cutoff = 2000
+        await ctx.channel.send(response[:cutoff].strip())
+        response = response[cutoff:].strip()
+    if file_name is not None:
+        await ctx.channel.send(response, file=discord.File(file_name))
+    else:
+        await ctx.channel.send(response)
 
 
 @bot.command(help="Checks bot listens and responds.")
@@ -176,8 +198,7 @@ async def create_game(ctx: discord.ext.commands.Context) -> None:
 
 def run():
     token = os.getenv("DISCORD_TOKEN")
-    # token = __DISCORD_TOKEN
     if token:
         bot.run(token)
     else:
-        print("The DISCORD_TOKEN enviroment variable is not set")
+        raise RuntimeError("The DISCORD_TOKEN environment variable is not set")
