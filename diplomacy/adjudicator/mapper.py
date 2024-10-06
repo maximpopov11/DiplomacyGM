@@ -136,9 +136,9 @@ class Mapper:
                     continue
 
                 if is_retreats_phase(phase):
-                    coordinate = unit.province.retreat_unit_coordinate
+                    coordinate = unit.get_location().retreat_unit_coordinate
                 else:
-                    coordinate = unit.province.primary_unit_coordinate
+                    coordinate = unit.get_location().primary_unit_coordinate
 
                 try:
                     self._draw_order(unit, coordinate)
@@ -250,7 +250,8 @@ class Mapper:
         self, order: Move | ConvoyMove | RetreatMove, coordinate: tuple[float, float], use_moves_svg=True
     ) -> None:
         element = self._moves_svg.getroot() if use_moves_svg else self.board_svg.getroot()
-        destination = _pull_coordinate(coordinate, order.destination.primary_unit_coordinate)
+        if order.destination.get_unit():
+            destination = _pull_coordinate(coordinate, order.destination.primary_unit_coordinate)
         order_path = _create_element(
             "path",
             {
@@ -345,7 +346,8 @@ class Mapper:
         valid_convoys = self.get_shortest_paths(valid_convoys)
         for path in valid_convoys:
             p = np.array(tuple(map((lambda a: a.primary_unit_coordinate), path)))
-
+            if path[-1].get_unit():
+                p[-1] = _pull_coordinate(p[-2], p[-1])
             def f(point: tuple[float, float]):
                 return " ".join(map(str, point))
 
@@ -377,6 +379,13 @@ class Mapper:
         y2 = order.source.province.primary_unit_coordinate[1]
         x3 = order.destination.primary_unit_coordinate[0]
         y3 = order.destination.primary_unit_coordinate[1]
+        if order.destination.get_unit():
+            if order.source.get_location() == order.destination:
+                (x3, y3) = _pull_coordinate((x1, y1), (x3, y3), RADIUS)
+            else:
+                (x3, y3) = _pull_coordinate((x2, y2), (x3, y3))
+            if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)):
+                self._draw_hold(order.destination.get_unit().get_location().primary_unit_coordinate)
         drawn_order = _create_element(
             "path",
             {
@@ -385,7 +394,7 @@ class Mapper:
                 "stroke": "black",
                 "stroke-dasharray": "5 5",
                 "stroke-width": STROKE_WIDTH,
-                "marker-end": "url(#arrow)" if order.source.province == order.destination else "",
+                "marker-end": f"url(#{'ball' if order.source.get_location() == order.destination else 'arrow'})"
             },
         )
         element.append(drawn_order)
@@ -598,7 +607,7 @@ def _create_element(tag: str, attributes: dict[str, any]) -> etree.Element:
     return etree.Element(tag, attributes_str)
 
 
-def _pull_coordinate(anchor: tuple[float, float], coordinate: tuple[float, float]) -> tuple[float, float]:
+def _pull_coordinate(anchor: tuple[float, float], coordinate: tuple[float, float], pull=(1.5*RADIUS)) -> tuple[float, float]:
     """Pull coordinate toward anchor by a small margin to give unit view breathing room"""
     ax, ay = anchor
     cx, cy = coordinate
@@ -609,6 +618,5 @@ def _pull_coordinate(anchor: tuple[float, float], coordinate: tuple[float, float
     if distance == 0:
         return coordinate
 
-    pull = 1.5 * RADIUS
     scale = pull / distance
     return cx + dx * scale, cy + dy * scale
