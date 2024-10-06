@@ -250,11 +250,11 @@ class Mapper:
         self, order: Move | ConvoyMove | RetreatMove, coordinate: tuple[float, float], use_moves_svg=True
     ) -> None:
         element = self._moves_svg.getroot() if use_moves_svg else self.board_svg.getroot()
+        destination = _pull_coordinate(coordinate, order.destination.primary_unit_coordinate)
         order_path = _create_element(
             "path",
             {
-                "d": f"M {coordinate[0]},{coordinate[1]} "
-                + f"   L {order.destination.primary_unit_coordinate[0]},{order.destination.primary_unit_coordinate[1]}",
+                "d": f"M {coordinate[0]},{coordinate[1]} L {destination[0]},{destination[1]}",
                 "fill": "none",
                 "stroke": "red" if isinstance(order, RetreatMove) else "black",
                 "stroke-width": STROKE_WIDTH,
@@ -272,7 +272,12 @@ class Mapper:
         new_checked = already_checked + (current,)
         for possibility in current.adjacent:
             if possibility == destination:
-                return [(current, destination,)]
+                return [
+                    (
+                        current,
+                        destination,
+                    )
+                ]
             if (
                 possibility.type == ProvinceType.SEA
                 and possibility.unit is not None
@@ -342,10 +347,10 @@ class Mapper:
             p = np.array(tuple(map((lambda a: a.primary_unit_coordinate), path)))
 
             def f(point: tuple[float, float]):
-                return ' '.join(map(str, point))
-            
+                return " ".join(map(str, point))
+
             def norm(point: tuple[float, float]) -> tuple[float, float]:
-                return point / ((np.sum(point ** 2)) ** .5)
+                return point / ((np.sum(point**2)) ** 0.5)
 
             # given surrounding points, generate a control point
             def g(point: tuple[tuple[float, float], tuple[float, float], tuple[float, float]]):
@@ -360,10 +365,9 @@ class Mapper:
             s = f"M {f(p[0])} C {f(p[1])}, "
             for x in range(1, len(p) - 1):
                 s += f"{f(g(p[x-1:x+2]))}, {f(p[x])} S "
-            
+
             s += f"{f(p[-2])}, {f(p[-1])}"
             self._draw_path(s, self._moves_svg)
-
 
     def _draw_support(self, order: Support, coordinate: tuple[float, float]) -> None:
         element = self._moves_svg.getroot()
@@ -393,14 +397,13 @@ class Mapper:
             {
                 "cx": coordinate[0],
                 "cy": coordinate[1],
-                "r" : RADIUS / 2,
+                "r": RADIUS / 2,
                 "fill": "none",
                 "stroke": "black",
-                "stroke-width": STROKE_WIDTH * 2 / 3
-            }
+                "stroke-width": STROKE_WIDTH * 2 / 3,
+            },
         )
         element.append(drawn_order)
-
 
     def _draw_build(self, player, order: Build) -> None:
         element = self._moves_svg.getroot()
@@ -593,3 +596,19 @@ class Mapper:
 def _create_element(tag: str, attributes: dict[str, any]) -> etree.Element:
     attributes_str = {key: str(val) for key, val in attributes.items()}
     return etree.Element(tag, attributes_str)
+
+
+def _pull_coordinate(anchor: tuple[float, float], coordinate: tuple[float, float]) -> tuple[float, float]:
+    """Pull coordinate toward anchor by a small margin to give unit view breathing room"""
+    ax, ay = anchor
+    cx, cy = coordinate
+    dx = ax - cx
+    dy = ay - cy
+
+    distance = math.sqrt(dx**2 + dy**2)
+    if distance == 0:
+        return coordinate
+
+    pull = 1.5 * RADIUS
+    scale = pull / distance
+    return cx + dx * scale, cy + dy * scale
