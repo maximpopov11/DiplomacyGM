@@ -570,18 +570,23 @@ class Mapper:
         if unit.coast:
             desired_province = unit.coast
 
-        desired_coords = desired_province.primary_unit_coordinate
+        # desired_coords = desired_province.primary_unit_coordinate
+        # if unit == unit.province.dislodged_unit:
+        #     desired_coords = desired_province.retreat_unit_coordinate
         if unit == unit.province.dislodged_unit:
-            desired_coords = desired_province.retreat_unit_coordinate
+            coord_list = unit.get_location().all_rets
+        else:
+            coord_list = unit.get_location().all_locs
+        for desired_coords in coord_list:
+            elem = copy.deepcopy(unit_element)
+            elem.set(
+                "transform", f"translate({desired_coords[0] - current_coords[0]},{desired_coords[1] - current_coords[1]})"
+            )
+            elem.set("id", unit.province.name)
+            elem.set("{http://www.inkscape.org/namespaces/inkscape}label", unit.province.name)
 
-        unit_element.set(
-            "transform", f"translate({desired_coords[0] - current_coords[0]},{desired_coords[1] - current_coords[1]})"
-        )
-        unit_element.set("id", unit.province.name)
-        unit_element.set("{http://www.inkscape.org/namespaces/inkscape}label", unit.province.name)
-
-        root_element = self.board_svg.getroot() if not use_moves_svg else self._moves_svg.getroot()
-        root_element.append(unit_element)
+            root_element = self.board_svg.getroot() if not use_moves_svg else self._moves_svg.getroot()
+            root_element.append(elem)
 
     def highlight_retreating_units(self, svg):
         for unit in self.board.units:

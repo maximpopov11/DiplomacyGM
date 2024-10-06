@@ -18,9 +18,15 @@ class Location:
         primary_unit_coordinate: tuple[float, float],
         retreat_unit_coordinate: tuple[float, float],
     ):
+        self.all_locs = set()
+        self.all_rets = set()
         self.name: str = name
         self.primary_unit_coordinate: tuple[float, float] = primary_unit_coordinate
         self.retreat_unit_coordinate: tuple[float, float] = retreat_unit_coordinate
+        if primary_unit_coordinate:
+            self.all_locs: set[tuple[float, float]] = {primary_unit_coordinate}
+        if retreat_unit_coordinate:
+            self.all_rets: set[float[float, float]] = {retreat_unit_coordinate}
 
     @abstractmethod
     def get_owner(self) -> Player | None:

@@ -113,6 +113,7 @@ class Parser:
         cheat_parsing.set_canals(self.name_to_province)
 
         provinces = cheat_parsing.create_high_seas_and_sands(provinces, self.name_to_province)
+        cheat_parsing.set_secondary_locs(self.name_to_province)
 
         # really bad bandaid code, will fix later
         # some coasts aren't set because their only coasts are with cheat provinces which are set after coasts are
@@ -147,6 +148,13 @@ class Parser:
         # TODO: (BETA) yet another very bad bandaid, no time to fix it the right way
         cheat_parsing.fix_phantom_units(provinces)
 
+        for province in provinces:
+            province.all_locs.add(province.primary_unit_coordinate)
+            province.all_rets.add(province.retreat_unit_coordinate)
+            for coast in province.coasts:
+                coast.all_locs.add(coast.primary_unit_coordinate)
+                coast.all_rets.add(coast.retreat_unit_coordinate)
+
         return provinces
 
     def _get_province_coordinates(self) -> set[Province]:
@@ -163,6 +171,7 @@ class Parser:
         province_type: ProvinceType,
     ) -> set[Province]:
         provinces = set()
+        prev_names = set()
         for province_data in provinces_layer.getchildren():
             path_string = province_data.get("d")
             if not path_string:
@@ -224,7 +233,6 @@ class Parser:
             name = None
             if PROVINCE_FILLS_LABELED:
                 name = self._get_province_name(province_data)
-
             province = Province(
                 name,
                 province_coordinates,
