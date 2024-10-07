@@ -402,7 +402,8 @@ class Mapper:
             else:
                 (x3, y3) = _pull_coordinate((x2, y2), (x3, y3))
             if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)):
-                self._draw_hold(order.destination.get_unit().get_location().primary_unit_coordinate)
+                for coord in order.destination.all_locs:
+                    self._draw_hold(coord)
             # if two units are support-holding each other
             destorder = order.destination.get_unit().order
 
