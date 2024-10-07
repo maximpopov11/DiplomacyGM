@@ -44,8 +44,11 @@ from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import ProvinceType, Province, Coast, Location
 from diplomacy.persistence.unit import Unit, UnitType
 
+from diplomacy.map_parser.vector.utils import get_svg_element
+
 from diplomacy.adjudicator.defs import AdjudicableOrder
 
+OUTPUTLAYER = 'layer16'
 
 def _add_arrow_definition_to_svg(svg: ElementTree) -> None:
     defs: Element = svg.find("{http://www.w3.org/2000/svg}defs")
@@ -140,16 +143,31 @@ class Mapper:
                 else:
                     unit_locs = unit.get_location().all_locs
                 
-                # TODO: Maybe there's a better way to handle convoyTransports?
-                if isinstance(unit.order, (RetreatMove, Move, Support, ConvoyTransport)):
+                # TODO: Maybe there's a better way to handle convoys?
+                if isinstance(unit.order, (RetreatMove, Move, Support)):
                     new_locs = []
                     for endpoint in unit.order.destination.all_locs:
                         new_locs += [get_closest_loc(unit_locs, endpoint)]
                     unit_locs = new_locs
                 try:
                     for loc in unit_locs:
-                        self._draw_order(unit, loc)
+                        val = self._draw_order(unit, loc)
+                        if val is not None:
+                            # if something returns, that means it could potentially go across the edge
+                            # copy it 3 times (-1, 0, +1)
+                            lval = copy.deepcopy(val)
+                            rval = copy.deepcopy(val)
+                            lval.attrib['transform'] = f'translate({-WIDTH}, 0)'
+                            rval.attrib['transform'] = f'translate({WIDTH}, 0)'
+                            t = self._moves_svg.getroot()
+                            
+                            l = get_svg_element(t, OUTPUTLAYER)
+
+                            l.append(lval)
+                            l.append(rval)
+                            l.append(val)
                 except Exception as err:
+                    raise err
                     logger.error(f"Drawing move failed for {unit}", exc_info=err)
         else:
             players: set[Player]
@@ -191,12 +209,12 @@ class Mapper:
             self._draw_core(coordinate)
         elif isinstance(order, Move):
             # moves are just convoyed moves that have no convoys
-            self._draw_convoyed_move(unit, coordinate)
+            return self._draw_convoyed_move(unit, coordinate)
         elif isinstance(order, ConvoyMove):
             logger.warning("Convoy move is depricated; use move instead")
-            self._draw_convoyed_move(unit, coordinate)
+            return self._draw_convoyed_move(unit, coordinate)
         elif isinstance(order, Support):
-            self._draw_support(unit, coordinate)
+            return self._draw_support(unit, coordinate)
         elif isinstance(order, ConvoyTransport):
             self._draw_convoy(order, coordinate)
         elif isinstance(order, RetreatMove):
@@ -298,8 +316,7 @@ class Mapper:
                 options += self._path_helper(source, destination, possibility, new_checked)
         return list(map((lambda t: (current.get_unit().get_location(),) + t), options))
 
-    def _draw_path(self, d: str, svg, marker_end="arrow", stroke_color="black"):
-        element = svg.getroot()
+    def _draw_path(self, d: str, marker_end="arrow", stroke_color="black"):
         order_path = _create_element(
             "path",
             {
@@ -311,7 +328,7 @@ class Mapper:
                 "marker-end": f"url(#{marker_end})",
             },
         )
-        element.append(order_path)
+        return order_path
 
     def _get_all_paths(self, unit: Unit) -> list[tuple[Province]]:
         paths = self._path_helper(unit.province, unit.order.destination, unit.province)
@@ -369,11 +386,10 @@ class Mapper:
                 s += f"{f(g(p[x-1:x+2]))}, {f(p[x])} S "
 
             s += f"{f(p[-2])}, {f(p[-1])}"
-            self._draw_path(s, self._moves_svg)
+            return self._draw_path(s)
 
     def _draw_support(self, unit: Unit, coordinate: tuple[float, float]) -> None:
         order: Support = unit.order
-        element = self._moves_svg.getroot()
         x1 = coordinate[0]
         y1 = coordinate[1]
         v2 = loc_to_point(order.source.get_location(), coordinate)
@@ -415,7 +431,7 @@ class Mapper:
                 "marker-end": f"url(#{'ball' if order.source.get_location() == order.destination else 'arrow'})"
             },
         )
-        element.append(drawn_order)
+        return drawn_order
 
     def _draw_convoy(self, order: ConvoyTransport, coordinate: tuple[float, float]) -> None:
         element = self._moves_svg.getroot()
@@ -654,22 +670,20 @@ WIDTH = 4375
 # returns closest point in a set
 # will wrap horizontally
 def get_closest_loc(possiblities: tuple[tuple[float, float]], coord: tuple[float, float]):
-    # possiblities = list(possiblities)
-    # crossed_pos = []
-    # for p in possiblities:
-    #     x = p[0]
-    #     cx = coord[0]
-    #     if abs(x - cx) > WIDTH / 2:
-    #         if x > cx:
-    #             x -= WIDTH
-    #         else:
-    #             x += WIDTH
-    #     crossed_pos += [(x, p[1])]
+    possiblities = list(possiblities)
+    crossed_pos = []
+    for p in possiblities:
+        x = p[0]
+        cx = coord[0]
+        if abs(x - cx) > WIDTH / 2:
+            if x > cx:
+                x -= WIDTH
+            else:
+                x += WIDTH
+        crossed_pos += [(x, p[1])]
     
-    #crossed_pos = np.array(crossed_pos)
+    crossed_pos = np.array(crossed_pos)
     
-    # TODO: set up proper rollover, as it can happen for transpacific convoys
-    crossed_pos = np.array(list(possiblities))
     dists = crossed_pos - coord
     short_ind = np.argmin(np.linalg.norm(dists, axis=1))
     return crossed_pos[short_ind].tolist()
