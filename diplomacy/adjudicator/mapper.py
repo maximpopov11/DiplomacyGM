@@ -217,7 +217,7 @@ class Mapper:
         elif isinstance(order, ConvoyTransport):
             self._draw_convoy(order, coordinate)
         elif isinstance(order, RetreatMove):
-            self._draw_move(order, coordinate)
+            return self._draw_move(order, coordinate)
         elif isinstance(order, RetreatDisband):
             self._draw_force_disband(coordinate, self._moves_svg)
         else:
@@ -270,7 +270,6 @@ class Mapper:
     def _draw_move(
         self, order: RetreatMove, coordinate: tuple[float, float], use_moves_svg=True
     ) -> None:
-        element = self._moves_svg.getroot() if use_moves_svg else self.board_svg.getroot()
         if order.destination.get_unit():
             destination = _pull_coordinate(coordinate, order.destination.primary_unit_coordinate)
         else:
@@ -286,7 +285,7 @@ class Mapper:
                 "marker-end": "url(#arrow)",
             },
         )
-        element.append(order_path)
+        return order_path
 
     def _path_helper(
         self, source: Province, destination: Province, current: Province, already_checked=()
