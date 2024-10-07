@@ -167,7 +167,6 @@ class Mapper:
                             l.append(rval)
                             l.append(val)
                 except Exception as err:
-                    raise err
                     logger.error(f"Drawing move failed for {unit}", exc_info=err)
         else:
             players: set[Player]
