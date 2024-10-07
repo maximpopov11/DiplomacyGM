@@ -669,8 +669,8 @@ def get_closest_loc(possiblities: tuple[tuple[float, float]], coord: tuple[float
     #crossed_pos = np.array(crossed_pos)
     
     # TODO: set up proper rollover, as it can happen for transpacific convoys
-    crossed_pos = np.array(crossed_pos)
+    crossed_pos = np.array(possiblities)
 
-    dists = crossed_pos - possiblities
+    dists = crossed_pos - coord
     short_ind = np.argmin(np.linalg.norm(dists, axis=1))
     return crossed_pos[short_ind].tolist()
