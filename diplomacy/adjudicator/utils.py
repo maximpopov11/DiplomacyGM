@@ -100,9 +100,12 @@ def loc_to_point(loc: Location, current: tuple[float, float], use_retreats=False
 
 
 def pull_coordinate(
-    anchor: tuple[float, float], coordinate: tuple[float, float], pull=(1.5 * RADIUS)
+    anchor: tuple[float, float], coordinate: tuple[float, float], pull=(1.5 * RADIUS), limit=0.05
 ) -> tuple[float, float]:
-    """Pull coordinate toward anchor by a small margin to give unit view breathing room"""
+    """
+    Pull coordinate toward anchor by a small margin to give unit view breathing room. The pull will be limited to be
+    no more than the given percent of the distance because otherwise small province size areas are hard to see.
+    """
     ax, ay = anchor
     cx, cy = coordinate
     dx = ax - cx
@@ -111,6 +114,9 @@ def pull_coordinate(
     distance = math.sqrt(dx**2 + dy**2)
     if distance == 0:
         return coordinate
+
+    # if the area is small, the pull can become too large of the percent of the total arrow length
+    pull = min(pull, distance * limit)
 
     scale = pull / distance
     return cx + dx * scale, cy + dy * scale
