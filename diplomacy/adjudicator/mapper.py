@@ -1,13 +1,19 @@
 import copy
 import itertools
-import math
-import re
 import sys
-import numpy as np
 from xml.etree.ElementTree import ElementTree, Element
 
+import numpy as np
 from lxml import etree
 
+from diplomacy.adjudicator.utils import (
+    get_closest_loc,
+    add_arrow_definition_to_svg,
+    create_element,
+    pull_coordinate,
+    loc_to_point,
+    color_element,
+)
 from diplomacy.map_parser.vector.config_svg import (
     SVG_PATH,
     UNITS_LAYER_ID,
@@ -21,8 +27,10 @@ from diplomacy.map_parser.vector.config_svg import (
     SUPPLY_CENTER_LAYER_ID,
     ISLAND_RING_LAYER_ID,
     SEASON_TITLE_LAYER_ID,
+    MAP_WIDTH,
 )
-from diplomacy.map_parser.vector.utils import get_svg_element, get_unit_coordinates
+from diplomacy.map_parser.vector.utils import get_svg_element
+from diplomacy.map_parser.vector.utils import get_unit_coordinates
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import logger
 from diplomacy.persistence.order import (
@@ -36,7 +44,6 @@ from diplomacy.persistence.order import (
     Disband,
     Move,
     ConvoyMove,
-    Order,
     PlayerOrder,
 )
 from diplomacy.persistence.phase import Phase, is_builds_phase, is_retreats_phase
@@ -44,66 +51,7 @@ from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import ProvinceType, Province, Coast, Location
 from diplomacy.persistence.unit import Unit, UnitType
 
-from diplomacy.map_parser.vector.utils import get_svg_element
-
-from diplomacy.adjudicator.defs import AdjudicableOrder
-
-OUTPUTLAYER = 'layer16'
-
-def _add_arrow_definition_to_svg(svg: ElementTree) -> None:
-    defs: Element = svg.find("{http://www.w3.org/2000/svg}defs")
-    if defs is None:
-        defs = _create_element("defs", {})
-        svg.getroot().append(defs)
-    # TODO: Check if 'arrow' id is already defined in defs
-    arrow_marker: Element = _create_element(
-        "marker",
-        {
-            "id": "arrow",
-            "viewbox": "0 0 3 3",
-            "refX": "1.5",
-            "refY": "1.5",
-            "markerWidth": "3",
-            "markerHeight": "3",
-            "orient": "auto-start-reverse",
-        },
-    )
-    arrow_path: Element = _create_element(
-        "path",
-        {"d": "M 0,0 L 3,1.5 L 0,3 z"},
-    )
-    arrow_marker.append(arrow_path)
-    defs.append(arrow_marker)
-    ball_marker: Element = _create_element(
-        "marker",
-        {
-            "id": "ball",
-            "viewbox": "0 0 3 3",
-            # "refX": "1.5",
-            # "refY": "1.5",
-            "markerWidth": "3",
-            "markerHeight": "3",
-            "orient": "auto-start-reverse",
-        },
-    )
-    ball_def: Element = _create_element(
-        "circle",
-        {"r": "2", "fill": "black"},
-    )
-    ball_marker.append(ball_def)
-    defs.append(ball_marker)
-
-
-# move this function somewhere more appropriate?
-def color_element(element: Element, color: str, key="fill"):
-    if len(color) == 6:  # Potentially buggy hack; just assume everything with length 6 is rgb without #
-        color = f"#{color}"
-    if element.get(key) is not None:
-        element.set(key, color)
-    if element.get("style") is not None and key in element.get("style"):
-        style = element.get("style")
-        style = re.sub(key + r":#[0-9a-fA-F]{6}", f"{key}:{color}", style)
-        element.set("style", style)
+OUTPUTLAYER = "layer16"
 
 
 class Mapper:
@@ -111,7 +59,7 @@ class Mapper:
         self.board: Board = board
         self.board_svg: ElementTree = etree.parse(SVG_PATH)
         self.player_restriction: Player | None = None
-        _add_arrow_definition_to_svg(self.board_svg)
+        add_arrow_definition_to_svg(self.board_svg)
 
         units_layer: Element = get_svg_element(self.board_svg, UNITS_LAYER_ID)
         self.board_svg.getroot().remove(units_layer)
@@ -142,7 +90,7 @@ class Mapper:
                     unit_locs = unit.get_location().all_rets
                 else:
                     unit_locs = unit.get_location().all_locs
-                
+
                 # TODO: Maybe there's a better way to handle convoys?
                 if isinstance(unit.order, (RetreatMove, Move, Support)):
                     new_locs = []
@@ -157,10 +105,10 @@ class Mapper:
                             # copy it 3 times (-1, 0, +1)
                             lval = copy.deepcopy(val)
                             rval = copy.deepcopy(val)
-                            lval.attrib['transform'] = f'translate({-WIDTH}, 0)'
-                            rval.attrib['transform'] = f'translate({WIDTH}, 0)'
+                            lval.attrib["transform"] = f"translate({-MAP_WIDTH}, 0)"
+                            rval.attrib["transform"] = f"translate({MAP_WIDTH}, 0)"
                             t = self._moves_svg.getroot()
-                            
+
                             l = get_svg_element(t, OUTPUTLAYER)
 
                             l.append(lval)
@@ -237,7 +185,7 @@ class Mapper:
 
     def _draw_hold(self, coordinate: tuple[float, float]) -> None:
         element = self._moves_svg.getroot()
-        drawn_order = _create_element(
+        drawn_order = create_element(
             "circle",
             {
                 "cx": coordinate[0],
@@ -252,7 +200,7 @@ class Mapper:
 
     def _draw_core(self, coordinate: tuple[float, float]) -> None:
         element = self._moves_svg.getroot()
-        drawn_order = _create_element(
+        drawn_order = create_element(
             "rect",
             {
                 "x": coordinate[0] - RADIUS,
@@ -267,14 +215,12 @@ class Mapper:
         )
         element.append(drawn_order)
 
-    def _draw_move(
-        self, order: RetreatMove, coordinate: tuple[float, float], use_moves_svg=True
-    ) -> None:
+    def _draw_move(self, order: RetreatMove, coordinate: tuple[float, float], use_moves_svg=True) -> None:
         if order.destination.get_unit():
-            destination = _pull_coordinate(coordinate, order.destination.primary_unit_coordinate)
+            destination = pull_coordinate(coordinate, order.destination.primary_unit_coordinate)
         else:
             destination = order.destination.primary_unit_coordinate
-        order_path = _create_element(
+        order_path = create_element(
             "path",
             {
                 "d": f"M {coordinate[0]},{coordinate[1]} L {destination[0]},{destination[1]}",
@@ -315,7 +261,7 @@ class Mapper:
         return list(map((lambda t: (current.get_unit().get_location(),) + t), options))
 
     def _draw_path(self, d: str, marker_end="arrow", stroke_color="black"):
-        order_path = _create_element(
+        order_path = create_element(
             "path",
             {
                 "d": d,
@@ -357,10 +303,10 @@ class Mapper:
             for loc in path[1:]:
                 p += [loc_to_point(loc, start)]
                 start = p[-1]
-            
+
             if path[-1].get_unit():
-                p[-1] = _pull_coordinate(p[-2], p[-1])
-            
+                p[-1] = pull_coordinate(p[-2], p[-1])
+
             p = np.array(p)
 
             def f(point: tuple[float, float]):
@@ -397,27 +343,29 @@ class Mapper:
         marker_start = ""
         if order.destination.get_unit():
             if order.source.get_location() == order.destination:
-                (x3, y3) = _pull_coordinate((x1, y1), (x3, y3), RADIUS)
+                (x3, y3) = pull_coordinate((x1, y1), (x3, y3), RADIUS)
             else:
-                (x3, y3) = _pull_coordinate((x2, y2), (x3, y3))
+                (x3, y3) = pull_coordinate((x2, y2), (x3, y3))
             if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)):
                 for coord in order.destination.all_locs:
                     self._draw_hold(coord)
             # if two units are support-holding each other
             destorder = order.destination.get_unit().order
 
-            if (isinstance(order.destination.get_unit().order, Support)
+            if (
+                isinstance(order.destination.get_unit().order, Support)
                 and destorder.source.get_location() == destorder.destination == unit.get_location()
-                and order.source.get_location() == order.destination):
+                and order.source.get_location() == order.destination
+            ):
                 # This check is so we only do it once, so it doesn't overlay
                 # it doesn't matter which one is the origin & which is the dest
                 if id(order.destination.get_unit()) > id(unit):
                     marker_start = "url(#ball)"
                     # doesn't matter that v3 has been pulled, as it's still collinear
-                    (x1, y1) = (x2, y2) = _pull_coordinate((x3, y3), (x1, y1), RADIUS)
+                    (x1, y1) = (x2, y2) = pull_coordinate((x3, y3), (x1, y1), RADIUS)
                 else:
                     return
-        drawn_order = _create_element(
+        drawn_order = create_element(
             "path",
             {
                 "d": f"M {x1},{y1} Q {x2},{y2} {x3},{y3}",
@@ -427,14 +375,14 @@ class Mapper:
                 "stroke-width": STROKE_WIDTH,
                 "stroke-linecap": "round",
                 "marker-start": marker_start,
-                "marker-end": f"url(#{'ball' if order.source.get_location() == order.destination else 'arrow'})"
+                "marker-end": f"url(#{'ball' if order.source.get_location() == order.destination else 'arrow'})",
             },
         )
         return drawn_order
 
     def _draw_convoy(self, order: ConvoyTransport, coordinate: tuple[float, float]) -> None:
         element = self._moves_svg.getroot()
-        drawn_order = _create_element(
+        drawn_order = create_element(
             "circle",
             {
                 "cx": coordinate[0],
@@ -449,7 +397,7 @@ class Mapper:
 
     def _draw_build(self, player, order: Build) -> None:
         element = self._moves_svg.getroot()
-        drawn_order = _create_element(
+        drawn_order = create_element(
             "circle",
             {
                 "cx": order.location.primary_unit_coordinate[0],
@@ -471,7 +419,7 @@ class Mapper:
 
     def _draw_disband(self, coordinate: tuple[float, float], svg) -> None:
         element = svg.getroot()
-        drawn_order = _create_element(
+        drawn_order = create_element(
             "circle",
             {
                 "cx": coordinate[0],
@@ -498,7 +446,7 @@ class Mapper:
         )
         rotate_90 = np.array([[0, -1], [1, 0]])
         points = np.concatenate((init, init @ rotate_90, -init, -init @ rotate_90)) + coordinate
-        drawn_order = _create_element(
+        drawn_order = create_element(
             "polygon",
             {
                 "points": " ".join(map(lambda a: ",".join(map(str, a)), points)),
@@ -610,7 +558,8 @@ class Mapper:
         for desired_coords in coord_list:
             elem = copy.deepcopy(unit_element)
             elem.set(
-                "transform", f"translate({desired_coords[0] - current_coords[0]},{desired_coords[1] - current_coords[1]})"
+                "transform",
+                f"translate({desired_coords[0] - current_coords[0]},{desired_coords[1] - current_coords[1]})",
             )
             elem.set("id", unit.province.name)
             elem.set("{http://www.inkscape.org/namespaces/inkscape}label", unit.province.name)
@@ -638,51 +587,3 @@ class Mapper:
         self._draw_disband(unit.province.retreat_unit_coordinate, svg)
         # for retreat_province in unit.retreat_options:
         #     self._draw_move(RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False)
-
-
-def _create_element(tag: str, attributes: dict[str, any]) -> etree.Element:
-    attributes_str = {key: str(val) for key, val in attributes.items()}
-    return etree.Element(tag, attributes_str)
-
-
-def _pull_coordinate(anchor: tuple[float, float], coordinate: tuple[float, float], pull=(1.5*RADIUS)) -> tuple[float, float]:
-    """Pull coordinate toward anchor by a small margin to give unit view breathing room"""
-    ax, ay = anchor
-    cx, cy = coordinate
-    dx = ax - cx
-    dy = ay - cy
-
-    distance = math.sqrt(dx**2 + dy**2)
-    if distance == 0:
-        return coordinate
-
-    scale = pull / distance
-    return cx + dx * scale, cy + dy * scale
-
-def loc_to_point(loc: Location, current: tuple[float, float], use_retreats=False):
-    if not use_retreats:
-        return get_closest_loc(loc.all_locs, current)
-    else:
-        return get_closest_loc(loc.all_rets, current)
-
-WIDTH = 4375
-# returns closest point in a set
-# will wrap horizontally
-def get_closest_loc(possiblities: tuple[tuple[float, float]], coord: tuple[float, float]):
-    possiblities = list(possiblities)
-    crossed_pos = []
-    for p in possiblities:
-        x = p[0]
-        cx = coord[0]
-        if abs(x - cx) > WIDTH / 2:
-            if x > cx:
-                x -= WIDTH
-            else:
-                x += WIDTH
-        crossed_pos += [(x, p[1])]
-    
-    crossed_pos = np.array(crossed_pos)
-    
-    dists = crossed_pos - coord
-    short_ind = np.argmin(np.linalg.norm(dists, axis=1))
-    return crossed_pos[short_ind].tolist()
