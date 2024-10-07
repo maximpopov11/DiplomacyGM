@@ -412,4 +412,4 @@ def set_secondary_locs(name_to_province: dict[str, set[Province]]):
     set_one("SPO4", (4099.759, 1577.737), (4111.759, 1589.737))
     set_one("SPO5", (4176.760, 1577.678), (4188.760, 1589.678))
 
-    set_one("Chukchi Sea", (4243.000, 330.000), (4166.281, 364.041))
+    set_one("Chukchi Sea", (28.000, 241.000), (72.908, 186.392))
