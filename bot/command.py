@@ -42,10 +42,8 @@ def bumble(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
         word_of_bumble = "You are the chosen bumble"
     return f"**{word_of_bumble}**", None
 
-
+@perms.gm("botsay")
 async def botsay(ctx: commands.Context) -> None:
-    if not is_gm(ctx.message.author) and is_gm_channel(ctx.channel):
-        return
     # noinspection PyTypeChecker
     if len(ctx.message.channel_mentions) == 0:
         return

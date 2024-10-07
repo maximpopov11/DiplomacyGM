@@ -165,7 +165,7 @@ class Mapper:
         elif isinstance(order, ConvoyTransport):
             self._draw_convoy(order, coordinate)
         elif isinstance(order, RetreatMove):
-            return self._draw_move(order, coordinate)
+            return self._draw_retreat_move(order, coordinate)
         elif isinstance(order, RetreatDisband):
             self._draw_force_disband(coordinate, self._moves_svg)
         else:
@@ -215,17 +215,16 @@ class Mapper:
         )
         element.append(drawn_order)
 
-    def _draw_move(self, order: RetreatMove, coordinate: tuple[float, float], use_moves_svg=True) -> None:
+    def _draw_retreat_move(self, order: RetreatMove, coordinate: tuple[float, float], use_moves_svg=True) -> None:
+        destination = loc_to_point(order.destination, coordinate)
         if order.destination.get_unit():
-            destination = pull_coordinate(coordinate, order.destination.primary_unit_coordinate)
-        else:
-            destination = order.destination.primary_unit_coordinate
+            destination = pull_coordinate(coordinate, destination)
         order_path = create_element(
             "path",
             {
                 "d": f"M {coordinate[0]},{coordinate[1]} L {destination[0]},{destination[1]}",
                 "fill": "none",
-                "stroke": "red" if isinstance(order, RetreatMove) else "black",
+                "stroke": "red",
                 "stroke-width": STROKE_WIDTH,
                 "stroke-linecap": "round",
                 "marker-end": "url(#arrow)",
@@ -586,4 +585,4 @@ class Mapper:
         # else:
         self._draw_disband(unit.province.retreat_unit_coordinate, svg)
         # for retreat_province in unit.retreat_options:
-        #     self._draw_move(RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False)
+        #     self._draw_retreat_move(RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False)
