@@ -179,7 +179,8 @@ class Mapper:
         if isinstance(order, Build):
             self._draw_build(player, order)
         elif isinstance(order, Disband):
-            self._draw_force_disband(order.location.primary_unit_coordinate, self._moves_svg)
+            for coord in order.location.all_locs:
+                self._draw_force_disband(coord, self._moves_svg)
         else:
             logger.error(f"Could not draw player order {order}")
 
