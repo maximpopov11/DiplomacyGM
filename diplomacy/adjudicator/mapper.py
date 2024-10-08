@@ -52,7 +52,7 @@ from diplomacy.persistence.province import ProvinceType, Province, Coast, Locati
 from diplomacy.persistence.unit import Unit, UnitType
 
 OUTPUTLAYER = "layer16"
-
+UNITLAYER = "layer17"
 
 class Mapper:
     def __init__(self, board: Board):
@@ -543,13 +543,6 @@ class Mapper:
 
         current_coords = get_unit_coordinates(unit_element)
 
-        desired_province = unit.province
-        if unit.coast:
-            desired_province = unit.coast
-
-        # desired_coords = desired_province.primary_unit_coordinate
-        # if unit == unit.province.dislodged_unit:
-        #     desired_coords = desired_province.retreat_unit_coordinate
         if unit == unit.province.dislodged_unit:
             coord_list = unit.get_location().all_rets
         else:
@@ -563,8 +556,9 @@ class Mapper:
             elem.set("id", unit.province.name)
             elem.set("{http://www.inkscape.org/namespaces/inkscape}label", unit.province.name)
 
-            root_element = self.board_svg.getroot() if not use_moves_svg else self._moves_svg.getroot()
-            root_element.append(elem)
+            tree = self.board_svg if not use_moves_svg else self._moves_svg
+            group = get_svg_element(tree, UNITLAYER)
+            group.append(elem)
 
     def highlight_retreating_units(self, svg):
         for unit in self.board.units:

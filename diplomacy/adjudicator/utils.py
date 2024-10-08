@@ -100,7 +100,7 @@ def loc_to_point(loc: Location, current: tuple[float, float], use_retreats=False
 
 
 def pull_coordinate(
-    anchor: tuple[float, float], coordinate: tuple[float, float], pull=(1.5 * RADIUS), limit=0.05
+    anchor: tuple[float, float], coordinate: tuple[float, float], pull=(1.5 * RADIUS), limit=0.25
 ) -> tuple[float, float]:
     """
     Pull coordinate toward anchor by a small margin to give unit view breathing room. The pull will be limited to be
