@@ -21,15 +21,19 @@ _build = "build"
 _disband = "disband"
 
 _order_dict = {
-    _hold: ["h", "hold", "holds"],
-    _move: ["-", "->", ">", "to", "m", "move", "moves", "into"],
+    _hold: ["h", "hold", "holds", "stand", "stands"],
+    _move: ["-", "–", "->", "–>", ">", "to", "m", "move", "moves", "into"],
     _convoy_move: [
         "c-",
+        "c–",
         "c->",
+        "c–>",
         "c>",
         "cm",
         "convoy -",
+        "convoy –",
         "convoy ->",
+        "convoy –>",
         "convoy >",
         "convoy to",
         "convoy m",
@@ -40,7 +44,7 @@ _order_dict = {
     _support: ["s", "support", "supports"],
     _convoy: ["c", "convoy", "convoys"],
     _core: ["core", "cores"],
-    _retreat_move: ["-", "->", "to", "m", "move", "moves", "r", "retreat", "retreats"],
+    _retreat_move: ["-", "–", "->", "–>", "to", "m", "move", "moves", "r", "retreat", "retreats"],
     _retreat_disband: ["d", "disband", "disbands", "boom", "explodes", "dies"],
     _build: ["b", "build", "place"],
     _disband: ["d", "disband", "disbands", "drop", "drops", "remove"],
