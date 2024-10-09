@@ -299,8 +299,8 @@ class Mapper:
                 valid_convoys = valid_convoys[0:1]
         valid_convoys = self.get_shortest_paths(valid_convoys)
         for path in valid_convoys:
-            p = [path[0].primary_unit_coordinate]
-            start = path[0].primary_unit_coordinate
+            p = [coordinate]
+            start = coordinate
             for loc in path[1:]:
                 p += [loc_to_point(loc, start)]
                 start = p[-1]
