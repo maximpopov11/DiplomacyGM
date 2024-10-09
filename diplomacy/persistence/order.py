@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from diplomacy.persistence.province import Location
+from diplomacy.persistence.province import Location, Coast
 from diplomacy.persistence.unit import unit_type_to_name
 
 if TYPE_CHECKING:
@@ -82,7 +82,12 @@ class Support(ComplexOrder):
 
     def __str__(self):
         suffix = "Hold"
-        if self.source.province != self.destination:
+
+        destination_province = self.destination
+        if isinstance(self.destination, Coast):
+            destination_province = self.destination.province
+
+        if self.source.province != destination_province:
             suffix = f"- {self.destination}"
         return f"Supports {self.source.province} {suffix}"
 
