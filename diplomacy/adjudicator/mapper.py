@@ -13,6 +13,7 @@ from diplomacy.adjudicator.utils import (
     pull_coordinate,
     loc_to_point,
     color_element,
+    normalize,
 )
 from diplomacy.map_parser.vector.config_svg import (
     SVG_PATH,
@@ -95,7 +96,7 @@ class Mapper:
                 if isinstance(unit.order, (RetreatMove, Move, Support)):
                     new_locs = []
                     for endpoint in unit.order.destination.all_locs:
-                        new_locs += [get_closest_loc(unit_locs, endpoint)]
+                        new_locs += [normalize(get_closest_loc(unit_locs, endpoint))]
                     unit_locs = new_locs
                 try:
                     for loc in unit_locs:
@@ -298,8 +299,8 @@ class Mapper:
                 valid_convoys = valid_convoys[0:1]
         valid_convoys = self.get_shortest_paths(valid_convoys)
         for path in valid_convoys:
-            p = [path[0].primary_unit_coordinate]
-            start = path[0].primary_unit_coordinate
+            p = [coordinate]
+            start = coordinate
             for loc in path[1:]:
                 p += [loc_to_point(loc, start)]
                 start = p[-1]

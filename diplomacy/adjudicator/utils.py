@@ -69,6 +69,9 @@ def create_element(tag: str, attributes: dict[str, any]) -> etree.Element:
     attributes_str = {key: str(val) for key, val in attributes.items()}
     return etree.Element(tag, attributes_str)
 
+# returns equivelent point within the map
+def normalize(point: tuple[float, float]):
+    return (point[0] % MAP_WIDTH, point[1])
 
 # returns closest point in a set
 # will wrap horizontally
