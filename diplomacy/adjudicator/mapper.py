@@ -238,7 +238,7 @@ class Mapper:
         self, source: Province, destination: Province, current: Province, already_checked=()
     ) -> list[tuple[Province]]:
         if current in already_checked:
-            return [()]
+            return []
         options = []
         new_checked = already_checked + (current,)
         for possibility in current.adjacent:
@@ -277,7 +277,7 @@ class Mapper:
 
     def _get_all_paths(self, unit: Unit) -> list[tuple[Province]]:
         paths = self._path_helper(unit.province, unit.order.destination, unit.province)
-        if paths == [()]:
+        if paths == []:
             return [(unit.province, unit.order.destination)]
         return paths
 
