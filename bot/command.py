@@ -8,7 +8,7 @@ from discord.ext import commands
 import bot.perms as perms
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
-from bot.utils import is_gm, is_gm_channel, get_orders, is_admin
+from bot.utils import is_gm_channel, get_orders, is_admin
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
@@ -41,6 +41,7 @@ def bumble(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
     if word_of_bumble == "bumble":
         word_of_bumble = "You are the chosen bumble"
     return f"**{word_of_bumble}**", None
+
 
 @perms.gm("botsay")
 async def botsay(ctx: commands.Context) -> None:

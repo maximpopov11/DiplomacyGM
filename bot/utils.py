@@ -1,6 +1,7 @@
 from discord.ext import commands
 
-from bot.config import gm_roles, gm_channels, player_channel_suffix
+from bot import config
+
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.manager import Manager
@@ -45,13 +46,13 @@ def is_admin(author: commands.Context.author) -> bool:
 
 def is_gm(author: commands.Context.author) -> bool:
     for role in author.roles:
-        if role.name in gm_roles:
+        if config.is_gm_role(role.name):
             return True
     return False
 
 
 def is_gm_channel(channel: commands.Context.channel) -> bool:
-    return channel.name in gm_channels
+    return config.is_gm_channel(channel.name) and config.is_gm_category(channel.category.name)
 
 
 def get_player_by_role(author: commands.Context.author, manager: Manager, server_id: int) -> Player | None:
@@ -62,11 +63,11 @@ def get_player_by_role(author: commands.Context.author, manager: Manager, server
     return None
 
 
-def get_player_by_channel(name: str, manager: Manager, server_id: int) -> Player | None:
-    name = name.strip()
-    if not name.endswith(player_channel_suffix):
+def get_player_by_channel(channel: commands.Context.channel, manager: Manager, server_id: int) -> Player | None:
+    name = channel.name
+    if not name.endswith(config.player_channel_suffix) or not config.is_player_category(channel.category.name):
         return None
-    name = name[: -(len(player_channel_suffix))]
+    name = name[: -(len(config.player_channel_suffix))]
     return get_player_by_name(name, manager, server_id)
 
 
@@ -78,8 +79,8 @@ def get_player_by_name(name: str, manager: Manager, server_id: int) -> Player | 
 
 
 def is_player_channel(player_role: str, channel: commands.Context.channel) -> bool:
-    player_channel = player_role.lower() + player_channel_suffix
-    return player_channel == channel.name
+    player_channel = player_role.lower() + config.player_channel_suffix
+    return player_channel == channel.name and config.is_player_category(channel.category.name)
 
 
 def get_keywords(command: str) -> list[str]:
