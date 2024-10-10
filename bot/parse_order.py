@@ -9,6 +9,7 @@ from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province
 from diplomacy.persistence.unit import Unit, UnitType
 
+# TODO: all of these are not actually used (probably), so should be deleted
 _hold = "hold"
 _move = "move"
 _convoy_move = "convoy move"

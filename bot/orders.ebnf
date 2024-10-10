@@ -32,27 +32,36 @@ retreat_order: retreat_unit WS RETREAT WS province
 
 disband_order: retreat_unit WS DISBAND
 
-SUPPORT_HOLD.2 : /(support|supports|s)[ \-_]?(hold|holds|h)/
+SUPPORT_HOLD.2 : /(support|supports|s)[ \-_]?(hold|holds|h|stand|stands)/
 
 HOLD.2 : "h"
        | "hold"
        | "holds"
+       | "stand"
+       | "stands"
 
 MOVE.2 : "-"
+       | "–"
        | "->"
+       | "–>"
        | "to"
        | "m"
        | "move"
        | "moves"
+       | "into"
 
 CONVOY_MOVE.2 : "c-"
+        | "c–"
         | "cm"
         | "convoy -"
+        | "convoy –"
         | "convoy ->"
+        | "convoy –>"
         | "convoy to"
         | "convoy m"
         | "convoy move"
         | "convoy moves"
+        | "convoy into"
 
 SUPPORT.2 : "s"
         | "support"
