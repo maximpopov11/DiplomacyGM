@@ -1,12 +1,11 @@
+import copy
+import itertools
 import re
 from typing import Callable
 from xml.etree.ElementTree import Element
 
 import shapely
-import itertools
-import numpy as np
 from lxml import etree
-from scipy.spatial import cKDTree
 from shapely.geometry import Point, Polygon
 
 from diplomacy.map_parser.vector import cheat_parsing
@@ -24,9 +23,6 @@ from diplomacy.persistence.phase import spring_moves
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, ProvinceType, Coast
 from diplomacy.persistence.unit import Unit, UnitType
-
-import copy
-
 
 # TODO: (BETA) all attribute getting should be in utils which we import and call utils.my_unit()
 # TODO: (BETA) consistent in bracket formatting
