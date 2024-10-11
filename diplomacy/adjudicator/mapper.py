@@ -1,5 +1,6 @@
 import copy
 import itertools
+import re
 import sys
 from xml.etree.ElementTree import ElementTree, Element
 
@@ -28,10 +29,10 @@ from diplomacy.map_parser.vector.config_svg import (
     SUPPLY_CENTER_LAYER_ID,
     ISLAND_RING_LAYER_ID,
     SEASON_TITLE_LAYER_ID,
+    POWER_BANNERS_LAYER_ID,
     MAP_WIDTH,
 )
-from diplomacy.map_parser.vector.utils import get_svg_element
-from diplomacy.map_parser.vector.utils import get_unit_coordinates
+from diplomacy.map_parser.vector.utils import get_element_color, get_svg_element, get_unit_coordinates
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import logger
@@ -61,6 +62,8 @@ class Mapper:
         self.board: Board = board
         self.board_svg: ElementTree = etree.parse(SVG_PATH)
         self.player_restriction: Player | None = None
+        self._initialize_scoreboard_locations()
+
         add_arrow_definition_to_svg(self.board_svg)
 
         units_layer: Element = get_svg_element(self.board_svg, UNITS_LAYER_ID)
@@ -142,7 +145,28 @@ class Mapper:
         # TODO: Get the start date from somewhere in the board/in a config file
         return self.board.phase.name + " " + str(self.board.year + 1642)
 
-    def draw_side_panel(self, svg) -> None:
+    def draw_side_panel(self, svg: ElementTree) -> None:
+        self._draw_side_panel_date(svg)
+        self._draw_side_panel_scoreboard(svg)
+
+    def _draw_side_panel_scoreboard(self, svg: ElementTree) -> None:
+        '''
+        format is a list of each power; for each power, its children nodes are as follows:
+        0: colored rectangle
+        1: full name ("Dutch Empire", ...)
+        2-4: "current", "victory", "start" text labels in that order
+        5-7: SC counts in that same order
+        '''
+        all_power_banners_element = get_svg_element(svg.getroot(), POWER_BANNERS_LAYER_ID)
+        for (i, player) in enumerate(self.board.get_players_sorted_by_vscc()):
+            for power_element in all_power_banners_element:
+                # match the correct svg element based on the color of the rectangle
+                if get_element_color(power_element[0]) == player.color:
+                    power_element.set('transform', self.scoreboard_power_locations[i])
+                    power_element[5][0].text = str(len(player.centers))
+                    break
+    
+    def _draw_side_panel_date(self, svg: ElementTree) -> None:
         date = get_svg_element(svg.getroot(), SEASON_TITLE_LAYER_ID)
         # TODO: this is hacky; I don't know a better way
         date[0][0].text = self.get_pretty_date()
@@ -583,3 +607,15 @@ class Mapper:
         self._draw_disband(unit.province.retreat_unit_coordinate, svg)
         # for retreat_province in unit.retreat_options:
         #     self._draw_retreat_move(RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False)
+
+    def _initialize_scoreboard_locations(self) -> None:
+        all_power_banners_element = get_svg_element(svg.getroot(), POWER_BANNERS_LAYER_ID)
+        self.scoreboard_power_locations : list[str] = []
+        for power_element in all_power_banners_element:
+            self.scoreboard_power_locations.append(power_element.get('transform'))
+        
+        # each power is placed in the right spot based on the transform field which has value of "tranlate($x,$y)" where x,y 
+        # are floating point numbers; we parse these via regex and sort by y-value
+        self.scoreboard_power_locations.sort(
+            lambda loc: float(re.match(r'translate\((-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\)', x).groups()[1])
+        )

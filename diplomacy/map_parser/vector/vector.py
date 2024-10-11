@@ -44,6 +44,7 @@ class Parser:
         self.names_layer: Element = get_svg_element(svg_root, PROVINCE_NAMES_LAYER_ID)
         self.centers_layer: Element = get_svg_element(svg_root, SUPPLY_CENTER_LAYER_ID)
         self.units_layer: Element = get_svg_element(svg_root, UNITS_LAYER_ID)
+        self.power_banner_layer: Element = get_svg_element(svg_root, POWER_BANNERS_LAYER_ID)
 
         self.phantom_primary_armies_layer: Element = get_svg_element(svg_root, PHANTOM_PRIMARY_ARMY_LAYER_ID)
         self.phantom_retreat_armies_layer: Element = get_svg_element(svg_root, PHANTOM_RETREAT_ARMY_LAYER_ID)

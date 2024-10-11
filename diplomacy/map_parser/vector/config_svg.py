@@ -23,7 +23,9 @@ SUPPLY_CENTER_LAYER_ID: str = "layer3"
 # Layer group in SVG containing units
 UNITS_LAYER_ID: str = "layer10"
 # Layer group in SVG containing the date
-SEASON_TITLE_LAYER_ID = "layer4"
+SEASON_TITLE_LAYER_ID: str = "layer4"
+# Layer group in SVG contianing the power banners
+POWER_BANNERS_LAYER_ID: str = "layer13"
 
 # Layer groups in SVG containing phantom units for optimal unit placements
 PHANTOM_PRIMARY_ARMY_LAYER_ID: str = "g652"

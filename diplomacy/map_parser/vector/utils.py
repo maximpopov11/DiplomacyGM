@@ -8,15 +8,15 @@ from diplomacy.persistence.unit import UnitType
 def get_svg_element(svg_root: ElementTree, element_id: str) -> Element:
     return svg_root.xpath(f'//*[@id="{element_id}"]')[0]
 
-
-def get_player(element: Element, color_to_player: dict[str, Player]) -> Player:
+def get_element_color(element: Element) -> str:
     style = element.get("style").split(";")
     for value in style:
         prefix = "fill:#"
         if value.startswith(prefix):
-            color = value[len(prefix) :]
-            return color_to_player[color]
+            return value[len(prefix) :]
 
+def get_player(element: Element, color_to_player: dict[str, Player]) -> Player:
+    return color_to_player[get_element_color(element)]
 
 def _get_unit_type(unit_data: Element) -> UnitType:
     num_sides = unit_data.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides")
