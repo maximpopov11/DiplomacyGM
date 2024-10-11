@@ -7,7 +7,6 @@ from diplomacy.map_parser.vector.config_svg import SVG_PATH
 # TODO: Find a better way to do this
 # maybe use a copy from manager?
 from diplomacy.map_parser.vector.vector import oneTrueParser
-
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.order import (
     Core,
@@ -20,11 +19,9 @@ from diplomacy.persistence.order import (
     RetreatMove,
     Build,
     Disband,
-    PlayerOrder,
 )
 from diplomacy.persistence.phase import phases, Phase, winter_builds
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.province import Province
 from diplomacy.persistence.unit import UnitType, Unit
 
 logger = logging.getLogger(__name__)
@@ -173,7 +170,7 @@ class _DatabaseConnection:
             if is_dislodged:
                 retreat_ops = cursor.execute(
                     "SELECT retreat_loc FROM retreat_options WHERE board_id=? and phase=? and origin=?",
-                    (board_id, board.get_phase_and_year_string(), location)
+                    (board_id, board.get_phase_and_year_string(), location),
                 )
                 retreat_options = set(map(board.get_location, set().union(*retreat_ops)))
             else:
@@ -292,16 +289,13 @@ class _DatabaseConnection:
             ],
         )
         cursor.executemany(
-            "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)", [
-                (
-                    board_id,
-                    board.get_phase_and_year_string(),
-                    unit.get_location().name,
-                    retreat_option.name
-                )
-                for unit in board.units if unit.retreat_options is not None
+            "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
+            [
+                (board_id, board.get_phase_and_year_string(), unit.get_location().name, retreat_option.name)
+                for unit in board.units
+                if unit.retreat_options is not None
                 for retreat_option in unit.retreat_options
-            ]
+            ],
         )
         cursor.close()
         self._connection.commit()
@@ -331,26 +325,19 @@ class _DatabaseConnection:
         cursor.executemany(
             "DELETE FROM retreat_options WHERE board_id=? and phase=? and origin=?",
             [
-                (
-                    board.board_id,
-                    board.get_phase_and_year_string(),
-                    unit.get_location().name
-                )
-                for unit in units if unit.retreat_options is not None
-            ]
+                (board.board_id, board.get_phase_and_year_string(), unit.get_location().name)
+                for unit in units
+                if unit.retreat_options is not None
+            ],
         )
         cursor.executemany(
             "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
             [
-                (
-                    board.board_id,
-                    board.get_phase_and_year_string(),
-                    unit.get_location().name,
-                    retreat_option.name
-                )
-                for unit in units if unit.retreat_options is not None
+                (board.board_id, board.get_phase_and_year_string(), unit.get_location().name, retreat_option.name)
+                for unit in units
+                if unit.retreat_options is not None
                 for retreat_option in unit.retreat_options
-            ]
+            ],
         )
         cursor.close()
         self._connection.commit()
@@ -397,7 +384,8 @@ class _DatabaseConnection:
             "DELETE FROM builds WHERE board_id=? AND phase=?", (board.board_id, board.get_phase_and_year_string())
         )
         cursor.execute(
-            "DELETE FROM retreat_options WHERE board_id=? AND phase=?", (board.board_id, board.get_phase_and_year_string())
+            "DELETE FROM retreat_options WHERE board_id=? AND phase=?",
+            (board.board_id, board.get_phase_and_year_string()),
         )
         cursor.close()
         self._connection.commit()
@@ -408,7 +396,7 @@ class _DatabaseConnection:
         cursor.execute(sql, args)
         cursor.close()
         self._connection.commit()
-    
+
     def executemany_arbitrary_sql(self, sql: str, args: list[tuple]):
         cursor = self._connection.cursor()
         cursor.executemany(sql, args)
