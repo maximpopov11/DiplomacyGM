@@ -609,7 +609,7 @@ class Mapper:
         #     self._draw_retreat_move(RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False)
 
     def _initialize_scoreboard_locations(self) -> None:
-        all_power_banners_element = get_svg_element(svg.getroot(), POWER_BANNERS_LAYER_ID)
+        all_power_banners_element = get_svg_element(self.board_svg.getroot(), POWER_BANNERS_LAYER_ID)
         self.scoreboard_power_locations : list[str] = []
         for power_element in all_power_banners_element:
             self.scoreboard_power_locations.append(power_element.get('transform'))
@@ -617,5 +617,5 @@ class Mapper:
         # each power is placed in the right spot based on the transform field which has value of "tranlate($x,$y)" where x,y 
         # are floating point numbers; we parse these via regex and sort by y-value
         self.scoreboard_power_locations.sort(
-            lambda loc: float(re.match(r'translate\((-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\)', x).groups()[1])
+            key=lambda loc: float(re.match(r'translate\((-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\)', loc).groups()[1])
         )
