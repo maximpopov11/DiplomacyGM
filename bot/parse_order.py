@@ -1,10 +1,9 @@
 from lark import Lark, Transformer
 
 from bot.utils import get_unit_type, get_keywords, _manage_coast_signature
-from diplomacy.persistence import order
+from diplomacy.persistence import order, phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import get_connection
-from diplomacy.persistence.phase import is_moves_phase, is_retreats_phase, is_builds_phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province
 from diplomacy.persistence.unit import Unit, UnitType
@@ -152,7 +151,7 @@ retreats_parser = Lark(ebnf, start="retreat_phase", parser="earley")
 
 def parse_order(message: str, player_restriction: Player | None, board: Board) -> str:
     invalid: list[tuple[str, Exception]] = []
-    if is_builds_phase(board.phase):
+    if phase.is_builds(board.phase):
         for command in str.splitlines(message):
             try:
                 if command.strip() != ".order":
@@ -171,8 +170,8 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
             response = "Orders validated successfully."
 
         return response
-    elif is_moves_phase(board.phase) or is_retreats_phase(board.phase):
-        if is_moves_phase(board.phase):
+    elif phase.is_moves(board.phase) or phase.is_retreats(board.phase):
+        if phase.is_moves(board.phase):
             parser = movement_parser
         else:
             parser = retreats_parser
@@ -232,7 +231,7 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
     location = keywords[0]
     province, coast = board.get_province_and_coast(location)
 
-    if is_builds_phase(board.phase):
+    if phase.is_builds(board.phase):
         # remove build order
         player = province.owner
         if player_restriction is not None and player != player_restriction:

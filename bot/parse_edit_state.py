@@ -1,7 +1,7 @@
-from bot.utils import get_phase, get_unit_type, get_keywords
+from bot.utils import get_unit_type, get_keywords
 from diplomacy.adjudicator.mapper import Mapper
+from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
-from diplomacy.persistence.phase import is_retreats_phase
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.unit import UnitType
 
@@ -77,7 +77,7 @@ def _parse_command(command: str, board: Board) -> None:
 
 def _set_phase(keywords: list[str], board: Board) -> None:
     old_phase_string = board.get_phase_and_year_string()
-    new_phase = get_phase(keywords[0])
+    new_phase = phase.get(keywords[0])
     if new_phase is None:
         raise ValueError(f"{keywords[0]} is not a valid phase name")
     board.phase = new_phase
@@ -148,7 +148,7 @@ def _create_unit(keywords: list[str], board: Board) -> None:
 
 
 def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
-    if is_retreats_phase(board.phase):
+    if phase.is_retreats(board.phase):
         unit_type = get_unit_type(keywords[0])
         player = board.get_player(keywords[1])
         province, coast = board.get_province_and_coast(keywords[2])
@@ -172,14 +172,9 @@ def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
         get_connection().executemany_arbitrary_sql(
             "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
             [
-                (
-                    board.board_id,
-                    board.get_phase_and_year_string(),
-                    unit.get_location().name,
-                    option.name
-                )
+                (board.board_id, board.get_phase_and_year_string(), unit.get_location().name, option.name)
                 for option in retreat_options
-            ]
+            ],
         )
     else:
         raise RuntimeError("Cannot create a dislodged unit in move phase")
@@ -231,7 +226,7 @@ def _move_unit(keywords: list[str], board: Board) -> None:
 
 
 def _dislodge_unit(keywords: list[str], board: Board) -> None:
-    if is_retreats_phase(board.phase):
+    if phase.is_retreats(board.phase):
         province = board.get_province(keywords[0])
         if province.dislodged_unit != None:
             raise RuntimeError("Dislodged unit already exists in province")

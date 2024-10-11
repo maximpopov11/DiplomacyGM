@@ -7,6 +7,7 @@ from diplomacy.map_parser.vector.config_svg import SVG_PATH
 # TODO: Find a better way to do this
 # maybe use a copy from manager?
 from diplomacy.map_parser.vector.vector import oneTrueParser
+from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.order import (
     Core,
@@ -20,7 +21,6 @@ from diplomacy.persistence.order import (
     Build,
     Disband,
 )
-from diplomacy.persistence.phase import phases, Phase, winter_builds
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType, Unit
 
@@ -58,7 +58,8 @@ class _DatabaseConnection:
 
             split_index = phase_string.index(" ")
             year = int(phase_string[:split_index])
-            current_phase = next(phase for phase in phases if phase.name == phase_string[split_index:].strip())
+            phase_name = phase_string[split_index:].strip()
+            current_phase = phase.get(phase_name)
             next_phase = current_phase.next
             next_phase_year = year
             if next_phase.name == "Spring Moves":
@@ -74,26 +75,26 @@ class _DatabaseConnection:
         logger.info("Successfully loaded")
         return boards
 
-    def get_board(self, board_id: int, phase: Phase, year: int) -> Board | None:
+    def get_board(self, board_id: int, board_phase: phase.Phase, year: int) -> Board | None:
         cursor = self._connection.cursor()
 
         board_data = cursor.execute(
-            "SELECT * FROM boards WHERE board_id=? and phase=?", (board_id, f"{year} {phase.name}")
+            "SELECT * FROM boards WHERE board_id=? and phase=?", (board_id, f"{year} {board_phase.name}")
         ).fetchone()
         if not board_data:
             cursor.close()
             return None
 
-        board = self._get_board(board_id, phase, year, cursor)
+        board = self._get_board(board_id, board_phase, year, cursor)
         cursor.close()
         return board
 
-    def _get_board(self, board_id: int, phase: Phase, year: int, cursor) -> Board:
+    def _get_board(self, board_id: int, board_phase: phase.Phase, year: int, cursor) -> Board:
         logger.info(f"Loading board with ID {board_id}")
         # TODO - we should eventually store things like coords, adjacencies, etc
         #  so we don't have to reparse the whole board each time
         board = oneTrueParser.parse()
-        board.phase = phase
+        board.phase = board_phase
         board.year = year
         board.board_id = board_id
         player_data = cursor.execute("SELECT player_name, color FROM players WHERE board_id=?", (board_id,)).fetchall()
@@ -107,7 +108,7 @@ class _DatabaseConnection:
             player.units = set()
             player.centers = set()
             # TODO - player build orders
-        if phase == winter_builds:
+        if phase.is_builds(board_phase):
             builds_data = cursor.execute(
                 "SELECT player, location, is_build, is_army FROM builds WHERE board_id=? and phase=?",
                 (board_id, board.get_phase_and_year_string()),

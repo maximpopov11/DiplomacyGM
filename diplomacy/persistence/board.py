@@ -1,4 +1,4 @@
-from diplomacy.persistence.phase import Phase, phases
+from diplomacy.persistence.phase import Phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, Coast, Location
 from diplomacy.persistence.unit import Unit, UnitType

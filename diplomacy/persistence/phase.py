@@ -2,36 +2,52 @@ from __future__ import annotations
 
 
 class Phase:
-    def __init__(self, name: str):
-        self.name = name
-        self.next = None
+    def __init__(self, name: str, next_phase: Phase, previous_phase: Phase):
+        self.name: str = name
+        self.next: Phase = next_phase
+        self.previous: Phase = previous_phase
 
     def __str__(self):
         return self.name
 
 
-spring_moves = Phase("Spring Moves")
-spring_retreats = Phase("Spring Retreats")
-fall_moves = Phase("Fall Moves")
-fall_retreats = Phase("Fall Retreats")
-winter_builds = Phase("Winter Builds")
+_winter_builds = Phase("Winter Builds", None, None)
+_fall_retreats = Phase("Fall Retreats", _winter_builds, None)
+_fall_moves = Phase("Fall Moves", _fall_retreats, None)
+_spring_retreats = Phase("Spring Retreats", _fall_moves, None)
+_spring_moves = Phase("Spring Moves", _spring_retreats, None)
 
-spring_moves.next = spring_retreats
-spring_retreats.next = fall_moves
-fall_moves.next = fall_retreats
-fall_retreats.next = winter_builds
-winter_builds.next = spring_moves
+_winter_builds.next = _spring_moves
+_winter_builds.previous = _fall_retreats
+_fall_retreats.previous = _fall_moves
+_fall_moves.previous = _spring_retreats
+_spring_retreats.previous = _spring_moves
+_spring_moves.previous = _winter_builds
 
-phases = [spring_moves, spring_retreats, fall_moves, fall_retreats, winter_builds]
+_name_to_phase: dict[str, Phase] = {
+    "Spring Moves": _spring_moves,
+    "Spring Retreats": _spring_retreats,
+    "Fall Moves": _fall_moves,
+    "Fall Retreats": _fall_retreats,
+    "Winter Builds": _winter_builds,
+}
 
 
-def is_moves_phase(phase: Phase) -> bool:
-    return phase == spring_moves or phase == fall_moves
+def get(name: str) -> Phase:
+    return _name_to_phase[name]
 
 
-def is_retreats_phase(phase: Phase) -> bool:
-    return phase == spring_retreats or phase == fall_retreats
+def initial() -> Phase:
+    return _spring_moves
 
 
-def is_builds_phase(phase: Phase) -> bool:
-    return phase == winter_builds
+def is_moves(phase: Phase) -> bool:
+    return phase == _spring_moves or phase == _fall_moves
+
+
+def is_retreats(phase: Phase) -> bool:
+    return phase == _spring_retreats or phase == _fall_retreats
+
+
+def is_builds(phase: Phase) -> bool:
+    return phase == _winter_builds

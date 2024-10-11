@@ -3,9 +3,9 @@ import logging
 from diplomacy.adjudicator.adjudicator import make_adjudicator
 from diplomacy.adjudicator.mapper import Mapper
 from diplomacy.map_parser.vector.vector import oneTrueParser
+from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db import database
-from diplomacy.persistence.phase import phases
 from diplomacy.persistence.player import Player
 
 logger = logging.getLogger(__name__)
@@ -61,7 +61,8 @@ class Manager:
     def rollback(self, server_id: int) -> tuple[str, str]:
         logger.info(f"Rolling back in server {server_id}")
         board = self._boards[server_id]
-        last_phase = next(phase for phase in phases if phase.next == board.phase)
+        # TODO: what happens if we're on the first phase?
+        last_phase = board.phase.previous
         last_phase_year = board.year
         if board.phase.name == "Spring Moves":
             last_phase_year -= 1

@@ -32,6 +32,7 @@ from diplomacy.map_parser.vector.config_svg import (
 )
 from diplomacy.map_parser.vector.utils import get_svg_element
 from diplomacy.map_parser.vector.utils import get_unit_coordinates
+from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import logger
 from diplomacy.persistence.order import (
@@ -47,13 +48,13 @@ from diplomacy.persistence.order import (
     ConvoyMove,
     PlayerOrder,
 )
-from diplomacy.persistence.phase import Phase, is_builds_phase, is_retreats_phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import ProvinceType, Province, Coast, Location
 from diplomacy.persistence.unit import Unit, UnitType
 
 OUTPUTLAYER = "layer16"
 UNITLAYER = "layer17"
+
 
 class Mapper:
     def __init__(self, board: Board):
@@ -77,17 +78,17 @@ class Mapper:
 
         self.highlight_retreating_units(self.state_svg)
 
-    def draw_moves_map(self, phase: Phase, player_restriction: Player | None) -> str:
+    def draw_moves_map(self, current_phase: phase.Phase, player_restriction: Player | None) -> str:
         self._reset_moves_map()
         self.player_restriction = player_restriction
-        if not is_builds_phase(phase):
+        if not phase.is_builds(current_phase):
             for unit in self.board.units:
                 if player_restriction and unit.player != player_restriction:
                     continue
-                if is_retreats_phase(phase) and unit.province.dislodged_unit != unit:
+                if phase.is_retreats(current_phase) and unit.province.dislodged_unit != unit:
                     continue
 
-                if is_retreats_phase(phase):
+                if phase.is_retreats(current_phase):
                     unit_locs = unit.get_location().all_rets
                 else:
                     unit_locs = unit.get_location().all_locs

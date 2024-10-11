@@ -18,8 +18,8 @@ from diplomacy.map_parser.vector.utils import (
     get_unit_coordinates,
     get_svg_element,
 )
+from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
-from diplomacy.persistence.phase import spring_moves
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, ProvinceType, Coast
 from diplomacy.persistence.unit import Unit, UnitType
@@ -74,7 +74,7 @@ class Parser:
             if unit:
                 units.add(unit)
 
-        return Board(players, provinces, units, spring_moves)
+        return Board(players, provinces, units, phase.initial())
 
     def read_map(self) -> tuple[set[Province], set[tuple[str, str]]]:
         if self.cache_provinces is None:

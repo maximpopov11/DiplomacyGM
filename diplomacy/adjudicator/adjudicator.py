@@ -9,6 +9,7 @@ from diplomacy.adjudicator.defs import (
     OrderType,
     get_base_province_from_location,
 )
+from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.order import (
     Order,
@@ -24,7 +25,6 @@ from diplomacy.persistence.order import (
     Build,
     Disband,
 )
-from diplomacy.persistence.phase import is_retreats_phase, is_moves_phase, is_builds_phase
 from diplomacy.persistence.province import Location, Coast, Province, ProvinceType
 from diplomacy.persistence.unit import UnitType, Unit
 
@@ -478,20 +478,22 @@ class MovesAdjudicator(Adjudicator):
                             opponent_strength = 1
                     else:
                         # the units don't bounce because at least one of them is convoyed
-                        if (attacked_order.convoys and self._adjudicate_convoys_for_order(attacked_order) == Resolution.SUCCEEDS) or (
-                            order.convoys and self._adjudicate_convoys_for_order(order) == Resolution.SUCCEEDS):
+                        if (
+                            attacked_order.convoys
+                            and self._adjudicate_convoys_for_order(attacked_order) == Resolution.SUCCEEDS
+                        ) or (order.convoys and self._adjudicate_convoys_for_order(order) == Resolution.SUCCEEDS):
                             pass
                         else:
                             if attacked_order.country == order.country:
                                 return Resolution.FAILS
-                            
+
                             orders_to_overcome.add(attacked_order)
                 else:
                     if attacked_order.country == order.country:
                         return Resolution.FAILS
                     # Unit hold strength
                     orders_to_overcome.add(attacked_order)
-            
+
             current_strength = 1
             for support in order.supports:
                 if self._resolve_order(support) == Resolution.SUCCEEDS:
@@ -505,7 +507,7 @@ class MovesAdjudicator(Adjudicator):
                         this_strength += 1
                 if this_strength > opponent_strength:
                     opponent_strength = this_strength
-            
+
             if current_strength > opponent_strength:
                 return Resolution.SUCCEEDS
             else:
@@ -596,11 +598,11 @@ class MovesAdjudicator(Adjudicator):
 
 
 def make_adjudicator(board: Board) -> Adjudicator:
-    if is_moves_phase(board.phase):
+    if phase.is_moves(board.phase):
         return MovesAdjudicator(board)
-    elif is_retreats_phase(board.phase):
+    elif phase.is_retreats(board.phase):
         return RetreatsAdjudicator(board)
-    elif is_builds_phase(board.phase):
+    elif phase.is_builds(board.phase):
         return BuildsAdjudicator(board)
     else:
         raise ValueError("Board is in invalid phase")

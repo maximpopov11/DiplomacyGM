@@ -5,7 +5,6 @@ from bot import config
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.manager import Manager
-from diplomacy.persistence.phase import Phase, winter_builds, is_retreats_phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType, Unit
 
@@ -119,23 +118,8 @@ def get_unit_type(command: str) -> UnitType | None:
     return None
 
 
-def get_phase(command: str) -> Phase | None:
-    if _spring_moves in command:
-        return phase.spring_moves
-    elif _spring_retreats in command:
-        return phase.spring_retreats
-    elif _fall_moves in command:
-        return phase.fall_moves
-    elif _fall_retreats in command:
-        return phase.fall_retreats
-    elif _winter_builds in command:
-        return phase.winter_builds
-    else:
-        return None
-
-
 def get_orders(board: Board, player_restriction: Player | None) -> str:
-    if board.phase == winter_builds:
+    if phase.is_builds(board.phase):
         response = "Received orders:"
         for player in sorted(board.players, key=lambda sort_player: sort_player.name):
             if not player_restriction or player == player_restriction:
@@ -148,7 +132,7 @@ def get_orders(board: Board, player_restriction: Player | None) -> str:
         missing: list[Unit] = []
 
         for unit in board.units:
-            if is_retreats_phase(board.phase) and unit != unit.province.dislodged_unit:
+            if phase.is_retreats(board.phase) and unit != unit.province.dislodged_unit:
                 continue
             if not player_restriction or unit.player == player_restriction:
                 if unit.order:
