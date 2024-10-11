@@ -25,6 +25,11 @@ class Board:
         # we ignore capitalization because this is primarily used for user input
         return next((player for player in self.players if player.name.lower() == name.lower()), None)
 
+    def get_players_sorted_by_vscc(self) -> list[Player]:
+        return sorted(
+            self.players, key=lambda sort_player: (len(sort_player.centers) / sort_player.vscc), reverse=True
+        )
+
     # TODO: we could have this as a dict ready on the variant
     def get_province(self, name: str) -> Province:
         # we ignore capitalization because this is primarily used for user input
