@@ -9,7 +9,7 @@ from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province
 from diplomacy.persistence.unit import Unit, UnitType
 
-# TODO: all of these are not actually used (probably), so should be deleted
+# TODO: Looks like these are used, but only in builds phase. Let's be consistent and move everything to the ebnf
 _hold = "hold"
 _move = "move"
 _convoy_move = "convoy move"
