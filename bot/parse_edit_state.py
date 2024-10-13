@@ -197,7 +197,7 @@ def _delete_dislodged_unit(keywords: list[str], board: Board) -> None:
         (board.board_id, board.get_phase_and_year_string(), unit.get_location().name, True),
     )
     get_connection().execute_arbitrary_sql(
-        "DELETE FROM retreat_locs WHERE board_id=? and phase=? and origin=?",
+        "DELETE FROM retreat_options WHERE board_id=? and phase=? and origin=?",
         (board.board_id, board.get_phase_and_year_string(), unit.get_location().name),
     )
 
