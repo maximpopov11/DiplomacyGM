@@ -136,9 +136,14 @@ def get_orders(board: Board, player_restriction: Player | None) -> str:
         
         response = ""
 
-        for player in players:
-            ordered = [unit for unit in player.units if unit.order is not None]
-            missing = [unit for unit in player.units if unit.order is None]
+        for player in sorted(players, key=lambda p: p.name):
+            if is_retreats(board.phase):
+                in_moves = lambda u: u == u.province.dislodged_unit
+            else:
+                in_moves = lambda _: True
+            moving_units = [unit for unit in player.units if in_moves(unit)]
+            ordered = [unit for unit in moving_units if unit.order is not None]
+            missing = [unit for unit in moving_units if unit.order is None]
 
             response += f"**{player.name}** ({len(ordered)}/{len(player.units)})\n"
             if missing:
