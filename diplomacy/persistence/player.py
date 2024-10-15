@@ -5,24 +5,35 @@ from typing import TYPE_CHECKING
 from diplomacy.persistence import order
 
 if TYPE_CHECKING:
-    from diplomacy.persistence.province import Province
-    from diplomacy.persistence.unit import Unit
+    from diplomacy.persistence import province
+    from diplomacy.persistence import unit
 
 
 class Player:
-    def __init__(self, name: str, color: str, vscc: int, start: int, centers: set[Province], units: set[Unit]):
+    def __init__(
+        self,
+        name: str,
+        color: str,
+        vscc: int,
+        iscc: int,
+        centers: set[province.Province],
+        units: set[unit.Unit],
+    ):
         self.name: str = name
         self.color: str = color
-        self.centers: set[Province] = centers
-        self.units: set[Unit] = units
+
+        # victory supply center count (we assume VSCC scoring)
         self.vscc: int = vscc
-        self.start: int = start
+        # initial supply center count
+        self.iscc: int = iscc
+
+        self.centers: set[province.Province] = centers
+        self.units: set[unit.Unit] = units
 
         self.build_orders: set[order.PlayerOrder] = set()
 
-    def get_vscc(self):
-        return (len(self.centers) - self.start) / (self.vscc - self.start)
-
-
     def __str__(self):
         return self.name
+
+    def score(self):
+        return (len(self.centers) - self.iscc) / (self.vscc - self.iscc)

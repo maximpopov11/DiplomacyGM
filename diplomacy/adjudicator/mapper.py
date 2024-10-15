@@ -150,22 +150,22 @@ class Mapper:
         self._draw_side_panel_scoreboard(svg)
 
     def _draw_side_panel_scoreboard(self, svg: ElementTree) -> None:
-        '''
+        """
         format is a list of each power; for each power, its children nodes are as follows:
         0: colored rectangle
         1: full name ("Dutch Empire", ...)
         2-4: "current", "victory", "start" text labels in that order
         5-7: SC counts in that same order
-        '''
+        """
         all_power_banners_element = get_svg_element(svg.getroot(), POWER_BANNERS_LAYER_ID)
-        for (i, player) in enumerate(self.board.get_players_sorted_by_vscc()):
+        for i, player in enumerate(self.board.get_players_by_score()):
             for power_element in all_power_banners_element:
                 # match the correct svg element based on the color of the rectangle
                 if get_element_color(power_element[0]) == player.color:
-                    power_element.set('transform', self.scoreboard_power_locations[i])
+                    power_element.set("transform", self.scoreboard_power_locations[i])
                     power_element[5][0].text = str(len(player.centers))
                     break
-    
+
     def _draw_side_panel_date(self, svg: ElementTree) -> None:
         date = get_svg_element(svg.getroot(), SEASON_TITLE_LAYER_ID)
         # TODO: this is hacky; I don't know a better way
@@ -610,12 +610,12 @@ class Mapper:
 
     def _initialize_scoreboard_locations(self) -> None:
         all_power_banners_element = get_svg_element(self.board_svg.getroot(), POWER_BANNERS_LAYER_ID)
-        self.scoreboard_power_locations : list[str] = []
+        self.scoreboard_power_locations: list[str] = []
         for power_element in all_power_banners_element:
-            self.scoreboard_power_locations.append(power_element.get('transform'))
-        
-        # each power is placed in the right spot based on the transform field which has value of "tranlate($x,$y)" where x,y 
+            self.scoreboard_power_locations.append(power_element.get("transform"))
+
+        # each power is placed in the right spot based on the transform field which has value of "tranlate($x,$y)" where x,y
         # are floating point numbers; we parse these via regex and sort by y-value
         self.scoreboard_power_locations.sort(
-            key=lambda loc: float(re.match(r'translate\((-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\)', loc).groups()[1])
+            key=lambda loc: float(re.match(r"translate\((-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\)", loc).groups()[1])
         )

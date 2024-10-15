@@ -59,8 +59,8 @@ class Parser:
 
     def parse(self) -> Board:
         players = set()
-        for name, (color, vscc, start) in player_data.items():
-            player = Player(name, color, vscc, start, set(), set())
+        for name, (color, vscc, iscc) in player_data.items():
+            player = Player(name, color, vscc, iscc, set(), set())
             players.add(player)
             self.color_to_player[color] = player
 

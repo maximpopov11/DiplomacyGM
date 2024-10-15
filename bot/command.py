@@ -144,7 +144,7 @@ def remove_all(ctx: commands.Context, manager: Manager) -> tuple[str, str | None
 def get_scoreboard(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
     response = ""
-    for player in board.get_players_sorted_by_vscc():
+    for player in board.get_players_by_score():
         response += f"\n__{player.name}__: {len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
     return response, None
 
