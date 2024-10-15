@@ -4,57 +4,41 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from diplomacy.persistence.player import Player
-    from diplomacy.persistence.province import Province, Coast, Location
-    from diplomacy.persistence.order import UnitOrder
+    from diplomacy.persistence import player
+    from diplomacy.persistence import province
+    from diplomacy.persistence import order
 
 
+# TODO: rename to Type and import as unit.Type
 class UnitType(Enum):
-    ARMY = 1
-    FLEET = 2
-
-
-unit_type_to_name = {
-    UnitType.ARMY: "A",
-    UnitType.FLEET: "F",
-}
+    ARMY = "A"
+    FLEET = "F"
 
 
 class Unit:
     def __init__(
         self,
         unit_type: UnitType,
-        player: Player,
-        province: Province,
-        coast: Coast | None,
-        retreat_options: set[Province] | None,
-        order: UnitOrder | None = None,
+        owner: player.Player,
+        current_province: province.Province,
+        coast: province.Coast | None,
+        retreat_options: set[province.Province] | None,
     ):
         self.unit_type: UnitType = unit_type
-        self.player: Player = player
-        self.province: Province = province
-        self.coast: Coast | None = coast
+        self.player: player.Player = owner
+        self.province: province.Province = current_province
+        self.coast: province.Coast | None = coast
+
         # retreat_options is None when not dislodged and {} when dislodged without retreat options
-        self.retreat_options: set[Province] | None = retreat_options
-        self.order: UnitOrder | None = order
+        self.retreat_options: set[province.Province] | None = retreat_options
+        self.order: order.UnitOrder | None = None
 
     def __str__(self):
-        return f"{unit_type_to_name[self.unit_type]} {self.get_location()}"
+        return f"{[self.unit_type.value]} {self.get_location()}"
 
-    def get_location(self) -> Location:
+    # TODO: this feels kind of bad, can we rework how we do locations? Or is it not worth it?
+    # TODO: rename to location
+    def get_location(self) -> province.Location:
         if self.coast:
             return self.coast
         return self.province
-
-    def get_coordinate(self) -> tuple[float, float]:
-        province = self.province
-        if self.coast:
-            if self.retreat_options is not None:
-                return self.coast.retreat_unit_coordinate
-            else:
-                return self.coast.primary_unit_coordinate
-        else:
-            if self.retreat_options is not None:
-                return province.retreat_unit_coordinate
-            else:
-                return province.primary_unit_coordinate
