@@ -108,7 +108,7 @@ class TreeToOrder(Transformer):
         if isinstance(s[-1][1], order.Move):
             return s[0], order.Support(s[-1][0], s[-1][1].destination)
         elif isinstance(s[-1][1], order.Hold):
-            return s[0], order.Support(s[-1][0], s[-1][0].get_location())
+            return s[0], order.Support(s[-1][0], s[-1][0].location())
         else:
             raise ValueError("Unknown type of support. Something has broken in the bot. Please report this")
 

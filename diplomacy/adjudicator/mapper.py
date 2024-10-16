@@ -92,9 +92,9 @@ class Mapper:
                     continue
 
                 if phase.is_retreats(current_phase):
-                    unit_locs = unit.get_location().all_rets
+                    unit_locs = unit.location().all_rets
                 else:
-                    unit_locs = unit.get_location().all_locs
+                    unit_locs = unit.location().all_locs
 
                 # TODO: Maybe there's a better way to handle convoys?
                 if isinstance(unit.order, (RetreatMove, Move, Support)):
@@ -270,7 +270,7 @@ class Mapper:
             if possibility == destination:
                 return [
                     (
-                        current.get_unit().get_location(),
+                        current.get_unit().location(),
                         destination,
                     )
                 ]
@@ -284,7 +284,7 @@ class Mapper:
                 and possibility.unit.order.destination is destination
             ):
                 options += self._path_helper(source, destination, possibility, new_checked)
-        return list(map((lambda t: (current.get_unit().get_location(),) + t), options))
+        return list(map((lambda t: (current.get_unit().location(),) + t), options))
 
     def _draw_path(self, d: str, marker_end="arrow", stroke_color="black"):
         order_path = create_element(
@@ -362,13 +362,13 @@ class Mapper:
         order: Support = unit.order
         x1 = coordinate[0]
         y1 = coordinate[1]
-        v2 = loc_to_point(order.source.get_location(), coordinate)
+        v2 = loc_to_point(order.source.location(), coordinate)
         x2, y2 = v2
         v3 = loc_to_point(order.destination, v2)
         x3, y3 = v3
         marker_start = ""
         if order.destination.get_unit():
-            if order.source.get_location() == order.destination:
+            if order.source.location() == order.destination:
                 (x3, y3) = pull_coordinate((x1, y1), (x3, y3), RADIUS)
             else:
                 (x3, y3) = pull_coordinate((x2, y2), (x3, y3))
@@ -380,8 +380,8 @@ class Mapper:
 
             if (
                 isinstance(order.destination.get_unit().order, Support)
-                and destorder.source.get_location() == destorder.destination == unit.get_location()
-                and order.source.get_location() == order.destination
+                and destorder.source.location() == destorder.destination == unit.location()
+                and order.source.location() == order.destination
             ):
                 # This check is so we only do it once, so it doesn't overlay
                 # it doesn't matter which one is the origin & which is the dest
@@ -401,7 +401,7 @@ class Mapper:
                 "stroke-width": STROKE_WIDTH,
                 "stroke-linecap": "round",
                 "marker-start": marker_start,
-                "marker-end": f"url(#{'ball' if order.source.get_location() == order.destination else 'arrow'})",
+                "marker-end": f"url(#{'ball' if order.source.location() == order.destination else 'arrow'})",
             },
         )
         return drawn_order
@@ -571,9 +571,9 @@ class Mapper:
         current_coords = get_unit_coordinates(unit_element)
 
         if unit == unit.province.dislodged_unit:
-            coord_list = unit.get_location().all_rets
+            coord_list = unit.location().all_rets
         else:
-            coord_list = unit.get_location().all_locs
+            coord_list = unit.location().all_locs
         for desired_coords in coord_list:
             elem = copy.deepcopy(unit_element)
             elem.set(

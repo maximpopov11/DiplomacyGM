@@ -34,11 +34,11 @@ class Unit:
         self.order: order.UnitOrder | None = None
 
     def __str__(self):
-        return f"{[self.unit_type.value]} {self.get_location()}"
+        return f"{[self.unit_type.value]} {self.location()}"
 
     # TODO: this feels kind of bad, can we rework how we do locations? Or is it not worth it?
     # TODO: rename to location
-    def get_location(self) -> province.Location:
+    def location(self) -> province.Location:
         if self.coast:
             return self.coast
         return self.province

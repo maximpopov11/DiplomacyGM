@@ -274,7 +274,7 @@ class _DatabaseConnection:
                 (
                     board_id,
                     board.get_phase_and_year_string(),
-                    unit.get_location().name,
+                    unit.location().name,
                     unit == unit.province.dislodged_unit,
                     unit.player.name,
                     unit.unit_type == UnitType.ARMY,
@@ -292,7 +292,7 @@ class _DatabaseConnection:
         cursor.executemany(
             "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
             [
-                (board_id, board.get_phase_and_year_string(), unit.get_location().name, retreat_option.name)
+                (board_id, board.get_phase_and_year_string(), unit.location().name, retreat_option.name)
                 for unit in board.units
                 if unit.retreat_options is not None
                 for retreat_option in unit.retreat_options
@@ -317,7 +317,7 @@ class _DatabaseConnection:
                     ),
                     board.board_id,
                     board.get_phase_and_year_string(),
-                    unit.get_location().name,
+                    unit.location().name,
                     unit.province.dislodged_unit == unit,
                 )
                 for unit in units
@@ -326,7 +326,7 @@ class _DatabaseConnection:
         cursor.executemany(
             "DELETE FROM retreat_options WHERE board_id=? and phase=? and origin=?",
             [
-                (board.board_id, board.get_phase_and_year_string(), unit.get_location().name)
+                (board.board_id, board.get_phase_and_year_string(), unit.location().name)
                 for unit in units
                 if unit.retreat_options is not None
             ],
@@ -334,7 +334,7 @@ class _DatabaseConnection:
         cursor.executemany(
             "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
             [
-                (board.board_id, board.get_phase_and_year_string(), unit.get_location().name, retreat_option.name)
+                (board.board_id, board.get_phase_and_year_string(), unit.location().name, retreat_option.name)
                 for unit in units
                 if unit.retreat_options is not None
                 for retreat_option in unit.retreat_options

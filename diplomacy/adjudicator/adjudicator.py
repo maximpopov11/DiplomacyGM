@@ -168,7 +168,7 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
         base_province = get_base_province_from_location(location)
         destination_province = get_base_province_from_location(order.destination)
         if not convoy_is_possible(order.source.province, base_province, check_fleet_orders=strict_convoys_supports):
-            return False, f"No valid convoy path from {order.source.get_location().name} to {location.name}"
+            return False, f"No valid convoy path from {order.source.location().name} to {location.name}"
         if not convoy_is_possible(base_province, destination_province, check_fleet_orders=strict_convoys_supports):
             return False, f"No valid convoy path from {location.name} to {order.destination.name}"
         return True, None
@@ -207,7 +207,7 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
 
 class MapperInformation:
     def __init__(self, unit: Unit):
-        self.location = unit.get_location()
+        self.location = unit.location()
         self.order = unit.order
 
 
@@ -321,13 +321,13 @@ class MovesAdjudicator(Adjudicator):
             # Replace invalid orders with holds
             # Importantly, this includes supports for which the corresponding unit didn't make the same move
             # Same for convoys
-            valid, reason = order_is_valid(unit.get_location(), unit.order, strict_convoys_supports=True)
+            valid, reason = order_is_valid(unit.location(), unit.order, strict_convoys_supports=True)
             if not valid:
                 logger.debug(f"Order for {unit} is invalid because {reason}")
                 if isinstance(unit.order, Move):
                     logger.debug("Retrying move order as ConvoyMove")
                     valid, reason = order_is_valid(
-                        unit.get_location(), ConvoyMove(unit.order.destination), strict_convoys_supports=True
+                        unit.location(), ConvoyMove(unit.order.destination), strict_convoys_supports=True
                     )
                     if valid:
                         unit.order = ConvoyMove(unit.order.destination)

@@ -137,7 +137,7 @@ def _create_unit(keywords: list[str], board: Board) -> None:
         (
             board.board_id,
             board.get_phase_and_year_string(),
-            unit.get_location().name,
+            unit.location().name,
             False,
             player.name,
             unit_type == UnitType.ARMY,
@@ -161,7 +161,7 @@ def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
             (
                 board.board_id,
                 board.get_phase_and_year_string(),
-                unit.get_location().name,
+                unit.location().name,
                 True,
                 player.name,
                 unit_type == UnitType.ARMY,
@@ -172,7 +172,7 @@ def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
         get_connection().executemany_arbitrary_sql(
             "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
             [
-                (board.board_id, board.get_phase_and_year_string(), unit.get_location().name, option.name)
+                (board.board_id, board.get_phase_and_year_string(), unit.location().name, option.name)
                 for option in retreat_options
             ],
         )
@@ -185,7 +185,7 @@ def _delete_unit(keywords: list[str], board: Board) -> None:
     unit = board.delete_unit(province)
     get_connection().execute_arbitrary_sql(
         "DELETE FROM units WHERE board_id=? and phase=? and location=? and is_dislodged=?",
-        (board.board_id, board.get_phase_and_year_string(), unit.get_location().name, False),
+        (board.board_id, board.get_phase_and_year_string(), unit.location().name, False),
     )
 
 
@@ -194,18 +194,18 @@ def _delete_dislodged_unit(keywords: list[str], board: Board) -> None:
     unit = board.delete_dislodged_unit(province)
     get_connection().execute_arbitrary_sql(
         "DELETE FROM units WHERE board_id=? and phase=? and location=? and is_dislodged=?",
-        (board.board_id, board.get_phase_and_year_string(), unit.get_location().name, True),
+        (board.board_id, board.get_phase_and_year_string(), unit.location().name, True),
     )
     get_connection().execute_arbitrary_sql(
         "DELETE FROM retreat_options WHERE board_id=? and phase=? and origin=?",
-        (board.board_id, board.get_phase_and_year_string(), unit.get_location().name),
+        (board.board_id, board.get_phase_and_year_string(), unit.location().name),
     )
 
 
 def _move_unit(keywords: list[str], board: Board) -> None:
     old_province = board.get_province(keywords[0])
     unit = old_province.unit
-    old_location = unit.get_location()
+    old_location = unit.location()
     new_location = board.get_location(keywords[1])
     board.move_unit(unit, new_location)
     get_connection().execute_arbitrary_sql(
@@ -217,7 +217,7 @@ def _move_unit(keywords: list[str], board: Board) -> None:
         (
             board.board_id,
             board.get_phase_and_year_string(),
-            unit.get_location().name,
+            unit.location().name,
             False,
             unit.player.name,
             unit.unit_type == UnitType.ARMY,
