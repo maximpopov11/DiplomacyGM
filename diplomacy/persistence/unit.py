@@ -37,7 +37,6 @@ class Unit:
         return f"{[self.unit_type.value]} {self.location()}"
 
     # TODO: this feels kind of bad, can we rework how we do locations? Or is it not worth it?
-    # TODO: rename to location
     def location(self) -> province.Location:
         if self.coast:
             return self.coast
