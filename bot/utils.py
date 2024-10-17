@@ -137,7 +137,7 @@ def get_orders(board: Board, player_restriction: Player | None) -> str:
         response = ""
 
         for player in sorted(players, key=lambda p: p.name):
-            if is_retreats(board.phase):
+            if phase.is_retreats(board.phase):
                 in_moves = lambda u: u == u.province.dislodged_unit
             else:
                 in_moves = lambda _: True
