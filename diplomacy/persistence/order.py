@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from diplomacy.persistence.province import Location, Coast
-from diplomacy.persistence.unit import unit_type_to_name
 
 if TYPE_CHECKING:
     from diplomacy.persistence.unit import Unit, UnitType
@@ -131,7 +130,7 @@ class Build(PlayerOrder):
         self.unit_type: UnitType = unit_type
 
     def __str__(self):
-        return f"Build {unit_type_to_name[self.unit_type]} {self.location}"
+        return f"Build {self.unit_type.value} {self.location}"
 
 
 class Disband(PlayerOrder):
