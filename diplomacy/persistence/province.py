@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 from shapely import Polygon
 
 if TYPE_CHECKING:
-    from diplomacy.persistence.player import Player
-    from diplomacy.persistence.unit import Unit
+    from diplomacy.persistence import player
+    from diplomacy.persistence import unit
 
 
 class Location:
@@ -29,11 +29,11 @@ class Location:
             self.all_rets: set[float[float, float]] = {retreat_unit_coordinate}
 
     @abstractmethod
-    def get_owner(self) -> Player | None:
+    def get_owner(self) -> player.Player | None:
         pass
 
     @abstractmethod
-    def get_unit(self) -> Unit | None:
+    def get_unit(self) -> unit.Unit | None:
         pass
 
     def __str__(self):
@@ -57,9 +57,9 @@ class Province(Location):
         has_supply_center: bool,
         adjacent: set[Province],
         coasts: set[Coast],
-        core: Player | None,
-        owner: Player | None,
-        unit: Unit | None,
+        core: player.Player | None,
+        owner: player.Player | None,
+        local_unit: unit.Unit | None,  # TODO: probably doesn't make sense to init with a unit
     ):
         super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate)
         self.coordinates: list[tuple[float, float]] = coordinates
@@ -68,19 +68,19 @@ class Province(Location):
         self.has_supply_center: bool = has_supply_center
         self.adjacent: set[Province] = adjacent
         self.coasts: set[Coast] = coasts
-        self.core: Player | None = core
-        self.half_core: Player | None = None
-        self.owner: Player | None = owner
-        self.unit: Unit | None = unit
-        self.dislodged_unit: Unit | None = None
+        self.core: player.Player | None = core
+        self.half_core: player.Player | None = None
+        self.owner: player.Player | None = owner
+        self.unit: unit.Unit | None = local_unit
+        self.dislodged_unit: unit.Unit | None = None
 
     def __str__(self):
         return self.name
 
-    def get_owner(self) -> Player | None:
+    def get_owner(self) -> player.Player | None:
         return self.owner
 
-    def get_unit(self) -> Unit | None:
+    def get_unit(self) -> unit.Unit | None:
         return self.unit
 
     def coast(self) -> Coast:
@@ -147,10 +147,10 @@ class Coast(Location):
     def __str__(self):
         return self.name
 
-    def get_owner(self) -> Player | None:
+    def get_owner(self) -> player.Player | None:
         return self.province.get_owner()
 
-    def get_unit(self) -> Unit | None:
+    def get_unit(self) -> unit.Unit | None:
         return self.province.get_unit()
 
     def get_adjacent_coasts(self) -> set[Coast]:

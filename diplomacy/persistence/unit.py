@@ -36,7 +36,6 @@ class Unit:
     def __str__(self):
         return f"{[self.unit_type.value]} {self.location()}"
 
-    # TODO: this feels kind of bad, can we rework how we do locations? Or is it not worth it?
     def location(self) -> province.Location:
         if self.coast:
             return self.coast
