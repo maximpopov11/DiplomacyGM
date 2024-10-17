@@ -279,7 +279,7 @@ def set_coasts(name_to_province: dict[str, Province]) -> None:
             "wc": {
                 name_to_province["Guatemala Basin"],
                 name_to_province["Berlanga Ridge"],
-                name_to_province["Viscaino Bay"],
+                name_to_province["Sea of Cortez"],
             },
         },
     )
@@ -391,6 +391,7 @@ def fix_phantom_units(provinces: set[Province]):
             province.coast().primary_unit_coordinate = province.primary_unit_coordinate
             province.coast().retreat_unit_coordinate = province.retreat_unit_coordinate
 
+
 def set_secondary_locs(name_to_province: dict[str, set[Province]]):
     def set_one(name, primary, retreat):
         p: Province = name_to_province[name]
@@ -399,7 +400,7 @@ def set_secondary_locs(name_to_province: dict[str, set[Province]]):
         retreat = (retreat[0] + 7.7655, retreat[1] + 7.033)
         p.all_locs.add(primary)
         p.all_rets.add(retreat)
-    
+
     set_one("NPO1", (3982.726, 874.217), (3994.726, 886.217))
     set_one("NPO2", (4059.726, 874.217), (4071.726, 886.217))
     set_one("NPO3", (4136.726, 874.217), (4148.726, 886.217))
