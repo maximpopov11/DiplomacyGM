@@ -34,7 +34,7 @@ class Unit:
         self.order: order.UnitOrder | None = None
 
     def __str__(self):
-        return f"{[self.unit_type.value]} {self.location()}"
+        return f"{self.unit_type.value} {self.location()}"
 
     def location(self) -> province.Location:
         if self.coast:

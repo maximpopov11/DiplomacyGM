@@ -9,43 +9,43 @@ from diplomacy.persistence.province import Province
 from diplomacy.persistence.unit import Unit, UnitType
 
 # TODO: Looks like these are used, but only in builds phase. Let's be consistent and move everything to the ebnf
-_hold = "hold"
-_move = "move"
-_convoy_move = "convoy move"
-_support = "support"
-_convoy = "convoy"
-_core = "core"
-_retreat_move = "retreat move"
-_retreat_disband = "retreat disband"
+# _hold = "hold"
+# _move = "move"
+# _convoy_move = "convoy move"
+# _support = "support"
+# _convoy = "convoy"
+# _core = "core"
+# _retreat_move = "retreat move"
+# _retreat_disband = "retreat disband"
 _build = "build"
 _disband = "disband"
 
 _order_dict = {
-    _hold: ["h", "hold", "holds", "stand", "stands"],
-    _move: ["-", "–", "->", "–>", ">", "to", "m", "move", "moves", "into"],
-    _convoy_move: [
-        "c-",
-        "c–",
-        "c->",
-        "c–>",
-        "c>",
-        "cm",
-        "convoy -",
-        "convoy –",
-        "convoy ->",
-        "convoy –>",
-        "convoy >",
-        "convoy to",
-        "convoy m",
-        "convoy move",
-        "convoy moves",
-        "convoy into",
-    ],
-    _support: ["s", "support", "supports"],
-    _convoy: ["c", "convoy", "convoys"],
-    _core: ["core", "cores"],
-    _retreat_move: ["-", "–", "->", "–>", "to", "m", "move", "moves", "r", "retreat", "retreats"],
-    _retreat_disband: ["d", "disband", "disbands", "boom", "explodes", "dies"],
+    # _hold: ["h", "hold", "holds", "stand", "stands"],
+    # _move: ["-", "–", "->", "–>", ">", "to", "m", "move", "moves", "into"],
+    # _convoy_move: [
+    #     "c-",
+    #     "c–",
+    #     "c->",
+    #     "c–>",
+    #     "c>",
+    #     "cm",
+    #     "convoy -",
+    #     "convoy –",
+    #     "convoy ->",
+    #     "convoy –>",
+    #     "convoy >",
+    #     "convoy to",
+    #     "convoy m",
+    #     "convoy move",
+    #     "convoy moves",
+    #     "convoy into",
+    # ],
+    # _support: ["s", "support", "supports"],
+    # _convoy: ["c", "convoy", "convoys"],
+    # _core: ["core", "cores"],
+    # _retreat_move: ["-", "–", "->", "–>", "to", "m", "move", "moves", "r", "retreat", "retreats"],
+    # _retreat_disband: ["d", "disband", "disbands", "boom", "explodes", "dies"],
     _build: ["b", "build", "place"],
     _disband: ["d", "disband", "disbands", "drop", "drops", "remove"],
 }
@@ -105,10 +105,17 @@ class TreeToOrder(Transformer):
         return s[0], order.ConvoyTransport(s[-1][0], s[-1][1].destination)
 
     def support_order(self, s):
-        if isinstance(s[-1][1], order.Move):
-            return s[0], order.Support(s[-1][0], s[-1][1].destination)
-        elif isinstance(s[-1][1], order.Hold):
-            return s[0], order.Support(s[-1][0], s[-1][0].location())
+        if isinstance(s[-1], Unit):
+            unit = s[-1]
+            unit_order = order.Hold()
+        else:
+            unit = s[-1][0]
+            unit_order = s[-1][1]
+        
+        if isinstance(unit_order, order.Move):
+            return s[0], order.Support(unit, unit_order.destination)
+        elif isinstance(unit_order, order.Hold):
+            return s[0], order.Support(unit, unit.location())
         else:
             raise ValueError("Unknown type of support. Something has broken in the bot. Please report this")
 

@@ -145,7 +145,7 @@ def get_orders(board: Board, player_restriction: Player | None) -> str:
             ordered = [unit for unit in moving_units if unit.order is not None]
             missing = [unit for unit in moving_units if unit.order is None]
 
-            response += f"**{player.name}** ({len(ordered)}/{len(player.units)})\n"
+            response += f"**{player.name}** ({len(ordered)}/{len(moving_units)})\n"
             if missing:
                 response += f"__Missing Orders:__\n"
                 for unit in sorted(missing, key=lambda _unit: _unit.province.name):
@@ -156,24 +156,3 @@ def get_orders(board: Board, player_restriction: Player | None) -> str:
                     response += f"{unit} {unit.order}\n"
 
         return response
-        # for unit in board.units:
-        #     if phase.is_retreats(board.phase) and unit != unit.province.dislodged_unit:
-        #         continue
-        #     if not player_restriction or unit.player == player_restriction:
-        #         if unit.order:
-        #             has_orders.append(unit)
-        #         else:
-        #             missing.append(unit)
-
-        # response = ""
-        # if missing:
-        #     response += "**Missing orders:**\n"
-        #     for unit in sorted(missing, key=lambda _unit: _unit.province.name):
-        #         response += f"{unit}\n"
-        # if has_orders:
-        #     response += "**Submitted orders:**"
-        #     for unit in sorted(has_orders, key=lambda _unit: _unit.province.name):
-        #         response += f"\n{unit} {unit.order}"
-        # if response == "":
-        #     response = "No units need orders"
-        # return response
