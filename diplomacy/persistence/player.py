@@ -36,4 +36,7 @@ class Player:
         return self.name
 
     def score(self):
-        return (len(self.centers) - self.iscc) / (self.vscc - self.iscc)
+        if len(self.centers) > self.iscc:
+            return (len(self.centers) - self.iscc) / (self.vscc - self.iscc)
+        else:
+            return (len(self.centers) / self.iscc) - 1
