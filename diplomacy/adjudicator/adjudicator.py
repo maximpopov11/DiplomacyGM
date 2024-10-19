@@ -165,12 +165,9 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
         if not valid_move:
             return valid_move, reason
         # Check we are actually part of the convoy chain
-        base_province = get_base_province_from_location(location)
         destination_province = get_base_province_from_location(order.destination)
-        if not convoy_is_possible(order.source.province, base_province, check_fleet_orders=strict_convoys_supports):
+        if not convoy_is_possible(order.source.province, destination_province, check_fleet_orders=strict_convoys_supports):
             return False, f"No valid convoy path from {order.source.location().name} to {location.name}"
-        if not convoy_is_possible(base_province, destination_province, check_fleet_orders=strict_convoys_supports):
-            return False, f"No valid convoy path from {location.name} to {order.destination.name}"
         return True, None
     elif isinstance(order, Support):
         move_valid, _ = order_is_valid(location, Move(order.destination), strict_convoys_supports)
