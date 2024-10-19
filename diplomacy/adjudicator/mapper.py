@@ -8,23 +8,8 @@ import numpy as np
 from lxml import etree
 
 from diplomacy.adjudicator import utils
+from diplomacy.map_parser.vector import config_svg as svgcfg
 
-from diplomacy.map_parser.vector.config_svg import (
-    SVG_PATH,
-    UNITS_LAYER_ID,
-    STROKE_WIDTH,
-    RADIUS,
-    PHANTOM_PRIMARY_ARMY_LAYER_ID,
-    PHANTOM_PRIMARY_FLEET_LAYER_ID,
-    LAND_PROVINCE_LAYER_ID,
-    ISLAND_FILL_LAYER_ID,
-    NEUTRAL_PROVINCE_COLOR,
-    SUPPLY_CENTER_LAYER_ID,
-    ISLAND_RING_LAYER_ID,
-    SEASON_TITLE_LAYER_ID,
-    POWER_BANNERS_LAYER_ID,
-    MAP_WIDTH,
-)
 from diplomacy.map_parser.vector.utils import get_element_color, get_svg_element, get_unit_coordinates
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
@@ -53,13 +38,13 @@ UNITLAYER = "layer17"
 class Mapper:
     def __init__(self, board: Board):
         self.board: Board = board
-        self.board_svg: ElementTree = etree.parse(SVG_PATH)
+        self.board_svg: ElementTree = etree.parse(svgcfg.SVG_PATH)
         self.player_restriction: Player | None = None
         self._initialize_scoreboard_locations()
 
         utils.add_arrow_definition_to_svg(self.board_svg)
 
-        units_layer: Element = get_svg_element(self.board_svg, UNITS_LAYER_ID)
+        units_layer: Element = get_svg_element(self.board_svg, svgcfg.UNITS_LAYER_ID)
         self.board_svg.getroot().remove(units_layer)
 
         # TODO: Switch to passing the SVG directly, as that's simpiler (self.svg = draw_units(svg)?)
@@ -103,8 +88,8 @@ class Mapper:
                             # copy it 3 times (-1, 0, +1)
                             lval = copy.deepcopy(val)
                             rval = copy.deepcopy(val)
-                            lval.attrib["transform"] = f"translate({-MAP_WIDTH}, 0)"
-                            rval.attrib["transform"] = f"translate({MAP_WIDTH}, 0)"
+                            lval.attrib["transform"] = f"translate({-svgcfg.MAP_WIDTH}, 0)"
+                            rval.attrib["transform"] = f"translate({svgcfg.MAP_WIDTH}, 0)"
                             t = self._moves_svg.getroot()
 
                             l = get_svg_element(t, OUTPUTLAYER)
@@ -150,7 +135,7 @@ class Mapper:
         2-4: "current", "victory", "start" text labels in that order
         5-7: SC counts in that same order
         """
-        all_power_banners_element = get_svg_element(svg.getroot(), POWER_BANNERS_LAYER_ID)
+        all_power_banners_element = get_svg_element(svg.getroot(), svgcfg.POWER_BANNERS_LAYER_ID)
         for i, player in enumerate(self.board.get_players_by_score()):
             for power_element in all_power_banners_element:
                 # match the correct svg element based on the color of the rectangle
@@ -160,7 +145,7 @@ class Mapper:
                     break
 
     def _draw_side_panel_date(self, svg: ElementTree) -> None:
-        date = get_svg_element(svg.getroot(), SEASON_TITLE_LAYER_ID)
+        date = get_svg_element(svg.getroot(), svgcfg.SEASON_TITLE_LAYER_ID)
         # TODO: this is hacky; I don't know a better way
         date[0][0].text = self.get_pretty_date()
 
@@ -210,10 +195,10 @@ class Mapper:
             {
                 "cx": coordinate[0],
                 "cy": coordinate[1],
-                "r": RADIUS,
+                "r": svgcfg.RADIUS,
                 "fill": "none",
                 "stroke": "black",
-                "stroke-width": STROKE_WIDTH,
+                "stroke-width": svgcfg.STROKE_WIDTH,
             },
         )
         element.append(drawn_order)
@@ -223,13 +208,13 @@ class Mapper:
         drawn_order = utils.create_element(
             "rect",
             {
-                "x": coordinate[0] - RADIUS,
-                "y": coordinate[1] - RADIUS,
-                "width": RADIUS * 2,
-                "height": RADIUS * 2,
+                "x": coordinate[0] - svgcfg.RADIUS,
+                "y": coordinate[1] - svgcfg.RADIUS,
+                "width": svgcfg.RADIUS * 2,
+                "height": svgcfg.RADIUS * 2,
                 "fill": "none",
                 "stroke": "black",
-                "stroke-width": STROKE_WIDTH,
+                "stroke-width": svgcfg.STROKE_WIDTH,
                 "transform": f"rotate(45 {coordinate[0]} {coordinate[1]})",
             },
         )
@@ -245,7 +230,7 @@ class Mapper:
                 "d": f"M {coordinate[0]},{coordinate[1]} L {destination[0]},{destination[1]}",
                 "fill": "none",
                 "stroke": "red",
-                "stroke-width": STROKE_WIDTH,
+                "stroke-width": svgcfg.STROKE_WIDTH,
                 "stroke-linecap": "round",
                 "marker-end": "url(#arrow)",
             },
@@ -286,7 +271,7 @@ class Mapper:
                 "d": d,
                 "fill": "none",
                 "stroke": stroke_color,
-                "stroke-width": STROKE_WIDTH,
+                "stroke-width": svgcfg.STROKE_WIDTH,
                 "stroke-linecap": "round",
                 "marker-end": f"url(#{marker_end})",
             },
@@ -362,7 +347,7 @@ class Mapper:
         marker_start = ""
         if order.destination.get_unit():
             if order.source.location() == order.destination:
-                (x3, y3) = utils.pull_coordinate((x1, y1), (x3, y3), RADIUS)
+                (x3, y3) = utils.pull_coordinate((x1, y1), (x3, y3), svgcfg.RADIUS)
             else:
                 (x3, y3) = utils.pull_coordinate((x2, y2), (x3, y3))
             if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)):
@@ -381,7 +366,7 @@ class Mapper:
                 if id(order.destination.get_unit()) > id(unit):
                     marker_start = "url(#ball)"
                     # doesn't matter that v3 has been pulled, as it's still collinear
-                    (x1, y1) = (x2, y2) = utils.pull_coordinate((x3, y3), (x1, y1), RADIUS)
+                    (x1, y1) = (x2, y2) = utils.pull_coordinate((x3, y3), (x1, y1), svgcfg.RADIUS)
                 else:
                     return
         drawn_order = utils.create_element(
@@ -391,7 +376,7 @@ class Mapper:
                 "fill": "none",
                 "stroke": "black",
                 "stroke-dasharray": "5 5",
-                "stroke-width": STROKE_WIDTH,
+                "stroke-width": svgcfg.STROKE_WIDTH,
                 "stroke-linecap": "round",
                 "marker-start": marker_start,
                 "marker-end": f"url(#{'ball' if order.source.location() == order.destination else 'arrow'})",
@@ -406,10 +391,10 @@ class Mapper:
             {
                 "cx": coordinate[0],
                 "cy": coordinate[1],
-                "r": RADIUS / 2,
+                "r": svgcfg.RADIUS / 2,
                 "fill": "none",
                 "stroke": "black",
-                "stroke-width": STROKE_WIDTH * 2 / 3,
+                "stroke-width": svgcfg.STROKE_WIDTH * 2 / 3,
             },
         )
         element.append(drawn_order)
@@ -424,7 +409,7 @@ class Mapper:
                 "r": 10,
                 "fill": "none",
                 "stroke": "green",
-                "stroke-width": STROKE_WIDTH,
+                "stroke-width": svgcfg.STROKE_WIDTH,
             },
         )
 
@@ -443,18 +428,18 @@ class Mapper:
             {
                 "cx": coordinate[0],
                 "cy": coordinate[1],
-                "r": RADIUS,
+                "r": svgcfg.RADIUS,
                 "fill": "none",
                 "stroke": "red",
-                "stroke-width": STROKE_WIDTH,
+                "stroke-width": svgcfg.STROKE_WIDTH,
             },
         )
         element.append(drawn_order)
 
     def _draw_force_disband(self, coordinate: tuple[float, float], svg) -> None:
         element = svg.getroot()
-        cross_width = STROKE_WIDTH / (2**0.5)
-        square_rad = RADIUS / (2**0.5)
+        cross_width = svgcfg.STROKE_WIDTH / (2**0.5)
+        square_rad = svgcfg.RADIUS / (2**0.5)
         # two corner and a center point. Rotate and concat them to make the correct object
         init = np.array(
             [
@@ -476,9 +461,9 @@ class Mapper:
         element.append(drawn_order)
 
     def _color_provinces(self) -> None:
-        province_layer = get_svg_element(self.board_svg, LAND_PROVINCE_LAYER_ID)
-        island_fill_layer = get_svg_element(self.board_svg, ISLAND_FILL_LAYER_ID)
-        island_ring_layer = get_svg_element(self.board_svg, ISLAND_RING_LAYER_ID)
+        province_layer = get_svg_element(self.board_svg, svgcfg.LAND_PROVINCE_LAYER_ID)
+        island_fill_layer = get_svg_element(self.board_svg, svgcfg.ISLAND_FILL_LAYER_ID)
+        island_ring_layer = get_svg_element(self.board_svg, svgcfg.ISLAND_RING_LAYER_ID)
 
         visited_provinces: set[str] = set()
 
@@ -490,7 +475,7 @@ class Mapper:
                 continue
 
             visited_provinces.add(province.name)
-            color = NEUTRAL_PROVINCE_COLOR
+            color = svgcfg.NEUTRAL_PROVINCE_COLOR
             if province.owner:
                 color = province.owner.color
             utils.color_element(province_element, color)
@@ -503,7 +488,7 @@ class Mapper:
                 print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
                 continue
 
-            color = NEUTRAL_PROVINCE_COLOR
+            color = svgcfg.NEUTRAL_PROVINCE_COLOR
             if province.owner:
                 color = province.owner.color
             utils.color_element(island_ring, color, key="stroke")
@@ -516,7 +501,7 @@ class Mapper:
             print(f"Warning: Province {province.name} was not recolored by mapper!")
 
     def _color_centers(self) -> None:
-        centers_layer = get_svg_element(self.board_svg, SUPPLY_CENTER_LAYER_ID)
+        centers_layer = get_svg_element(self.board_svg, svgcfg.SUPPLY_CENTER_LAYER_ID)
 
         for center_element in centers_layer:
             try:
@@ -588,9 +573,9 @@ class Mapper:
     def _get_element_for_unit_type(self, unit_type) -> Element:
         # Just copy a random phantom unit
         if unit_type == UnitType.ARMY:
-            layer: Element = get_svg_element(self.board_svg, PHANTOM_PRIMARY_ARMY_LAYER_ID)
+            layer: Element = get_svg_element(self.board_svg, svgcfg.PHANTOM_PRIMARY_ARMY_LAYER_ID)
         else:
-            layer: Element = get_svg_element(self.board_svg, PHANTOM_PRIMARY_FLEET_LAYER_ID)
+            layer: Element = get_svg_element(self.board_svg, svgcfg.PHANTOM_PRIMARY_FLEET_LAYER_ID)
         return copy.deepcopy(layer.getchildren()[0])
 
     def _draw_retreat_options(self, unit: Unit, svg):
@@ -602,7 +587,7 @@ class Mapper:
         #     self._draw_retreat_move(RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False)
 
     def _initialize_scoreboard_locations(self) -> None:
-        all_power_banners_element = get_svg_element(self.board_svg.getroot(), POWER_BANNERS_LAYER_ID)
+        all_power_banners_element = get_svg_element(self.board_svg.getroot(), svgcfg.POWER_BANNERS_LAYER_ID)
         self.scoreboard_power_locations: list[str] = []
         for power_element in all_power_banners_element:
             self.scoreboard_power_locations.append(power_element.get("transform"))
