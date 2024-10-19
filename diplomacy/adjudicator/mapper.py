@@ -305,11 +305,11 @@ class Mapper:
             p = [coordinate]
             start = coordinate
             for loc in path[1:]:
-                p += [loc_to_point(loc, start)]
+                p += [utils.loc_to_point(loc, start)]
                 start = p[-1]
 
             if path[-1].get_unit():
-                p[-1] = pull_coordinate(p[-2], p[-1])
+                p[-1] = utils.pull_coordinate(p[-2], p[-1])
 
             p = np.array(p)
 
