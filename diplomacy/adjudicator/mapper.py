@@ -7,15 +7,8 @@ from xml.etree.ElementTree import ElementTree, Element
 import numpy as np
 from lxml import etree
 
-from diplomacy.adjudicator.utils import (
-    get_closest_loc,
-    add_arrow_definition_to_svg,
-    create_element,
-    pull_coordinate,
-    loc_to_point,
-    color_element,
-    normalize,
-)
+from diplomacy.adjudicator import utils
+
 from diplomacy.map_parser.vector.config_svg import (
     SVG_PATH,
     UNITS_LAYER_ID,
@@ -64,7 +57,7 @@ class Mapper:
         self.player_restriction: Player | None = None
         self._initialize_scoreboard_locations()
 
-        add_arrow_definition_to_svg(self.board_svg)
+        utils.add_arrow_definition_to_svg(self.board_svg)
 
         units_layer: Element = get_svg_element(self.board_svg, UNITS_LAYER_ID)
         self.board_svg.getroot().remove(units_layer)
@@ -100,7 +93,7 @@ class Mapper:
                 if isinstance(unit.order, (RetreatMove, Move, Support)):
                     new_locs = []
                     for endpoint in unit.order.destination.all_locs:
-                        new_locs += [normalize(get_closest_loc(unit_locs, endpoint))]
+                        new_locs += [utils.normalize(utils.get_closest_loc(unit_locs, endpoint))]
                     unit_locs = new_locs
                 try:
                     for loc in unit_locs:
@@ -212,7 +205,7 @@ class Mapper:
 
     def _draw_hold(self, coordinate: tuple[float, float]) -> None:
         element = self._moves_svg.getroot()
-        drawn_order = create_element(
+        drawn_order = utils.create_element(
             "circle",
             {
                 "cx": coordinate[0],
@@ -227,7 +220,7 @@ class Mapper:
 
     def _draw_core(self, coordinate: tuple[float, float]) -> None:
         element = self._moves_svg.getroot()
-        drawn_order = create_element(
+        drawn_order = utils.create_element(
             "rect",
             {
                 "x": coordinate[0] - RADIUS,
@@ -243,10 +236,10 @@ class Mapper:
         element.append(drawn_order)
 
     def _draw_retreat_move(self, order: RetreatMove, coordinate: tuple[float, float], use_moves_svg=True) -> None:
-        destination = loc_to_point(order.destination, coordinate)
+        destination = utils.loc_to_point(order.destination, coordinate)
         if order.destination.get_unit():
-            destination = pull_coordinate(coordinate, destination)
-        order_path = create_element(
+            destination = utils.pull_coordinate(coordinate, destination)
+        order_path = utils.create_element(
             "path",
             {
                 "d": f"M {coordinate[0]},{coordinate[1]} L {destination[0]},{destination[1]}",
@@ -287,7 +280,7 @@ class Mapper:
         return list(map((lambda t: (current.get_unit().location(),) + t), options))
 
     def _draw_path(self, d: str, marker_end="arrow", stroke_color="black"):
-        order_path = create_element(
+        order_path = utils.create_element(
             "path",
             {
                 "d": d,
@@ -362,16 +355,16 @@ class Mapper:
         order: Support = unit.order
         x1 = coordinate[0]
         y1 = coordinate[1]
-        v2 = loc_to_point(order.source.location(), coordinate)
+        v2 = utils.loc_to_point(order.source.location(), coordinate)
         x2, y2 = v2
-        v3 = loc_to_point(order.destination, v2)
+        v3 = utils.loc_to_point(order.destination, v2)
         x3, y3 = v3
         marker_start = ""
         if order.destination.get_unit():
             if order.source.location() == order.destination:
-                (x3, y3) = pull_coordinate((x1, y1), (x3, y3), RADIUS)
+                (x3, y3) = utils.pull_coordinate((x1, y1), (x3, y3), RADIUS)
             else:
-                (x3, y3) = pull_coordinate((x2, y2), (x3, y3))
+                (x3, y3) = utils.pull_coordinate((x2, y2), (x3, y3))
             if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)):
                 for coord in order.destination.all_locs:
                     self._draw_hold(coord)
@@ -388,10 +381,10 @@ class Mapper:
                 if id(order.destination.get_unit()) > id(unit):
                     marker_start = "url(#ball)"
                     # doesn't matter that v3 has been pulled, as it's still collinear
-                    (x1, y1) = (x2, y2) = pull_coordinate((x3, y3), (x1, y1), RADIUS)
+                    (x1, y1) = (x2, y2) = utils.pull_coordinate((x3, y3), (x1, y1), RADIUS)
                 else:
                     return
-        drawn_order = create_element(
+        drawn_order = utils.create_element(
             "path",
             {
                 "d": f"M {x1},{y1} Q {x2},{y2} {x3},{y3}",
@@ -408,7 +401,7 @@ class Mapper:
 
     def _draw_convoy(self, order: ConvoyTransport, coordinate: tuple[float, float]) -> None:
         element = self._moves_svg.getroot()
-        drawn_order = create_element(
+        drawn_order = utils.create_element(
             "circle",
             {
                 "cx": coordinate[0],
@@ -423,7 +416,7 @@ class Mapper:
 
     def _draw_build(self, player, order: Build) -> None:
         element = self._moves_svg.getroot()
-        drawn_order = create_element(
+        drawn_order = utils.create_element(
             "circle",
             {
                 "cx": order.location.primary_unit_coordinate[0],
@@ -445,7 +438,7 @@ class Mapper:
 
     def _draw_disband(self, coordinate: tuple[float, float], svg) -> None:
         element = svg.getroot()
-        drawn_order = create_element(
+        drawn_order = utils.create_element(
             "circle",
             {
                 "cx": coordinate[0],
@@ -472,7 +465,7 @@ class Mapper:
         )
         rotate_90 = np.array([[0, -1], [1, 0]])
         points = np.concatenate((init, init @ rotate_90, -init, -init @ rotate_90)) + coordinate
-        drawn_order = create_element(
+        drawn_order = utils.create_element(
             "polygon",
             {
                 "points": " ".join(map(lambda a: ",".join(map(str, a)), points)),
@@ -500,7 +493,7 @@ class Mapper:
             color = NEUTRAL_PROVINCE_COLOR
             if province.owner:
                 color = province.owner.color
-            color_element(province_element, color)
+            utils.color_element(province_element, color)
 
         # Try to combine this with the code above? A lot of repeated stuff here
         for island_ring in island_ring_layer:
@@ -513,7 +506,7 @@ class Mapper:
             color = NEUTRAL_PROVINCE_COLOR
             if province.owner:
                 color = province.owner.color
-            color_element(island_ring, color, key="stroke")
+            utils.color_element(island_ring, color, key="stroke")
 
         for province in self.board.provinces:
             if province.type == ProvinceType.SEA:
@@ -547,7 +540,7 @@ class Mapper:
                 # ...it doesn't have to be stripes, that was just my first idea. We could figure something else out.
                 pass
             for path in center_element.getchildren():
-                color_element(path, color)
+                utils.color_element(path, color)
 
     def _get_province_from_element_by_label(self, element: Element) -> Province:
         province_name = element.get("{http://www.inkscape.org/namespaces/inkscape}label")
@@ -566,7 +559,7 @@ class Mapper:
         unit_element = self._get_element_for_unit_type(unit.unit_type)
 
         for path in unit_element.getchildren():
-            color_element(path, unit.player.color)
+            utils.color_element(path, unit.player.color)
 
         current_coords = get_unit_coordinates(unit_element)
 
