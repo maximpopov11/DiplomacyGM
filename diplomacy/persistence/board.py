@@ -83,7 +83,7 @@ class Board:
         retreat_options: set[Province] | None,
     ) -> Unit:
         unit = Unit(unit_type, player, province, coast, retreat_options)
-        if retreat_options:
+        if retreat_options is not None:
             province.dislodged_unit = unit
         else:
             province.unit = unit
