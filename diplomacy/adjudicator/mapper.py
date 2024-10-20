@@ -579,10 +579,10 @@ class Mapper:
         return copy.deepcopy(layer.getchildren()[0])
 
     def _draw_retreat_options(self, unit: Unit, svg):
-        # if not unit.retreat_options:
-        #    self._draw_force_disband(unit.province.retreat_unit_coordinate, svg)
-        # else:
-        self._draw_disband(unit.province.retreat_unit_coordinate, svg)
+        if not unit.retreat_options:
+           self._draw_force_disband(unit.province.retreat_unit_coordinate, svg)
+        else:
+            self._draw_disband(unit.location().retreat_unit_coordinate, svg)
         # for retreat_province in unit.retreat_options:
         #     self._draw_retreat_move(RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False)
 

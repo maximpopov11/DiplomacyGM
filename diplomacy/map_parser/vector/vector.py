@@ -378,7 +378,7 @@ class Parser:
                     try:
                         coast = province.coast()
                     except Exception:
-                        print("Warning: phantom unit skipped, if drawing some move doesn't work this might be why")
+                        print(f"Warning: phantom unit skipped, if drawing some move doesn't work this might be why: {province_name} {province_key}")
                         continue
 
                 coordinate = get_unit_coordinates(unit_data)
