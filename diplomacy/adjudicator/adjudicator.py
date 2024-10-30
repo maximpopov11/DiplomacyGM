@@ -305,6 +305,9 @@ class RetreatsAdjudicator(Adjudicator):
             unit.player.units.remove(unit)
             self._board.units.remove(unit)
             unit.province.dislodged_unit = None
+        
+        for unit in self._board.units:
+            unit.order = None
 
         return self._board
 
