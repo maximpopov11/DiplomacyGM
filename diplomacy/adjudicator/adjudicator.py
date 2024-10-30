@@ -420,6 +420,8 @@ class MovesAdjudicator(Adjudicator):
             if current != order.source_province and order.destination_province in current.adjacent:
                 return Resolution.SUCCEEDS
 
+            visited.add(current.name)
+
             adjacent_convoys = {
                 convoy_order for convoy_order in order.convoys if convoy_order.current_province in current.adjacent
             }
