@@ -362,6 +362,11 @@ class MovesAdjudicator(Adjudicator):
         if not all(order.state == ResolutionState.RESOLVED for order in self.orders):
             raise RuntimeError("Cannot update board until all orders are resolved!")
 
+        bounces_and_occupied = set()
+        for order in self.orders:
+            if order.type == OrderType.MOVE:
+                bounces_and_occupied.add(order.destination_province)
+
         for order in self.orders:
             if order.type == OrderType.CORE and order.resolution == Resolution.SUCCEEDS:
                 if order.source_province.half_core == order.country:
@@ -395,8 +400,14 @@ class MovesAdjudicator(Adjudicator):
             if order.type == OrderType.HOLD and order.resolution == Resolution.SUCCEEDS:
                 if not order.destination_province.has_supply_center or self._board.phase.name.startswith("Fall"):
                     self._board.change_owner(order.destination_province, order.country)
+        
+        for unit in self._board.units:
+            bounces_and_occupied.add(unit.province)
+
         for unit in self._board.units:
             unit.order = None
+            if unit.retreat_options is not None:
+                unit.retreat_options -= bounces_and_occupied
 
             # Update provinces again to capture SCs in fall where units held
             if self._board.phase.name.startswith("Fall"):
@@ -480,6 +491,9 @@ class MovesAdjudicator(Adjudicator):
                             if attacked_order.country == order.country:
                                 return Resolution.FAILS
                             opponent_strength = 1
+                        else:
+                            # A -> B, B -> C, C -> B, if B succeeds then C can't effect A
+                            orders_to_overcome = {order for order in orders_to_overcome if order.source_province != attacked_order.destination_province}
                     else:
                         # the units don't bounce because at least one of them is convoyed
                         if (

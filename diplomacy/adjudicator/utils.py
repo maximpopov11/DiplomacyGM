@@ -34,6 +34,26 @@ def add_arrow_definition_to_svg(svg: ElementTree) -> None:
     )
     arrow_marker.append(arrow_path)
     defs.append(arrow_marker)
+    red_arrow_marker: Element = create_element(
+        "marker",
+        {
+            "id": "redarrow",
+            "viewbox": "0 0 3 3",
+            "refX": "1.5",
+            "refY": "1.5",
+            "markerWidth": "3",
+            "markerHeight": "3",
+            "orient": "auto-start-reverse",
+        },
+    )
+    red_arrow_path: Element = create_element(
+        "path",
+        {"d": "M 0,0 L 3,1.5 L 0,3 z",
+         "fill": "red"},
+    )
+    red_arrow_marker.append(red_arrow_path)
+    defs.append(red_arrow_marker)
+
     ball_marker: Element = create_element(
         "marker",
         {

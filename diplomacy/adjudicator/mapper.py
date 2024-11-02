@@ -232,7 +232,7 @@ class Mapper:
                 "stroke": "red",
                 "stroke-width": svgcfg.STROKE_WIDTH,
                 "stroke-linecap": "round",
-                "marker-end": "url(#arrow)",
+                "marker-end": "url(#redarrow)",
             },
         )
         return order_path
@@ -579,12 +579,15 @@ class Mapper:
         return copy.deepcopy(layer.getchildren()[0])
 
     def _draw_retreat_options(self, unit: Unit, svg):
+        root = svg.getroot()
         if not unit.retreat_options:
            self._draw_force_disband(unit.province.retreat_unit_coordinate, svg)
-        else:
-            self._draw_disband(unit.location().retreat_unit_coordinate, svg)
-        # for retreat_province in unit.retreat_options:
-        #     self._draw_retreat_move(RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False)
+        # if we're drawing possible retreat locs, why show it as dislodged at all?
+        # else:
+        #     self._draw_disband(unit.location().retreat_unit_coordinate, svg)
+
+        for retreat_province in unit.retreat_options:
+            root.append(self._draw_retreat_move(RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False))
 
     def _initialize_scoreboard_locations(self) -> None:
         all_power_banners_element = get_svg_element(self.board_svg.getroot(), svgcfg.POWER_BANNERS_LAYER_ID)
