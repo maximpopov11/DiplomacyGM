@@ -83,7 +83,7 @@ async def bumble(ctx: discord.ext.commands.Context) -> None:
 
 @bot.command(hidden=True)
 async def botsay(ctx: discord.ext.commands.Context) -> None:
-    await command.botsay(ctx)
+    await command.botsay(ctx, manager)
 
 
 @bot.command(hidden=True)

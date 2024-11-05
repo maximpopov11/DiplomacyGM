@@ -40,11 +40,13 @@ def bumble(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
     word_of_bumble = random.choice(["".join(perm) for perm in itertools.permutations("bumble")])
     if word_of_bumble == "bumble":
         word_of_bumble = "You are the chosen bumble"
+    if word_of_bumble == "elbmub":
+        word_of_bumble = "elbmub nesohc eht era uoY"
     return f"**{word_of_bumble}**", None
 
 
 @perms.gm("botsay")
-async def botsay(ctx: commands.Context) -> None:
+async def botsay(ctx: commands.Context, _: Manager) -> None:
     # noinspection PyTypeChecker
     if len(ctx.message.channel_mentions) == 0:
         return
