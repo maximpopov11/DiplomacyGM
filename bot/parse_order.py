@@ -1,11 +1,12 @@
 from lark import Lark, Transformer
 
 from bot.utils import get_unit_type, get_keywords, _manage_coast_signature
+from diplomacy.adjudicator.defs import get_base_province_from_location
 from diplomacy.persistence import order, phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.province import Province
+from diplomacy.persistence.province import Province, Location
 from diplomacy.persistence.unit import Unit, UnitType
 
 # TODO: Looks like these are used, but only in builds phase. Let's be consistent and move everything to the ebnf
@@ -111,7 +112,7 @@ class TreeToOrder(Transformer):
         else:
             unit = s[-1][0]
             unit_order = s[-1][1]
-        
+
         if isinstance(unit_order, order.Move):
             return s[0], order.Support(unit, unit_order.destination)
         elif isinstance(unit_order, order.Hold):
@@ -199,7 +200,7 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
     invalid: list[tuple[str, Exception]] = []
     commands = str.splitlines(message)
     updated_units: set[Unit] = set()
-    provinces_with_removed_builds: set[Province] = set()
+    provinces_with_removed_builds: set[str] = set()
     for command in commands:
         if command.strip() == ".remove_order":
             continue
@@ -246,10 +247,7 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
                 f"{player_restriction.name} does not control the unit in {location} which belongs to {player.name}"
             )
 
-        for build_order in player.build_orders:
-            if build_order.location == province:
-                player.build_orders.remove(build_order)
-                break
+        remove_player_order_for_location(board, player, province)
 
         if coast is None:
             if province.coasts:
@@ -303,18 +301,28 @@ def _parse_player_order(keywords: list[str], player_restriction: Player | None, 
             if isinstance(location, Province):
                 location = location.coast()
         player_order = order.Build(location, unit_type)
-        # This is jank. Probably bad practice? PlayerOrder class implements __eq__ to only check location
-        # So basically we have to remove the other equivalent one if it's in there and add ourselves
-        if player_order in player.build_orders:
-            player.build_orders.remove(player_order)
+        remove_player_order_for_location(board, player, location)
         player.build_orders.add(player_order)
         return player
 
     if command in _order_dict[_disband]:
         player_order = order.Disband(location)
-        if player_order in player.build_orders:
-            player.build_orders.remove(player_order)
+        remove_player_order_for_location(board, player, location)
         player.build_orders.add(player_order)
         return player
 
     raise RuntimeError("Build could not be parsed")
+
+
+def remove_player_order_for_location(board: Board, player: Player, location: Location) -> bool:
+    base_province = get_base_province_from_location(location)
+    for player_order in player.build_orders:
+        if get_base_province_from_location(player_order.location) == base_province:
+            player.build_orders.remove(player_order)
+            database = get_connection()
+            database.execute_arbitrary_sql(
+                "DELETE FROM builds WHERE board_id=? and phase=? and location=?",
+                (board.board_id, board.get_phase_and_year_string(), player_order.location.name),
+            )
+            return True
+    return False
