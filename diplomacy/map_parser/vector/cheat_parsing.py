@@ -42,6 +42,7 @@ def create_high_seas_and_sands(provinces: set[Province], name_to_province: dict[
             name_to_province["St. Marguerite Baie"],
             name_to_province["Strait of Belle Isle"],
             name_to_province["Labrador Sea"],
+            name_to_province["Azores"]
         },
     )
     _set_adjacencies(
