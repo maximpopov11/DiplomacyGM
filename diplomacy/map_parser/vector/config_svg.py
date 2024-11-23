@@ -47,7 +47,7 @@ PROVINCE_BORDER_MARGIN: float = 1
 # Neutral/unconquered color
 NEUTRAL_PROVINCE_COLOR = "c6b7ab"
 
-# Width of map SVG
+# Width of map SVG. Doesn't count the scorebar
 MAP_WIDTH = 4375
 # Order drawing radius: recommended unit radius * 1.5
 RADIUS: float = 10

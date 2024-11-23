@@ -82,7 +82,7 @@ class Mapper:
                     unit_locs = new_locs
                 try:
                     for loc in unit_locs:
-                        val = self._draw_order(unit, loc)
+                        val = self._draw_order(unit, loc, current_phase)
                         if val is not None:
                             # if something returns, that means it could potentially go across the edge
                             # copy it 3 times (-1, 0, +1)
@@ -152,7 +152,7 @@ class Mapper:
     def _reset_moves_map(self):
         self._moves_svg = copy.deepcopy(self.board_svg)
 
-    def _draw_order(self, unit: Unit, coordinate: tuple[float, float]) -> None:
+    def _draw_order(self, unit: Unit, coordinate: tuple[float, float], current_phase: phase.Phase) -> None:
         order = unit.order
         if isinstance(order, Hold):
             self._draw_hold(coordinate)
@@ -173,7 +173,10 @@ class Mapper:
         elif isinstance(order, RetreatDisband):
             self._draw_force_disband(coordinate, self._moves_svg)
         else:
-            self._draw_hold(coordinate)
+            if phase.is_moves(current_phase):
+                self._draw_hold(coordinate)
+            else:
+                self._draw_force_disband(coordinate, self._moves_svg)
             logger.debug(f"None order found: hold drawn. Coordinates: {coordinate}")
 
     def _draw_player_order(self, player: Player, order: PlayerOrder):

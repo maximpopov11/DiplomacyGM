@@ -98,20 +98,26 @@ def normalize(point: tuple[float, float]):
 def get_closest_loc(possiblities: tuple[tuple[float, float]], coord: tuple[float, float]):
     possiblities = list(possiblities)
     crossed_pos = []
+    crossed = []
     for p in possiblities:
         x = p[0]
         cx = coord[0]
         if abs(x - cx) > MAP_WIDTH / 2:
+            crossed += [1]
             if x > cx:
                 x -= MAP_WIDTH
             else:
                 x += MAP_WIDTH
+        else:
+            crossed += [0]
         crossed_pos += [(x, p[1])]
 
+    crossed = np.array(crossed)
     crossed_pos = np.array(crossed_pos)
 
     dists = crossed_pos - coord
-    short_ind = np.argmin(np.linalg.norm(dists, axis=1))
+    #penalty for crossing map is 500 px
+    short_ind = np.argmin(np.linalg.norm(dists, axis=1) + 500 * crossed)
     return crossed_pos[short_ind].tolist()
 
 
