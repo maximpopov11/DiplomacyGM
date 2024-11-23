@@ -50,7 +50,7 @@ class Province(Location):
     def __init__(
         self,
         name: str,
-        coordinates: list[tuple[float, float]],
+        coordinates: Polygon,
         primary_unit_coordinate: tuple[float, float],
         retreat_unit_coordinate: tuple[float, float],
         province_type: ProvinceType,
@@ -62,8 +62,7 @@ class Province(Location):
         local_unit: unit.Unit | None,  # TODO: probably doesn't make sense to init with a unit
     ):
         super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate)
-        self.coordinates: list[tuple[float, float]] = coordinates
-        self.geometry: Polygon = Polygon(self.coordinates)
+        self.geometry: Polygon = coordinates
         self.type: ProvinceType = province_type
         self.has_supply_center: bool = has_supply_center
         self.adjacent: set[Province] = adjacent

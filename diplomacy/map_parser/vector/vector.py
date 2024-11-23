@@ -175,13 +175,15 @@ class Parser:
                 raise RuntimeError("Province path data not found")
             path: list[str] = path_string.split()
 
-            province_coordinates = []
+            province_coordinates = [[]]
 
             command = None
             expected_arguments = 0
             base_coordinate = (0, 0)
             former_coordinate = (0, 0)
             current_index = 0
+            layer_translation = get_transform(provinces_layer)
+            this_translation = get_transform(province_data)
             while current_index < len(path):
                 if path[current_index][0].isalpha():
                     if len(path[current_index]) != 1:
@@ -192,10 +194,6 @@ class Parser:
                     command = path[current_index]
                     if command.lower() == "z":
                         expected_arguments = 0
-                        former_coordinate = base_coordinate
-                        province_coordinates.append(former_coordinate)
-                        current_index += 1
-                        continue
                     elif command.lower() in ["m", "l", "h", "v", "t"]:
                         expected_arguments = 1
                     elif command.lower() in ["s", "q"]:
@@ -208,31 +206,41 @@ class Parser:
                         raise RuntimeError(f"Unknown SVG path command {command}")
 
                     current_index += 1
+                if expected_arguments != 0:
+                    if len(path) < (current_index + expected_arguments):
+                        raise RuntimeError(f"Ran out of arguments for {command}")
 
-                if len(path) < (current_index + expected_arguments):
-                    raise RuntimeError(f"Ran out of arguments for {command}")
+                    args = [
+                        (float(coord_string.split(",")[0]), float(coord_string.split(",")[-1]))
+                        for coord_string in path[current_index : current_index + expected_arguments]
+                    ]
+                    base_coordinate, former_coordinate = _parse_path_command(
+                        command, args, base_coordinate, former_coordinate
+                    )
+                else:
+                    former_coordinate = base_coordinate
 
-                args = [
-                    (float(coord_string.split(",")[0]), float(coord_string.split(",")[-1]))
-                    for coord_string in path[current_index : current_index + expected_arguments]
-                ]
-                base_coordinate, former_coordinate = _parse_path_command(
-                    command, args, base_coordinate, former_coordinate
-                )
-                province_coordinates.append(former_coordinate)
+                province_coordinates[-1].append(layer_translation.transform(this_translation.transform(former_coordinate)))
                 current_index += expected_arguments
+                if current_index < len(path) and command.lower() == "z":
+                    # If we are closing, and there is more, there must be a second polygon (Chukchi Sea)
+                    province_coordinates += [[]]
 
-            layer_translation = get_transform(provinces_layer)
-            this_translation = get_transform(province_data)
-            for index, coordinate in enumerate(province_coordinates):
-                province_coordinates[index] = layer_translation.transform(this_translation.transform(coordinate))
+
+            if len(province_coordinates) <= 1:
+                poly = shapely.Polygon(province_coordinates[0])
+            else:
+                print(list(map(shapely.Polygon, province_coordinates)))
+                poly = shapely.MultiPolygon(map(shapely.Polygon, province_coordinates))
+
+            province_coordinates = shapely.MultiPolygon()
 
             name = None
             if PROVINCE_FILLS_LABELED:
                 name = self._get_province_name(province_data)
             province = Province(
                 name,
-                province_coordinates,
+                poly,
                 None,
                 None,
                 province_type,
@@ -480,7 +488,6 @@ def initialize_province_resident_data(
     for province in provinces:
         remove = set()
 
-        polygon = Polygon(province.coordinates)
         found = False
         for resident_data in resident_dataset:
             x, y = get_coordinates(resident_data)
@@ -490,7 +497,7 @@ def initialize_province_resident_data(
                 continue
 
             point = Point((x, y))
-            if polygon.contains(point):
+            if province.geometry.contains(point):
                 found = True
                 resident_data_callback(province, resident_data)
                 remove.add(resident_data)
@@ -512,7 +519,11 @@ def _get_adjacencies(provinces: set[Province]) -> set[tuple[str, str]]:
             adjacencies.add((province1.name, province2.name))
     # import matplotlib.pyplot as plt
     # for p in provinces:
-    #     plt.plot(*np.array(p.coordinates).T)
+    #     if isinstance(p.geometry, shapely.Polygon):
+    #         plt.plot(*p.geometry.exterior.xy)
+    #     else:
+    #         for geo in p.geometry.geoms:
+    #             plt.plot(*geo.exterior.xy)
     # plt.gca().invert_yaxis()
     # plt.show()
     return adjacencies
