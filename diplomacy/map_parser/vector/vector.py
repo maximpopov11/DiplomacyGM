@@ -230,7 +230,6 @@ class Parser:
             if len(province_coordinates) <= 1:
                 poly = shapely.Polygon(province_coordinates[0])
             else:
-                print(list(map(shapely.Polygon, province_coordinates)))
                 poly = shapely.MultiPolygon(map(shapely.Polygon, province_coordinates))
 
             province_coordinates = shapely.MultiPolygon()
