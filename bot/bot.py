@@ -95,10 +95,10 @@ async def announce(ctx: discord.ext.commands.Context) -> None:
     brief="Submits orders; there must be one and only one order per line.",
     description="""Submits orders: 
     There must be one and only one order per line.
-    All multi-word concepts must be separated by a '_'.
-        e.g. 'New York North Coast' should be 'New_York_North_Coast'.
-    Convoy moves must be explicitly specified at this time due to adjudication library constraints, meaning 'A move B' and 'A convoy_move B' are not the same.
-    A variety of keywords are supported: e.g. '-', 'move', and 'm' are all supported for a move command.
+    A variety of keywords are supported: e.g. '-', '->', 'move', and 'm' are all supported for a move command.
+    Supplying the unit type is fine but not required: e.g. 'A Ghent -> Normandy' and 'Ghent -> Normandy' are the same
+    If anything in the command errors, we recommend resubmitting the whole order message.
+    *During Build phases only*, you have to specify multi-word provinces with underscores; e.g. Somali Basin would be Somali_Basin (we use a different parser during build phases)
     If you would like to use something that is not currently supported please inform your GM and we can add it.""",
 )
 async def order(ctx: discord.ext.commands.Context) -> None:
@@ -171,14 +171,14 @@ async def remove_all(ctx: discord.ext.commands.Context) -> None:
 
 @bot.command(
     brief="disables orders until .unlock_orders is run.",
-    discription="""disables orders until .enable_orders is run.
+    description="""disables orders until .enable_orders is run.
              Note: Currently does not persist after the bot is restarted""",
 )
 async def lock_orders(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.disable_orders, ctx)
 
 
-@bot.command(brief="reenables orders")
+@bot.command(brief="re-enables orders")
 async def unlock_orders(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.enable_orders, ctx)
 
@@ -186,6 +186,11 @@ async def unlock_orders(ctx: discord.ext.commands.Context) -> None:
 @bot.command(brief="outputs information about the current game")
 async def info(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.info, ctx)
+
+
+@bot.command(brief="outputs information about a specific province")
+async def province_info(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.province_info, ctx)
 
 
 @bot.command(
