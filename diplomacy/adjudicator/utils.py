@@ -1,5 +1,6 @@
 import math
 import re
+import itertools
 
 from lxml import etree
 from xml.etree.ElementTree import ElementTree, Element
@@ -9,6 +10,7 @@ import numpy as np
 from diplomacy.map_parser.vector.config_svg import MAP_WIDTH, RADIUS
 from diplomacy.persistence.province import Location
 
+from diplomacy.map_parser.vector.config_player import player_data
 
 def add_arrow_definition_to_svg(svg: ElementTree) -> None:
     defs: Element = svg.find("{http://www.w3.org/2000/svg}defs")
@@ -72,6 +74,33 @@ def add_arrow_definition_to_svg(svg: ElementTree) -> None:
     )
     ball_marker.append(ball_def)
     defs.append(ball_marker)
+
+    data = player_data.copy()
+    data["None"] = ["ffffff"]
+    for mapping in itertools.product(data, data):
+        gradient_def: Element = create_element(
+            "linearGradient",
+            {
+                "id": f"{mapping[0]}_{mapping[1]}"
+            }
+        )
+        first: Element = create_element(
+            "stop",
+            {
+                "offset": "50%",
+                "stop-color": f"#{data[mapping[0]][0]}"
+            }
+        )
+        second: Element = create_element(
+            "stop",
+            {
+                "offset": "50%",
+                "stop-color": f"#{data[mapping[1]][0]}"
+            }
+        )
+        gradient_def.append(first)
+        gradient_def.append(second)
+        defs.append(gradient_def)
 
 
 def color_element(element: Element, color: str, key="fill"):

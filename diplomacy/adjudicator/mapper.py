@@ -517,18 +517,45 @@ class Mapper:
                 print(f"Province {province.name} says it has no supply center, but it does", file=sys.stderr)
                 continue
 
-            color = "#ffffff"
             if province.core:
-                color = province.core.color
-            elif province.half_core:
-                # TODO: I tried to put "repeating-linear-gradient(white, {province.half_core.color})" here but that
-                #  doesn't work. Doing this in SVG requires making a new pattern in defs which means doing a separate
-                #  pattern for every single color, which would suck
-                #  https://stackoverflow.com/questions/27511153/fill-svg-element-with-a-repeating-linear-gradient-color
-                # ...it doesn't have to be stripes, that was just my first idea. We could figure something else out.
-                pass
-            for path in center_element.getchildren():
-                utils.color_element(path, color)
+                core_color = province.core.color
+            else:
+                core_color = "#ffffff"
+            if province.half_core:
+                half_color = province.half_core.color
+            else:
+                half_color = core_color
+            # color = "#ffffff"
+            # if province.core:
+            #     color = province.core.color
+            # elif province.half_core:
+            #     # TODO: I tried to put "repeating-linear-gradient(white, {province.half_core.color})" here but that
+            #     #  doesn't work. Doing this in SVG requires making a new pattern in defs which means doing a separate
+            #     #  pattern for every single color, which would suck
+            #     #  https://stackoverflow.com/questions/27511153/fill-svg-element-with-a-repeating-linear-gradient-color
+            #     # ...it doesn't have to be stripes, that was just my first idea. We could figure something else out.
+            #     pass
+            # for path in center_element.getchildren():
+            #     print(f"\t{path}")
+            #     utils.color_element(path, color)
+            for elem in center_element.getchildren():
+                if "{http://www.inkscape.org/namespaces/inkscape}label" in elem.attrib and elem.attrib["{http://www.inkscape.org/namespaces/inkscape}label"] in ["Halfcore Marker", "Core Marker"]:
+                    # Handling capitals is easy bc it's all marked
+                    # TODO: Maybe make it split vertically?
+                    # that might be hard to do
+                    if elem.attrib["{http://www.inkscape.org/namespaces/inkscape}label"] == "Halfcore Marker":
+                        utils.color_element(elem, half_color)
+                    elif elem.attrib["{http://www.inkscape.org/namespaces/inkscape}label"] == "Core Marker":
+                        utils.color_element(elem, core_color)
+                else:
+                    if half_color != core_color:
+                        corename = "None" if not province.core else province.core.name
+                        halfname = "None" if not province.half_core else province.half_core.name
+                        utils.color_element(elem, f"url(#{halfname}_{corename})")
+                    else:
+                        utils.color_element(elem, core_color)
+
+
 
     def _get_province_from_element_by_label(self, element: Element) -> Province:
         province_name = element.get("{http://www.inkscape.org/namespaces/inkscape}label")
