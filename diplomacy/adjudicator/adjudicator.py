@@ -372,10 +372,7 @@ class MovesAdjudicator(Adjudicator):
 
         for order in self.orders:
             if order.type == OrderType.CORE and order.resolution == Resolution.SUCCEEDS:
-                if order.source_province.half_core == order.country:
-                    order.source_province.core = order.country
-                else:
-                    order.source_province.half_core = order.country
+                order.source_province.corer = order.country
             if order.type == OrderType.MOVE and order.resolution == Resolution.SUCCEEDS:
                 logger.debug(f"Moving {order.source_province} to {order.destination_province}")
                 if order.source_province.unit == order.base_unit:
@@ -404,6 +401,17 @@ class MovesAdjudicator(Adjudicator):
                 if not order.destination_province.has_supply_center or self._board.phase.name.startswith("Fall"):
                     self._board.change_owner(order.destination_province, order.country)
         
+        for province in self._board.provinces:
+            if province.corer:
+                if province.half_core == province.corer:
+                    province.core = province.corer
+                    province.half_core = None
+                else:
+                    province.half_core = province.corer
+            else:
+                province.half_core = None
+            province.corer = None
+
         for unit in self._board.units:
             bounces_and_occupied.add(unit.province)
 

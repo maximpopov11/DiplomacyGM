@@ -67,6 +67,7 @@ class Province(Location):
         self.has_supply_center: bool = has_supply_center
         self.adjacent: set[Province] = adjacent
         self.coasts: set[Coast] = coasts
+        self.corer: player.Player | None = None
         self.core: player.Player | None = core
         self.half_core: player.Player | None = None
         self.owner: player.Player | None = owner
