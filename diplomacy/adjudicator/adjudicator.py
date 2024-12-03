@@ -121,10 +121,11 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
     if isinstance(order, Hold) or isinstance(order, RetreatDisband):
         return True, None
     elif isinstance(order, Core):
-        return (
-            get_base_province_from_location(location).has_supply_center,
-            f"{location.name} does not have a supply center to core",
-        )
+        if not get_base_province_from_location(location).has_supply_center:
+            return False, f"{location.name} does not have a supply center to core"
+        if location.get_owner() != unit.owner:
+            return False, "Units can only core in owned supply centers"
+        return True, None
     elif isinstance(order, Move) or isinstance(order, RetreatMove):
         destination_province = get_base_province_from_location(order.destination)
         if destination_province not in get_adjacent_provinces(location):
