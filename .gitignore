@@ -11,5 +11,6 @@ __pychache__/
 *.py[cod]
 *.svg
 *.sqlite
+*.out.sql
 
 test.py

@@ -113,7 +113,7 @@ def create_high_seas_and_sands(provinces: set[Province], name_to_province: dict[
             name_to_province["SPO5"],
             name_to_province["Solomon Islands"],
             name_to_province["Halmahera Sea"],
-            name_to_province["Philippene Sea"],
+            name_to_province["Philippine Sea"],
             name_to_province["Kuroshio Current"],
             name_to_province["Edo"],
             name_to_province["Tsugaru Strait"],
