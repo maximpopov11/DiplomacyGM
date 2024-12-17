@@ -103,26 +103,15 @@ class Parser:
             province1.adjacent.add(province2)
             province2.adjacent.add(province1)
 
-        # set coasts
-        for province in provinces:
-            province.set_coasts()
         cheat_parsing.set_coasts(self.name_to_province)
         cheat_parsing.set_canals(self.name_to_province)
 
         provinces = cheat_parsing.create_high_seas_and_sands(provinces, self.name_to_province)
         cheat_parsing.set_secondary_locs(self.name_to_province)
 
-        # really bad bandaid code, will fix later
-        # some coasts aren't set because their only coasts are with cheat provinces which are set after coasts are
+        # set coasts
         for province in provinces:
-            if province.type != ProvinceType.SEA and len(province.coasts) == 0:
-                sea_provinces = set()
-                for adjacent in province.adjacent:
-                    if adjacent.type != ProvinceType.LAND:
-                        sea_provinces.add(adjacent)
-                if sea_provinces:
-                    name = province.name + " coast"
-                    province.coasts.add(Coast(name, None, None, sea_provinces, province))
+            province.set_coasts()
 
         self._initialize_province_owners(self.land_layer)
         self._initialize_province_owners(self.island_fill_layer)

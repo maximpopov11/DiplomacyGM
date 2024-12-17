@@ -26,7 +26,9 @@ def create_high_seas_and_sands(provinces: set[Province], name_to_province: dict[
         5,
         {
             name_to_province["Robertstorg"],
+            # name_to_province["Robertstorg coast"],
             name_to_province["Brattahlid"],
+            # name_to_province["Brattahlid coast"],
             name_to_province["Greenland Sea"],
             name_to_province["Rockall Rise"],
             name_to_province["Iberian Current"],
@@ -38,11 +40,13 @@ def create_high_seas_and_sands(provinces: set[Province], name_to_province: dict[
             name_to_province["SAO5"],
             name_to_province["Saragasso Sea"],
             name_to_province["Bermuda"],
+            # name_to_province["Bermuda coast"],
             name_to_province["Massachusetts Bay"],
             name_to_province["St. Marguerite Baie"],
             name_to_province["Strait of Belle Isle"],
             name_to_province["Labrador Sea"],
-            name_to_province["Azores"]
+            name_to_province["Azores"],
+            # name_to_province["Azores coast"]
         },
     )
     _set_adjacencies(
