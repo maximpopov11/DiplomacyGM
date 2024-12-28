@@ -51,6 +51,7 @@ class _DatabaseConnection:
         cursor = self._connection.cursor()
 
         board_data = cursor.execute("SELECT * FROM boards").fetchall()
+        board_keys = [(row[0], row[1]) for row in board_data]
         logger.info(f"Loading {len(board_data)} boards from DB")
         boards = dict()
         for board_row in board_data:
@@ -64,7 +65,7 @@ class _DatabaseConnection:
             next_phase_year = year
             if next_phase.name == "Spring Moves":
                 next_phase_year += 1
-            if (board_id, f"{next_phase_year} {next_phase.name}", svg_file) in board_data:
+            if (board_id, f"{next_phase_year} {next_phase.name}") in board_keys:
                 continue
 
             if fish is None:
