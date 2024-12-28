@@ -67,7 +67,7 @@ class Manager:
         if board.phase.name == "Spring Moves":
             last_phase_year -= 1
 
-        old_board = self._database.get_board(board.board_id, last_phase, last_phase_year)
+        old_board = self._database.get_board(board.board_id, last_phase, last_phase_year, board.fish)
         if old_board is None:
             raise ValueError(f"There is no {last_phase_year} {last_phase.name} board for this server")
 
@@ -80,7 +80,7 @@ class Manager:
         logger.info(f"Reloading server {server_id}")
         board = self._boards[server_id]
 
-        loaded_board = self._database.get_board(server_id, board.phase, board.year)
+        loaded_board = self._database.get_board(server_id, board.phase, board.year, board.fish)
         if loaded_board is None:
             raise ValueError(f"There is no {board.year} {board.phase.name} board for this server")
 

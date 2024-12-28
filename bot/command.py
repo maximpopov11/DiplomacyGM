@@ -45,6 +45,49 @@ def bumble(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
     return f"**{word_of_bumble}**", None
 
 
+def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+    board = manager.get_board(ctx.guild.id)
+    fish_num = random.randrange(0, 20)
+    if 0 == fish_num:
+        # something special
+        rare_fish_options = [
+            ":dolphin:",
+            ":shark:",
+            ":duck:",
+            ":goose:",
+            ":dodo:",
+            ":flamingo:",
+            ":unicorn:",
+            ":swan:",
+            ":whale:",
+            ":seal:",
+            ":sheep:",
+            ":sloth:",
+            ":hippopotamus:",
+        ]
+        board.fish += 10
+        fish_message = f"**Caught a rare fish!** {random.choice(rare_fish_options)}"
+    elif fish_num < 16:
+        fish_num = (fish_num + 1) // 2
+        board.fish += fish_num
+        fish_emoji_options = [":fish:", ":tropical_fish:", ":blowfish:", ":jellyfish:", ":shrimp:"]
+        fish_weights = [8, 4, 2, 1, 2]
+        fish_message = f"Caught {fish_num} fish! " + " ".join(
+            random.choices(fish_emoji_options, weights=fish_weights, k=fish_num)
+        )
+    else:
+        fish_num = (21 - fish_num) // 2
+        board.fish -= fish_num
+        fish_message = f"Accidentally let {fish_num} captured fish sneak away :("
+    fish_message += f"\nIn total, {board.fish} fish have been caught!"
+    if board.fish % 200 < 10:
+        get_connection().execute_arbitrary_sql(
+            """UPDATE boards SET fish=? WHERE board_id=? AND phase=?""",
+            (board.fish, board.board_id, board.get_phase_and_year_string()),
+        )
+    return fish_message, None
+
+
 @perms.gm("botsay")
 async def botsay(ctx: commands.Context, _: Manager) -> None:
     # noinspection PyTypeChecker

@@ -18,6 +18,7 @@ class Board:
         self.phase: Phase = phase
         self.year = 0
         self.board_id = 0
+        self.fish = 0
         self.orders_enabled: bool = True
 
     # TODO: we could have this as a dict ready on the variant

@@ -54,7 +54,7 @@ class _DatabaseConnection:
         logger.info(f"Loading {len(board_data)} boards from DB")
         boards = dict()
         for board_row in board_data:
-            board_id, phase_string, svg_file = board_row
+            board_id, phase_string, svg_file, fish = board_row
 
             split_index = phase_string.index(" ")
             year = int(phase_string[:split_index])
@@ -67,7 +67,10 @@ class _DatabaseConnection:
             if (board_id, f"{next_phase_year} {next_phase.name}", svg_file) in board_data:
                 continue
 
-            board = self._get_board(board_id, current_phase, year, cursor)
+            if fish is None:
+                fish = 0
+
+            board = self._get_board(board_id, current_phase, year, fish, cursor)
 
             boards[board_id] = board
 
@@ -75,7 +78,7 @@ class _DatabaseConnection:
         logger.info("Successfully loaded")
         return boards
 
-    def get_board(self, board_id: int, board_phase: phase.Phase, year: int) -> Board | None:
+    def get_board(self, board_id: int, board_phase: phase.Phase, year: int, fish: int) -> Board | None:
         cursor = self._connection.cursor()
 
         board_data = cursor.execute(
@@ -85,17 +88,18 @@ class _DatabaseConnection:
             cursor.close()
             return None
 
-        board = self._get_board(board_id, board_phase, year, cursor)
+        board = self._get_board(board_id, board_phase, year, fish, cursor)
         cursor.close()
         return board
 
-    def _get_board(self, board_id: int, board_phase: phase.Phase, year: int, cursor) -> Board:
+    def _get_board(self, board_id: int, board_phase: phase.Phase, year: int, fish: int, cursor) -> Board:
         logger.info(f"Loading board with ID {board_id}")
         # TODO - we should eventually store things like coords, adjacencies, etc
         #  so we don't have to reparse the whole board each time
         board = oneTrueParser.parse()
         board.phase = board_phase
         board.year = year
+        board.fish = fish
         board.board_id = board_id
         player_data = cursor.execute("SELECT player_name, color FROM players WHERE board_id=?", (board_id,)).fetchall()
         player_info_by_name = {player_name: color for player_name, color in player_data}
@@ -231,8 +235,8 @@ class _DatabaseConnection:
         # TODO: Check if board already exists
         cursor = self._connection.cursor()
         cursor.execute(
-            "INSERT INTO boards (board_id, phase, map_file) VALUES (?, ?, ?);",
-            (board_id, board.get_phase_and_year_string(), SVG_PATH),
+            "INSERT INTO boards (board_id, phase, map_file, fish) VALUES (?, ?, ?, ?);",
+            (board_id, board.get_phase_and_year_string(), SVG_PATH, board.fish),
         )
         cursor.executemany(
             "INSERT INTO players (board_id, player_name, color) VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
