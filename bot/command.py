@@ -193,11 +193,11 @@ def province_info(ctx: commands.Context, manager: Manager) -> tuple[str, str | N
     out = f"Province: {province.name}\n" + \
         f"Type: {province.type.name}\n" + \
         f"Coasts: {len(province.coasts)}\n" + \
-        f"Owner: {province.owner.name if province.owner else "None"}\n" + \
+        f"Owner: {province.owner.name if province.owner else 'None'}\n" + \
         f"Unit: {(province.unit.player.name + " " + province.unit.unit_type.name) if province.unit else "None"}\n" + \
         f"Center: {province.has_supply_center}\n" + \
-        f"Core: {province.core.name if province.core else "None"}\n" + \
-        f"Half-Core: {province.half_core.name if province.half_core else "None"}\n" + \
+        f"Core: {province.core.name if province.core else 'None'}\n" + \
+        f"Half-Core: {province.half_core.name if province.half_core else 'None'}\n" + \
         f"Adjacent Provinces:\n- {"\n- ".join(sorted([adjacent.name for adjacent in province.adjacent]))}\n"
     # fmt: on
     return out, None
