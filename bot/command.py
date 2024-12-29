@@ -83,7 +83,7 @@ def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
         board.fish -= fish_num
         fish_message = f"Accidentally let {fish_num} captured fish sneak away :("
     fish_message += f"\nIn total, {board.fish} fish have been caught!"
-    if board.fish % 200 < 10:
+    if random.randrange(0, 5) == 0:
         get_connection().execute_arbitrary_sql(
             """UPDATE boards SET fish=? WHERE board_id=? AND phase=?""",
             (board.fish, board.board_id, board.get_phase_and_year_string()),
