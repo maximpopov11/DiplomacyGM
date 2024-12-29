@@ -6,7 +6,7 @@ from diplomacy.persistence import order, phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.province import Province, Location
+from diplomacy.persistence.province import Province, Location, ProvinceType
 from diplomacy.persistence.unit import Unit, UnitType
 
 # TODO: Looks like these are used, but only in builds phase. Let's be consistent and move everything to the ebnf
@@ -98,8 +98,10 @@ class TreeToOrder(Transformer):
 
     def move_order(self, s):
         if s[0].unit_type == UnitType.FLEET and isinstance(s[-1], Province):
-            if len(s[-1].coasts) != 1:
-                raise ValueError(f"You cannot order F {s[-1]} to a province with num coasts != 1 without specifying which coast to go to")
+            if len(s[-1].coasts) > 1:
+                raise ValueError(f"You cannot order F {s[-1]} to a province with more than one coast without specifying which coast to go to")
+            if len(s[-1].coasts) == 1:
+                s[-1] = s[-1].coast()
         return s[0], order.Move(s[-1])
 
     def convoy_move_order(self, s):
