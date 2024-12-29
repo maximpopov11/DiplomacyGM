@@ -36,12 +36,15 @@ def ping(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
     return response, None
 
 
-def bumble(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
+def bumble(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     word_of_bumble = random.choice(["".join(perm) for perm in itertools.permutations("bumble")])
     if word_of_bumble == "bumble":
         word_of_bumble = "You are the chosen bumble"
     if word_of_bumble == "elbmub":
         word_of_bumble = "elbmub nesohc eht era uoY"
+    
+    board = manager.get_board(ctx.guild.id)
+    board.fish -= 1
     return f"**{word_of_bumble}**", None
 
 
