@@ -5,7 +5,7 @@ to_rename = [
     ["Arkangelsk coast", "Arkhangelsk coast"],
     ["Cartogena", "Cartagena"],
     ["Cartogena coast", "Cartagena coast"],
-    ["Philippene Sea", "Philippine Sea"]
+    ["Philippene Sea", "Philippine Sea"],
     ["Constantinople coast #1", "Constantinople coast"],
     ["Cairo coast #1", "Cairo coast"],
     ["Kiel coast #1", "Kiel coast"]
