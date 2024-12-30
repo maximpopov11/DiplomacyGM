@@ -338,6 +338,10 @@ def set_coasts(name_to_province: dict[str, Province]) -> None:
     )
 
 
+def fix_arrows(name_to_province: dict[str, Province]) -> None:
+    name_to_province["Nunavut"].adjacent.add(name_to_province["Iqaluit"])
+    name_to_province["Iqaluit"].adjacent.add(name_to_province["Nunavut"])
+
 # Remove coasts for canal provinces
 # def set_canals(name_to_province: dict[str, Province]) -> None:
 #     _set_coasts(
