@@ -8,7 +8,10 @@ to_rename = [
     ["Philippene Sea", "Philippine Sea"],
     ["Constantinople coast #1", "Constantinople coast"],
     ["Cairo coast #1", "Cairo coast"],
-    ["Kiel coast #1", "Kiel coast"]
+    ["Kiel coast #1", "Kiel coast"],
+    ["Luxemburg", "Luxembourg"],
+    ["Hydarabad", "Hyderabad"],
+    ["Strasburg", "Strasbourg"]
 ]
 
 with open("assets/imperial_diplomacy.svg", 'r') as f:
