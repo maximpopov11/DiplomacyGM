@@ -104,7 +104,7 @@ class Parser:
             province2.adjacent.add(province1)
 
         cheat_parsing.set_coasts(self.name_to_province)
-        cheat_parsing.set_canals(self.name_to_province)
+        #cheat_parsing.set_canals(self.name_to_province)
 
         provinces = cheat_parsing.create_high_seas_and_sands(provinces, self.name_to_province)
         cheat_parsing.set_secondary_locs(self.name_to_province)

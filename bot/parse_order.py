@@ -99,7 +99,7 @@ class TreeToOrder(Transformer):
     def move_order(self, s):
         if s[0].unit_type == UnitType.FLEET and isinstance(s[-1], Province):
             if len(s[-1].coasts) > 1:
-                raise ValueError(f"You cannot order F {s[-1]} to a province with more than one coast without specifying which coast to go to")
+                raise ValueError(f"You cannot order a fleet to {s[-1]} without specifying the coast to go to")
             if len(s[-1].coasts) == 1:
                 s[-1] = s[-1].coast()
         return s[0], order.Move(s[-1])

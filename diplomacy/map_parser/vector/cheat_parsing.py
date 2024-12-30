@@ -339,34 +339,34 @@ def set_coasts(name_to_province: dict[str, Province]) -> None:
 
 
 # Remove coasts for canal provinces
-def set_canals(name_to_province: dict[str, Province]) -> None:
-    _set_coasts(
-        name_to_province["Cairo"],
-        {
-            "coast #1": {
-                name_to_province["Levantine Sea"],
-                name_to_province["Red Sea"],
-            }
-        },
-    )
-    _set_coasts(
-        name_to_province["Kiel"],
-        {
-            "coast #1": {
-                name_to_province["Wadden Sea"],
-                name_to_province["Copenhagen"],
-            }
-        },
-    )
-    _set_coasts(
-        name_to_province["Constantinople"],
-        {
-            "coast #1": {
-                name_to_province["Black Sea"],
-                name_to_province["Aegean Sea"],
-            }
-        },
-    )
+# def set_canals(name_to_province: dict[str, Province]) -> None:
+#     _set_coasts(
+#         name_to_province["Cairo"],
+#         {
+#             "coast #1": {
+#                 name_to_province["Levantine Sea"],
+#                 name_to_province["Red Sea"],
+#             }
+#         },
+#     )
+#     _set_coasts(
+#         name_to_province["Kiel"],
+#         {
+#             "coast #1": {
+#                 name_to_province["Wadden Sea"],
+#                 name_to_province["Copenhagen"],
+#             }
+#         },
+#     )
+#     _set_coasts(
+#         name_to_province["Constantinople"],
+#         {
+#             "coast #1": {
+#                 name_to_province["Black Sea"],
+#                 name_to_province["Aegean Sea"],
+#             }
+#         },
+#     )
 
 
 def _set_coasts(province: Province, name_to_adjacent: dict[str, set[Province]]):
