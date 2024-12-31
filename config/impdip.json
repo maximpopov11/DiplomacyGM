@@ -30,6 +30,116 @@
         "unit_radius": 10,
         "order_stroke_width": 2
     },
+    "overrides": {
+        "high provinces": {
+            "SAH": {
+                "num": 3,
+                "type": "LAND",
+                "adjacencies": ["Ghadames", "Fezzan", "Zaghawa", "Darfur", "Kanem", "Hausa States", "Gurma", "Mossi", "Jenne", "Timbuktu", "Aswanik", "Regeibat"]
+            },
+            "NAO": {
+                "num": 5,
+                "type": "SEA",
+                "adjacencies": ["Robertstorg", "Brattahlid", "Greenland Sea", "Rockall Rise", "Iberian Current", "Seewarte Seamounts", "SAO1", "SAO2", "SAO3", "SAO4", "SAO5", "Saragasso Sea", "Bermuda", "Massachusetts Bay", "St. Marguerite Baie", "Strait of Belle Isle", "Labrador Sea", "Azores"]
+            },
+            "SAO": {
+                "num": 5,
+                "type": "SEA",
+                "adjacencies": ["NAO1", "NAO2", "NAO3", "NAO4", "NAO5", "Seewarte Seamounts", "Serra Leoa Rise", "Manden", "Gold Coast", "Guinea Rise", "Angola Basin", "St. Helena", "Cape Basin", "Southern Sea", "Argentine Basin", "Guanabara Bay", "Todos os Santos Bay", "Mauritsstad", "St. Marcos Bay", "Guiana Current", "Saragasso Sea"]
+            },
+            "NPO": {
+                "num": 5,
+                "type": "SEA",
+                "adjacencies": ["Chukchi Sea", "North Equatorial Current", "Hawai'i", "Berlanga Ridge", "Guatemala Basin", "SPO1", "SPO2", "SPO3", "SPO4", "SPO5", "Solomon Islands", "Halmahera Sea", "Philippine Sea", "Kuroshio Current", "Edo", "Tsugaru Strait", "Kuril Sea", "Sea of Okhotsk", "Koryaks"]
+            },
+            "SPO": {
+                "num": 5,
+                "type": "SEA",
+                "adjacencies": ["NPO1", "NPO2", "NPO3", "NPO4", "NPO5", "Guatemala Basin", "Galapagos", "Peru Basin", "Roggeveen Basin", "Chiloe", "Mar de Hoces", "Antarctic Basin", "Aotearoa", "Gunai", "Coral Sea", "Solomon Islands"]
+            },
+            "INO": {
+                "num": 5,
+                "type": "SEA",
+                "adjacencies": ["Laccadive Plateau", "Maldives", "Gulf of Mannar", "Ceylon", "Gulf of Ceylon", "Cocos Basin", "Sumatra", "Mentawai Strait", "Timor Sea", "Kimberley", "Great Australian Bight", "Antarctic Basin", "Crozet Basin", "Reunion", "Mascarene Sea", "Somali Basin"]
+            }
+        },
+        "provinces": {
+            "Iqaluit": {
+                "adjacencies": "Nunavut"
+            },
+            "Nunavut": {
+                "adjacencies": "Iqaluit"
+            }
+        },
+        "coasts": {
+            "Honduras":{
+               "nc":[
+                  "Gulf of Honduras",
+                  "Bay of Panama"
+               ],
+               "sc":[
+                  "Guatemala Basin",
+                  "Colon Ridge"
+               ]
+            },
+            "Yucatan":{
+               "nc":[
+                  "Gulf of Mexico",
+                  "Yucatan Channel"
+               ],
+               "sc":[
+                  "Guatemala Basin"
+               ]
+            },
+            "Mexico City":{
+               "ec":[
+                  "Gulf of Mexico"
+               ],
+               "wc":[
+                  "Guatemala Basin",
+                  "Berlanga Ridge",
+                  "Sea of Cortez"
+               ]
+            },
+            "Nakhon Si":{
+               "ec":[
+                  "Gulf of Siam",
+                  "Natuna Sea"
+               ],
+               "wc":[
+                  "Malacca Strait"
+               ]
+            },
+            "Pyeongyang":{
+               "ec":[
+                  "Oriental Sea",
+                  "Tsushima"
+               ],
+               "wc":[
+                  "Beizhili Sea",
+                  "Yellow Sea"
+               ]
+            },
+            "Chukchis":{
+               "ec":[
+                  "Chukchi Sea"
+               ],
+               "wc":[
+                  "Sea of Okhotsk"
+               ]
+            },
+            "Rome":{
+               "ec":[
+                  "Adriatic Sea"
+               ],
+               "wc":[
+                  "Ligurian Sea",
+                  "Tyrrhenian Sea"
+               ]
+            }
+         }
+    },
+
     "players": {
         "Abyssinia": {
             "color": "a88080",

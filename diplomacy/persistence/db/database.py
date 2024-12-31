@@ -1,6 +1,7 @@
 import logging
 import sqlite3
 from collections.abc import Iterable
+import json
 
 from diplomacy.map_parser.vector.config_svg import SVG_PATH
 
@@ -55,7 +56,7 @@ class _DatabaseConnection:
         logger.info(f"Loading {len(board_data)} boards from DB")
         boards = dict()
         for board_row in board_data:
-            board_id, phase_string, svg_file, fish = board_row
+            board_id, phase_string, data_file, fish = board_row
 
             split_index = phase_string.index(" ")
             year = int(phase_string[:split_index])
@@ -71,7 +72,7 @@ class _DatabaseConnection:
             if fish is None:
                 fish = 0
 
-            board = self._get_board(board_id, current_phase, year, fish, cursor)
+            board = self._get_board(data_file, board_id, current_phase, year, fish, cursor)
 
             boards[board_id] = board
 
@@ -93,7 +94,7 @@ class _DatabaseConnection:
         cursor.close()
         return board
 
-    def _get_board(self, board_id: int, board_phase: phase.Phase, year: int, fish: int, cursor) -> Board:
+    def _get_board(self, data_file: str, board_id: int, board_phase: phase.Phase, year: int, fish: int, cursor) -> Board:
         logger.info(f"Loading board with ID {board_id}")
         # TODO - we should eventually store things like coords, adjacencies, etc
         #  so we don't have to reparse the whole board each time
@@ -102,6 +103,9 @@ class _DatabaseConnection:
         board.year = year
         board.fish = fish
         board.board_id = board_id
+        with open(f"config/{data_file}", 'r') as f:
+            board.data = json.load(f)
+
         player_data = cursor.execute("SELECT player_name, color FROM players WHERE board_id=?", (board_id,)).fetchall()
         player_info_by_name = {player_name: color for player_name, color in player_data}
         for player in board.players:

@@ -26,9 +26,7 @@ def create_high_seas_and_sands(provinces: set[Province], name_to_province: dict[
         5,
         {
             name_to_province["Robertstorg"],
-            # name_to_province["Robertstorg coast"],
             name_to_province["Brattahlid"],
-            # name_to_province["Brattahlid coast"],
             name_to_province["Greenland Sea"],
             name_to_province["Rockall Rise"],
             name_to_province["Iberian Current"],
@@ -40,13 +38,11 @@ def create_high_seas_and_sands(provinces: set[Province], name_to_province: dict[
             name_to_province["SAO5"],
             name_to_province["Saragasso Sea"],
             name_to_province["Bermuda"],
-            # name_to_province["Bermuda coast"],
             name_to_province["Massachusetts Bay"],
             name_to_province["St. Marguerite Baie"],
             name_to_province["Strait of Belle Isle"],
             name_to_province["Labrador Sea"],
             name_to_province["Azores"],
-            # name_to_province["Azores coast"]
         },
     )
     _set_adjacencies(
@@ -271,19 +267,6 @@ def set_coasts(name_to_province: dict[str, Province]) -> None:
             "wc": {
                 name_to_province["Guatemala Basin"],
                 name_to_province["Berlanga Ridge"],
-                name_to_province["Viscaino Bay"],
-            },
-        },
-    )
-    _set_coasts(
-        name_to_province["Mexico City"],
-        {
-            "ec": {
-                name_to_province["Gulf of Mexico"],
-            },
-            "wc": {
-                name_to_province["Guatemala Basin"],
-                name_to_province["Berlanga Ridge"],
                 name_to_province["Sea of Cortez"],
             },
         },
@@ -380,25 +363,28 @@ def _set_coasts(province: Province, name_to_adjacent: dict[str, set[Province]]):
         province.coasts.add(coast)
 
 
-def fix_phantom_units(provinces: set[Province]):
-    for province in provinces:
-        if province.name == "Yucatan Channel":
-            province.primary_unit_coordinate = (1028, 952)
-            province.retreat_unit_coordinate = (1039, 921)
-        if province.name == "SAH1":
-            province.primary_unit_coordinate = (2029, 922)
-            province.retreat_unit_coordinate = (2041, 935)
-        if province.name == "SAH2":
-            province.primary_unit_coordinate = (2100, 949)
-            province.retreat_unit_coordinate = (2112, 961)
-        if province.name == "SAH3":
-            province.primary_unit_coordinate = (2129, 1017)
-            province.retreat_unit_coordinate = (2141, 1029)
-        if province.name == "Imerina":
-            province.primary_unit_coordinate = (2632, 1518)
-            province.retreat_unit_coordinate = (2648, 1485)
-            province.coast().primary_unit_coordinate = province.primary_unit_coordinate
-            province.coast().retreat_unit_coordinate = province.retreat_unit_coordinate
+# def fix_phantom_units(provinces: set[Province]):
+#     for province in provinces:
+#         if province.name == "Yucatan Channel":
+#             province.primary_unit_coordinate = (1028, 952)
+#             province.retreat_unit_coordinate = (1039, 921)
+#         if province.name == "SAH1":
+#             print(province.primary_unit_coordinate, province.retreat_unit_coordinate)
+#             province.primary_unit_coordinate = (2029, 922)
+#             province.retreat_unit_coordinate = (2041, 935)
+#         if province.name == "SAH2":
+#             print(province.primary_unit_coordinate, province.retreat_unit_coordinate)
+#             province.primary_unit_coordinate = (2100, 949)
+#             province.retreat_unit_coordinate = (2112, 961)
+#         if province.name == "SAH3":
+#             print(province.primary_unit_coordinate, province.retreat_unit_coordinate)
+#             province.primary_unit_coordinate = (2129, 1017)
+#             province.retreat_unit_coordinate = (2141, 1029)
+#         if province.name == "Imerina":
+#             province.primary_unit_coordinate = (2632, 1518)
+#             province.retreat_unit_coordinate = (2648, 1485)
+#             province.coast().primary_unit_coordinate = province.primary_unit_coordinate
+#             province.coast().retreat_unit_coordinate = province.retreat_unit_coordinate
 
 
 def set_secondary_locs(name_to_province: dict[str, set[Province]]):

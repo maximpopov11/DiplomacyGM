@@ -133,7 +133,7 @@ class Parser:
         self._set_phantom_unit_coordinates()
 
         # TODO: (BETA) yet another very bad bandaid, no time to fix it the right way
-        cheat_parsing.fix_phantom_units(provinces)
+        #cheat_parsing.fix_phantom_units(provinces)
 
         for province in provinces:
             province.all_locs.add(province.primary_unit_coordinate)
