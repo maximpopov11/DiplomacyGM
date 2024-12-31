@@ -539,7 +539,9 @@ class Mapper:
             #     print(f"\t{path}")
             #     utils.color_element(path, color)
             for elem in center_element.getchildren():
-                if "{http://www.inkscape.org/namespaces/inkscape}label" in elem.attrib and elem.attrib["{http://www.inkscape.org/namespaces/inkscape}label"] in ["Halfcore Marker", "Core Marker"]:
+                if elem.attrib["id"].startswith("Capital_Marker"):
+                    pass
+                elif "{http://www.inkscape.org/namespaces/inkscape}label" in elem.attrib and elem.attrib["{http://www.inkscape.org/namespaces/inkscape}label"] in ["Halfcore Marker", "Core Marker"]:
                     # Handling capitals is easy bc it's all marked
                     # TODO: Maybe make it split vertically?
                     # that might be hard to do
