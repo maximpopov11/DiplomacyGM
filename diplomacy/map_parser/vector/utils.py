@@ -27,6 +27,7 @@ def _get_unit_type(unit_data: Element) -> UnitType:
     elif num_sides == "6":
         return UnitType.ARMY
     else:
+        return UnitType.ARMY
         raise RuntimeError(f"Unit has {num_sides} sides which does not match any unit definition.")
 
 
@@ -34,6 +35,14 @@ def get_unit_coordinates(
     unit_data: Element,
 ) -> tuple[float, float]:
     path: Element = unit_data.find("{http://www.w3.org/2000/svg}path")
-    x = float(path.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cx"))
-    y = float(path.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cy"))
+
+    x = path.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cx")
+    y = path.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cy")
+    if x == None or y == None:
+        start = path.get("d")
+        start = start.split(" ")[1]
+        x, y = start.split(",")
+    x = float(x)
+    y = float(y)
     return get_transform(path).transform((x, y))
+            

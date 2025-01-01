@@ -11,7 +11,7 @@
         "supply_center_icons": "layer3",
         "season": "layer4",
         "power_banners": "layer11",
-        "starting_units": "layer10",
+        "starting_units": null,
         "unit_output": "layer17",
         "arrow_output": "layer16",
 
@@ -23,6 +23,8 @@
         "unit_labels": false,
         "province_labels": true,
         "center_labels": true,
+
+        "coring": false,
 
         "unowned_color": "c6b7ab",
 

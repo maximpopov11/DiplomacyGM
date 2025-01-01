@@ -36,6 +36,8 @@ NAMESPACE: dict[str, str] = {
 class Parser:
     def __init__(self, data: str):
 
+        self.datafile = data
+
         with open(f"config/{data}", 'r') as f:
             self.data = json.load(f)
 
@@ -50,7 +52,10 @@ class Parser:
         self.sea_layer: Element = get_svg_element(svg_root, self.layers["sea_borders"])
         self.names_layer: Element = get_svg_element(svg_root, self.layers["province_names"])
         self.centers_layer: Element = get_svg_element(svg_root, self.layers["supply_center_icons"])
-        self.units_layer: Element = get_svg_element(svg_root, self.layers["starting_units"])
+        if self.layers["starting_units"]:
+            self.units_layer: Element = get_svg_element(svg_root, self.layers["starting_units"])
+        else:
+            self.units_layer = None
         self.power_banner_layer: Element = get_svg_element(svg_root, self.layers["power_banners"])
 
         self.phantom_primary_armies_layer: Element = get_svg_element(svg_root, self.layers["army"])
@@ -85,7 +90,7 @@ class Parser:
             if unit:
                 units.add(unit)
 
-        return Board(players, provinces, units, phase.initial(), self.data)
+        return Board(players, provinces, units, phase.initial(), self.data, self.datafile)
 
     def read_map(self) -> tuple[set[Province], set[tuple[str, str]]]:
         if self.cache_provinces is None:
@@ -170,16 +175,18 @@ class Parser:
         self._initialize_province_owners(self.island_fill_layer)
 
         # set supply centers
-        if self.layers["center_labels"]:
-            self._initialize_supply_centers_assisted()
-        else:
-            self._initialize_supply_centers(provinces)
+        if self.data["svg config"]["coring"]:
+            if self.layers["center_labels"]:
+                self._initialize_supply_centers_assisted()
+            else:
+                self._initialize_supply_centers(provinces)
 
         # set units
-        if self.layers["unit_labels"]:
-            self._initialize_units_assisted()
-        else:
-            self._initialize_units(provinces)
+        if self.units_layer is not None:
+            if self.layers["unit_labels"]:
+                self._initialize_units_assisted()
+            else:
+                self._initialize_units(provinces)
 
         # set phantom unit coordinates for optimal unit placements
         self._set_phantom_unit_coordinates()
@@ -211,6 +218,8 @@ class Parser:
     ) -> set[Province]:
         provinces = set()
         prev_names = set()
+        if province_type == ProvinceType.ISLAND:
+            print('here', len(provinces_layer.getchildren()))
         for province_data in provinces_layer.getchildren():
             path_string = province_data.get("d")
             if not path_string:
@@ -279,6 +288,11 @@ class Parser:
             name = None
             if self.layers["province_labels"]:
                 name = self._get_province_name(province_data)
+
+            if province_type == ProvinceType.ISLAND:
+                print(name)
+
+
             province = Province(
                 name,
                 poly,
@@ -299,12 +313,7 @@ class Parser:
     def _initialize_province_owners(self, provinces_layer: Element) -> None:
         for province_data in provinces_layer.getchildren():
             name = self._get_province_name(province_data)
-            try:
-                self.name_to_province[name].owner = get_player(province_data, self.color_to_player)
-            except:
-                print(self.name_to_province)
-                print(self.name_to_province["MEJO"])
-                raise Exception
+            self.name_to_province[name].owner = get_player(province_data, self.color_to_player)
 
     # Sets province names given the names layer
     def _initialize_province_names(self, provinces: set[Province]) -> None:
@@ -347,11 +356,8 @@ class Parser:
                 return None, None
             circle = circles[0]
             base_coordinates = float(circle.get("cx")), float(circle.get("cy"))
-            translation_coordinates = _get_translation_coordinates(supply_center_data)
-            return (
-                base_coordinates[0] + translation_coordinates[0],
-                base_coordinates[1] + translation_coordinates[1],
-            )
+            trans = get_transform(supply_center_data)
+            return trans.transform(base_coordinates)
 
         def set_province_supply_center(province: Province, _: Element) -> None:
             if province.has_supply_center:
@@ -360,7 +366,7 @@ class Parser:
 
         initialize_province_resident_data(provinces, self.centers_layer, get_coordinates, set_province_supply_center)
 
-    def _set_province_unit(self, province: Province, unit_data: Element, coast: Coast) -> Unit:
+    def _set_province_unit(self, province: Province, unit_data: Element, coast: Coast=None) -> Unit:
         if province.unit:
             raise RuntimeError(f"{province.name} already has a unit")
 
@@ -385,12 +391,9 @@ class Parser:
     # Sets province unit values
     def _initialize_units(self, provinces: set[Province]) -> None:
         def get_coordinates(unit_data: Element) -> tuple[float | None, float | None]:
-            base_coordinates = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get("d").split()[1].split(",")
-            translation_coordinates = _get_translation_coordinates(unit_data)
-            return (
-                float(base_coordinates[0]) + translation_coordinates[0],
-                float(base_coordinates[1]) + translation_coordinates[1],
-            )
+            base_coordinates = tuple(map(float, unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get("d").split()[1].split(",")))
+            trans = get_transform(unit_data)
+            return trans.transform(base_coordinates)
 
         initialize_province_resident_data(
             provinces, self.units_layer.getchildren(), get_coordinates, self._set_province_unit
@@ -533,6 +536,8 @@ def _get_translation_coordinates(element: Element) -> tuple[float, float]:
     if not transform:
         return None, None
     split = re.split(r"[(),]", transform)
+    if split[0] != "translate":
+        print(transform)
     assert split[0] == "translate"
     return float(split[1]), float(split[2])
 

@@ -235,13 +235,30 @@ class _DatabaseConnection:
         # TODO: Check if board already exists
         cursor = self._connection.cursor()
         cursor.execute(
-            "INSERT INTO boards (board_id, phase, map_file, fish) VALUES (?, ?, ?, ?);",
-            (board_id, board.get_phase_and_year_string(), board.data["file"], board.fish),
+            "INSERT INTO boards (board_id, phase, data_file, fish) VALUES (?, ?, ?, ?);",
+            (board_id, board.get_phase_and_year_string(), board.datafile, board.fish),
         )
         cursor.executemany(
             "INSERT INTO players (board_id, player_name, color) VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
             [(board_id, player.name, player.color) for player in board.players],
         )
+
+        cache = []
+        for p in board.provinces:
+            if p.name == "NICE":
+                print(p.type)
+                import matplotlib.pyplot as plt
+                import shapely
+                if isinstance(p.geometry, shapely.Polygon):
+                    plt.plot(*p.geometry.exterior.xy)
+                else:
+                    for geo in p.geometry.geoms:
+                        plt.plot(*geo.exterior.xy)
+        plt.gca().invert_yaxis()
+        plt.show()
+        print(board_id, board.get_phase_and_year_string())
+
+
         cursor.executemany(
             "INSERT INTO provinces (board_id, phase, province_name, owner, core, half_core) VALUES (?, ?, ?, ?, ?, ?)",
             [
