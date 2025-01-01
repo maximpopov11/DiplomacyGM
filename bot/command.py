@@ -60,6 +60,7 @@ def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
             ":goose:",
             ":dodo:",
             ":flamingo:",
+            ":penguin:",
             ":unicorn:",
             ":swan:",
             ":whale:",
@@ -81,7 +82,8 @@ def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     else:
         fish_num = (21 - fish_num) // 2
         board.fish -= fish_num
-        fish_message = f"Accidentally let {fish_num} captured fish sneak away :("
+        fish_kind = "captured" if board.fish >= 0 else "future"
+        fish_message = f"Accidentally let {fish_num} {fish_kind} fish sneak away :("
     fish_message += f"\nIn total, {board.fish} fish have been caught!"
     if random.randrange(0, 5) == 0:
         get_connection().execute_arbitrary_sql(
