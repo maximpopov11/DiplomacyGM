@@ -1,6 +1,7 @@
 import copy
 import itertools
 import re
+import json
 from typing import Callable
 from xml.etree.ElementTree import Element
 
@@ -9,8 +10,7 @@ from lxml import etree
 from shapely.geometry import Point, Polygon
 
 from diplomacy.map_parser.vector import cheat_parsing
-from diplomacy.map_parser.vector.config_player import player_data, NEUTRAL, BLANK_CENTER
-from diplomacy.map_parser.vector.config_svg import *
+from diplomacy.map_parser.vector.config_player import NEUTRAL, BLANK_CENTER#, player_data
 from diplomacy.map_parser.vector.transform import get_transform
 from diplomacy.map_parser.vector.utils import (
     get_player,
@@ -34,22 +34,29 @@ NAMESPACE: dict[str, str] = {
 
 
 class Parser:
-    def __init__(self):
-        svg_root = etree.parse(SVG_PATH)
+    def __init__(self, data: str):
 
-        self.land_layer: Element = get_svg_element(svg_root, LAND_PROVINCE_LAYER_ID)
-        self.island_layer: Element = get_svg_element(svg_root, ISLAND_PROVINCE_LAYER_ID)
-        self.island_fill_layer: Element = get_svg_element(svg_root, ISLAND_FILL_LAYER_ID)
-        self.sea_layer: Element = get_svg_element(svg_root, SEA_PROVINCE_LAYER_ID)
-        self.names_layer: Element = get_svg_element(svg_root, PROVINCE_NAMES_LAYER_ID)
-        self.centers_layer: Element = get_svg_element(svg_root, SUPPLY_CENTER_LAYER_ID)
-        self.units_layer: Element = get_svg_element(svg_root, UNITS_LAYER_ID)
-        self.power_banner_layer: Element = get_svg_element(svg_root, POWER_BANNERS_LAYER_ID)
+        with open(f"config/{data}", 'r') as f:
+            self.data = json.load(f)
 
-        self.phantom_primary_armies_layer: Element = get_svg_element(svg_root, PHANTOM_PRIMARY_ARMY_LAYER_ID)
-        self.phantom_retreat_armies_layer: Element = get_svg_element(svg_root, PHANTOM_RETREAT_ARMY_LAYER_ID)
-        self.phantom_primary_fleets_layer: Element = get_svg_element(svg_root, PHANTOM_PRIMARY_FLEET_LAYER_ID)
-        self.phantom_retreat_fleets_layer: Element = get_svg_element(svg_root, PHANTOM_RETREAT_FLEET_LAYER_ID)
+
+        svg_root = etree.parse(self.data["file"])
+
+        self.layers = self.data["svg config"]
+
+        self.land_layer: Element = get_svg_element(svg_root, self.layers["land_layer"])
+        self.island_layer: Element = get_svg_element(svg_root, self.layers["island_borders"])
+        self.island_fill_layer: Element = get_svg_element(svg_root, self.layers["island_fill_layer"])
+        self.sea_layer: Element = get_svg_element(svg_root, self.layers["sea_borders"])
+        self.names_layer: Element = get_svg_element(svg_root, self.layers["province_names"])
+        self.centers_layer: Element = get_svg_element(svg_root, self.layers["supply_center_icons"])
+        self.units_layer: Element = get_svg_element(svg_root, self.layers["starting_units"])
+        self.power_banner_layer: Element = get_svg_element(svg_root, self.layers["power_banners"])
+
+        self.phantom_primary_armies_layer: Element = get_svg_element(svg_root, self.layers["army"])
+        self.phantom_retreat_armies_layer: Element = get_svg_element(svg_root, self.layers["retreat_army"])
+        self.phantom_primary_fleets_layer: Element = get_svg_element(svg_root, self.layers["fleet"])
+        self.phantom_retreat_fleets_layer: Element = get_svg_element(svg_root, self.layers["retreat_fleet"])
 
         self.color_to_player: dict[str, Player | None] = {}
         self.name_to_province: dict[str, Province] = {}
@@ -59,13 +66,16 @@ class Parser:
 
     def parse(self) -> Board:
         players = set()
-        for name, (color, vscc, iscc) in player_data.items():
+        for name, data in self.data["players"].items():
+            color = data["color"]
+            vscc = data["vscc"]
+            iscc = data["iscc"]
             player = Player(name, color, vscc, iscc, set(), set())
             players.add(player)
             self.color_to_player[color] = player
 
-        self.color_to_player[NEUTRAL] = None
-        self.color_to_player[BLANK_CENTER] = None
+        self.color_to_player[self.data["svg config"]["neutral"]] = None
+        self.color_to_player[self.data["svg config"]["neutral_sc"]] = None
 
         provinces = self._get_provinces()
 
@@ -75,13 +85,13 @@ class Parser:
             if unit:
                 units.add(unit)
 
-        return Board(players, provinces, units, phase.initial())
+        return Board(players, provinces, units, phase.initial(), self.data)
 
     def read_map(self) -> tuple[set[Province], set[tuple[str, str]]]:
         if self.cache_provinces is None:
             # set coordinates and names
             self.cache_provinces: set[Province] = self._get_province_coordinates()
-            if not PROVINCE_FILLS_LABELED:
+            if not self.layers["province_labels"]:
                 self._initialize_province_names(self.cache_provinces)
 
         provinces = copy.deepcopy(self.cache_provinces)
@@ -90,10 +100,50 @@ class Parser:
 
         if self.cache_adjacencies is None:
             # set adjacencies
-            self.cache_adjacencies = _get_adjacencies(provinces)
+            self.cache_adjacencies = self._get_adjacencies(provinces)
         adjacencies = copy.deepcopy(self.cache_adjacencies)
 
         return (provinces, adjacencies)
+    
+    def names_to_provinces(self, names: set[str]):
+        return map((lambda n: self.name_to_province[n]), names)
+
+    def json_cheats(self, provinces: set[Province]):
+        if not "overrides" in self.data:
+            return
+        if "high provinces" in self.data["overrides"]:
+            for name, data in self.data["overrides"]["high provinces"].items():
+                for index in range(1, data["num"] + 1):
+                    province = Province(
+                        name + str(index),
+                        [],
+                        None,
+                        None,
+                        getattr(ProvinceType, data["type"]),
+                        False,
+                        set(),
+                        set(),
+                        None,
+                        None,
+                        None,
+                    )
+                    provinces.add(province)
+                    self.name_to_province[province.name] = province
+
+        if "provinces" in self.data["overrides"]:
+            for name, data in self.data["overrides"]["provinces"].items():
+                province = self.name_to_province[name]
+                #TODO: Some way to specifiy whether or not to clear other adjacencies?
+                if "adjacencies" in data:
+                    province.adjacent.update(self.names_to_provinces(data["adjacencies"]))
+                if "coasts" in data:
+                    province.coasts = set()
+                    for coast_name, coast_adjacent in data["coasts"].items():
+                        coast = Coast(f"{name} {coast_name}", None, None, self.names_to_provinces(coast_adjacent), province)
+                        province.coasts.add(coast)
+
+
+            
 
     def _get_provinces(self) -> set[Province]:
         provinces, adjacencies = self.read_map()
@@ -103,12 +153,14 @@ class Parser:
             province1.adjacent.add(province2)
             province2.adjacent.add(province1)
 
-        cheat_parsing.set_coasts(self.name_to_province)
-        #cheat_parsing.set_canals(self.name_to_province)
+        self.json_cheats(provinces)
 
-        provinces = cheat_parsing.create_high_seas_and_sands(provinces, self.name_to_province)
-        cheat_parsing.set_secondary_locs(self.name_to_province)
-        cheat_parsing.fix_arrows(self.name_to_province)
+        #cheat_parsing.set_coasts(self.name_to_province)
+        #cheat_parsing.set_canals(self.name_to_province)
+        #provinces = cheat_parsing.create_high_seas_and_sands(provinces, self.name_to_province)
+        #cheat_parsing.fix_arrows(self.name_to_province)
+
+        #cheat_parsing.set_secondary_locs(self.name_to_province)
 
         # set coasts
         for province in provinces:
@@ -118,13 +170,13 @@ class Parser:
         self._initialize_province_owners(self.island_fill_layer)
 
         # set supply centers
-        if CENTER_PROVINCES_LABELED:
+        if self.layers["center_labels"]:
             self._initialize_supply_centers_assisted()
         else:
             self._initialize_supply_centers(provinces)
 
         # set units
-        if UNIT_PROVINCES_LABELED:
+        if self.layers["unit_labels"]:
             self._initialize_units_assisted()
         else:
             self._initialize_units(provinces)
@@ -225,7 +277,7 @@ class Parser:
             province_coordinates = shapely.MultiPolygon()
 
             name = None
-            if PROVINCE_FILLS_LABELED:
+            if self.layers["province_labels"]:
                 name = self._get_province_name(province_data)
             province = Province(
                 name,
@@ -247,7 +299,12 @@ class Parser:
     def _initialize_province_owners(self, provinces_layer: Element) -> None:
         for province_data in provinces_layer.getchildren():
             name = self._get_province_name(province_data)
-            self.name_to_province[name].owner = get_player(province_data, self.color_to_player)
+            try:
+                self.name_to_province[name].owner = get_player(province_data, self.color_to_player)
+            except:
+                print(self.name_to_province)
+                print(self.name_to_province["MEJO"])
+                raise Exception
 
     # Sets province names given the names layer
     def _initialize_province_names(self, provinces: set[Province]) -> None:
@@ -408,6 +465,24 @@ class Parser:
 
         return province, coast
 
+    # Returns province adjacency set
+    def _get_adjacencies(self, provinces: set[Province]) -> set[tuple[str, str]]:
+        adjacencies = set()
+
+        # Combinations so that we only have (A, B) and not (B, A) or (A, A)
+        for province1, province2 in itertools.combinations(provinces, 2):
+            if shapely.distance(province1.geometry, province2.geometry) < self.layers["border_margin_hint"]:
+                adjacencies.add((province1.name, province2.name))
+        # import matplotlib.pyplot as plt
+        # for p in provinces:
+        #     if isinstance(p.geometry, shapely.Polygon):
+        #         plt.plot(*p.geometry.exterior.xy)
+        #     else:
+        #         for geo in p.geometry.geoms:
+        #             plt.plot(*geo.exterior.xy)
+        # plt.gca().invert_yaxis()
+        # plt.show()
+        return adjacencies
 
 # returns:
 # new base_coordinate (= base_coordinate if not applicable),
@@ -498,24 +573,15 @@ def initialize_province_resident_data(
             resident_dataset.remove(resident_data)
 
 
-# Returns province adjacency set
-def _get_adjacencies(provinces: set[Province]) -> set[tuple[str, str]]:
-    adjacencies = set()
-
-    # Combinations so that we only have (A, B) and not (B, A) or (A, A)
-    for province1, province2 in itertools.combinations(provinces, 2):
-        if shapely.distance(province1.geometry, province2.geometry) < PROVINCE_BORDER_MARGIN:
-            adjacencies.add((province1.name, province2.name))
-    # import matplotlib.pyplot as plt
-    # for p in provinces:
-    #     if isinstance(p.geometry, shapely.Polygon):
-    #         plt.plot(*p.geometry.exterior.xy)
-    #     else:
-    #         for geo in p.geometry.geoms:
-    #             plt.plot(*geo.exterior.xy)
-    # plt.gca().invert_yaxis()
-    # plt.show()
-    return adjacencies
 
 
-oneTrueParser = Parser()
+parsers = {}
+
+def get_parser(name: str) -> Parser:
+    if name in parsers:
+        return parsers[name]
+    else:
+        parsers[name] = Parser(name)
+        return parsers[name]
+
+#oneTrueParser = Parser()

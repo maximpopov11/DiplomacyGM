@@ -97,6 +97,8 @@ class Province(Location):
         sea_provinces: set[Province] = set()
         for province in self.adjacent:
             # Islands do not break coasts
+            if isinstance(province, str):
+                print(province)
             if province.type == ProvinceType.SEA or province.type == ProvinceType.ISLAND:
                 sea_provinces.add(province)
 

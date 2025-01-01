@@ -11,6 +11,7 @@ class Board:
         provinces: set[Province],
         units: set[Unit],
         phase: Phase,
+        data
     ):
         self.players: set[Player] = players
         self.provinces: set[Province] = provinces
@@ -20,7 +21,7 @@ class Board:
         self.board_id = 0
         self.fish = 0
         self.orders_enabled: bool = True
-        self.data = None
+        self.data = data
 
     # TODO: we could have this as a dict ready on the variant
     def get_player(self, name: str) -> Player:

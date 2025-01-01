@@ -20,7 +20,6 @@ def get_element_color(element: Element) -> str:
 def get_player(element: Element, color_to_player: dict[str, Player]) -> Player:
     return color_to_player[get_element_color(element)]
 
-
 def _get_unit_type(unit_data: Element) -> UnitType:
     num_sides = unit_data.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides")
     if num_sides == "3":

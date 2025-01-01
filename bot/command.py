@@ -12,6 +12,7 @@ from bot.utils import is_gm_channel, get_orders, is_admin
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
+from diplomacy.persistence.province import Province
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +205,12 @@ def edit(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
 
 @perms.gm("create a game")
 def create_game(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
-    return manager.create_game(ctx.guild.id), None
+    gametype = ctx.message.content.removeprefix(".create_game")
+    if gametype == "":
+        gametype = "impdip.json"
+    else:
+        gametype = gametype.removeprefix(" ") + ".json"
+    return manager.create_game(ctx.guild.id, gametype), None
 
 
 @perms.gm("unlock orders")
@@ -232,18 +238,24 @@ def province_info(ctx: commands.Context, manager: Manager) -> tuple[str, str | N
     province_name = ctx.message.content.removeprefix(".province_info ").strip()
     if not province_name:
         raise ValueError("Usage: .province_info <province>")
-    province = board.get_province(province_name)
+    province = board.get_location(province_name)
     if province is None:
         raise ValueError(f"Could not find province {province_name}")
     # fmt: off
-    out = f"Province: {province.name}\n" + \
-        f"Type: {province.type.name}\n" + \
-        f"Coasts: {len(province.coasts)}\n" + \
-        f"Owner: {province.owner.name if province.owner else 'None'}\n" + \
-        f"Unit: {(province.unit.player.name + ' ' + province.unit.unit_type.name) if province.unit else 'None'}\n" + \
-        f"Center: {province.has_supply_center}\n" + \
-        f"Core: {province.core.name if province.core else 'None'}\n" + \
-        f"Half-Core: {province.half_core.name if province.half_core else 'None'}\n" + \
-        f"Adjacent Provinces:\n- " + "\n- ".join(sorted([adjacent.name for adjacent in province.adjacent])) + "\n"
+    if isinstance(province, Province):
+        out = f"Province: {province.name}\n" + \
+            f"Type: {province.type.name}\n" + \
+            f"Coasts: {len(province.coasts)}\n" + \
+            f"Owner: {province.owner.name if province.owner else 'None'}\n" + \
+            f"Unit: {(province.unit.player.name + ' ' + province.unit.unit_type.name) if province.unit else 'None'}\n" + \
+            f"Center: {province.has_supply_center}\n" + \
+            f"Core: {province.core.name if province.core else 'None'}\n" + \
+            f"Half-Core: {province.half_core.name if province.half_core else 'None'}\n" + \
+            f"Adjacent Provinces:\n- " + "\n- ".join(sorted([adjacent.name for adjacent in province.adjacent])) + "\n"
+    else:
+        out = f"""Province: {province.name}
+Type: COAST
+Adjacent Provinces:
+- """ + "\n- ".join(sorted([adjacent.name for adjacent in province.adjacent_seas])) + "\n"
     # fmt: on
     return out, None

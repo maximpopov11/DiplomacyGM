@@ -12,6 +12,8 @@
         "season": "layer4",
         "power_banners": "layer13",
         "starting_units": "layer10",
+        "unit_output": "layer17",
+        "arrow_output": "layer16",
 
         "army": "g652",
         "retreat_army": "g2176",
@@ -28,7 +30,9 @@
 
         "map_width": 4375,
         "unit_radius": 10,
-        "order_stroke_width": 2
+        "order_stroke_width": 2,
+        "neutral": "c6b7ab",
+        "neutral_sc": "ffffff"
     },
     "overrides": {
         "high provinces": {
@@ -65,81 +69,102 @@
         },
         "provinces": {
             "Iqaluit": {
-                "adjacencies": "Nunavut"
+                "adjacencies": ["Nunavut"]
             },
             "Nunavut": {
-                "adjacencies": "Iqaluit"
+                "adjacencies": ["Iqaluit"]
+            },
+            "Panama": {
+                "coasts": {
+                   "nc": [
+                        "Bay of Panama"
+                   ],
+                   "sc": [
+                        "Colon Ridge"
+                   ]
+                }
+            },
+            "Honduras": {
+                "coasts": {
+                    "nc": [
+                        "Gulf of Honduras",
+                        "Bay of Panama"
+                    ],
+                    "sc": [
+                        "Guatemala Basin",
+                        "Colon Ridge"
+                    ]
+                }
+            },
+            "Yucatan": {
+                "coasts": {
+                    "nc": [
+                        "Gulf of Mexico",
+                        "Yucatan Channel"
+                    ],
+                    "sc": [
+                        "Guatemala Basin"
+                    ]
+                }
+            },
+            "Mexico City": {
+                "coasts": {
+                    "ec": [
+                        "Gulf of Mexico"
+                    ],
+                    "wc": [
+                        "Guatemala Basin",
+                        "Berlanga Ridge",
+                        "Sea of Cortez"
+                    ]
+                }
+            },
+            "Nakhon Si": {
+                "coasts": {
+                    "ec": [
+                        "Gulf of Siam",
+                        "Natuna Sea"
+                    ],
+                    "wc": [
+                        "Malacca Strait"
+                    ]
+                }
+            },
+            "Pyeongyang": {
+                "coasts": {
+                    "ec": [
+                        "Oriental Sea",
+                        "Tsushima"
+                    ],
+                    "wc": [
+                        "Beizhili Sea",
+                        "Yellow Sea"
+                    ]
+                }
+            },
+            "Chukchis": {
+                "coasts": {
+                    "ec": [
+                        "Chukchi Sea"
+                    ],
+                    "wc": [
+                        "Sea of Okhotsk"
+                    ]
+                }
+            },
+            "Rome": {
+                "coasts": {
+                    "ec": [
+                        "Adriatic Sea"
+                    ],
+                    "wc": [
+                        "Ligurian Sea",
+                        "Tyrrhenian Sea"
+                    ]
+                }
             }
-        },
-        "coasts": {
-            "Honduras":{
-               "nc":[
-                  "Gulf of Honduras",
-                  "Bay of Panama"
-               ],
-               "sc":[
-                  "Guatemala Basin",
-                  "Colon Ridge"
-               ]
-            },
-            "Yucatan":{
-               "nc":[
-                  "Gulf of Mexico",
-                  "Yucatan Channel"
-               ],
-               "sc":[
-                  "Guatemala Basin"
-               ]
-            },
-            "Mexico City":{
-               "ec":[
-                  "Gulf of Mexico"
-               ],
-               "wc":[
-                  "Guatemala Basin",
-                  "Berlanga Ridge",
-                  "Sea of Cortez"
-               ]
-            },
-            "Nakhon Si":{
-               "ec":[
-                  "Gulf of Siam",
-                  "Natuna Sea"
-               ],
-               "wc":[
-                  "Malacca Strait"
-               ]
-            },
-            "Pyeongyang":{
-               "ec":[
-                  "Oriental Sea",
-                  "Tsushima"
-               ],
-               "wc":[
-                  "Beizhili Sea",
-                  "Yellow Sea"
-               ]
-            },
-            "Chukchis":{
-               "ec":[
-                  "Chukchi Sea"
-               ],
-               "wc":[
-                  "Sea of Okhotsk"
-               ]
-            },
-            "Rome":{
-               "ec":[
-                  "Adriatic Sea"
-               ],
-               "wc":[
-                  "Ligurian Sea",
-                  "Tyrrhenian Sea"
-               ]
-            }
-         }
+        }
     },
-
     "players": {
         "Abyssinia": {
             "color": "a88080",

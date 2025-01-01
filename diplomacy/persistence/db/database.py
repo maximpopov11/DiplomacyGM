@@ -1,13 +1,10 @@
 import logging
 import sqlite3
 from collections.abc import Iterable
-import json
-
-from diplomacy.map_parser.vector.config_svg import SVG_PATH
 
 # TODO: Find a better way to do this
 # maybe use a copy from manager?
-from diplomacy.map_parser.vector.vector import oneTrueParser
+from diplomacy.map_parser.vector.vector import get_parser
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.order import (
@@ -98,13 +95,11 @@ class _DatabaseConnection:
         logger.info(f"Loading board with ID {board_id}")
         # TODO - we should eventually store things like coords, adjacencies, etc
         #  so we don't have to reparse the whole board each time
-        board = oneTrueParser.parse()
+        board = get_parser(data_file).parse()
         board.phase = board_phase
         board.year = year
         board.fish = fish
         board.board_id = board_id
-        with open(f"config/{data_file}", 'r') as f:
-            board.data = json.load(f)
 
         player_data = cursor.execute("SELECT player_name, color FROM players WHERE board_id=?", (board_id,)).fetchall()
         player_info_by_name = {player_name: color for player_name, color in player_data}
@@ -241,7 +236,7 @@ class _DatabaseConnection:
         cursor = self._connection.cursor()
         cursor.execute(
             "INSERT INTO boards (board_id, phase, map_file, fish) VALUES (?, ?, ?, ?);",
-            (board_id, board.get_phase_and_year_string(), SVG_PATH, board.fish),
+            (board_id, board.get_phase_and_year_string(), board.data["file"], board.fish),
         )
         cursor.executemany(
             "INSERT INTO players (board_id, player_name, color) VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
