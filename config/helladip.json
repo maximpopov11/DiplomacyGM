@@ -1,5 +1,5 @@
 {
-    "name": "Imp Dip",
+    "name": "Hellenic Diplomacy",
     "file": "assets/hellenic_diplomacy.svg",
     "svg config": {
         "land_layer": "layer6",
@@ -11,9 +11,9 @@
         "supply_center_icons": "layer3",
         "season": "layer4",
         "power_banners": "layer11",
-        "starting_units": null,
-        "unit_output": "layer17",
-        "arrow_output": "layer16",
+        "starting_units": "layer10",
+        "unit_output": "layer7",
+        "arrow_output": "layer8",
 
         "army": "g652",
         "retreat_army": "g2176",
@@ -23,16 +23,15 @@
         "unit_labels": false,
         "province_labels": true,
         "center_labels": true,
+        "detect_starting_units": false,
 
         "coring": false,
 
-        "unowned_color": "c6b7ab",
-
         "border_margin_hint": 1,
 
-        "map_width": 4375,
-        "unit_radius": 10,
-        "order_stroke_width": 2,
+        "map_width": 4190.557,
+        "unit_radius": 14,
+        "order_stroke_width": 5,
         "neutral": "e1d49d",
         "neutral_sc": "ffffff"
     },

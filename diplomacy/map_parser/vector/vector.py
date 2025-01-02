@@ -5,6 +5,7 @@ import json
 from typing import Callable
 from xml.etree.ElementTree import Element
 
+import logging
 import shapely
 from lxml import etree
 from shapely.geometry import Point, Polygon
@@ -32,6 +33,7 @@ NAMESPACE: dict[str, str] = {
     "svg": "http://www.w3.org/2000/svg",
 }
 
+logger = logging.getLogger(__name__)
 
 class Parser:
     def __init__(self, data: str):
@@ -52,7 +54,7 @@ class Parser:
         self.sea_layer: Element = get_svg_element(svg_root, self.layers["sea_borders"])
         self.names_layer: Element = get_svg_element(svg_root, self.layers["province_names"])
         self.centers_layer: Element = get_svg_element(svg_root, self.layers["supply_center_icons"])
-        if self.layers["starting_units"]:
+        if self.layers["detect_starting_units"]:
             self.units_layer: Element = get_svg_element(svg_root, self.layers["starting_units"])
         else:
             self.units_layer = None
@@ -95,7 +97,16 @@ class Parser:
     def read_map(self) -> tuple[set[Province], set[tuple[str, str]]]:
         if self.cache_provinces is None:
             # set coordinates and names
-            self.cache_provinces: set[Province] = self._get_province_coordinates()
+            raw_provinces: set[Province] = self._get_province_coordinates()
+            cache = []
+            self.cache_provinces = set()
+            for province in raw_provinces:
+                if province.name in cache:
+                    logger.warning(f"{province.name} repeats in map, ignoring...")
+                    continue
+                cache.append(province.name)
+                self.cache_provinces.add(province)
+
             if not self.layers["province_labels"]:
                 self._initialize_province_names(self.cache_provinces)
 

@@ -243,19 +243,19 @@ class _DatabaseConnection:
             [(board_id, player.name, player.color) for player in board.players],
         )
 
-        cache = []
-        for p in board.provinces:
-            if p.name == "NICE":
-                print(p.type)
-                import matplotlib.pyplot as plt
-                import shapely
-                if isinstance(p.geometry, shapely.Polygon):
-                    plt.plot(*p.geometry.exterior.xy)
-                else:
-                    for geo in p.geometry.geoms:
-                        plt.plot(*geo.exterior.xy)
-        plt.gca().invert_yaxis()
-        plt.show()
+        # cache = []
+        # for p in board.provinces:
+        #     if p.name == "NICE":
+        #         print(p.type)
+        #         import matplotlib.pyplot as plt
+        #         import shapely
+        #         if isinstance(p.geometry, shapely.Polygon):
+        #             plt.plot(*p.geometry.exterior.xy)
+        #         else:
+        #             for geo in p.geometry.geoms:
+        #                 plt.plot(*geo.exterior.xy)
+        # plt.gca().invert_yaxis()
+        # plt.show()
         print(board_id, board.get_phase_and_year_string())
 
 

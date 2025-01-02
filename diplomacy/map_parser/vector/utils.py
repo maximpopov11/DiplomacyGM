@@ -6,8 +6,10 @@ from diplomacy.persistence.unit import UnitType
 
 
 def get_svg_element(svg_root: ElementTree, element_id: str) -> Element:
-    return svg_root.xpath(f'//*[@id="{element_id}"]')[0]
-
+    try:
+        return svg_root.xpath(f'//*[@id="{element_id}"]')[0]
+    except:
+        print(element_id)
 
 def get_element_color(element: Element) -> str:
     style = element.get("style").split(";")
@@ -40,9 +42,14 @@ def get_unit_coordinates(
     y = path.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cy")
     if x == None or y == None:
         start = path.get("d")
+        print(start)
         start = start.split(" ")[1]
         x, y = start.split(",")
+        #TODO: if there are multiple layers of transforms we need to do them all
+        trans = get_transform(unit_data)
+    else:
+        trans = get_transform(path)
     x = float(x)
     y = float(y)
-    return get_transform(path).transform((x, y))
+    return trans.transform((x, y))
             

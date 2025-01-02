@@ -36,6 +36,8 @@ class Translation(Transform):
     def transform(self, point: tuple[float, float]) -> tuple[float, float]:
         return point[0] + self.x, point[1] + self.y
 
+    def __str__(self):
+        return f"translate({self.x},{self.y})"
 
 class MatrixTransform(Transform):
     def __init__(self, element: Element):
@@ -62,6 +64,9 @@ class MatrixTransform(Transform):
         x = self.x_dx * point[0] + self.x_dy * point[1] + self.x_c
         y = self.y_dx * point[0] + self.y_dy * point[1] + self.y_c
         return x, y
+
+    def __str__(self):
+        return f"matrix({self.x_dx},{self.y_dx},{self.x_dy},{self.y_dy},{self.x_c},{self.y_c})"
 
 
 def get_transform(element: Element) -> Transform:

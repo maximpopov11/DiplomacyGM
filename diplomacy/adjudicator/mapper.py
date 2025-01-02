@@ -32,6 +32,8 @@ from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import ProvinceType, Province, Coast, Location
 from diplomacy.persistence.unit import Unit, UnitType
 
+from diplomacy.map_parser.vector.transform import get_transform, MatrixTransform, Translation
+
 # OUTPUTLAYER = "layer16"
 # UNITLAYER = "layer17"
 
@@ -373,13 +375,15 @@ class Mapper:
                     (x1, y1) = (x2, y2) = self.pull_coordinate((x3, y3), (x1, y1), self.board.data["svg config"]["unit_radius"])
                 else:
                     return
+        
+        dasharray_size = 2.5 * self.board.data["svg config"]["order_stroke_width"]
         drawn_order = self.create_element(
             "path",
             {
                 "d": f"M {x1},{y1} Q {x2},{y2} {x3},{y3}",
                 "fill": "none",
                 "stroke": "black",
-                "stroke-dasharray": "5 5",
+                "stroke-dasharray": f"{dasharray_size} {dasharray_size}",
                 "stroke-width": self.board.data["svg config"]["order_stroke_width"],
                 "stroke-linecap": "round",
                 "marker-start": marker_start,
@@ -479,7 +483,7 @@ class Mapper:
                 continue
 
             visited_provinces.add(province.name)
-            color = self.board.data["svg config"]["unowned_color"]
+            color = self.board.data["svg config"]["neutral"]
             if province.owner:
                 color = province.owner.color
             self.color_element(province_element, color)
@@ -492,7 +496,7 @@ class Mapper:
                 print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
                 continue
 
-            color = self.board.data["svg config"]["unowned_color"]
+            color = self.board.data["svg config"]["neutral"]
             if province.owner:
                 color = province.owner.color
             self.color_element(island_ring, color, key="stroke")
@@ -515,7 +519,7 @@ class Mapper:
                 continue
 
             if not province.has_supply_center:
-                print(f"Province {province.name} says it has no supply center, but it does", file=sys.stderr)
+                #print(f"Province {province.name} says it has no supply center, but it does", file=sys.stderr)
                 continue
 
             if province.core:
@@ -587,10 +591,28 @@ class Mapper:
             coord_list = unit.location().all_locs
         for desired_coords in coord_list:
             elem = copy.deepcopy(unit_element)
-            elem.set(
-                "transform",
-                f"translate({desired_coords[0] - current_coords[0]},{desired_coords[1] - current_coords[1]})",
-            )
+            
+
+            print(desired_coords, current_coords)
+            dx = desired_coords[0] - current_coords[0]
+            dy = desired_coords[1] - current_coords[1]
+
+            #TODO: put this somewhere better
+            if "transform" in elem.attrib:
+                trans = get_transform(elem)
+                if isinstance(trans, MatrixTransform):
+                    trans.x_c += dx
+                    trans.y_c += dy
+                else:
+                    trans.x += dx
+                    trans.y += dy
+                print(str(trans))
+                elem.set("transform", str(trans))
+            else:
+                elem.set(
+                    "transform",
+                    f"translate({dx},{dy})",
+                )
             elem.set("id", unit.province.name)
             elem.set("{http://www.inkscape.org/namespaces/inkscape}label", unit.province.name)
 
