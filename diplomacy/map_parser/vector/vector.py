@@ -124,7 +124,13 @@ class Parser:
     def names_to_provinces(self, names: set[str]):
         return map((lambda n: self.name_to_province[n]), names)
 
-    def json_cheats(self, provinces: set[Province]):
+    def add_province_to_board(self, provinces: set[Province], province: Province) -> set[Province]:
+        provinces = {x for x in provinces if x.name != province.name}
+        provinces.add(province)
+        self.name_to_province[province.name] = province
+        return provinces
+
+    def json_cheats(self, provinces: set[Province]) -> set[Province]:
         if not "overrides" in self.data:
             return
         if "high provinces" in self.data["overrides"]:
@@ -143,9 +149,7 @@ class Parser:
                         None,
                         None,
                     )
-                    provinces.add(province)
-                    self.name_to_province[province.name] = province
-
+                    provinces = self.add_province_to_board(provinces, province)
         if "provinces" in self.data["overrides"]:
             for name, data in self.data["overrides"]["provinces"].items():
                 province = self.name_to_province[name]
@@ -157,7 +161,16 @@ class Parser:
                     for coast_name, coast_adjacent in data["coasts"].items():
                         coast = Coast(f"{name} {coast_name}", None, None, self.names_to_provinces(coast_adjacent), province)
                         province.coasts.add(coast)
+                if "unit_loc" in data:
+                    for coordinate in data["unit_loc"]:
+                        province.primary_unit_coordinate = tuple(coordinate)
+                    province.all_locs.add(tuple(coordinate))
+                if "retreat_unit_loc"in data:
+                    for coordinate in data["retreat_unit_loc"]:
+                        province.retreat_unit_coordinate = tuple(coordinate)
+                    province.all_rets.add(tuple(coordinate))
 
+        return provinces
 
             
 
@@ -169,7 +182,7 @@ class Parser:
             province1.adjacent.add(province2)
             province2.adjacent.add(province1)
 
-        self.json_cheats(provinces)
+        provinces = self.json_cheats(provinces)
 
         #cheat_parsing.set_coasts(self.name_to_province)
         #cheat_parsing.set_canals(self.name_to_province)
@@ -186,11 +199,11 @@ class Parser:
         self._initialize_province_owners(self.island_fill_layer)
 
         # set supply centers
-        if self.data["svg config"]["coring"]:
-            if self.layers["center_labels"]:
-                self._initialize_supply_centers_assisted()
-            else:
-                self._initialize_supply_centers(provinces)
+        #if self.data["svg config"]["coring"]:
+        if self.layers["center_labels"]:
+            self._initialize_supply_centers_assisted()
+        else:
+            self._initialize_supply_centers(provinces)
 
         # set units
         if self.units_layer is not None:
@@ -353,9 +366,9 @@ class Parser:
 
             # TODO: (BETA): we cheat assume core = owner if exists because capital center symbols work different
             core = province.owner
-            if not core:
-                core_data = center_data.findall(".//svg:circle", namespaces=NAMESPACE)[1]
-                core = get_player(core_data, self.color_to_player)
+            # if not core:
+            #     core_data = center_data.findall(".//svg:circle", namespaces=NAMESPACE)[1]
+            #     core = get_player(core_data, self.color_to_player)
             province.core = core
 
     # Sets province supply center values

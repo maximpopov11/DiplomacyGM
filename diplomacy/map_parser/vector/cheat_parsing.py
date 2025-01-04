@@ -387,25 +387,25 @@ from diplomacy.persistence.province import Province, Coast, ProvinceType
 # #             province.coast().retreat_unit_coordinate = province.retreat_unit_coordinate
 
 
-def set_secondary_locs(name_to_province: dict[str, set[Province]]):
-    def set_one(name, primary, retreat):
-        p: Province = name_to_province[name]
-        # correct for inkscape giving top left, not middle coord
-        primary = (primary[0] + 7.7655, primary[1] + 7.033)
-        retreat = (retreat[0] + 7.7655, retreat[1] + 7.033)
-        p.all_locs.add(primary)
-        p.all_rets.add(retreat)
+# def set_secondary_locs(name_to_province: dict[str, set[Province]]):
+#     def set_one(name, primary, retreat):
+#         p: Province = name_to_province[name]
+#         # correct for inkscape giving top left, not middle coord
+#         primary = (primary[0] + 7.7655, primary[1] + 7.033)
+#         retreat = (retreat[0] + 7.7655, retreat[1] + 7.033)
+#         p.all_locs.add(primary)
+#         p.all_rets.add(retreat)
 
-    set_one("NPO1", (3982.726, 874.217), (3994.726, 886.217))
-    set_one("NPO2", (4059.726, 874.217), (4071.726, 886.217))
-    set_one("NPO3", (4136.726, 874.217), (4148.726, 886.217))
-    set_one("NPO4", (4021.226, 942.459), (4033.226, 954.459))
-    set_one("NPO5", (4098.226, 942.401), (4110.226, 954.401))
+#     set_one("NPO1", (3982.726, 874.217), (3994.726, 886.217))
+#     set_one("NPO2", (4059.726, 874.217), (4071.726, 886.217))
+#     set_one("NPO3", (4136.726, 874.217), (4148.726, 886.217))
+#     set_one("NPO4", (4021.226, 942.459), (4033.226, 954.459))
+#     set_one("NPO5", (4098.226, 942.401), (4110.226, 954.401))
 
-    set_one("SPO1", (4061.260, 1509.495), (4073.260, 1521.495))
-    set_one("SPO2", (4138.259, 1509.495), (4150.259, 1521.495))
-    set_one("SPO3", (4215.260, 1510.000), (4227.260, 1522.000))
-    set_one("SPO4", (4099.759, 1577.737), (4111.759, 1589.737))
-    set_one("SPO5", (4176.760, 1577.678), (4188.760, 1589.678))
+#     set_one("SPO1", (4061.260, 1509.495), (4073.260, 1521.495))
+#     set_one("SPO2", (4138.259, 1509.495), (4150.259, 1521.495))
+#     set_one("SPO3", (4215.260, 1510.000), (4227.260, 1522.000))
+#     set_one("SPO4", (4099.759, 1577.737), (4111.759, 1589.737))
+#     set_one("SPO5", (4176.760, 1577.678), (4188.760, 1589.678))
 
-    set_one("Chukchi Sea", (28.000, 241.000), (72.908, 186.392))
+#     set_one("Chukchi Sea", (28.000, 241.000), (72.908, 186.392))

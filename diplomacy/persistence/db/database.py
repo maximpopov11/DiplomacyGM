@@ -258,6 +258,11 @@ class _DatabaseConnection:
         # plt.show()
         print(board_id, board.get_phase_and_year_string())
 
+        cache = []
+        for p in board.provinces:
+            if p.name in cache:
+                print(f"{p.name} repeats!!!")
+            cache.append(p.name)
 
         cursor.executemany(
             "INSERT INTO provinces (board_id, phase, province_name, owner, core, half_core) VALUES (?, ?, ?, ?, ?, ?)",

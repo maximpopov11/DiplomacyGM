@@ -42,7 +42,6 @@ def get_unit_coordinates(
     y = path.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cy")
     if x == None or y == None:
         start = path.get("d")
-        print(start)
         start = start.split(" ")[1]
         x, y = start.split(",")
         #TODO: if there are multiple layers of transforms we need to do them all

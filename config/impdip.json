@@ -20,6 +20,8 @@
         "fleet": "layer15",
         "retreat_fleet": "g3300",
 
+        "detect_starting_units": true,
+
         "unit_labels": true,
         "province_labels": true,
         "center_labels": true,
@@ -162,7 +164,52 @@
                         "Tyrrhenian Sea"
                     ]
                 }
+            },
+            "NPO1": {
+                "unit_loc": [[3982.726, 874.217]],
+                "retreat_unit_loc": [[3994.726, 886.217]]
+            },
+            "NPO2": {
+                "unit_loc": [[4059.726, 874.217]],
+                "retreat_unit_loc": [[4071.726, 886.217]]
+            },
+            "NPO3": {
+                "unit_loc": [[4136.726, 874.217]],
+                "retreat_unit_loc": [[4148.726, 886.217]]
+            },
+            "NPO4": {
+                "unit_loc": [[4021.226, 942.459]],
+                "retreat_unit_loc": [[4033.226, 954.459]]
+            },
+            "NPO5": {
+                "unit_loc": [[4098.226, 942.401]],
+                "retreat_unit_loc": [[4110.226, 954.401]]
+            },
+            "SPO1": {
+                "unit_loc": [[4061.260, 1509.495]],
+                "retreat_unit_loc": [[4073.260, 1521.495]]
+            },
+            "SPO2": {
+                "unit_loc": [[4138.259, 1509.495]],
+                "retreat_unit_loc": [[4150.259, 1521.495]]
+            },
+            "SPO3": {
+                "unit_loc": [[4215.260, 1510.000]],
+                "retreat_unit_loc": [[4227.260, 1522.000]]
+            },
+            "SPO4": {
+                "unit_loc": [[4099.759, 1577.737]],
+                "retreat_unit_loc": [[4111.759, 1589.737]]
+            },
+            "SPO5": {
+                "unit_loc": [[4176.760, 1577.678]],
+                "retreat_unit_loc": [[4188.760, 1589.678]]
+            },
+            "Chukchi Sea": {
+                "unit_loc": [[28.000, 241.000]],
+                "retreat_unit_loc": [[72.908, 186.392]]
             }
+
         }
     },
     "players": {
