@@ -126,7 +126,7 @@ def cheat(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
             "yeah",
             "People in this game are not voiding enough",
         }.pop()
-        message = f'Here\'s a helpful message I stole from the spectator chat: "\n{sample}"'
+        message = f'Here\'s a helpful message I stole from the spectator chat: \n"{sample}"'
     return message, None
 
 
