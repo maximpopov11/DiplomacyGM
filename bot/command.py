@@ -115,13 +115,13 @@ def phish(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
     return message, None
 
 
-def cheat(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
+def cheat(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     message = "Cheating is disabled for this user."
     author = ctx.message.author.name
     if is_bumble(author):
         sample = {
             f"It looks like {author} is getting coalitioned this turn :cry:",
-            f"{author} is talking about stabbing the Netherlands again",
+            f"{author} is talking about stabbing {random.choice(list(manager.get_board(ctx.guild.id).players)).name} again",
             f"looks like he's throwing to {author}... shame",
             "yeah",
             "People in this game are not voiding enough",
