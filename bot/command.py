@@ -108,6 +108,13 @@ def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     return fish_message, None
 
 
+def phish(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
+    message = "No! Phishing is bad!"
+    if is_bumble(ctx.author.name):
+        message = "Please provide your firstborn pet and your soul for a chance at winning your next game!"
+    return message, None
+
+
 @perms.gm("botsay")
 async def botsay(ctx: commands.Context, _: Manager) -> None:
     # noinspection PyTypeChecker
