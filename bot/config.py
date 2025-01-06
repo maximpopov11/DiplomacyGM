@@ -53,7 +53,7 @@ def is_player_category(category: str) -> bool:
 # E.g. if the player is "france" and the suffix is "-orders", the channel is "france-orders"
 player_channel_suffix: str = "-orders"
 
-# Temporary bumbleship holds until the server restarts
+# Temporary bumbleship holds until the server restarts or until you fish too much
 temporary_bumbles: set[str] = set()
 
 

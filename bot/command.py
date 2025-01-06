@@ -62,9 +62,13 @@ def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
     fish_num = random.randrange(0, 20)
 
+    debumblify = False
     if is_bumble(ctx.author.name) and random.choice:
         # Bumbles are good fishers
-        fish_num //= 2
+        if fish_num == 1:
+            fish_num = 0
+        elif fish_num > 15:
+            fish_num -= 5
 
     if 0 == fish_num:
         # something special
@@ -98,8 +102,14 @@ def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
         fish_num = (21 - fish_num) // 2
 
         if is_bumble(ctx.author.name):
-            # Bumbles that lose fish lose a lot of them
-            fish_num *= randrange(3, 10)
+            if randrange(0, 20) == 0:
+                # Sometimes Bumbles are so bad at fishing they debumblify
+                debumblify = True
+                fish_num = randrange(10, 20)
+                return "", None
+            else:
+                # Bumbles that lose fish lose a lot of them
+                fish_num *= randrange(3, 10)
 
         board.fish -= fish_num
         fish_kind = "captured" if board.fish >= 0 else "future"
@@ -110,6 +120,11 @@ def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
             """UPDATE boards SET fish=? WHERE board_id=? AND phase=?""",
             (board.fish, board.board_id, board.get_phase_and_year_string()),
         )
+
+    if debumblify:
+        temporary_bumbles.remove(ctx.author.name)
+        fish_message = f"\n Your luck has run out! {fish_message}\nBumble is sad, you must once again prove your worth by Bumbling!"
+
     return fish_message, None
 
 
