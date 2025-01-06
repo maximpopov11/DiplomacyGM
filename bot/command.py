@@ -61,9 +61,12 @@ def bumble(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
 def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
     fish_num = random.randrange(0, 20)
-    bad_fisher = is_bumble(ctx.author.name)
 
-    if not bad_fisher and 0 == fish_num:
+    if is_bumble(ctx.author.name) and random.choice:
+        # Bumbles are good fishers
+        fish_num //= 2
+
+    if 0 == fish_num:
         # something special
         rare_fish_options = [
             ":dolphin:",
@@ -83,7 +86,7 @@ def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
         ]
         board.fish += 10
         fish_message = f"**Caught a rare fish!** {random.choice(rare_fish_options)}"
-    elif not bad_fisher and fish_num < 16:
+    elif fish_num < 16:
         fish_num = (fish_num + 1) // 2
         board.fish += fish_num
         fish_emoji_options = [":fish:", ":tropical_fish:", ":blowfish:", ":jellyfish:", ":shrimp:"]
@@ -94,8 +97,9 @@ def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     else:
         fish_num = (21 - fish_num) // 2
 
-        if bad_fisher:
-            fish_num += 20
+        if is_bumble(ctx.author.name):
+            # Bumbles that lose fish lose a lot of them
+            fish_num *= randrange(3, 10)
 
         board.fish -= fish_num
         fish_kind = "captured" if board.fish >= 0 else "future"
