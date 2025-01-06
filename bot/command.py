@@ -6,6 +6,7 @@ from discord import Guild
 from discord.ext import commands
 
 import bot.perms as perms
+from bot.config import is_bumble
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
 from bot.utils import is_gm_channel, get_orders, is_admin
@@ -38,11 +39,15 @@ def ping(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
 
 def bumble(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     word_of_bumble = random.choice(["".join(perm) for perm in itertools.permutations("bumble")])
+
+    if is_bumble(ctx.author.name) and random.choice:
+        word_of_bumble = "bumble"
+
     if word_of_bumble == "bumble":
         word_of_bumble = "You are the chosen bumble"
     if word_of_bumble == "elbmub":
         word_of_bumble = "elbmub nesohc eht era uoY"
-    
+
     board = manager.get_board(ctx.guild.id)
     board.fish -= 1
     return f"**{word_of_bumble}**", None
@@ -51,7 +56,9 @@ def bumble(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
 def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
     fish_num = random.randrange(0, 20)
-    if 0 == fish_num:
+    bad_fisher = is_bumble(ctx.author.name)
+
+    if not bad_fisher and 0 == fish_num:
         # something special
         rare_fish_options = [
             ":dolphin:",
@@ -71,7 +78,7 @@ def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
         ]
         board.fish += 10
         fish_message = f"**Caught a rare fish!** {random.choice(rare_fish_options)}"
-    elif fish_num < 16:
+    elif not bad_fisher and fish_num < 16:
         fish_num = (fish_num + 1) // 2
         board.fish += fish_num
         fish_emoji_options = [":fish:", ":tropical_fish:", ":blowfish:", ":jellyfish:", ":shrimp:"]
@@ -81,6 +88,10 @@ def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
         )
     else:
         fish_num = (21 - fish_num) // 2
+
+        if bad_fisher:
+            fish_num += 20
+
         board.fish -= fish_num
         fish_kind = "captured" if board.fish >= 0 else "future"
         fish_message = f"Accidentally let {fish_num} {fish_kind} fish sneak away :("
