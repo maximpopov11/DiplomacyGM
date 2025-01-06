@@ -115,6 +115,21 @@ def phish(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
     return message, None
 
 
+def cheat(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
+    message = "Cheating is disabled for this user."
+    author = ctx.message.author.name
+    if is_bumble(author):
+        sample = {
+            f"It looks like {author} is getting coalitioned this turn :cry:",
+            f"{author} is talking about stabbing the Netherlands again",
+            f"looks like he's throwing to {author}... shame",
+            "yeah",
+            "People in this game are not voiding enough",
+        }.pop()
+        message = f'Here\'s a helpful message I stole from the spectator chat: "\n{sample}"'
+    return message, None
+
+
 @perms.gm("botsay")
 async def botsay(ctx: commands.Context, _: Manager) -> None:
     # noinspection PyTypeChecker

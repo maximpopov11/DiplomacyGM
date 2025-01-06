@@ -98,6 +98,12 @@ async def phish(ctx: discord.ext.commands.Context) -> None:
 
 
 @bot.command(hidden=True)
+async def phish(ctx: discord.ext.commands.Context) -> None:
+    await ctx.message.add_reaction("🐟")
+    await _handle_command(command.cheat, ctx)
+
+
+@bot.command(hidden=True)
 async def botsay(ctx: discord.ext.commands.Context) -> None:
     await command.botsay(ctx, manager)
 
