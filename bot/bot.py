@@ -103,6 +103,11 @@ async def cheat(ctx: discord.ext.commands.Context) -> None:
 
 
 @bot.command(hidden=True)
+async def advice(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.advice, ctx)
+
+
+@bot.command(hidden=True)
 async def botsay(ctx: discord.ext.commands.Context) -> None:
     await command.botsay(ctx, manager)
 
