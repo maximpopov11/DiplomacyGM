@@ -6,7 +6,7 @@ from discord import Guild
 from discord.ext import commands
 
 import bot.perms as perms
-from bot.config import is_bumble
+from bot.config import is_bumble, temporary_bumbles
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
 from bot.utils import is_gm_channel, get_orders, is_admin
@@ -45,6 +45,10 @@ def bumble(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
 
     if word_of_bumble == "bumble":
         word_of_bumble = "You are the chosen bumble"
+
+        if ctx.author.name not in temporary_bumbles:
+            # no keeping temporary bumbleship easily
+            temporary_bumbles.add(ctx.author.name)
     if word_of_bumble == "elbmub":
         word_of_bumble = "elbmub nesohc eht era uoY"
 
