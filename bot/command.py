@@ -120,13 +120,15 @@ def cheat(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     message = "Cheating is disabled for this user."
     author = ctx.message.author.name
     if is_bumble(author):
-        sample = {
-            f"It looks like {author} is getting coalitioned this turn :cry:",
-            f"{author} is talking about stabbing {random.choice(list(manager.get_board(ctx.guild.id).players)).name} again",
-            f"looks like he's throwing to {author}... shame",
-            "yeah",
-            "People in this game are not voiding enough",
-        }.pop()
+        sample = random.choice(
+            [
+                f"It looks like {author} is getting coalitioned this turn :cry:",
+                f"{author} is talking about stabbing {random.choice(list(manager.get_board(ctx.guild.id).players)).name} again",
+                f"looks like he's throwing to {author}... shame",
+                "yeah",
+                "People in this game are not voiding enough",
+            ]
+        )
         message = f'Here\'s a helpful message I stole from the spectator chat: \n"{sample}"'
     return message, None
 
@@ -135,17 +137,19 @@ def advice(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
     message = "You are not worthy of advice."
     if is_bumble(ctx.author.name):
         message = "Bumble suggests that you go fishing, although typically blasphemous, today is your lucky day!"
-    elif randrange(0, 10) == 0:
-        message = {
-            "Bumble was surprised you asked him for advice and wasn't ready to give you any, maybe if you were a true follower...",
-            "Icecream demands that you void more and will not be giving any advice until sated.",
-            "Salt suggests that stabbing all of your neighbors is a good play in this particular situation.",
-            "Ezio points you to an ancient proverb: see dot take dot.",
-            "CaptainMeme advises balance of power play at this instance.",
-            "Ash Lael deems you a sufficiently apt liar, go use those skills!",
-            "Kwiksand suggests winning.",
-            "The GMs suggest you input your orders so they don't need to hound you for them at the deadline.",
-        }.pop()
+    elif randrange(0, 5) == 0:
+        message = random.choice(
+            [
+                "Bumble was surprised you asked him for advice and wasn't ready to give you any, maybe if you were a true follower...",
+                "Icecream demands that you void more and will not be giving any advice until sated.",
+                "Salt suggests that stabbing all of your neighbors is a good play in this particular situation.",
+                "Ezio points you to an ancient proverb: see dot take dot.",
+                "CaptainMeme advises balance of power play at this instance.",
+                "Ash Lael deems you a sufficiently apt liar, go use those skills!",
+                "Kwiksand suggests winning.",
+                "The GMs suggest you input your orders so they don't need to hound you for them at the deadline.",
+            ]
+        )
     return message, None
 
 
