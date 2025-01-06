@@ -21,6 +21,8 @@
         "retreat_fleet": "g3300",
 
         "detect_starting_units": true,
+        "unit_type_labeled": false,
+
 
         "unit_labels": true,
         "province_labels": true,

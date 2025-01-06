@@ -589,6 +589,7 @@ class Mapper:
             self.color_element(path, unit.player.color)
 
         current_coords = get_unit_coordinates(unit_element)
+        current_coords = get_transform(unit_element).transform(current_coords)
 
         if unit == unit.province.dislodged_unit:
             coord_list = unit.location().all_rets
@@ -598,26 +599,21 @@ class Mapper:
             elem = copy.deepcopy(unit_element)
             
 
-            print(desired_coords, current_coords)
             dx = desired_coords[0] - current_coords[0]
             dy = desired_coords[1] - current_coords[1]
 
-            #TODO: put this somewhere better
-            if "transform" in elem.attrib:
-                trans = get_transform(elem)
-                if isinstance(trans, MatrixTransform):
-                    trans.x_c += dx
-                    trans.y_c += dy
-                else:
-                    trans.x += dx
-                    trans.y += dy
-                print(str(trans))
-                elem.set("transform", str(trans))
+            trans = get_transform(elem)
+            if isinstance(trans, MatrixTransform):
+                trans.x_c += dx
+                trans.y_c += dy
+            elif isinstance(trans, Translation):
+                trans.x += dx
+                trans.y += dy
             else:
-                elem.set(
-                    "transform",
-                    f"translate({dx},{dy})",
-                )
+                trans = Translation(None, (dx, dy))
+            
+            elem.set("transform", str(trans))
+
             elem.set("id", unit.province.name)
             elem.set("{http://www.inkscape.org/namespaces/inkscape}label", unit.province.name)
 

@@ -15,7 +15,6 @@ from diplomacy.map_parser.vector.config_player import NEUTRAL, BLANK_CENTER#, pl
 from diplomacy.map_parser.vector.transform import get_transform
 from diplomacy.map_parser.vector.utils import (
     get_player,
-    _get_unit_type,
     get_unit_coordinates,
     get_svg_element,
 )
@@ -150,6 +149,12 @@ class Parser:
                         None,
                     )
                     provinces = self.add_province_to_board(provinces, province)
+            for name, data in self.data["overrides"]["high provinces"].items():
+                adjacent = tuple(self.names_to_provinces(data["adjacencies"]))
+                for index in range(1, data["num"] + 1):
+                    high_province = self.name_to_province[name + str(index)]
+                    high_province.adjacent.update(adjacent)
+
         if "provinces" in self.data["overrides"]:
             for name, data in self.data["overrides"]["provinces"].items():
                 province = self.name_to_province[name]
@@ -242,8 +247,6 @@ class Parser:
     ) -> set[Province]:
         provinces = set()
         prev_names = set()
-        if province_type == ProvinceType.ISLAND:
-            print('here', len(provinces_layer.getchildren()))
         for province_data in provinces_layer.getchildren():
             path_string = province_data.get("d")
             if not path_string:
@@ -306,16 +309,20 @@ class Parser:
                 poly = shapely.Polygon(province_coordinates[0])
             else:
                 poly = shapely.MultiPolygon(map(shapely.Polygon, province_coordinates))
+                poly = poly.buffer(0.1)
+                import matplotlib.pyplot as plt
+                if not poly.is_valid:
+                    print(f"MULTIPOLYGON IS NOT VALID (name: {self._get_province_name(province_data)})")
+                    for subpoly in poly.geoms:
+                        plt.plot(*subpoly.exterior.xy)
+                    plt.show()
+
 
             province_coordinates = shapely.MultiPolygon()
 
             name = None
             if self.layers["province_labels"]:
                 name = self._get_province_name(province_data)
-
-            if province_type == ProvinceType.ISLAND:
-                print(name)
-
 
             province = Province(
                 name,
@@ -392,15 +399,21 @@ class Parser:
 
     def _set_province_unit(self, province: Province, unit_data: Element, coast: Coast=None) -> Unit:
         if province.unit:
+            return
             raise RuntimeError(f"{province.name} already has a unit")
 
-        unit_type = _get_unit_type(unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0])
-        color_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
-        player = get_player(color_data, self.color_to_player)
+        unit_type = self._get_unit_type(unit_data)
+
+        # assume that all starting units are on provinces colored in to their color
+        player = self.color_to_player["98e98f"]
+
+        #color_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
+        #player = get_player(color_data, self.color_to_player)
         # TODO: (BETA) tech debt: let's pass the coast in instead of only passing in coast when province has multiple
         if not coast and unit_type == UnitType.FLEET:
             coast = next((coast for coast in province.coasts), None)
 
+        print(province.name)
         unit = Unit(unit_type, player, province, coast, None)
         province.unit = unit
         unit.player.units.add(unit)
@@ -409,6 +422,8 @@ class Parser:
     def _initialize_units_assisted(self) -> None:
         for unit_data in self.units_layer.getchildren():
             province_name = self._get_province_name(unit_data)
+            if self.data["svg config"]["unit_type_labeled"]:
+                province_name = province_name[1:]
             province, coast = self._get_province_and_coast(province_name)
             self._set_province_unit(province, unit_data, coast)
 
@@ -420,7 +435,7 @@ class Parser:
             return trans.transform(base_coordinates)
 
         initialize_province_resident_data(
-            provinces, self.units_layer.getchildren(), get_coordinates, self._set_province_unit
+            provinces, self.units_layer, get_coordinates, self._set_province_unit
         )
 
     def _set_phantom_unit_coordinates(self) -> None:
@@ -510,6 +525,31 @@ class Parser:
         # plt.gca().invert_yaxis()
         # plt.show()
         return adjacencies
+
+
+    def _get_unit_type(self, unit_data: Element) -> UnitType:
+        if self.data["svg config"]["unit_type_labeled"]:
+            name = self._get_province_name(unit_data)
+            if name is None:
+                print(unit_data.text, unit_data.attrib)
+                raise RuntimeError("Unit has no name, but unit_type_labeled = true")
+            if name.lower().startswith("f"):
+                return UnitType.FLEET
+            if name.lower().startswith("a"):
+                return UnitType.ARMY
+            else:
+                print(unit_data.text, unit_data.attrib)
+                raise RuntimeError(f"Unit types are labeled, but {name} doesn't start with F or A")
+        unit_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
+        num_sides = unit_data.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides")
+        if num_sides == "3":
+            return UnitType.FLEET
+        elif num_sides == "6":
+            return UnitType.ARMY
+        else:
+            return UnitType.ARMY
+            raise RuntimeError(f"Unit has {num_sides} sides which does not match any unit definition.")
+
 
 # returns:
 # new base_coordinate (= base_coordinate if not applicable),

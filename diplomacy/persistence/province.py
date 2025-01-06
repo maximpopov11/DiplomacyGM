@@ -61,6 +61,10 @@ class Province(Location):
         owner: player.Player | None,
         local_unit: unit.Unit | None,  # TODO: probably doesn't make sense to init with a unit
     ):
+        if primary_unit_coordinate == None:
+            primary_unit_coordinate = (0, 0)
+        if retreat_unit_coordinate == None:
+            retreat_unit_coordinate = (1, 1)
         super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate)
         self.geometry: Polygon = coordinates
         self.type: ProvinceType = province_type
@@ -97,8 +101,6 @@ class Province(Location):
         sea_provinces: set[Province] = set()
         for province in self.adjacent:
             # Islands do not break coasts
-            if isinstance(province, str):
-                print(province)
             if province.type == ProvinceType.SEA or province.type == ProvinceType.ISLAND:
                 sea_provinces.add(province)
 
@@ -142,6 +144,10 @@ class Coast(Location):
         adjacent_seas: set[Province],
         province: Province,
     ):
+        if primary_unit_coordinate == None:
+            primary_unit_coordinate = (0, 0)
+        if retreat_unit_coordinate == None:
+            retreat_unit_coordinate = (1, 1)
         super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate)
         self.adjacent_seas: set[Province] = adjacent_seas
         self.province: Province = province

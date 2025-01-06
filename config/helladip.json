@@ -23,7 +23,8 @@
         "unit_labels": false,
         "province_labels": true,
         "center_labels": true,
-        "detect_starting_units": false,
+        "detect_starting_units": true,
+        "unit_type_labeled": true,
 
         "coring": false,
 

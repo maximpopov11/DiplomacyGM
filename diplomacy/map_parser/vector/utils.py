@@ -1,6 +1,6 @@
 from xml.etree.ElementTree import Element, ElementTree
 
-from diplomacy.map_parser.vector.transform import MatrixTransform, get_transform
+from diplomacy.map_parser.vector.transform import EmptyTransform, get_transform
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType
 
@@ -22,17 +22,6 @@ def get_element_color(element: Element) -> str:
 def get_player(element: Element, color_to_player: dict[str, Player]) -> Player:
     return color_to_player[get_element_color(element)]
 
-def _get_unit_type(unit_data: Element) -> UnitType:
-    num_sides = unit_data.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides")
-    if num_sides == "3":
-        return UnitType.FLEET
-    elif num_sides == "6":
-        return UnitType.ARMY
-    else:
-        return UnitType.ARMY
-        raise RuntimeError(f"Unit has {num_sides} sides which does not match any unit definition.")
-
-
 def get_unit_coordinates(
     unit_data: Element,
 ) -> tuple[float, float]:
@@ -44,11 +33,10 @@ def get_unit_coordinates(
         start = path.get("d")
         start = start.split(" ")[1]
         x, y = start.split(",")
+        x = float(x)
+        y = float(y)
         #TODO: if there are multiple layers of transforms we need to do them all
-        trans = get_transform(unit_data)
-    else:
-        trans = get_transform(path)
+        x, y = get_transform(unit_data).transform((x, y))
     x = float(x)
     y = float(y)
-    return trans.transform((x, y))
-            
+    return get_transform(path).transform((x, y))
