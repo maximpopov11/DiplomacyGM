@@ -138,6 +138,7 @@ def phish(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
 def cheat(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     message = "Cheating is disabled for this user."
     author = ctx.message.author.name
+    board = manager.get_board(ctx.guild.id)
     if is_bumble(author):
         sample = random.choice(
             [
@@ -146,6 +147,10 @@ def cheat(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
                 f"looks like he's throwing to {author}... shame",
                 "yeah",
                 "People in this game are not voiding enough",
+                f"I can't believe {author} is moving to {random.choice(list(board.provinces)).name}",
+                f"{author} has a bunch of invalid orders",
+                f"No one noticed that {author} overbuilt?",
+                f"{random.choice(list(manager.get_board(ctx.guild.id).players)).name} is in a perfect position to stab {author}"
             ]
         )
         message = f'Here\'s a helpful message I stole from the spectator chat: \n"{sample}"'
