@@ -41,7 +41,7 @@ def ping(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
 def bumble(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     word_of_bumble = random.choice(["".join(perm) for perm in itertools.permutations("bumble")])
 
-    if is_bumble(ctx.author.name) and random.choice:
+    if is_bumble(ctx.author.name) and random.randrange(0, 10) == 0:
         word_of_bumble = "bumble"
 
     if word_of_bumble == "bumble":
@@ -63,7 +63,7 @@ def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     fish_num = random.randrange(0, 20)
 
     debumblify = False
-    if is_bumble(ctx.author.name) and random.choice:
+    if is_bumble(ctx.author.name) and random.randrange(0, 10) == 0:
         # Bumbles are good fishers
         if fish_num == 1:
             fish_num = 0
