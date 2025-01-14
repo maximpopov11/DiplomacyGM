@@ -340,7 +340,8 @@ def province_info(ctx: commands.Context, manager: Manager) -> tuple[str, str | N
 async def has_permissions(ctx):
     return ctx.author.guild_permissions.manage_channels
 
-def archive(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
+@perms.gm("archive")
+async def archive(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
     category = ctx.channel.category
     if not category:
         return "This channel is not part of a category.", None
