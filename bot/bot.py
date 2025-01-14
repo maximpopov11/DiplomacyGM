@@ -2,6 +2,7 @@ import logging
 import os
 import re
 from typing import Callable
+import inspect
 
 import discord
 from discord.ext import commands
@@ -58,7 +59,10 @@ async def _handle_command(
     # People input apostrophes that don't match what the province names are, we can catch all of that here
     ctx.message.content = re.sub(r"[‘’`´′‛]", "'", ctx.message.content)
 
-    response, file_name = function(ctx, manager)
+    if inspect.iscoroutinefunction(function):
+        response, file_name = await function(ctx, manager)
+    else:
+        response, file_name = function(ctx, manager)
     logger.debug(
         f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{response}"
     )

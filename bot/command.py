@@ -5,7 +5,7 @@ from random import randrange
 
 from discord import Guild
 from discord.ext import commands
-from discord import Permissions
+from discord import PermissionOverwrite
 
 import bot.perms as perms
 from bot.config import is_bumble, temporary_bumbles
@@ -15,6 +15,8 @@ from bot.utils import is_gm_channel, get_orders, is_admin
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
+
+import asyncio
 
 
 logger = logging.getLogger(__name__)
@@ -337,34 +339,32 @@ def province_info(ctx: commands.Context, manager: Manager) -> tuple[str, str | N
     # fmt: on
     return out, None
 
-async def has_permissions(ctx):
-    return ctx.author.guild_permissions.manage_channels
-
-@perms.gm("archive")
+#needed due to async
+from bot.utils import is_gm, is_gm_channel
 async def archive(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
-    category = ctx.channel.category
-    if not category:
+
+    if not is_gm(ctx.message.author):
+        raise PermissionError(f"You cannot archive because you are not a GM.")
+
+    if not is_gm_channel(ctx.channel):
+        raise PermissionError(f"You cannot archive in a non-GM channel.")
+
+
+    categories = [channel.category for channel in ctx.message.channel_mentions]
+    if not categories:
         return "This channel is not part of a category.", None
 
-    # Check if the user has the necessary permissions
-    if not ctx.author.guild_permissions.manage_channels:
-        return "You do not have permission to archive channels.", None
 
-    message = f"Archiving category: {category.name}"
-
-    async def execute_archive():
-        # Loop through all channels in the category
+    for category in categories:
         for channel in category.channels:
             overwrites = channel.overwrites
 
             # Remove all permissions except for everyone
             overwrites.clear()
-            overwrites[ctx.guild.default_role] = Permissions(read_messages=True, send_messages=False)
+            overwrites[ctx.guild.default_role] = PermissionOverwrite(read_messages=True, send_messages=False)
+
 
             # Apply the updated overwrites
             await channel.edit(overwrites=overwrites)
 
-        # Confirm completion
-        await ctx.send(f"{category.name} has been archived.")
-
-    return message, execute_archive
+    return f"The following catagories have been archived: {' '.join([catagory.name for catagory in categories])}", None
