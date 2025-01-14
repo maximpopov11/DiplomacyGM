@@ -340,7 +340,7 @@ def province_info(ctx: commands.Context, manager: Manager) -> tuple[str, str | N
 async def has_admin_permissions(ctx):
     return ctx.author.guild_permissions.administrator
 
-def archive(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
+async def archive(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
     category = ctx.channel.category
     if not category:
         return "This channel is not part of a category.", None
@@ -349,21 +349,20 @@ def archive(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
     if not ctx.author.guild_permissions.administrator:
         return "You do not have administrator permissions to archive channels.", None
 
-    message = f"Archiving category: {category.name}"
+    await ctx.send(f"Starting to archive all channels in the category: {category.name}")
 
-    async def execute_archive():
-        # Loop through all channels in the category
-        for channel in category.channels:
-            overwrites = channel.overwrites
+    # Loop through all channels in the category
+    for channel in category.channels:
+        overwrites = channel.overwrites
 
-            # Remove all permissions except for everyone
-            overwrites.clear()
-            overwrites[ctx.guild.default_role] = Permissions(read_messages=True, send_messages=False)
+        # Remove all permissions except for everyone
+        overwrites.clear()
+        overwrites[ctx.guild.default_role] = Permissions(read_messages=True, send_messages=False)
 
-            # Apply the updated overwrites
-            await channel.edit(overwrites=overwrites)
+        # Apply the updated overwrites
+        await channel.edit(overwrites=overwrites)
 
         # Confirm completion
-        await ctx.send(f"{category.name} has been archived.")
+        out = f"{category.name} has been archived."
 
-    return message, execute_archive
+    return out, None
