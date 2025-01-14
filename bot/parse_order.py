@@ -6,7 +6,7 @@ from diplomacy.persistence import order, phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.province import Province, Location, ProvinceType
+from diplomacy.persistence.province import Province, Location, Coast, ProvinceType
 from diplomacy.persistence.unit import Unit, UnitType
 
 # TODO: Looks like these are used, but only in builds phase. Let's be consistent and move everything to the ebnf
@@ -21,7 +21,7 @@ from diplomacy.persistence.unit import Unit, UnitType
 _build = "build"
 _disband = "disband"
 
-_order_dict = {
+#_order_dict = {
     # _hold: ["h", "hold", "holds", "stand", "stands"],
     # _move: ["-", "–", "->", "–>", ">", "to", "m", "move", "moves", "into"],
     # _convoy_move: [
@@ -47,9 +47,9 @@ _order_dict = {
     # _core: ["core", "cores"],
     # _retreat_move: ["-", "–", "->", "–>", "to", "m", "move", "moves", "r", "retreat", "retreats"],
     # _retreat_disband: ["d", "disband", "disbands", "boom", "explodes", "dies"],
-    _build: ["b", "build", "place"],
-    _disband: ["d", "disband", "disbands", "drop", "drops", "remove"],
-}
+    #_build: ["b", "build", "place"],
+    #_disband: ["d", "disband", "disbands", "drop", "drops", "remove"],
+#}
 
 
 class TreeToOrder(Transformer):
@@ -88,13 +88,51 @@ class TreeToOrder(Transformer):
 
         return unit
 
-    # format for all of these is (unit, order)
+    # only used for build orders
+    def descriptor(self, s) -> UnitType:
+        return get_unit_type(s[0])
 
     def hold_order(self, s):
         return s[0], order.Hold()
 
     def core_order(self, s):
         return s[0], order.Core()
+    
+    def build_unit(self, s):
+        if isinstance(s[2], Location):
+            location = s[2]
+            unit_type = s[3]
+        elif isinstance(s[3], Location):
+            location = s[3]
+            unit_type = s[2]
+        
+        if isinstance(location, Coast):
+            province = location.province
+        else:
+            province = location
+
+        return s[0], province.owner, order.Build(location, unit_type)
+    
+    def disband_unit(self, s):
+        return s[0].location(), s[0].player, order.Disband(s[0].location())
+    
+    def build(self, s):
+        print(s[0])
+        return s[0]
+
+    def build_phase(self, s):
+        orders = [x for x in s if isinstance(x, (order.Build, order.Disband))]
+        for order in orders:
+            if self.player_restriction is not None and self.player_restriction != order[1]:
+                raise Exception(f"Cannot issue order for {order[0].name} as you do not control it")
+        
+
+        for order in orders:
+            remove_player_order_for_location(self.board, order[1], order[0])
+            order[1].build_orders.add(order[2])
+
+
+    # format for all of these is (unit, order)
 
     def move_order(self, s):
         if s[0].unit_type == UnitType.FLEET and isinstance(s[-1], Province):
@@ -160,29 +198,31 @@ with open("bot/orders.ebnf", "r") as f:
 
 movement_parser = Lark(ebnf, start="movement_phase", parser="earley")
 retreats_parser = Lark(ebnf, start="retreat_phase", parser="earley")
-
+builds_parser   = Lark(ebnf, start="build_phase", parser="earley")
 
 def parse_order(message: str, player_restriction: Player | None, board: Board) -> str:
-    invalid: list[tuple[str, Exception]] = []
+    # invalid: list[tuple[str, Exception]] = []
     if phase.is_builds(board.phase):
-        for command in str.splitlines(message):
-            try:
-                if command.strip() != ".order":
-                    _parse_player_order(get_keywords(command.lower()), player_restriction, board)
-            except Exception as error:
-                invalid.append((command, error))
-
+        # for command in str.splitlines(message):
+        #     try:
+        #         if command.strip() != ".order":
+        #             _parse_player_order(get_keywords(command.lower()), player_restriction, board)
+        #     except Exception as error:
+        #         invalid.append((command, error))
+        generator.set_state(board, player_restriction)
+        builds_parser.parse(message.lower() + "\n")
+        generator.transform(cmd)
         database = get_connection()
         database.save_build_orders_for_players(board, player_restriction)
 
-        if invalid:
-            response = "The following orders were invalid:"
-            for command in invalid:
-                response += f"\n{command[0]} with error: {command[1]}"
-        else:
-            response = "Orders validated successfully."
+        # if invalid:
+        #     response = "The following orders were invalid:"
+        #     for command in invalid:
+        #         response += f"\n{command[0]} with error: {command[1]}"
+        # else:
+        #     response = 
 
-        return response
+        return "Orders validated successfully."
     elif phase.is_moves(board.phase) or phase.is_retreats(board.phase):
         if phase.is_moves(board.phase):
             parser = movement_parser

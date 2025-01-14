@@ -5,6 +5,8 @@ movement_phase: ".order" (WS order?)? (NL (order? WS? NL) *)?
 
 retreat_phase: ".order" (WS retreat?)? (NL (retreat? WS? NL) *)?
 
+build_phase: ".order" (WS build?)? (NL (build? WS? NL) *)?
+
 order: move_order
     | hold_order
     | support_order
@@ -15,6 +17,8 @@ order: move_order
 retreat: retreat_order
        | disband_order
 
+build: build_unit
+     | disband_unit
 
 move_order: unit WS MOVE WS province
 
@@ -30,7 +34,11 @@ core_order: unit WS CORE
 
 retreat_order: retreat_unit WS RETREAT WS province
 
-disband_order: retreat_unit WS DISBAND
+disband_order: ( retreat_unit WS DISBAND ) | ( DISBAND WS retreat_unit )
+
+disband_unit: ( unit WS DISBAND ) | ( DISBAND WS unit )
+
+build_unit: ( BUILD WS DESCRIPTOR province ) | ( BUILD WS province DESCRIPTOR )
 
 SUPPORT_HOLD.3 : /(support|supports|s)[ \-_]?(hold|holds|h|stand|stands)/
 
@@ -85,6 +93,13 @@ DISBAND.2 : "d"
           | "boom"
           | "explodes"
           | "dies"
+          | "drop"
+          | "drops"
+          | "remove"
+
+BUILD.2 : "b"
+        | "build"
+        | "place"
 
 unit : (DESCRIPTOR)? province
 
