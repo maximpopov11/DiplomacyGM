@@ -227,6 +227,13 @@ async def create_game(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.create_game, ctx)
 
 
+@bot.command(
+        brief="archives a category of the server",     
+        description="Used after a game is done. Will make all channels in category viewable by all server members, but no messages allowed.)",
+)
+async def archive(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.archive, ctx)
+
 def run():
     token = os.getenv("DISCORD_TOKEN")
     if token:

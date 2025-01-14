@@ -5,6 +5,7 @@ from random import randrange
 
 from discord import Guild
 from discord.ext import commands
+from discord import Permissions
 
 import bot.perms as perms
 from bot.config import is_bumble, temporary_bumbles
@@ -14,6 +15,7 @@ from bot.utils import is_gm_channel, get_orders, is_admin
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
+
 
 logger = logging.getLogger(__name__)
 
@@ -334,3 +336,35 @@ def province_info(ctx: commands.Context, manager: Manager) -> tuple[str, str | N
         f"Adjacent Provinces:\n- " + "\n- ".join(sorted([adjacent.name for adjacent in province.adjacent])) + "\n"
     # fmt: on
     return out, None
+
+async def has_permissions(ctx):
+    return ctx.author.guild_permissions.manage_channels
+
+@perms.gm("archive")
+async def archive(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
+    category = ctx.channel.category
+    if not category:
+        return "This channel is not part of a category.", None
+
+    # Check if the user has the necessary permissions
+    if not ctx.author.guild_permissions.manage_channels:
+        return "You do not have permission to archive channels.", None
+
+    message = f"Archiving category: {category.name}"
+
+    async def execute_archive():
+        # Loop through all channels in the category
+        for channel in category.channels:
+            overwrites = channel.overwrites
+
+            # Remove all permissions except for everyone
+            overwrites.clear()
+            overwrites[ctx.guild.default_role] = Permissions(read_messages=True, send_messages=False)
+
+            # Apply the updated overwrites
+            await channel.edit(overwrites=overwrites)
+
+        # Confirm completion
+        await ctx.send(f"{category.name} has been archived.")
+
+    return message, execute_archive
