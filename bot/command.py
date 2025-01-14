@@ -337,17 +337,17 @@ def province_info(ctx: commands.Context, manager: Manager) -> tuple[str, str | N
     # fmt: on
     return out, None
 
-async def has_permissions(ctx):
-    return ctx.author.guild_permissions.manage_channels
+async def has_admin_permissions(ctx):
+    return ctx.author.guild_permissions.administrator
 
 def archive(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
     category = ctx.channel.category
     if not category:
         return "This channel is not part of a category.", None
 
-    # Check if the user has the necessary permissions
-    if not ctx.author.guild_permissions.manage_channels:
-        return "You do not have permission to archive channels.", None
+    # Check if the user has the necessary administrator permissions
+    if not ctx.author.guild_permissions.administrator:
+        return "You do not have administrator permissions to archive channels.", None
 
     message = f"Archiving category: {category.name}"
 
