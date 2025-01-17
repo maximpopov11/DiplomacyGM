@@ -1,13 +1,15 @@
 from xml.etree.ElementTree import Element, ElementTree
 
-from diplomacy.map_parser.vector.transform import MatrixTransform, get_transform
+from diplomacy.map_parser.vector.transform import EmptyTransform, get_transform
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType
 
 
 def get_svg_element(svg_root: ElementTree, element_id: str) -> Element:
-    return svg_root.xpath(f'//*[@id="{element_id}"]')[0]
-
+    try:
+        return svg_root.xpath(f'//*[@id="{element_id}"]')[0]
+    except:
+        print(element_id)
 
 def get_element_color(element: Element) -> str:
     style = element.get("style").split(";")
@@ -20,21 +22,21 @@ def get_element_color(element: Element) -> str:
 def get_player(element: Element, color_to_player: dict[str, Player]) -> Player:
     return color_to_player[get_element_color(element)]
 
-
-def _get_unit_type(unit_data: Element) -> UnitType:
-    num_sides = unit_data.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides")
-    if num_sides == "3":
-        return UnitType.FLEET
-    elif num_sides == "6":
-        return UnitType.ARMY
-    else:
-        raise RuntimeError(f"Unit has {num_sides} sides which does not match any unit definition.")
-
-
 def get_unit_coordinates(
     unit_data: Element,
 ) -> tuple[float, float]:
     path: Element = unit_data.find("{http://www.w3.org/2000/svg}path")
-    x = float(path.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cx"))
-    y = float(path.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cy"))
+
+    x = path.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cx")
+    y = path.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}cy")
+    if x == None or y == None:
+        start = path.get("d")
+        start = start.split(" ")[1]
+        x, y = start.split(",")
+        x = float(x)
+        y = float(y)
+        #TODO: if there are multiple layers of transforms we need to do them all
+        x, y = get_transform(unit_data).transform((x, y))
+    x = float(x)
+    y = float(y)
     return get_transform(path).transform((x, y))
