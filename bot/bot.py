@@ -2,8 +2,10 @@ import logging
 import os
 import re
 from typing import Callable
+import inspect
 
 import discord
+from discord import HTTPException
 from discord.ext import commands
 
 from bot import command
@@ -58,7 +60,10 @@ async def _handle_command(
     # People input apostrophes that don't match what the province names are, we can catch all of that here
     ctx.message.content = re.sub(r"[‘’`´′‛]", "'", ctx.message.content)
 
-    response, file_name = function(ctx, manager)
+    if inspect.iscoroutinefunction(function):
+        response, file_name = await function(ctx, manager)
+    else:
+        response, file_name = function(ctx, manager)
     logger.debug(
         f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{response}"
     )
@@ -70,7 +75,11 @@ async def _handle_command(
         await ctx.channel.send(response[:cutoff].strip())
         response = response[cutoff:].strip()
     if file_name is not None:
-        await ctx.channel.send(response, file=discord.File(file_name))
+        try:
+            await ctx.channel.send(response, file=discord.File(file_name))
+        except HTTPException:
+            os.system(f"zip '{file_name}.zip' '{file_name}'")
+            await ctx.channel.send(response, file=discord.File(f"{file_name}.zip"))
     else:
         await ctx.channel.send(response)
 
@@ -225,6 +234,14 @@ async def province_info(ctx: discord.ext.commands.Context) -> None:
 )
 async def create_game(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.create_game, ctx)
+
+
+@bot.command(
+    brief="archives a category of the server",
+    description="Used after a game is done. Will make all channels in category viewable by all server members, but no messages allowed.)",
+)
+async def archive(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.archive, ctx)
 
 
 def run():
