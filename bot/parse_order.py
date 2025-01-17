@@ -51,6 +51,19 @@ _disband = "disband"
     #_disband: ["d", "disband", "disbands", "drop", "drops", "remove"],
 #}
 
+def normalize_location(unit_type: UnitType, location: Location):
+    if unit_type == UnitType.FLEET:
+        if isinstance(location, Province):
+            if len(location.coasts) > 1:
+                raise ValueError(f"You cannot order a fleet to {location} without specifying the coast to go to")
+            if len(location.coasts) == 1:
+                return location.coast()
+        return location
+    else:
+        if isinstance(location, Coast):
+            return location.province
+        return location
+
 
 class TreeToOrder(Transformer):
     def set_state(self, board: Board, player_restriction: Player | None):
@@ -88,10 +101,6 @@ class TreeToOrder(Transformer):
 
         return unit
 
-    # only used for build orders
-    def descriptor(self, s) -> UnitType:
-        return get_unit_type(s[0])
-
     def hold_order(self, s):
         return s[0], order.Hold()
 
@@ -111,36 +120,42 @@ class TreeToOrder(Transformer):
         else:
             province = location
 
-        return s[0], province.owner, order.Build(location, unit_type)
+        unit_type = get_unit_type(unit_type)
+
+        location = normalize_location(unit_type, location)
+
+        return location, province.owner, order.Build(location, unit_type)
     
     def disband_unit(self, s):
-        return s[0].location(), s[0].player, order.Disband(s[0].location())
+        if isinstance(s[0], Unit):
+            u = s[0]
+        else:
+            u = s[2]
+        return u.location(), u.player, order.Disband(u.location())
     
     def build(self, s):
         print(s[0])
         return s[0]
 
     def build_phase(self, s):
-        orders = [x for x in s if isinstance(x, (order.Build, order.Disband))]
-        for order in orders:
-            if self.player_restriction is not None and self.player_restriction != order[1]:
-                raise Exception(f"Cannot issue order for {order[0].name} as you do not control it")
+        orders = [x for x in s if isinstance(x, tuple)]
+        print(orders, s)
+        for build_order in orders:
+            if self.player_restriction is not None and self.player_restriction != build_order[1]:
+                raise Exception(f"Cannot issue order for {build_order[0].name} as you do not control it")
         
 
-        for order in orders:
-            remove_player_order_for_location(self.board, order[1], order[0])
-            order[1].build_orders.add(order[2])
+        for build_order in orders:
+            remove_player_order_for_location(self.board, build_order[1], build_order[0])
+            build_order[1].build_orders.add(build_order[2])
 
 
     # format for all of these is (unit, order)
 
     def move_order(self, s):
-        if s[0].unit_type == UnitType.FLEET and isinstance(s[-1], Province):
-            if len(s[-1].coasts) > 1:
-                raise ValueError(f"You cannot order a fleet to {s[-1]} without specifying the coast to go to")
-            if len(s[-1].coasts) == 1:
-                s[-1] = s[-1].coast()
-        return s[0], order.Move(s[-1])
+        loc = normalize_location(s[0].unit_type, s[-1])
+
+        return s[0], order.Move(loc)
 
     def convoy_move_order(self, s):
         return s[0], order.Move(s[-1])
@@ -210,7 +225,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
         #     except Exception as error:
         #         invalid.append((command, error))
         generator.set_state(board, player_restriction)
-        builds_parser.parse(message.lower() + "\n")
+        cmd = builds_parser.parse(message.lower() + "\n")
         generator.transform(cmd)
         database = get_connection()
         database.save_build_orders_for_players(board, player_restriction)

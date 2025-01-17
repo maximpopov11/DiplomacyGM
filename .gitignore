@@ -7,10 +7,11 @@ bot/_token.py
 .DS_Store
 
 .idea
-__pychache__/
+__pycache__
 *.py[cod]
 *.svg
 *.sqlite
 *.out.sql
+*.zip
 
 test.py
