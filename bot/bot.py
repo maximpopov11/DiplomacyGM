@@ -78,7 +78,7 @@ async def _handle_command(
         try:
             await ctx.channel.send(response, file=discord.File(file_name))
         except HTTPException:
-            os.system(f"zip {file_name}.zip {file_name}")
+            os.system(f"zip '{file_name}.zip' '{file_name}'")
             await ctx.channel.send(response, file=discord.File(f"{file_name}.zip"))
     else:
         await ctx.channel.send(response)
