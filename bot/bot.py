@@ -228,6 +228,11 @@ async def province_info(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.province_info, ctx)
 
 
+@bot.command(brief="outputs all provinces per owner")
+async def all_province_data(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.all_province_data, ctx)
+
+
 @bot.command(
     brief="Create a game of Imp Dip and output the map.",
     description="Create a game of Imp Dip and output the map. (there are no other variant options at this time)",

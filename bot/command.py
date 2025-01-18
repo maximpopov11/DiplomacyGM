@@ -3,6 +3,7 @@ import logging
 import random
 from random import randrange
 
+from black.trans import defaultdict
 from discord import Guild
 from discord.ext import commands
 from discord import PermissionOverwrite
@@ -155,7 +156,7 @@ def cheat(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
                 f"{author} has a bunch of invalid orders",
                 f"No one noticed that {author} overbuilt?",
                 f"{random.choice(list(board.players)).name} is in a perfect position to stab {author}",
-                ".bumble"
+                ".bumble",
             ]
         )
         message = f'Here\'s a helpful message I stole from the spectator chat: \n"{sample}"'
@@ -339,8 +340,31 @@ def province_info(ctx: commands.Context, manager: Manager) -> tuple[str, str | N
     # fmt: on
     return out, None
 
-#needed due to async
+
+def all_province_data(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+    board = manager.get_board(ctx.guild.id)
+
+    province_by_owner = defaultdict(list)
+    for province in board.provinces:
+        owner = province.owner
+        if not owner:
+            owner = "None"
+        province_by_owner[owner].append(province.name)
+
+    data = ""
+    for owner, provinces in province_by_owner.items():
+        data += f"{owner}: "
+        for province in provinces:
+            data += f"{province}, "
+        data += "\n\n"
+
+    return data, None
+
+
+# needed due to async
 from bot.utils import is_gm, is_gm_channel
+
+
 async def archive(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
 
     if not is_gm(ctx.message.author):
@@ -349,11 +373,9 @@ async def archive(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
     if not is_gm_channel(ctx.channel):
         raise PermissionError(f"You cannot archive in a non-GM channel.")
 
-
     categories = [channel.category for channel in ctx.message.channel_mentions]
     if not categories:
         return "This channel is not part of a category.", None
-
 
     for category in categories:
         for channel in category.channels:
@@ -362,7 +384,6 @@ async def archive(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
             # Remove all permissions except for everyone
             overwrites.clear()
             overwrites[ctx.guild.default_role] = PermissionOverwrite(read_messages=True, send_messages=False)
-
 
             # Apply the updated overwrites
             await channel.edit(overwrites=overwrites)
