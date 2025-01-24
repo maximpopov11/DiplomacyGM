@@ -421,9 +421,11 @@ class MovesAdjudicator(Adjudicator):
         for unit in self._board.units:
             unit.order = None
             if unit.retreat_options is not None:
+                #TODO: Don't remove provinces from the retreat list where a unit is overpowered
+                #      by an attack coming from its intended destination
                 unit.retreat_options -= bounces_and_occupied
                 if unit.unit_type == UnitType.ARMY:
-                    unit.retreat_options = [x for x in unit.retreat_options if x.type != ProvinceType.SEA]
+                    unit.retreat_options = {x for x in unit.retreat_options if x.type != ProvinceType.SEA}
                 else:
                     unit.retreat_options &= get_adjacent_provinces(unit.location())
 
