@@ -422,6 +422,10 @@ class MovesAdjudicator(Adjudicator):
             unit.order = None
             if unit.retreat_options is not None:
                 unit.retreat_options -= bounces_and_occupied
+                if unit.unit_type == UnitType.ARMY:
+                    unit.retreat_options = [x for x in unit.retreat_options if x.type != ProvinceType.SEA]
+                else:
+                    unit.retreat_options &= get_adjacent_provinces(unit.location())
 
             # Update provinces again to capture SCs in fall where units held
             if self._board.phase.name.startswith("Fall"):
