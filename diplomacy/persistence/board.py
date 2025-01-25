@@ -1,3 +1,5 @@
+import re
+
 from diplomacy.persistence.phase import Phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, Coast, Location
@@ -48,11 +50,36 @@ class Board:
         coast = name_to_coast.get(name)
         if coast:
             return coast.province, coast
-        else:
+        elif name in name_to_province:
             return name_to_province[name], None
+        else:
+            return None, None
+    
+    def get_possible_provinces(self, name: str) -> list[str]:
+        pattern = r"\b{}.*".format(name.strip().replace(" ", r".*\b"))
+        print(pattern)
+        matches = []
+        for province in self.provinces:
+            if re.search(pattern, province.name.lower()):
+                matches.append(province.name)
+            else:
+                matches += ([coast.name for coast in province.coasts if re.search(pattern, coast.name.lower())])
+        return matches
 
     def get_location(self, name: str) -> Location:
         province, coast = self.get_province_and_coast(name)
+        if not province:
+            potential_provinces = self.get_possible_provinces(name)
+            if len(potential_provinces) > 5:
+                raise Exception(f"The province {name} is ambiguous. Please type out the full name.")
+            elif len(potential_provinces) > 1:
+                raise Exception(f'The province {name} is ambiguous. Possible matches: {", ".join(potential_provinces)}.')
+            elif len(potential_provinces) == 0:
+                raise Exception(f"The province {name} does not match any known provinces.")
+            else:
+                full_name = potential_provinces[0]
+                province, coast = self.get_province_and_coast(full_name)
+
         if coast:
             return coast
         return province
