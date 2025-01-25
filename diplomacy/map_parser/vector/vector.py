@@ -109,6 +109,7 @@ class Parser:
         provinces = cheat_parsing.create_high_seas_and_sands(provinces, self.name_to_province)
         cheat_parsing.set_secondary_locs(self.name_to_province)
         cheat_parsing.fix_arrows(self.name_to_province)
+        cheat_parsing.remove_false_borders(self.name_to_province)
 
         # set coasts
         for province in provinces:

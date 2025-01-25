@@ -342,6 +342,10 @@ def fix_arrows(name_to_province: dict[str, Province]) -> None:
     name_to_province["Nunavut"].adjacent.add(name_to_province["Iqaluit"])
     name_to_province["Iqaluit"].adjacent.add(name_to_province["Nunavut"])
 
+def remove_false_borders(name_to_province: dict[str, Province]) -> None:
+    name_to_province["Edinburgh"].adjacent.remove(name_to_province["Greenland Sea"])
+    name_to_province["Greenland Sea"].adjacent.remove(name_to_province["Edinburgh"])
+
 # Remove coasts for canal provinces
 # def set_canals(name_to_province: dict[str, Province]) -> None:
 #     _set_coasts(
