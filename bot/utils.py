@@ -111,6 +111,7 @@ def _manage_coast_signature(keyword: str) -> str:
 
 
 def get_unit_type(command: str) -> UnitType | None:
+    command = command.strip()
     if command in unit_dict[_army]:
         return UnitType.ARMY
     if command in unit_dict[_fleet]:

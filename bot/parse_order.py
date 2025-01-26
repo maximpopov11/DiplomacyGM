@@ -6,7 +6,7 @@ from diplomacy.persistence import order, phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.province import Province, Location, ProvinceType
+from diplomacy.persistence.province import Province, Location, Coast, ProvinceType
 from diplomacy.persistence.unit import Unit, UnitType
 
 # TODO: Looks like these are used, but only in builds phase. Let's be consistent and move everything to the ebnf
@@ -21,7 +21,7 @@ from diplomacy.persistence.unit import Unit, UnitType
 _build = "build"
 _disband = "disband"
 
-_order_dict = {
+#_order_dict = {
     # _hold: ["h", "hold", "holds", "stand", "stands"],
     # _move: ["-", "–", "->", "–>", ">", "to", "m", "move", "moves", "into"],
     # _convoy_move: [
@@ -47,9 +47,22 @@ _order_dict = {
     # _core: ["core", "cores"],
     # _retreat_move: ["-", "–", "->", "–>", "to", "m", "move", "moves", "r", "retreat", "retreats"],
     # _retreat_disband: ["d", "disband", "disbands", "boom", "explodes", "dies"],
-    _build: ["b", "build", "place"],
-    _disband: ["d", "disband", "disbands", "drop", "drops", "remove"],
-}
+    #_build: ["b", "build", "place"],
+    #_disband: ["d", "disband", "disbands", "drop", "drops", "remove"],
+#}
+
+def normalize_location(unit_type: UnitType, location: Location):
+    if unit_type == UnitType.FLEET:
+        if isinstance(location, Province):
+            if len(location.coasts) > 1:
+                raise ValueError(f"You cannot order a fleet to {location} without specifying the coast to go to")
+            if len(location.coasts) == 1:
+                return location.coast()
+        return location
+    else:
+        if isinstance(location, Coast):
+            return location.province
+        return location
 
 
 class TreeToOrder(Transformer):
@@ -88,21 +101,61 @@ class TreeToOrder(Transformer):
 
         return unit
 
-    # format for all of these is (unit, order)
-
     def hold_order(self, s):
         return s[0], order.Hold()
 
     def core_order(self, s):
         return s[0], order.Core()
+    
+    def build_unit(self, s):
+        if isinstance(s[2], Location):
+            location = s[2]
+            unit_type = s[3]
+        elif isinstance(s[3], Location):
+            location = s[3]
+            unit_type = s[2]
+        
+        if isinstance(location, Coast):
+            province = location.province
+        else:
+            province = location
+
+        unit_type = get_unit_type(unit_type)
+
+        location = normalize_location(unit_type, location)
+
+        return location, province.owner, order.Build(location, unit_type)
+    
+    def disband_unit(self, s):
+        if isinstance(s[0], Unit):
+            u = s[0]
+        else:
+            u = s[2]
+        return u.location(), u.player, order.Disband(u.location())
+    
+    def build(self, s):
+        print(s[0])
+        return s[0]
+
+    def build_phase(self, s):
+        orders = [x for x in s if isinstance(x, tuple)]
+        print(orders, s)
+        for build_order in orders:
+            if self.player_restriction is not None and self.player_restriction != build_order[1]:
+                raise Exception(f"Cannot issue order for {build_order[0].name} as you do not control it")
+        
+
+        for build_order in orders:
+            remove_player_order_for_location(self.board, build_order[1], build_order[0])
+            build_order[1].build_orders.add(build_order[2])
+
+
+    # format for all of these is (unit, order)
 
     def move_order(self, s):
-        if s[0].unit_type == UnitType.FLEET and isinstance(s[-1], Province):
-            if len(s[-1].coasts) > 1:
-                raise ValueError(f"You cannot order a fleet to {s[-1]} without specifying the coast to go to")
-            if len(s[-1].coasts) == 1:
-                s[-1] = s[-1].coast()
-        return s[0], order.Move(s[-1])
+        loc = normalize_location(s[0].unit_type, s[-1])
+
+        return s[0], order.Move(loc)
 
     def convoy_move_order(self, s):
         return s[0], order.Move(s[-1])
@@ -160,29 +213,31 @@ with open("bot/orders.ebnf", "r") as f:
 
 movement_parser = Lark(ebnf, start="movement_phase", parser="earley")
 retreats_parser = Lark(ebnf, start="retreat_phase", parser="earley")
-
+builds_parser   = Lark(ebnf, start="build_phase", parser="earley")
 
 def parse_order(message: str, player_restriction: Player | None, board: Board) -> str:
-    invalid: list[tuple[str, Exception]] = []
+    # invalid: list[tuple[str, Exception]] = []
     if phase.is_builds(board.phase):
-        for command in str.splitlines(message):
-            try:
-                if command.strip() != ".order":
-                    _parse_player_order(get_keywords(command.lower()), player_restriction, board)
-            except Exception as error:
-                invalid.append((command, error))
-
+        # for command in str.splitlines(message):
+        #     try:
+        #         if command.strip() != ".order":
+        #             _parse_player_order(get_keywords(command.lower()), player_restriction, board)
+        #     except Exception as error:
+        #         invalid.append((command, error))
+        generator.set_state(board, player_restriction)
+        cmd = builds_parser.parse(message.lower() + "\n")
+        generator.transform(cmd)
         database = get_connection()
         database.save_build_orders_for_players(board, player_restriction)
 
-        if invalid:
-            response = "The following orders were invalid:"
-            for command in invalid:
-                response += f"\n{command[0]} with error: {command[1]}"
-        else:
-            response = "Orders validated successfully."
+        # if invalid:
+        #     response = "The following orders were invalid:"
+        #     for command in invalid:
+        #         response += f"\n{command[0]} with error: {command[1]}"
+        # else:
+        #     response = 
 
-        return response
+        return "Orders validated successfully."
     elif phase.is_moves(board.phase) or phase.is_retreats(board.phase):
         if phase.is_moves(board.phase):
             parser = movement_parser

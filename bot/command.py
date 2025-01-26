@@ -1,11 +1,15 @@
 import itertools
 import logging
 import random
+from random import randrange
 
+from black.trans import defaultdict
 from discord import Guild
 from discord.ext import commands
+from discord import PermissionOverwrite
 
 import bot.perms as perms
+from bot.config import is_bumble, temporary_bumbles
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
 from bot.utils import is_gm_channel, get_orders, is_admin
@@ -13,6 +17,9 @@ from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province
+
+import asyncio
+
 
 logger = logging.getLogger(__name__)
 
@@ -39,11 +46,19 @@ def ping(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
 
 def bumble(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     word_of_bumble = random.choice(["".join(perm) for perm in itertools.permutations("bumble")])
+
+    if is_bumble(ctx.author.name) and random.randrange(0, 10) == 0:
+        word_of_bumble = "bumble"
+
     if word_of_bumble == "bumble":
         word_of_bumble = "You are the chosen bumble"
+
+        if ctx.author.name not in temporary_bumbles:
+            # no keeping temporary bumbleship easily
+            temporary_bumbles.add(ctx.author.name)
     if word_of_bumble == "elbmub":
         word_of_bumble = "elbmub nesohc eht era uoY"
-    
+
     board = manager.get_board(ctx.guild.id)
     board.fish -= 1
     return f"**{word_of_bumble}**", None
@@ -52,6 +67,15 @@ def bumble(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
 def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
     fish_num = random.randrange(0, 20)
+
+    debumblify = False
+    if is_bumble(ctx.author.name) and random.randrange(0, 10) == 0:
+        # Bumbles are good fishers
+        if fish_num == 1:
+            fish_num = 0
+        elif fish_num > 15:
+            fish_num -= 5
+
     if 0 == fish_num:
         # something special
         rare_fish_options = [
@@ -61,6 +85,7 @@ def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
             ":goose:",
             ":dodo:",
             ":flamingo:",
+            ":penguin:",
             ":unicorn:",
             ":swan:",
             ":whale:",
@@ -81,15 +106,82 @@ def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
         )
     else:
         fish_num = (21 - fish_num) // 2
+
+        if is_bumble(ctx.author.name):
+            if randrange(0, 20) == 0:
+                # Sometimes Bumbles are so bad at fishing they debumblify
+                debumblify = True
+                fish_num = randrange(10, 20)
+                return "", None
+            else:
+                # Bumbles that lose fish lose a lot of them
+                fish_num *= randrange(3, 10)
+
         board.fish -= fish_num
-        fish_message = f"Accidentally let {fish_num} captured fish sneak away :("
+        fish_kind = "captured" if board.fish >= 0 else "future"
+        fish_message = f"Accidentally let {fish_num} {fish_kind} fish sneak away :("
     fish_message += f"\nIn total, {board.fish} fish have been caught!"
     if random.randrange(0, 5) == 0:
         get_connection().execute_arbitrary_sql(
             """UPDATE boards SET fish=? WHERE board_id=? AND phase=?""",
             (board.fish, board.board_id, board.get_phase_and_year_string()),
         )
+
+    if debumblify:
+        temporary_bumbles.remove(ctx.author.name)
+        fish_message = f"\n Your luck has run out! {fish_message}\nBumble is sad, you must once again prove your worth by Bumbling!"
+
     return fish_message, None
+
+
+def phish(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
+    message = "No! Phishing is bad!"
+    if is_bumble(ctx.author.name):
+        message = "Please provide your firstborn pet and your soul for a chance at winning your next game!"
+    return message, None
+
+
+def cheat(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+    message = "Cheating is disabled for this user."
+    author = ctx.message.author.name
+    board = manager.get_board(ctx.guild.id)
+    if is_bumble(author):
+        sample = random.choice(
+            [
+                f"It looks like {author} is getting coalitioned this turn :cry:",
+                f"{author} is talking about stabbing {random.choice(list(board.players)).name} again",
+                f"looks like he's throwing to {author}... shame",
+                "yeah",
+                "People in this game are not voiding enough",
+                f"I can't believe {author} is moving to {random.choice(list(board.provinces)).name}",
+                f"{author} has a bunch of invalid orders",
+                f"No one noticed that {author} overbuilt?",
+                f"{random.choice(list(board.players)).name} is in a perfect position to stab {author}",
+                ".bumble",
+            ]
+        )
+        message = f'Here\'s a helpful message I stole from the spectator chat: \n"{sample}"'
+    return message, None
+
+
+def advice(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
+    message = "You are not worthy of advice."
+    if is_bumble(ctx.author.name):
+        message = "Bumble suggests that you go fishing, although typically blasphemous, today is your lucky day!"
+    elif randrange(0, 5) == 0:
+        message = random.choice(
+            [
+                "Bumble was surprised you asked him for advice and wasn't ready to give you any, maybe if you were a true follower...",
+                "Icecream demands that you void more and will not be giving any advice until sated.",
+                "Salt suggests that stabbing all of your neighbors is a good play in this particular situation.",
+                "Ezio points you to an ancient proverb: see dot take dot.",
+                "CaptainMeme advises balance of power play at this instance.",
+                "Ash Lael deems you a sufficiently apt liar, go use those skills!",
+                "Kwiksand suggests winning.",
+                "The GMs suggest you input your orders so they don't need to hound you for them at the deadline.",
+            ]
+        )
+    return message, None
 
 
 @perms.gm("botsay")
@@ -259,3 +351,53 @@ Adjacent Provinces:
 - """ + "\n- ".join(sorted([adjacent.name for adjacent in province.adjacent_seas])) + "\n"
     # fmt: on
     return out, None
+
+
+def all_province_data(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+    board = manager.get_board(ctx.guild.id)
+
+    province_by_owner = defaultdict(list)
+    for province in board.provinces:
+        owner = province.owner
+        if not owner:
+            owner = "None"
+        province_by_owner[owner].append(province.name)
+
+    data = ""
+    for owner, provinces in province_by_owner.items():
+        data += f"{owner}: "
+        for province in provinces:
+            data += f"{province}, "
+        data += "\n\n"
+
+    return data, None
+
+
+# needed due to async
+from bot.utils import is_gm, is_gm_channel
+
+
+async def archive(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
+
+    if not is_gm(ctx.message.author):
+        raise PermissionError(f"You cannot archive because you are not a GM.")
+
+    if not is_gm_channel(ctx.channel):
+        raise PermissionError(f"You cannot archive in a non-GM channel.")
+
+    categories = [channel.category for channel in ctx.message.channel_mentions]
+    if not categories:
+        return "This channel is not part of a category.", None
+
+    for category in categories:
+        for channel in category.channels:
+            overwrites = channel.overwrites
+
+            # Remove all permissions except for everyone
+            overwrites.clear()
+            overwrites[ctx.guild.default_role] = PermissionOverwrite(read_messages=True, send_messages=False)
+
+            # Apply the updated overwrites
+            await channel.edit(overwrites=overwrites)
+
+    return f"The following catagories have been archived: {' '.join([catagory.name for catagory in categories])}", None
