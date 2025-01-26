@@ -177,6 +177,7 @@ def advice(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
                 "CaptainMeme advises balance of power play at this instance.",
                 "Ash Lael deems you a sufficiently apt liar, go use those skills!",
                 "Kwiksand suggests winning.",
+                "Ambrosius advises taking the opportunity you've been considering, for more will ensue.",
                 "The GMs suggest you input your orders so they don't need to hound you for them at the deadline.",
             ]
         )
