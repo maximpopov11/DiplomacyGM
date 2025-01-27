@@ -45,7 +45,9 @@ def ping(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
 
 
 def bumble(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
-    word_of_bumble = random.choice(["".join(perm) for perm in itertools.permutations("bumble")])
+    list_of_bumble = list("bumble")
+    random.shuffle(list_of_bumble)
+    word_of_bumble = ''.join(list_of_bumble)
 
     if is_bumble(ctx.author.name) and random.randrange(0, 10) == 0:
         word_of_bumble = "bumble"
