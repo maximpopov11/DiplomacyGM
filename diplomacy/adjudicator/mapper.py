@@ -66,10 +66,6 @@ class Mapper:
         self.state_svg = copy.deepcopy(self.board_svg)
 
         self.highlight_retreating_units(self.state_svg)
-        
-        self.cached_elements = {}
-        self.cached_elements["army"] = get_svg_element(self.board_svg, self.board.data["svg config"]["army"])
-        self.cached_elements["fleet"] = get_svg_element(self.board_svg, self.board.data["svg config"]["fleet"])
 
     def draw_moves_map(self, current_phase: phase.Phase, player_restriction: Player | None) -> str:
         self._reset_moves_map()
@@ -122,7 +118,7 @@ class Mapper:
                     self._draw_player_order(player, build_order)
 
         self.draw_side_panel(self._moves_svg)
-        svg_file_name = f"{self.board.phase.name.replace(' ', '-')}_moves_map.svg"
+        svg_file_name = f"{self.board.phase.name}_moves_map.svg"
         self._moves_svg.write(svg_file_name)
         return svg_file_name
 
