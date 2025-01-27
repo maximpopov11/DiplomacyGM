@@ -1,0 +1,104 @@
+{
+    "name": "Hellenic Diplomacy",
+    "file": "assets/hellenic_diplomacy.svg",
+    "svg config": {
+        "land_layer": "layer6",
+        "island_ring_layer": "layer9",
+        "island_fill_layer": "g24",
+        "island_borders": "layer5",
+        "sea_borders": "layer2",
+        "province_names": "layer1",
+        "supply_center_icons": "layer3",
+        "season": "layer4",
+        "power_banners": "layer11",
+        "starting_units": "layer10",
+        "unit_output": "layer7",
+        "arrow_output": "layer8",
+
+        "army": "g652",
+        "retreat_army": "g2176",
+        "fleet": "layer15",
+        "retreat_fleet": "g3300",
+
+        "unit_labels": true,
+        "province_labels": true,
+        "center_labels": true,
+        "detect_starting_units": true,
+        "unit_type_labeled": true,
+
+        "coring": false,
+
+        "border_margin_hint": 1,
+
+        "map_width": 4190.557,
+        "unit_radius": 18,
+        "order_stroke_width": 4,
+        "neutral": "e1d49d",
+        "neutral_sc": "ffffff"
+    },
+    "overrides": {
+
+    },
+    "players": {
+        "Acheans": {
+            "color": "55d3c2",
+            "vscc": 34,
+            "iscc": 7
+        },
+        "Carthage": {
+            "color": "cfb811",
+            "vscc": 25,
+            "iscc": 3
+        },
+        "Colchis": {
+            "color": "a19eb1",
+            "vscc": 25,
+            "iscc": 3
+        },
+        "Dorians": {
+            "color": "bc80bd",
+            "vscc": 42,
+            "iscc": 10
+        },
+        "Egypt": {
+            "color": "5898c6",
+            "vscc": 25,
+            "iscc": 3
+        },
+        "Etruscans": {
+            "color": "fb8072",
+            "vscc": 25,
+            "iscc": 3
+        },
+        "Iberia": {
+            "color": "a38857",
+            "vscc": 25,
+            "iscc": 3
+        },
+        "Illyria": {
+            "color": "fdb462",
+            "vscc": 25,
+            "iscc": 3
+        },
+        "Ionia": {
+            "color": "98e98f",
+            "vscc": 44,
+            "iscc": 11
+        },
+        "Lydia": {
+            "color": "fccde5",
+            "vscc": 27,
+            "iscc": 4
+        },
+        "Phoenicia": {
+            "color": "ffff73",
+            "vscc": 34,
+            "iscc": 7
+        },
+        "Scythia": {
+            "color": "4c7e47",
+            "vscc": 25,
+            "iscc": 3
+        }
+    }
+}

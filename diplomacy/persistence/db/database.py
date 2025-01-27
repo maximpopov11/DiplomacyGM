@@ -2,11 +2,9 @@ import logging
 import sqlite3
 from collections.abc import Iterable
 
-from diplomacy.map_parser.vector.config_svg import SVG_PATH
-
 # TODO: Find a better way to do this
 # maybe use a copy from manager?
-from diplomacy.map_parser.vector.vector import oneTrueParser
+from diplomacy.map_parser.vector.vector import get_parser
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.order import (
@@ -55,7 +53,7 @@ class _DatabaseConnection:
         logger.info(f"Loading {len(board_data)} boards from DB")
         boards = dict()
         for board_row in board_data:
-            board_id, phase_string, svg_file, fish = board_row
+            board_id, phase_string, data_file, fish = board_row
 
             split_index = phase_string.index(" ")
             year = int(phase_string[:split_index])
@@ -71,7 +69,7 @@ class _DatabaseConnection:
             if fish is None:
                 fish = 0
 
-            board = self._get_board(board_id, current_phase, year, fish, cursor)
+            board = self._get_board(data_file, board_id, current_phase, year, fish, cursor)
 
             boards[board_id] = board
 
@@ -93,15 +91,16 @@ class _DatabaseConnection:
         cursor.close()
         return board
 
-    def _get_board(self, board_id: int, board_phase: phase.Phase, year: int, fish: int, cursor) -> Board:
+    def _get_board(self, data_file: str, board_id: int, board_phase: phase.Phase, year: int, fish: int, cursor) -> Board:
         logger.info(f"Loading board with ID {board_id}")
         # TODO - we should eventually store things like coords, adjacencies, etc
         #  so we don't have to reparse the whole board each time
-        board = oneTrueParser.parse()
+        board = get_parser(data_file).parse()
         board.phase = board_phase
         board.year = year
         board.fish = fish
         board.board_id = board_id
+
         player_data = cursor.execute("SELECT player_name, color FROM players WHERE board_id=?", (board_id,)).fetchall()
         player_info_by_name = {player_name: color for player_name, color in player_data}
         for player in board.players:
@@ -236,13 +235,34 @@ class _DatabaseConnection:
         # TODO: Check if board already exists
         cursor = self._connection.cursor()
         cursor.execute(
-            "INSERT INTO boards (board_id, phase, map_file, fish) VALUES (?, ?, ?, ?);",
-            (board_id, board.get_phase_and_year_string(), SVG_PATH, board.fish),
+            "INSERT INTO boards (board_id, phase, data_file, fish) VALUES (?, ?, ?, ?);",
+            (board_id, board.get_phase_and_year_string(), board.datafile, board.fish),
         )
         cursor.executemany(
             "INSERT INTO players (board_id, player_name, color) VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
             [(board_id, player.name, player.color) for player in board.players],
         )
+
+        # cache = []
+        # for p in board.provinces:
+        #     if p.name == "NICE":
+        #         print(p.type)
+        #         import matplotlib.pyplot as plt
+        #         import shapely
+        #         if isinstance(p.geometry, shapely.Polygon):
+        #             plt.plot(*p.geometry.exterior.xy)
+        #         else:
+        #             for geo in p.geometry.geoms:
+        #                 plt.plot(*geo.exterior.xy)
+        # plt.gca().invert_yaxis()
+        # plt.show()
+
+        cache = []
+        for p in board.provinces:
+            if p.name in cache:
+                print(f"{p.name} repeats!!!")
+            cache.append(p.name)
+
         cursor.executemany(
             "INSERT INTO provinces (board_id, phase, province_name, owner, core, half_core) VALUES (?, ?, ?, ?, ?, ?)",
             [

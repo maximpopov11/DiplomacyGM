@@ -134,12 +134,10 @@ class TreeToOrder(Transformer):
         return u.location(), u.player, order.Disband(u.location())
     
     def build(self, s):
-        print(s[0])
         return s[0]
 
     def build_phase(self, s):
         orders = [x for x in s if isinstance(x, tuple)]
-        print(orders, s)
         for build_order in orders:
             if self.player_restriction is not None and self.player_restriction != build_order[1]:
                 raise Exception(f"Cannot issue order for {build_order[0].name} as you do not control it")
