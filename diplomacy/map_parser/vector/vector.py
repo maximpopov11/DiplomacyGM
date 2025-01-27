@@ -10,8 +10,6 @@ import shapely
 from lxml import etree
 from shapely.geometry import Point, Polygon
 
-from diplomacy.map_parser.vector import cheat_parsing
-from diplomacy.map_parser.vector.config_player import NEUTRAL, BLANK_CENTER#, player_data
 from diplomacy.map_parser.vector.transform import get_transform
 from diplomacy.map_parser.vector.utils import (
     get_player,
@@ -162,6 +160,8 @@ class Parser:
                 #TODO: Some way to specifiy whether or not to clear other adjacencies?
                 if "adjacencies" in data:
                     province.adjacent.update(self.names_to_provinces(data["adjacencies"]))
+                if "remove_adjacencies" in data:
+                    province.adjacent.difference_update(self.names_to_provinces(data["remove_adjacencies"]))
                 if "coasts" in data:
                     province.coasts = set()
                     for coast_name, coast_adjacent in data["coasts"].items():
@@ -190,13 +190,6 @@ class Parser:
 
         provinces = self.json_cheats(provinces)
 
-        #cheat_parsing.set_coasts(self.name_to_province)
-        #cheat_parsing.set_canals(self.name_to_province)
-        #provinces = cheat_parsing.create_high_seas_and_sands(provinces, self.name_to_province)
-        #cheat_parsing.fix_arrows(self.name_to_province)
-
-        #cheat_parsing.set_secondary_locs(self.name_to_province)
-
         # set coasts
         for province in provinces:
             province.set_coasts()
@@ -220,9 +213,6 @@ class Parser:
 
         # set phantom unit coordinates for optimal unit placements
         self._set_phantom_unit_coordinates()
-
-        # TODO: (BETA) yet another very bad bandaid, no time to fix it the right way
-        #cheat_parsing.fix_phantom_units(provinces)
 
         for province in provinces:
             province.all_locs.add(province.primary_unit_coordinate)

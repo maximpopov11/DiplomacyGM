@@ -78,6 +78,12 @@
             "Nunavut": {
                 "adjacencies": ["Iqaluit"]
             },
+            "Edinburgh": {
+                "remove_adjacencies": ["Greenland Sea"]
+            },
+            "Greenland Sea": {
+                "remove_adjacencies": ["Edinburgh"]
+            },
             "Panama": {
                 "coasts": {
                    "nc": [
