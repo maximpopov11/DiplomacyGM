@@ -50,6 +50,10 @@ class Mapper:
         units_layer: Element = get_svg_element(self.board_svg, self.board.data["svg config"]["starting_units"])
         self.board_svg.getroot().remove(units_layer)
 
+        self.cached_elements = {}
+        for element_name in ["army", "fleet", "unit_output"]:
+            self.cached_elements[element_name] = get_svg_element(self.board_svg, self.board.data["svg config"][element_name])
+
         # TODO: Switch to passing the SVG directly, as that's simpiler (self.svg = draw_units(svg)?)
         self._draw_units()
         self._color_provinces()
@@ -57,10 +61,15 @@ class Mapper:
         self.draw_side_panel(self.board_svg)
 
         self._moves_svg = copy.deepcopy(self.board_svg)
+        self.cached_elements["unit_output_moves"] = get_svg_element(self._moves_svg, self.board.data["svg config"]["unit_output"])
 
         self.state_svg = copy.deepcopy(self.board_svg)
 
         self.highlight_retreating_units(self.state_svg)
+        
+        self.cached_elements = {}
+        self.cached_elements["army"] = get_svg_element(self.board_svg, self.board.data["svg config"]["army"])
+        self.cached_elements["fleet"] = get_svg_element(self.board_svg, self.board.data["svg config"]["fleet"])
 
     def draw_moves_map(self, current_phase: phase.Phase, player_restriction: Player | None) -> str:
         self._reset_moves_map()
@@ -113,7 +122,7 @@ class Mapper:
                     self._draw_player_order(player, build_order)
 
         self.draw_side_panel(self._moves_svg)
-        svg_file_name = f"{self.board.phase.name}_moves_map.svg"
+        svg_file_name = f"{self.board.phase.name.replace(' ', '-')}_moves_map.svg"
         self._moves_svg.write(svg_file_name)
         return svg_file_name
 
@@ -612,8 +621,8 @@ class Mapper:
             elem.set("id", unit.province.name)
             elem.set("{http://www.inkscape.org/namespaces/inkscape}label", unit.province.name)
 
-            tree = self.board_svg if not use_moves_svg else self._moves_svg
-            group = get_svg_element(tree, self.board.data["svg config"]["unit_output"])
+            tree = "unit_output" if not use_moves_svg else "unit_output_moves"
+            group = self.cached_elements[tree]
             group.append(elem)
 
     def highlight_retreating_units(self, svg):
@@ -624,9 +633,9 @@ class Mapper:
     def _get_element_for_unit_type(self, unit_type) -> Element:
         # Just copy a random phantom unit
         if unit_type == UnitType.ARMY:
-            layer: Element = get_svg_element(self.board_svg, self.board.data["svg config"]["army"])
+            layer: Element = self.cached_elements["army"]
         else:
-            layer: Element = get_svg_element(self.board_svg, self.board.data["svg config"]["fleet"])
+            layer: Element = self.cached_elements["fleet"]
         return copy.deepcopy(layer.getchildren()[0])
 
     def _draw_retreat_options(self, unit: Unit, svg):
