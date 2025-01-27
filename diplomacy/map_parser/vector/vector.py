@@ -17,6 +17,7 @@ from diplomacy.map_parser.vector.utils import (
     get_player,
     get_unit_coordinates,
     get_svg_element,
+    parse_path
 )
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
@@ -251,59 +252,10 @@ class Parser:
             path_string = province_data.get("d")
             if not path_string:
                 raise RuntimeError("Province path data not found")
-            path: list[str] = path_string.split()
-
-            province_coordinates = [[]]
-
-            command = None
-            expected_arguments = 0
-            base_coordinate = (0, 0)
-            former_coordinate = (0, 0)
-            current_index = 0
             layer_translation = get_transform(provinces_layer)
             this_translation = get_transform(province_data)
-            while current_index < len(path):
-                if path[current_index][0].isalpha():
-                    if len(path[current_index]) != 1:
-                        # m20,70 is valid syntax, so move the 20,70 to the next element
-                        path.insert(current_index + 1, path[current_index][1:])
-                        path[current_index] = path[current_index][0]
 
-                    command = path[current_index]
-                    if command.lower() == "z":
-                        expected_arguments = 0
-                    elif command.lower() in ["m", "l", "h", "v", "t"]:
-                        expected_arguments = 1
-                    elif command.lower() in ["s", "q"]:
-                        expected_arguments = 2
-                    elif command.lower() in ["c"]:
-                        expected_arguments = 3
-                    elif command.lower() in ["a"]:
-                        expected_arguments = 4
-                    else:
-                        raise RuntimeError(f"Unknown SVG path command {command}")
-
-                    current_index += 1
-                if expected_arguments != 0:
-                    if len(path) < (current_index + expected_arguments):
-                        raise RuntimeError(f"Ran out of arguments for {command}")
-
-                    args = [
-                        (float(coord_string.split(",")[0]), float(coord_string.split(",")[-1]))
-                        for coord_string in path[current_index : current_index + expected_arguments]
-                    ]
-                    base_coordinate, former_coordinate = _parse_path_command(
-                        command, args, base_coordinate, former_coordinate
-                    )
-                else:
-                    former_coordinate = base_coordinate
-
-                province_coordinates[-1].append(layer_translation.transform(this_translation.transform(former_coordinate)))
-                current_index += expected_arguments
-                if current_index < len(path) and command.lower() == "z":
-                    # If we are closing, and there is more, there must be a second polygon (Chukchi Sea)
-                    province_coordinates += [[]]
-
+            province_coordinates = parse_path(path_string, layer_translation, this_translation)
 
             if len(province_coordinates) <= 1:
                 poly = shapely.Polygon(province_coordinates[0])
@@ -405,7 +357,8 @@ class Parser:
         unit_type = self._get_unit_type(unit_data)
 
         # assume that all starting units are on provinces colored in to their color
-        player = self.color_to_player["98e98f"]
+        player = province.owner
+        assert(province.owner != None)
 
         #color_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
         #player = get_player(color_data, self.color_to_player)
@@ -413,7 +366,6 @@ class Parser:
         if not coast and unit_type == UnitType.FLEET:
             coast = next((coast for coast in province.coasts), None)
 
-        print(province.name)
         unit = Unit(unit_type, player, province, coast, None)
         province.unit = unit
         unit.player.units.add(unit)
@@ -531,14 +483,12 @@ class Parser:
         if self.data["svg config"]["unit_type_labeled"]:
             name = self._get_province_name(unit_data)
             if name is None:
-                print(unit_data.text, unit_data.attrib)
                 raise RuntimeError("Unit has no name, but unit_type_labeled = true")
             if name.lower().startswith("f"):
                 return UnitType.FLEET
             if name.lower().startswith("a"):
                 return UnitType.ARMY
             else:
-                print(unit_data.text, unit_data.attrib)
                 raise RuntimeError(f"Unit types are labeled, but {name} doesn't start with F or A")
         unit_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
         num_sides = unit_data.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides")
@@ -549,62 +499,6 @@ class Parser:
         else:
             return UnitType.ARMY
             raise RuntimeError(f"Unit has {num_sides} sides which does not match any unit definition.")
-
-
-# returns:
-# new base_coordinate (= base_coordinate if not applicable),
-# new former_coordinate (= former_coordinate if not applicable),
-def _parse_path_command(
-    command: str,
-    args: list[tuple[float, float]],
-    base_coordinate: tuple[float, float],
-    former_coordinate: tuple[float, float],
-) -> tuple[tuple[float, float], tuple[float, float]]:
-    if command.isupper():
-        former_coordinate = (0, 0)
-        command = command.lower()
-
-    if command == "m":
-        new_coordinate = move_coordinate(former_coordinate, args[0])
-        return new_coordinate, new_coordinate
-    elif command == "l" or command == "t" or command == "s" or command == "q" or command == "c" or command == "a":
-        return base_coordinate, move_coordinate(former_coordinate, args[-1])  # Ignore all args except the last
-    elif command == "h":
-        return base_coordinate, move_coordinate(former_coordinate, args[0], ignore_y=True)
-    elif command == "v":
-        return base_coordinate, move_coordinate(former_coordinate, args[0], ignore_x=True)
-    elif command == "z":
-        raise RuntimeError("SVG command z should not be followed by any coordinates")
-    else:
-        raise RuntimeError(f"Unknown SVG path command: {command}")
-
-
-def move_coordinate(
-    former_coordinate: tuple[float, float],
-    coordinate: tuple[float, float],
-    ignore_x=False,
-    ignore_y=False,
-) -> tuple[float, float]:
-    x = former_coordinate[0]
-    y = former_coordinate[1]
-    if not ignore_x:
-        x += coordinate[0]
-    if not ignore_y:
-        y += coordinate[1]
-    return x, y
-
-
-# Returns the coordinates of the translation transform in the given element
-def _get_translation_coordinates(element: Element) -> tuple[float, float]:
-    transform = element.get("transform")
-    if not transform:
-        return None, None
-    split = re.split(r"[(),]", transform)
-    if split[0] != "translate":
-        print(transform)
-    assert split[0] == "translate"
-    return float(split[1]), float(split[2])
-
 
 # Initializes relevant province data
 # resident_dataset: SVG element whose children each live in some province

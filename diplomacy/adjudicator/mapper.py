@@ -140,13 +140,8 @@ class Mapper:
         """
         all_power_banners_element = get_svg_element(svg.getroot(), self.board.data["svg config"]["power_banners"])
         for i, player in enumerate(self.board.get_players_by_score()):
-            print(player)
             for power_element in all_power_banners_element:
                 # match the correct svg element based on the color of the rectangle
-                if player.name == "Colchis":
-                    print(get_element_color(power_element[0]), player.color)
-                    if get_element_color(power_element[0]) == None:
-                        print("None", power_element[0].attrib["style"])
                 if get_element_color(power_element[0]) == player.color:
                     power_element.set("transform", self.scoreboard_power_locations[i])
                     power_element[5][0].text = str(len(player.centers))
@@ -524,7 +519,7 @@ class Mapper:
                 continue
 
             if not province.has_supply_center:
-                #print(f"Province {province.name} says it has no supply center, but it does", file=sys.stderr)
+                print(f"Province {province.name} says it has no supply center, but it does", file=sys.stderr)
                 continue
 
             if province.core:
@@ -607,8 +602,8 @@ class Mapper:
                 trans.x_c += dx
                 trans.y_c += dy
             elif isinstance(trans, Translation):
-                trans.x += dx
-                trans.y += dy
+                trans.x_c += dx
+                trans.y_c += dy
             else:
                 trans = Translation(None, (dx, dy))
             
@@ -650,8 +645,6 @@ class Mapper:
         self.scoreboard_power_locations: list[str] = []
         for power_element in all_power_banners_element:
             self.scoreboard_power_locations.append(power_element.get("transform"))
-        print(self.scoreboard_power_locations)
-
 
         # each power is placed in the right spot based on the transform field which has value of "tranlate($x,$y)" where x,y
         # are floating point numbers; we parse these via regex and sort by y-value

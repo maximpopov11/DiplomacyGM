@@ -256,7 +256,6 @@ class _DatabaseConnection:
         #                 plt.plot(*geo.exterior.xy)
         # plt.gca().invert_yaxis()
         # plt.show()
-        print(board_id, board.get_phase_and_year_string())
 
         cache = []
         for p in board.provinces:

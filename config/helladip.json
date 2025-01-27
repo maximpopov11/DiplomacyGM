@@ -20,7 +20,7 @@
         "fleet": "layer15",
         "retreat_fleet": "g3300",
 
-        "unit_labels": false,
+        "unit_labels": true,
         "province_labels": true,
         "center_labels": true,
         "detect_starting_units": true,
@@ -31,8 +31,8 @@
         "border_margin_hint": 1,
 
         "map_width": 4190.557,
-        "unit_radius": 14,
-        "order_stroke_width": 5,
+        "unit_radius": 18,
+        "order_stroke_width": 4,
         "neutral": "e1d49d",
         "neutral_sc": "ffffff"
     },

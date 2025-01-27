@@ -118,8 +118,6 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
     if unit is None:
         return False, f"There is no unit in {location.name}"
 
-    print(unit)
-
     if isinstance(order, Hold) or isinstance(order, RetreatDisband):
         return True, None
     elif isinstance(order, Core):
