@@ -348,7 +348,8 @@ class Parser:
 
         # assume that all starting units are on provinces colored in to their color
         player = province.owner
-        assert(province.owner != None)
+        if province.owner == None:
+            raise Exception(f"{province.name} has a unit, but isn't owned by any country")
 
         #color_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
         #player = get_player(color_data, self.color_to_player)
