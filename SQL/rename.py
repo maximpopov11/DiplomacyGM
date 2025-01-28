@@ -12,16 +12,18 @@ to_rename = [
     ["Luxemburg", "Luxembourg"],
     ["Hydarabad", "Hyderabad"],
     ["Strasburg", "Strasbourg"],
-    ["Synuik", "Syunik"]
+    ["Synuik", "Syunik"],
+    ["Saragasso Sea", "Sargasso Sea"],
+    ["Kathmundu", "Kathmandu"]
 ]
 
-with open("assets/imperial_diplomacy.svg", 'r') as f:
+with open("assets/impdip.1.1.svg", 'r') as f:
     txt = f.read()
 
 for find, replace in to_rename:
     txt = txt.replace(find, replace)
 
-with open("assets/imperial_diplomacy.svg", 'w') as f:
+with open("assets/impdip.1.1.svg", 'w') as f:
     f.write(txt)
 
 SQL_format = """
