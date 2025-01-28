@@ -1,18 +1,16 @@
+import logging
+
 from diplomacy.persistence.phase import Phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, Coast, Location
 from diplomacy.persistence.unit import Unit, UnitType
 
+logger = logging.getLogger(__name__)
+
 
 class Board:
     def __init__(
-        self,
-        players: set[Player],
-        provinces: set[Province],
-        units: set[Unit],
-        phase: Phase,
-        data,
-        datafile: str
+        self, players: set[Player], provinces: set[Province], units: set[Unit], phase: Phase, data, datafile: str
     ):
         self.players: set[Player] = players
         self.provinces: set[Province] = provinces
@@ -39,6 +37,8 @@ class Board:
         return next((province for province in self.provinces if province.name.lower() == name.lower()), None)
 
     def get_province_and_coast(self, name: str) -> tuple[Province, Coast | None]:
+        logger.debug(f"persistence.board.get_province_and_coast.{name}")
+
         # TODO: (BETA) we build this everywhere, let's just have one live on the Board on init
         # we ignore capitalization because this is primarily used for user input
         name = name.lower()
