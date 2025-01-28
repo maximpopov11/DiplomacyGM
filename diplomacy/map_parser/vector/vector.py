@@ -167,7 +167,7 @@ class Parser:
                 if "coasts" in data:
                     province.coasts = set()
                     for coast_name, coast_adjacent in data["coasts"].items():
-                        coast = Coast(f"{name} {coast_name}", None, None, self.names_to_provinces(coast_adjacent), province)
+                        coast = Coast(f"{name} {coast_name}", None, None, set(self.names_to_provinces(coast_adjacent)), province)
                         province.coasts.add(coast)
                 if "unit_loc" in data:
                     for coordinate in data["unit_loc"]:

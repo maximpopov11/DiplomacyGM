@@ -40,6 +40,10 @@ class Manager:
             raise RuntimeError("There is no existing game this this server.")
         return board
 
+    def total_delete(self, server_id: int):
+        self._database.total_delete(self._boards[server_id])
+        del self._boards[server_id]
+
     def draw_moves_map(self, server_id: int, player_restriction: Player | None) -> str:
         return Mapper(self._boards[server_id]).draw_moves_map(self._boards[server_id].phase, player_restriction)
 

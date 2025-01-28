@@ -248,6 +248,11 @@ async def create_game(ctx: discord.ext.commands.Context) -> None:
 async def archive(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.archive, ctx)
 
+@bot.command(
+        brief="permanently deletes a game, cannot be undone"
+)
+async def delete_game(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.delete_game, ctx)
 
 def run():
     token = os.getenv("DISCORD_TOKEN")

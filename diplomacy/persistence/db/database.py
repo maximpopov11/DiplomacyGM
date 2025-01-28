@@ -415,6 +415,27 @@ class _DatabaseConnection:
         )
         cursor.close()
         self._connection.commit()
+    
+    def total_delete(self, board: Board):
+        cursor = self._connection.cursor()
+        cursor.execute(
+            "DELETE FROM boards WHERE board_id=?", (board.board_id,)
+        )
+        cursor.execute(
+            "DELETE FROM provinces WHERE board_id=?", (board.board_id,)
+        )
+        cursor.execute(
+            "DELETE FROM units WHERE board_id=?", (board.board_id,)
+        )
+        cursor.execute(
+            "DELETE FROM builds WHERE board_id=?", (board.board_id,)
+        )
+        cursor.execute(
+            "DELETE FROM retreat_options WHERE board_id=?",
+            (board.board_id,)
+        )
+        cursor.close()
+        self._connection.commit()
 
     def execute_arbitrary_sql(self, sql: str, args: tuple):
         # TODO - everywhere using this should just be made into a method probably? idk

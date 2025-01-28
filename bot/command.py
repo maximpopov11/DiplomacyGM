@@ -321,6 +321,10 @@ def disable_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | 
     board.orders_enabled = False
     return "Successful", None
 
+@perms.gm("delete the game")
+def delete_game(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+    manager.total_delete(ctx.guild.id)
+    return "Game deleted", None
 
 def info(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
