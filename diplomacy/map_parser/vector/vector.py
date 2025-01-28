@@ -153,6 +153,8 @@ class Parser:
                 for index in range(1, data["num"] + 1):
                     high_province = self.name_to_province[name + str(index)]
                     high_province.adjacent.update(adjacent)
+                    for ad in adjacent:
+                        ad.adjacent.add(high_province)
 
         if "provinces" in self.data["overrides"]:
             for name, data in self.data["overrides"]["provinces"].items():
