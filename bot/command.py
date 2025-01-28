@@ -1,25 +1,21 @@
-import itertools
 import logging
 import random
 from random import randrange
 
 from black.trans import defaultdict
 from discord import Guild
-from discord.ext import commands
 from discord import PermissionOverwrite
+from discord.ext import commands
 
 import bot.perms as perms
 from bot.config import is_bumble, temporary_bumbles
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
-from bot.utils import is_gm_channel, get_orders, is_admin
+from bot.utils import get_orders, is_admin
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province
-
-import asyncio
-
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +43,7 @@ def ping(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
 def bumble(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     list_of_bumble = list("bumble")
     random.shuffle(list_of_bumble)
-    word_of_bumble = ''.join(list_of_bumble)
+    word_of_bumble = "".join(list_of_bumble)
 
     if is_bumble(ctx.author.name) and random.randrange(0, 10) == 0:
         word_of_bumble = "bumble"

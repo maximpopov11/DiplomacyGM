@@ -8,8 +8,8 @@ import numpy as np
 from lxml import etree
 import math
 
-#from diplomacy.adjudicator import utils
-#from diplomacy.map_parser.vector import config_svg as svgcfg
+# from diplomacy.adjudicator import utils
+# from diplomacy.map_parser.vector import config_svg as svgcfg
 
 from diplomacy.map_parser.vector.utils import get_element_color, get_svg_element, get_unit_coordinates
 from diplomacy.persistence import phase
@@ -52,7 +52,9 @@ class Mapper:
 
         self.cached_elements = {}
         for element_name in ["army", "fleet", "unit_output"]:
-            self.cached_elements[element_name] = get_svg_element(self.board_svg, self.board.data["svg config"][element_name])
+            self.cached_elements[element_name] = get_svg_element(
+                self.board_svg, self.board.data["svg config"][element_name]
+            )
 
         # TODO: Switch to passing the SVG directly, as that's simpiler (self.svg = draw_units(svg)?)
         self._draw_units()
@@ -61,13 +63,17 @@ class Mapper:
         self.draw_side_panel(self.board_svg)
 
         self._moves_svg = copy.deepcopy(self.board_svg)
-        self.cached_elements["unit_output_moves"] = get_svg_element(self._moves_svg, self.board.data["svg config"]["unit_output"])
+        self.cached_elements["unit_output_moves"] = get_svg_element(
+            self._moves_svg, self.board.data["svg config"]["unit_output"]
+        )
 
         self.state_svg = copy.deepcopy(self.board_svg)
 
         self.highlight_retreating_units(self.state_svg)
 
     def draw_moves_map(self, current_phase: phase.Phase, player_restriction: Player | None) -> str:
+        logger.info("mapper.draw_moves_map")
+
         self._reset_moves_map()
         self.player_restriction = player_restriction
         if not phase.is_builds(current_phase):
@@ -123,6 +129,8 @@ class Mapper:
         return svg_file_name
 
     def draw_current_map(self) -> str:
+        logger.info("mapper.draw_current_map")
+
         svg_file_name = f"{self.board.phase.name}_map.svg"
         self.state_svg.write(svg_file_name)
         return svg_file_name
@@ -377,10 +385,12 @@ class Mapper:
                 if id(order.destination.get_unit()) > id(unit):
                     marker_start = "url(#ball)"
                     # doesn't matter that v3 has been pulled, as it's still collinear
-                    (x1, y1) = (x2, y2) = self.pull_coordinate((x3, y3), (x1, y1), self.board.data["svg config"]["unit_radius"])
+                    (x1, y1) = (x2, y2) = self.pull_coordinate(
+                        (x3, y3), (x1, y1), self.board.data["svg config"]["unit_radius"]
+                    )
                 else:
                     return
-        
+
         dasharray_size = 2.5 * self.board.data["svg config"]["order_stroke_width"]
         drawn_order = self.create_element(
             "path",
@@ -551,7 +561,9 @@ class Mapper:
             for elem in center_element.getchildren():
                 if elem.attrib["id"].startswith("Capital_Marker"):
                     pass
-                elif "{http://www.inkscape.org/namespaces/inkscape}label" in elem.attrib and elem.attrib["{http://www.inkscape.org/namespaces/inkscape}label"] in ["Halfcore Marker", "Core Marker"]:
+                elif "{http://www.inkscape.org/namespaces/inkscape}label" in elem.attrib and elem.attrib[
+                    "{http://www.inkscape.org/namespaces/inkscape}label"
+                ] in ["Halfcore Marker", "Core Marker"]:
                     # Handling capitals is easy bc it's all marked
                     # TODO: Maybe make it split vertically?
                     # that might be hard to do
@@ -566,8 +578,6 @@ class Mapper:
                         self.color_element(elem, f"url(#{halfname}_{corename})")
                     else:
                         self.color_element(elem, core_color)
-
-
 
     def _get_province_from_element_by_label(self, element: Element) -> Province:
         province_name = element.get("{http://www.inkscape.org/namespaces/inkscape}label")
@@ -597,7 +607,6 @@ class Mapper:
             coord_list = unit.location().all_locs
         for desired_coords in coord_list:
             elem = copy.deepcopy(unit_element)
-            
 
             dx = desired_coords[0] - current_coords[0]
             dy = desired_coords[1] - current_coords[1]
@@ -611,7 +620,7 @@ class Mapper:
                 trans.y_c += dy
             else:
                 trans = Translation(None, (dx, dy))
-            
+
             elem.set("transform", str(trans))
 
             elem.set("id", unit.province.name)
@@ -637,16 +646,22 @@ class Mapper:
     def _draw_retreat_options(self, unit: Unit, svg):
         root = svg.getroot()
         if not unit.retreat_options:
-           self._draw_force_disband(unit.province.retreat_unit_coordinate, svg)
+            self._draw_force_disband(unit.province.retreat_unit_coordinate, svg)
         # if we're drawing possible retreat locs, why show it as dislodged at all?
         # else:
         #     self._draw_disband(unit.location().retreat_unit_coordinate, svg)
 
         for retreat_province in unit.retreat_options:
-            root.append(self._draw_retreat_move(RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False))
+            root.append(
+                self._draw_retreat_move(
+                    RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False
+                )
+            )
 
     def _initialize_scoreboard_locations(self) -> None:
-        all_power_banners_element = get_svg_element(self.board_svg.getroot(), self.board.data["svg config"]["power_banners"])
+        all_power_banners_element = get_svg_element(
+            self.board_svg.getroot(), self.board.data["svg config"]["power_banners"]
+        )
         self.scoreboard_power_locations: list[str] = []
         for power_element in all_power_banners_element:
             self.scoreboard_power_locations.append(power_element.get("transform"))
@@ -656,7 +671,6 @@ class Mapper:
         self.scoreboard_power_locations.sort(
             key=lambda loc: float(re.match(r"translate\((-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\)", loc).groups()[1])
         )
-
 
     def add_arrow_definition_to_svg(self, svg: ElementTree) -> None:
         defs: Element = svg.find("{http://www.w3.org/2000/svg}defs")
@@ -696,8 +710,7 @@ class Mapper:
         )
         red_arrow_path: Element = self.create_element(
             "path",
-            {"d": "M 0,0 L 3,1.5 L 0,3 z",
-            "fill": "red"},
+            {"d": "M 0,0 L 3,1.5 L 0,3 z", "fill": "red"},
         )
         red_arrow_marker.append(red_arrow_path)
         defs.append(red_arrow_marker)
@@ -724,30 +737,16 @@ class Mapper:
         data = self.board.data["players"].copy()
         data["None"] = {"color": "ffffff"}
         for mapping in itertools.product(data, data):
-            gradient_def: Element = self.create_element(
-                "linearGradient",
-                {
-                    "id": f"{mapping[0]}_{mapping[1]}"
-                }
-            )
+            gradient_def: Element = self.create_element("linearGradient", {"id": f"{mapping[0]}_{mapping[1]}"})
             first: Element = self.create_element(
-                "stop",
-                {
-                    "offset": "50%",
-                    "stop-color": f"#{data[mapping[0]]['color']}"
-                }
+                "stop", {"offset": "50%", "stop-color": f"#{data[mapping[0]]['color']}"}
             )
             second: Element = self.create_element(
-                "stop",
-                {
-                    "offset": "50%",
-                    "stop-color": f"#{data[mapping[1]]['color']}"
-                }
+                "stop", {"offset": "50%", "stop-color": f"#{data[mapping[1]]['color']}"}
             )
             gradient_def.append(first)
             gradient_def.append(second)
             defs.append(gradient_def)
-
 
     def color_element(self, element: Element, color: str, key="fill"):
         if len(color) == 6:  # Potentially buggy hack; just assume everything with length 6 is rgb without #
@@ -758,7 +757,6 @@ class Mapper:
             style = element.get("style")
             style = re.sub(key + r":#[0-9a-fA-F]{6}", f"{key}:{color}", style)
             element.set("style", style)
-
 
     def create_element(self, tag: str, attributes: dict[str, any]) -> etree.Element:
         attributes_str = {key: str(val) for key, val in attributes.items()}
@@ -791,17 +789,15 @@ class Mapper:
         crossed_pos = np.array(crossed_pos)
 
         dists = crossed_pos - coord
-        #penalty for crossing map is 500 px
+        # penalty for crossing map is 500 px
         short_ind = np.argmin(np.linalg.norm(dists, axis=1) + 500 * crossed)
         return crossed_pos[short_ind].tolist()
-
 
     def loc_to_point(self, loc: Location, current: tuple[float, float], use_retreats=False):
         if not use_retreats:
             return self.get_closest_loc(loc.all_locs, current)
         else:
             return self.get_closest_loc(loc.all_rets, current)
-
 
     def pull_coordinate(
         self, anchor: tuple[float, float], coordinate: tuple[float, float], pull=None, limit=0.25

@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import time
 from typing import Callable
 import inspect
 
@@ -57,6 +58,8 @@ async def _handle_command(
     function: Callable[[commands.Context, Manager], tuple[str, str | None]],
     ctx: discord.ext.commands.Context,
 ) -> None:
+    start = time.time()
+
     # People input apostrophes that don't match what the province names are, we can catch all of that here
     ctx.message.content = re.sub(r"[‘’`´′‛]", "'", ctx.message.content)
 
@@ -64,9 +67,6 @@ async def _handle_command(
         response, file_name = await function(ctx, manager)
     else:
         response, file_name = function(ctx, manager)
-    logger.debug(
-        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{response}"
-    )
     while 2000 < len(response):
         # Try to find an even line break to split the message on
         cutoff = response.rfind("\n", 0, 2000)
@@ -82,6 +82,11 @@ async def _handle_command(
             await ctx.channel.send(response, file=discord.File(f"{file_name}.zip"))
     else:
         await ctx.channel.send(response)
+
+    elapsed = time.time() - start
+    logger.debug(
+        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{response} | {elapsed}s"
+    )
 
 
 @bot.command(help="Checks bot listens and responds.")
