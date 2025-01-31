@@ -37,7 +37,80 @@
         "neutral_sc": "ffffff"
     },
     "overrides": {
-
+        "provinces": {
+            "CONT": {
+                "coasts": {
+                    "nc": [
+                        "GVAL"
+                    ],
+                    "sc": [
+                        "GVAL"
+                    ]
+                }
+            },
+            "WSIC": {
+                "coasts": {
+                    "nc": [
+                        "TYRH",
+                        "SMES"
+                    ],
+                    "sc": [
+                        "SSIC"
+                    ]
+                }
+            },
+            "ESIC": {
+                "coasts": {
+                    "nc": [
+                        "SMES"
+                    ],
+                    "ec": [
+                        "MACH"
+                    ]
+                }
+            },
+            "LAOS": {
+                "coasts": {
+                    "wc": [
+                        "GSIC"
+                    ],
+                    "ec": [
+                        "GTAR"
+                    ]
+                }
+            },
+            "EPEL": {
+                "coasts": {
+                    "ec": [
+                        "SCRE"
+                    ],
+                    "nc": [
+                        "GCOR"
+                    ]
+                }
+            },
+            "DELP": {
+                "coasts": {
+                    "sc": [],
+                    "wc": [
+                        "GCOR"
+                    ]
+                }
+            },
+            "CRIM": {
+                "coasts": {
+                    "wc": [
+                        "GODE"
+                    ],
+                    "nc": [
+                        "AZOV"
+                    ],
+                    "sc": [
+                        "CRIS"
+                    ]
+                }
+            }
+        }
     },
     "players": {
         "Acheans": {

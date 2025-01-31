@@ -399,12 +399,12 @@ class Parser:
             (self.phantom_retreat_fleets_layer, "retreat_unit_coordinate"),
         ]
         for layer, province_key in fleet_layer_to_key:
+
             layer_translation = get_transform(layer)
             for unit_data in layer.getchildren():
                 unit_translation = get_transform(unit_data)
                 # This could either be a sea province or a land coast
                 province_name = self._get_province_name(unit_data)
-
                 # this is me writing bad code to get this out faster, will fix later when we clean up this file
                 province, coast = self._get_province_and_coast(province_name)
                 is_coastal = False

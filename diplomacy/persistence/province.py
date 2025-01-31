@@ -94,6 +94,11 @@ class Province(Location):
 
     def set_coasts(self):
         """This should only be called once all province adjacencies have been set."""
+
+        # Externally set, i. e. by json_cheats()
+        if self.coasts:
+            return
+
         if self.type == ProvinceType.SEA:
             # seas don't have coasts
             return set()
