@@ -252,13 +252,13 @@ class Parser:
             else:
                 poly = shapely.MultiPolygon(map(shapely.Polygon, province_coordinates))
                 poly = poly.buffer(0.1)
-                import matplotlib.pyplot as plt
+                # import matplotlib.pyplot as plt
 
-                if not poly.is_valid:
-                    print(f"MULTIPOLYGON IS NOT VALID (name: {self._get_province_name(province_data)})")
-                    for subpoly in poly.geoms:
-                        plt.plot(*subpoly.exterior.xy)
-                    plt.show()
+                # if not poly.is_valid:
+                #     print(f"MULTIPOLYGON IS NOT VALID (name: {self._get_province_name(province_data)})")
+                #     for subpoly in poly.geoms:
+                #         plt.plot(*subpoly.exterior.xy)
+                #     plt.show()
 
             province_coordinates = shapely.MultiPolygon()
 
@@ -533,11 +533,10 @@ parsers = {}
 
 
 def get_parser(name: str) -> Parser:
-    if name in parsers:
-        return parsers[name]
-    else:
+    if name not in parsers:
+        logger.info(f"Creating new Parser for board named {name}")
         parsers[name] = Parser(name)
-        return parsers[name]
+    return parsers[name]
 
 
 # oneTrueParser = Parser()

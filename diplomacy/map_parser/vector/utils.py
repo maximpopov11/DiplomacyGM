@@ -5,13 +5,15 @@ from xml.etree.ElementTree import Element, ElementTree
 from diplomacy.map_parser.vector.transform import Transform, EmptyTransform, get_transform
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType
+import logging
 
+logger = logging.getLogger(__name__)
 
 def get_svg_element(svg_root: ElementTree, element_id: str) -> Element:
     try:
         return svg_root.xpath(f'//*[@id="{element_id}"]')[0]
     except:
-        print(element_id)
+        logger.error(f"{element_id} isn't contained in svg_root")
 
 def get_element_color(element: Element) -> str:
     style = element.get("style").split(";")

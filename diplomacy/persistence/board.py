@@ -37,8 +37,6 @@ class Board:
         return next((province for province in self.provinces if province.name.lower() == name.lower()), None)
 
     def get_province_and_coast(self, name: str) -> tuple[Province, Coast | None]:
-        logger.debug(f"persistence.board.get_province_and_coast.{name}")
-
         # TODO: (BETA) we build this everywhere, let's just have one live on the Board on init
         # we ignore capitalization because this is primarily used for user input
         name = name.lower()
