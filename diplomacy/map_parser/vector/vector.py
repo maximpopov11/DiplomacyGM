@@ -3,6 +3,7 @@ import itertools
 import json
 import logging
 import time
+import numpy as np
 from typing import Callable
 from xml.etree.ElementTree import Element
 
@@ -156,6 +157,17 @@ class Parser:
                     for ad in adjacent:
                         ad.adjacent.add(high_province)
 
+        x_offset = 0
+        y_offset = 0
+
+        if "loc_x_offset" in self.data["svg config"]:
+            x_offset = self.data["svg config"]["loc_x_offset"]
+        
+        if "loc_y_offset" in self.data["svg config"]:
+            x_offset = self.data["svg config"]["loc_y_offset"]
+
+        offset = np.array([x_offset, y_offset])
+
         if "provinces" in self.data["overrides"]:
             for name, data in self.data["overrides"]["provinces"].items():
                 province = self.name_to_province[name]
@@ -171,12 +183,14 @@ class Parser:
                         province.coasts.add(coast)
                 if "unit_loc" in data:
                     for coordinate in data["unit_loc"]:
-                        province.primary_unit_coordinate = tuple(coordinate)
-                    province.all_locs.add(tuple(coordinate))
+                        coordinate = tuple((tuple(coordinate) + offset).tolist())
+                        province.all_locs.add(coordinate)
+                        province.primary_unit_coordinate = coordinate
                 if "retreat_unit_loc" in data:
                     for coordinate in data["retreat_unit_loc"]:
-                        province.retreat_unit_coordinate = tuple(coordinate)
-                    province.all_rets.add(tuple(coordinate))
+                        coordinate = tuple((tuple(coordinate) + offset).tolist())
+                        province.all_rets.add(coordinate)
+                        province.retreat_unit_coordinate = coordinate
 
         return provinces
 
