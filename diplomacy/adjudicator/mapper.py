@@ -76,6 +76,9 @@ class Mapper:
 
         self._reset_moves_map()
         self.player_restriction = player_restriction
+        
+        t = self._moves_svg.getroot()
+        arrow_layer = get_svg_element(t, self.board.data["svg config"]["arrow_output"])
         if not phase.is_builds(current_phase):
             for unit in self.board.units:
                 if player_restriction and unit.player != player_restriction:
@@ -104,13 +107,10 @@ class Mapper:
                             rval = copy.deepcopy(val)
                             lval.attrib["transform"] = f"translate({-self.board.data['svg config']['map_width']}, 0)"
                             rval.attrib["transform"] = f"translate({self.board.data['svg config']['map_width']}, 0)"
-                            t = self._moves_svg.getroot()
 
-                            l = get_svg_element(t, self.board.data["svg config"]["arrow_output"])
-
-                            l.append(lval)
-                            l.append(rval)
-                            l.append(val)
+                            arrow_layer.append(lval)
+                            arrow_layer.append(rval)
+                            arrow_layer.append(val)
                 except Exception as err:
                     logger.error(f"Drawing move failed for {unit}", exc_info=err)
         else:
