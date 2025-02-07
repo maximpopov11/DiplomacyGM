@@ -4,7 +4,7 @@ from abc import abstractmethod
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from shapely import Polygon
+from shapely import Polygon, MultiPolygon
 
 if TYPE_CHECKING:
     from diplomacy.persistence import player
@@ -50,7 +50,7 @@ class Province(Location):
     def __init__(
         self,
         name: str,
-        coordinates: Polygon,
+        coordinates: Polygon | MultiPolygon,
         primary_unit_coordinate: tuple[float, float],
         retreat_unit_coordinate: tuple[float, float],
         province_type: ProvinceType,

@@ -91,6 +91,16 @@ class Parser:
         elapsed = time.time() - start
         logger.info(f"map_parser.vector.parse: {elapsed}s")
 
+        # import matplotlib.pyplot as plt
+        # for province in provinces:
+        #     poly = province.geometry
+        #     if isinstance(poly, shapely.Polygon):
+        #         plt.plot(*poly.exterior.xy)
+        #     else:
+        #         for subpoly in poly.geoms:
+        #             plt.plot(*subpoly.exterior.xy)
+        # plt.show()
+
         return Board(players, provinces, units, phase.initial(), self.data, self.datafile)
 
     def read_map(self) -> tuple[set[Province], set[tuple[str, str]]]:
@@ -137,7 +147,7 @@ class Parser:
                 for index in range(1, data["num"] + 1):
                     province = Province(
                         name + str(index),
-                        [],
+                        shapely.Polygon(),
                         None,
                         None,
                         getattr(ProvinceType, data["type"]),
