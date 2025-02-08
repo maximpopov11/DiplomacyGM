@@ -101,6 +101,16 @@ class Parser:
         #             plt.plot(*subpoly.exterior.xy)
         # plt.show()
 
+        for province in provinces:
+            province.all_locs -= {None}
+            province.all_rets -= {None}
+            if province.primary_unit_coordinate == None:
+                logger.warning(f"Province {province.name} has no unit coord. Setting to 0,0 ...")
+                province.primary_unit_coordinate = (0, 0)
+            if province.retreat_unit_coordinate == None:
+                logger.warning(f"Province {province.name} has no retreat coord. Setting to 0,0 ...")
+                province.retreat_unit_coordinate = (0, 0)
+
         return Board(players, provinces, units, phase.initial(), self.data, self.datafile)
 
     def read_map(self) -> tuple[set[Province], set[tuple[str, str]]]:
