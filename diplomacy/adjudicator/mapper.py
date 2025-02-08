@@ -626,8 +626,7 @@ class Mapper:
             elem.set("id", unit.province.name)
             elem.set("{http://www.inkscape.org/namespaces/inkscape}label", unit.province.name)
 
-            tree = "unit_output" if not use_moves_svg else "unit_output_moves"
-            group = self.cached_elements[tree]
+            group = self.cached_elements["unit_output"] if not use_moves_svg else self._moves_svg.getroot()
             group.append(elem)
 
     def highlight_retreating_units(self, svg):
