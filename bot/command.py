@@ -110,7 +110,6 @@ def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
                 # Sometimes Bumbles are so bad at fishing they debumblify
                 debumblify = True
                 fish_num = randrange(10, 20)
-                return "", None
             else:
                 # Bumbles that lose fish lose a lot of them
                 fish_num *= randrange(3, 10)
@@ -190,7 +189,7 @@ async def botsay(ctx: commands.Context, _: Manager) -> None:
         return
     channel = ctx.message.channel_mentions[0]
     content = ctx.message.content
-    content = content.replace(".botsay", "").replace(channel.mention, "").strip()
+    content = content.removeprefix(".botsay").replace(channel.mention, "").strip()
     if len(content) == 0:
         return
     await ctx.message.add_reaction("👍")

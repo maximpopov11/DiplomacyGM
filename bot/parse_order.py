@@ -18,8 +18,8 @@ from diplomacy.persistence.unit import Unit, UnitType
 # _core = "core"
 # _retreat_move = "retreat move"
 # _retreat_disband = "retreat disband"
-_build = "build"
-_disband = "disband"
+#_build = "build"
+#_disband = "disband"
 
 #_order_dict = {
     # _hold: ["h", "hold", "holds", "stand", "stands"],
@@ -76,7 +76,7 @@ class TreeToOrder(Transformer):
     def retreat_phase(self, statements):
         return set([x for x in statements if isinstance(x, Unit)])
 
-    def province(self, s):
+    def province(self, s) -> Location:
         name = " ".join(s[::2]).replace("_", " ").strip()
         name = _manage_coast_signature(name)
         return self.board.get_location(name)
@@ -155,8 +155,9 @@ class TreeToOrder(Transformer):
 
         return s[0], order.Move(loc)
 
+    # interpretting as a convoy is necessary when ambiguous
     def convoy_move_order(self, s):
-        return s[0], order.Move(s[-1])
+        return s[0], order.ConvoyMove(s[-1])
 
     def convoy_order(self, s):
         return s[0], order.ConvoyTransport(s[-1][0], s[-1][1].destination)
@@ -353,21 +354,21 @@ def _parse_player_order(keywords: list[str], player_restriction: Player | None, 
     if player is None:
         raise ValueError(f"{location.name} is not owned by anyone")
 
-    if command in _order_dict[_build]:
-        unit_type = get_unit_type(keywords[2])
-        if unit_type == UnitType.FLEET:
-            if isinstance(location, Province):
-                location = location.coast()
-        player_order = order.Build(location, unit_type)
-        remove_player_order_for_location(board, player, location)
-        player.build_orders.add(player_order)
-        return player
+    #if command in _order_dict[_build]:
+    #    unit_type = get_unit_type(keywords[2])
+    #    if unit_type == UnitType.FLEET:
+    #        if isinstance(location, Province):
+    #            location = location.coast()
+    #    player_order = order.Build(location, unit_type)
+    #    remove_player_order_for_location(board, player, location)
+    #    player.build_orders.add(player_order)
+    #    return player
 
-    if command in _order_dict[_disband]:
-        player_order = order.Disband(location)
-        remove_player_order_for_location(board, player, location)
-        player.build_orders.add(player_order)
-        return player
+    #if command in _order_dict[_disband]:
+    #    player_order = order.Disband(location)
+    #    remove_player_order_for_location(board, player, location)
+    #    player.build_orders.add(player_order)
+    #    return player
 
     raise RuntimeError("Build could not be parsed")
 

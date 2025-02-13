@@ -1,6 +1,6 @@
 from enum import Enum
 
-from diplomacy.persistence.order import Hold, Core, Move, ConvoyMove, Support, ConvoyTransport
+from diplomacy.persistence.order import Hold, Core, Move, ConvoyMove, Support, ConvoyTransport, FailedConvoy
 from diplomacy.persistence.province import Province, Location, Coast
 from diplomacy.persistence.unit import Unit, UnitType
 
@@ -43,17 +43,22 @@ class AdjudicableOrder:
         self.destination_province: Province = self.current_province
         self.raw_destination: Location = self.current_province
         self.source_province: Province = self.current_province
-        self.requires_convoy: bool = False
+        self.is_convoy: bool = False
+        # indicates that a move is also a convoy that failed, so no support holds
+        self.failed_convoy = False
         if isinstance(unit.order, Hold):
             self.type = OrderType.HOLD
+        elif isinstance(unit.order, FailedConvoy):
+            self.type = OrderType.HOLD
+            self.failed_convoy = True
         elif isinstance(unit.order, Core):
             self.type = OrderType.CORE
         elif isinstance(unit.order, Move) or isinstance(unit.order, ConvoyMove):
             self.type = OrderType.MOVE
             self.destination_province = get_base_province_from_location(unit.order.destination)
             self.raw_destination = unit.order.destination
-            if self.destination_province not in unit.province.adjacent:
-                self.requires_convoy = True
+            if isinstance(unit.order, ConvoyMove):
+                self.is_convoy = True
         elif isinstance(unit.order, Support):
             self.type = OrderType.SUPPORT
             self.source_province = unit.order.source.province
