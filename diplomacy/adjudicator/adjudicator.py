@@ -372,7 +372,6 @@ class MovesAdjudicator(Adjudicator):
             # Same for convoys
             valid, reason = order_is_valid(unit.location(), unit.order, strict_convoys_supports=True)
             if not valid:
-                print(f"Order for {unit} is invalid because {reason}")
                 logger.debug(f"Order for {unit} is invalid because {reason}")
                 if isinstance(unit.order, Move) and unit.unit_type == UnitType.ARMY:
                     logger.debug("Retrying move order as ConvoyMove")
@@ -421,31 +420,18 @@ class MovesAdjudicator(Adjudicator):
             if order.type != OrderType.MOVE:
                 continue
 
-            kidnappers = self.orders_by_province[order.source_province.name].convoys
-
-            if (len(kidnappers) == 0):
+            if (len(self.orders_by_province[order.source_province.name].convoys) == 0):
                 continue
-
-            print(f"Found kidnappers :O for {order.source_province}")
 
             # According to the 1971 ruling in DATC, the army only is kidnapped if 
             # 1. the army's destination is moving back at it
             # 2.  the convoy isn't disrupted
 
-            if order.destination_province.name not in self.orders_by_province:
-                print("Ignore kidnapping under 1")
-                continue
-
-            attacked_order = self.orders_by_province[order.destination_province.name]
-            if (attacked_order.destination_province != order.source_province):
-                print("Ignored kidnapping under 1")
-                continue
-
-            if (self._adjudicate_convoys_for_order(order) == Resolution.SUCCEEDS):
-                order.is_convoy = True
-                print(f"{order.source_province} is getting kidnapped :p")
-            else:
-                print("Ignored kidnapping under 2")
+            if order.destination_province.name in self.orders_by_province:
+                attacked_order = self.orders_by_province[order.destination_province.name]
+                if (attacked_order.destination_province == order.source_province):
+                    if (self._adjudicate_convoys_for_order(order) == Resolution.SUCCEEDS):
+                        order.is_convoy = True
 
     def run(self) -> Board:
         for order in self.orders:
