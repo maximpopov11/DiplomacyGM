@@ -38,14 +38,6 @@ class Hold(UnitOrder):
     def __str__(self):
         return "Holds"
 
-# Results from an attempted convoy by an army not supported by a fleet
-# Acts like a hold, but does not receive support holds
-class FailedConvoy(UnitOrder):
-    def __init__(self):
-        super().__init__()
-
-    def __str__(self):
-        return "Failed Convoy"
 
 class Core(UnitOrder):
     def __init__(self):

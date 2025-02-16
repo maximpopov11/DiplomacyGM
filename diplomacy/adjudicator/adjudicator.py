@@ -16,7 +16,6 @@ from diplomacy.persistence.order import (
     Hold,
     Move,
     Core,
-    FailedConvoy,
     ConvoyMove,
     RetreatMove,
     ConvoyTransport,
@@ -240,8 +239,6 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
                 return False, f"Supported unit {order.source} did not make corresponding order"
 
         return True, None
-    elif isinstance(order, FailedConvoy):
-        return True, None
 
     return False, f"Unknown move type: {order.__class__.__name__}"
 
@@ -366,10 +363,17 @@ class MovesAdjudicator(Adjudicator):
     def __init__(self, board: Board):
         super().__init__(board)
 
+        self.orders = set()
+
         for unit in board.units:
             # Replace invalid orders with holds
             # Importantly, this includes supports for which the corresponding unit didn't make the same move
             # Same for convoys
+
+            failed: bool = False
+            # indicates a convoy move that failed, so it can't be support held
+            failed_convoy: bool = False
+
             valid, reason = order_is_valid(unit.location(), unit.order, strict_convoys_supports=True)
             if not valid:
                 logger.debug(f"Order for {unit} is invalid because {reason}")
@@ -381,22 +385,29 @@ class MovesAdjudicator(Adjudicator):
                     )
                     if not valid: # move is invalid in the first place, becomes hold
                         unit.order = Hold()
+                        failed = True
                     else:
                         strict_valid, reason = order_is_valid(
                             unit.location(), ConvoyMove(unit.order.destination), strict_convoys_supports=True
                         )
 
-                        if not strict_valid: # move is valid but no convoy, so its failed move
-                            unit.order = FailedConvoy()
+                        if not strict_valid: # move is valid but no convoy, so it is a failed move
+                            unit.order = Hold()
+                            failed_convoy = True
                         else:
                             unit.order = ConvoyMove(unit.order.destination)
-                        
-                        continue
+                else:
+                    unit.order = Hold()
+                    failed = True
 
-                unit.order = Hold()
+            if failed:
                 self.failed_or_invalid_units.add(MapperInformation(unit))
+            order = AdjudicableOrder(unit)
+            if failed_convoy:
+                order.failed_convoy = True
+            
+            self.orders.add(order)
 
-        self.orders = {AdjudicableOrder(unit) for unit in board.units}
         self.orders_by_province = {order.current_province.name: order for order in self.orders}
         self.moves_by_destination: dict[str, set[AdjudicableOrder]] = dict()
         for order in self.orders:
