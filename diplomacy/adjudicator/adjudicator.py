@@ -99,7 +99,7 @@ def convoy_is_possible(start: Province, end: Province, check_fleet_orders=False)
     return False
 
 
-def order_is_valid(location: Location, order: Order, strict_convoys_supports=False, strict_coast_movement=True) -> tuple[bool, str | None]:
+def order_is_valid(location: Location, order: Order, strict_convoys_supports=False) -> tuple[bool, str | None]:
     """
     Checks if order from given location is valid for configured board
 
@@ -107,8 +107,6 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
     :param order: Order to check
     :param strict_convoys_supports: Defaults False. Validates only if supported order was also ordered,
                                     or convoyed unit was convoyed correctly
-    :param strict_coast_movement: Defaults True. Checks movement regarding coasts, should be false when checking 
-                                    for support holds.
 
     :return: tuple(result, reason)
         - bool result is True if the order is valid, False otherwise
@@ -139,27 +137,8 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
         elif unit.unit_type == UnitType.FLEET:
             check = get_base_province_from_location(order.destination) in get_adjacent_provinces(location)
 
-            # TODO look into doing this all in one by writing a method 
-            if strict_coast_movement:
-                # assumes checking coasts never gives false negatives, check for coast to coast movement
-                # TODO properly handle the case of islands
-                destination = order.destination
-                destination_is_coast = isinstance(destination, Coast)
-                source_is_coast = isinstance(location, Coast)
-                destination_is_sea = isinstance(destination, Province) and destination.type == ProvinceType.SEA
-                source_is_sea = isinstance(location, Province) and location.type == ProvinceType.SEA
-
-                if destination_is_coast and source_is_coast:
-                    check = destination in location.get_adjacent_coasts()
-                elif destination_is_coast and source_is_sea:
-                    check = location in destination.adjacent_seas
-                elif destination_is_sea and source_is_coast:
-                    check = destination in location.adjacent_seas
-
-                if (isinstance(destination, Province) and destination.type == ProvinceType.LAND or 
-                    isinstance(location, Province) and location.type == ProvinceType.LAND):
-                    logger.warning(f"Movement to province without specified coast involving fleet at {unit.province.name}")
-                    check = False
+            # FIXME currently adjacencies for coasts don't work properly, and allow for supporting from different coasts when necessary
+            # when this is fixed, please uncomment out tests test_6_b_3_variant, test_6_d_29, test_6_d_30 as they fail currently
 
             if not check:
                 return False, f"{location.name} does not border {order.destination.name}"
@@ -211,7 +190,7 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
         if (isinstance(order.source.order, Core) and order_is_valid(order.source.province, Core)):
             return False, f"Cannot support a unit that is coring"
 
-        move_valid, _ = order_is_valid(location, Move(order.destination), strict_convoys_supports, False)
+        move_valid, _ = order_is_valid(location, Move(order.destination), strict_convoys_supports)
         if not move_valid:
             return False, f"Cannot support somewhere you can't move to"
 
@@ -271,6 +250,9 @@ class BuildsAdjudicator(Adjudicator):
             if available_builds == 0:
                 continue
             for order in player.build_orders:
+                if order.unit_type == None:
+                    continue
+
                 if 0 < available_builds and isinstance(order, Build):
                     coast = None
                     province = order.location

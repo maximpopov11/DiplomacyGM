@@ -103,7 +103,7 @@ BUILD.2 : "b"
         | "build"
         | "place"
 
-unit : (DESCRIPTOR) province
+unit : (DESCRIPTOR)? province
 
 retreat_unit : (DESCRIPTOR)? province
 

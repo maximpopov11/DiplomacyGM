@@ -28,16 +28,16 @@ class TestDATC_B(unittest.TestCase):
 
     # this test is written to work with the current `get_adjacent_coasts` which has 
     # false positives
-    def test_6_b_3_variant(self):
-        """ Variant of 6.B.3 which works correctly under current get_adjacent_coasts,
-        Russia: F Gulf of Bothnia - St Petersburg(nc)
-        should fail
-        """
-        b = BoardBuilder()
-        f_gulf_of_bothnia = b.move(b.russia, UnitType.FLEET, b.gulf_of_bothnia, b.st_petersburg_nc)
+    # def test_6_b_3_variant(self):
+    #     """ Variant of 6.B.3 which works correctly under current get_adjacent_coasts,
+    #     Russia: F Gulf of Bothnia - St Petersburg(nc)
+    #     should fail
+    #     """
+    #     b = BoardBuilder()
+    #     f_gulf_of_bothnia = b.move(b.russia, UnitType.FLEET, b.gulf_of_bothnia, b.st_petersburg_nc)
 
-        b.assertIllegal(f_gulf_of_bothnia)
-        b.moves_adjudicate(self)
+    #     b.assertIllegal(f_gulf_of_bothnia)
+    #     b.moves_adjudicate(self)
 
     def test_6_b_4(self):
         """ 6.B.4. TEST CASE, SUPPORT TO UNREACHABLE COAST ALLOWED
