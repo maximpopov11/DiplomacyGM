@@ -501,11 +501,18 @@ class Parser:
     # Returns province adjacency set
     def _get_adjacencies(self, provinces: set[Province]) -> set[tuple[str, str]]:
         adjacencies = set()
-
-        # Combinations so that we only have (A, B) and not (B, A) or (A, A)
-        for province1, province2 in itertools.combinations(provinces, 2):
-            if shapely.distance(province1.geometry, province2.geometry) < self.layers["border_margin_hint"]:
-                adjacencies.add((province1.name, province2.name))
+        try:
+            f = open(f"config/{self.datafile}_adjacencies.txt", "r")
+        except FileNotFoundError:
+            with open(f"config/{self.datafile}_adjacencies.txt", "w") as f:
+                # Combinations so that we only have (A, B) and not (B, A) or (A, A)
+                for province1, province2 in itertools.combinations(provinces, 2):
+                    if shapely.distance(province1.geometry, province2.geometry) < self.layers["border_margin_hint"]:
+                        adjacencies.add((province1.name, province2.name))
+                        f.write(f"{province1.name},{province2.name}\n")
+        else:
+            for line in f:
+                adjacencies.add(tuple(line[:-1].split(',')))
         # import matplotlib.pyplot as plt
         # for p in provinces:
         #     if isinstance(p.geometry, shapely.Polygon):
