@@ -240,18 +240,17 @@ def view_orders(player: Player | None, ctx: commands.Context, manager: Manager) 
     except RuntimeError as err:
         logger.error(f"View_orders text failed in game with id: {ctx.guild.id}", exc_info=err)
         order_text = "view_orders text failed"
-    if player is None:
-        try:
-            file_name = manager.draw_moves_map(ctx.guild.id, None)
-        except Exception as err:
-            logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
-            file_name = None
-        return order_text, file_name
+    return order_text, None
 
-    else:
-        # file_name = manager.draw_moves_map(ctx.guild.id, player)
-        return order_text, None
-
+@perms.gm("view map")
+def view_map(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+    # file_name = manager.draw_moves_map(ctx.guild.id, player)
+    try:
+        file_name = manager.draw_moves_map(ctx.guild.id, None)
+    except Exception as err:
+        logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
+        file_name = None
+    return "Map created successfully", file_name
 
 @perms.gm("adjudicate")
 def adjudicate(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
