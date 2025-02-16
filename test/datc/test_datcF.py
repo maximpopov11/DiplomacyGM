@@ -2,7 +2,7 @@ import unittest
 
 from diplomacy.persistence.order import Support
 from diplomacy.persistence.unit import UnitType
-from tests.utils import BoardBuilder
+from test.utils import BoardBuilder
 
 # These tests are based off https://webdiplomacy.net/doc/DATC_v3_0.html, with 
 # https://github.com/diplomacy/diplomacy/blob/master/diplomacy/tests/test_datc.py being used as a reference as well.
