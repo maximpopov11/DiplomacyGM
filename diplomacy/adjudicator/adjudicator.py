@@ -250,10 +250,14 @@ class BuildsAdjudicator(Adjudicator):
             if available_builds == 0:
                 continue
             for order in player.build_orders:
-                if order.unit_type == None:
-                    continue
 
                 if 0 < available_builds and isinstance(order, Build):
+                    if  order.unit_type == None:
+                        logger.warning(
+                            f"Skipping {order}; someone tried to build without specifying the unit type."
+                        )
+                        continue
+
                     coast = None
                     province = order.location
                     # ignore coast specifications for army
