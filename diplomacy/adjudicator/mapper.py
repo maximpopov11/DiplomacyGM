@@ -51,7 +51,7 @@ class Mapper:
         self.board_svg.getroot().remove(units_layer)
 
         self.cached_elements = {}
-        for element_name in ["army", "fleet", "unit_output"]:
+        for element_name in ["army", "fleet", "retreat_army", "retreat_fleet", "unit_output"]:
             self.cached_elements[element_name] = get_svg_element(
                 self.board_svg, self.board.data["svg config"][element_name]
             )
@@ -61,6 +61,9 @@ class Mapper:
         self._color_provinces()
         self._color_centers()
         self.draw_side_panel(self.board_svg)
+        
+        for element_name in ["army", "fleet", "retreat_army", "retreat_fleet"]:
+            self.board_svg.getroot().remove(self.cached_elements[element_name])
 
         self._moves_svg = copy.deepcopy(self.board_svg)
         self.cached_elements["unit_output_moves"] = get_svg_element(
