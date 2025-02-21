@@ -55,7 +55,6 @@ class Move(UnitOrder):
     def __str__(self):
         return f"- {self.destination}"
 
-
 class ConvoyMove(UnitOrder):
     def __init__(self, destination: Location):
         super().__init__()
