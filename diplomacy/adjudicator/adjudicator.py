@@ -107,6 +107,7 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
     :param order: Order to check
     :param strict_convoys_supports: Defaults False. Validates only if supported order was also ordered,
                                     or convoyed unit was convoyed correctly
+
     :return: tuple(result, reason)
         - bool result is True if the order is valid, False otherwise
         - str reason is arbitrary if the order is valid, provides reasoning if invalid
@@ -128,10 +129,23 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
         return True, None
     elif isinstance(order, Move) or isinstance(order, RetreatMove):
         destination_province = get_base_province_from_location(order.destination)
-        if destination_province not in get_adjacent_provinces(location):
-            return False, f"{location.name} does not border {order.destination.name}"
-        if unit.unit_type == UnitType.ARMY and destination_province.type == ProvinceType.SEA:
-            return False, "Armies cannot move to sea provinces"
+        if unit.unit_type == UnitType.ARMY:
+            if destination_province not in get_adjacent_provinces(location):
+                return False, f"{location.name} does not border {order.destination.name}"
+            if destination_province.type == ProvinceType.SEA:
+                return False, "Armies cannot move to sea provinces"
+        elif unit.unit_type == UnitType.FLEET:
+            check = get_base_province_from_location(order.destination) in get_adjacent_provinces(location)
+
+            # FIXME currently adjacencies for coasts don't work properly, and allow for supporting from different coasts when necessary
+            # when this is fixed, please uncomment out tests test_6_b_3_variant, test_6_d_29, test_6_d_30 as they fail currently
+
+            if not check:
+                return False, f"{location.name} does not border {order.destination.name}"
+        else:
+            raise ValueError("Unknown type of unit. Something has broken in the bot. Please report this")
+
+
         if isinstance(order, RetreatMove) and destination_province.unit is not None:
             return False, "Cannot retreat to occupied provinces"
         return True, None
@@ -141,6 +155,8 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
         destination_province = get_base_province_from_location(order.destination)
         if destination_province.type == ProvinceType.SEA:
             return False, "Cannot convoy to a sea space"
+        if destination_province == unit.location():
+            return False, "Cannot convoy army to its previous space"
         return (
             convoy_is_possible(
                 get_base_province_from_location(location),
@@ -171,20 +187,20 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
             return False, f"No valid convoy path from {order.source.location().name} to {location.name}"
         return True, None
     elif isinstance(order, Support):
+        if (isinstance(order.source.order, Core) and order_is_valid(order.source.province, Core)):
+            return False, f"Cannot support a unit that is coring"
+
         move_valid, _ = order_is_valid(location, Move(order.destination), strict_convoys_supports)
         if not move_valid:
             return False, f"Cannot support somewhere you can't move to"
 
         is_support_hold = order.source.province == get_base_province_from_location(order.destination)
-        source_to_destination_valid = is_support_hold
-        if not source_to_destination_valid:
-            source_to_destination_valid, _ = order_is_valid(
-                order.source.province, Move(order.destination), strict_convoys_supports
-            )
-        if not source_to_destination_valid:
-            source_to_destination_valid, _ = order_is_valid(
-                order.source.province, ConvoyMove(order.destination), strict_convoys_supports
-            )
+        source_to_destination_valid = is_support_hold or order_is_valid(
+                order.source.location(), Move(order.destination), strict_convoys_supports
+        )[0] or order_is_valid(
+                order.source.location(), ConvoyMove(order.destination), strict_convoys_supports
+        )[0]
+
         if not source_to_destination_valid:
             return False, "Supported unit can't reach destination"
 
@@ -192,7 +208,10 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
             corresponding_order_is_move = isinstance(order.source.order, Move) or isinstance(
                 order.source.order, ConvoyMove
             )
-            if (is_support_hold and corresponding_order_is_move) or (
+            # if move is invalid then it goes through anyways
+            if (is_support_hold and corresponding_order_is_move and order_is_valid(
+                    order.source.province, order.source.order, False
+                )[0]) or (
                 not is_support_hold
                 and (not corresponding_order_is_move or order.source.order.destination != order.destination)
             ):
@@ -231,22 +250,25 @@ class BuildsAdjudicator(Adjudicator):
             if available_builds == 0:
                 continue
             for order in player.build_orders:
+
                 if 0 < available_builds and isinstance(order, Build):
-                    if order.location.primary_unit_coordinate is None:
-                        logger.warning(
-                            f"Skipping {order}; this is probably because someone tried to build an inland fleet"
-                        )
-                        continue
                     coast = None
                     province = order.location
+                    # ignore coast specifications for army
                     if isinstance(province, Coast):
-                        coast = province
+                        if order.unit_type == UnitType.FLEET:
+                            coast = province
                         province = province.province
+                    if order.unit_type == UnitType.FLEET and coast == None:
+                        logger.warning(
+                            f"Skipping {order}; someone tried to build a fleet not on the coast"
+                        )
+                        continue
                     if province.unit is not None:
                         logger.warning(f"Skipping {order}; there is already a unit there")
                         continue
-                    if not province.has_supply_center or province.core != player:
-                        logger.warning(f"Skipping {order}; tried to build in non-core or non-sc")
+                    if not province.has_supply_center or province.core != player or province.owner != player:
+                        logger.warning(f"Skipping {order}; tried to build in non-core, non-sc, non-owned")
                         continue
                     self._board.create_unit(order.unit_type, player, province, coast, None)
                     available_builds -= 1
@@ -257,6 +279,9 @@ class BuildsAdjudicator(Adjudicator):
                         continue
                     self._board.delete_unit(province)
                     available_builds += 1
+
+                if available_builds < 0:
+                    logger.warning(f"Player {player.name} disbanded less orders than they should have")
 
         for player in self._board.players:
             player.build_orders = set()
@@ -274,7 +299,7 @@ class RetreatsAdjudicator(Adjudicator):
             if unit != unit.province.dislodged_unit:
                 continue
 
-            if isinstance(unit.order, RetreatMove) and order_is_valid(unit.province, unit.order)[0]:
+            if isinstance(unit.order, RetreatMove) and unit.order.destination in unit.retreat_options:
                 destination_province = get_base_province_from_location(unit.order.destination)
                 if destination_province.name not in retreats_by_destination:
                     retreats_by_destination[destination_province.name] = set()
@@ -318,26 +343,51 @@ class MovesAdjudicator(Adjudicator):
     def __init__(self, board: Board):
         super().__init__(board)
 
+        self.orders = set()
+
         for unit in board.units:
             # Replace invalid orders with holds
             # Importantly, this includes supports for which the corresponding unit didn't make the same move
             # Same for convoys
+
+            failed: bool = False
+            # indicates a convoy move that failed, so it can't be support held
+            failed_convoy: bool = False
+
             valid, reason = order_is_valid(unit.location(), unit.order, strict_convoys_supports=True)
             if not valid:
                 logger.debug(f"Order for {unit} is invalid because {reason}")
-                if isinstance(unit.order, Move):
+                if isinstance(unit.order, Move) and unit.unit_type == UnitType.ARMY:
                     logger.debug("Retrying move order as ConvoyMove")
+                    # TODO Runs duplicated code
                     valid, reason = order_is_valid(
-                        unit.location(), ConvoyMove(unit.order.destination), strict_convoys_supports=True
+                        unit.location(), ConvoyMove(unit.order.destination), strict_convoys_supports=False
                     )
-                    if valid:
-                        unit.order = ConvoyMove(unit.order.destination)
-                        continue
+                    if not valid: # move is invalid in the first place, becomes hold
+                        unit.order = Hold()
+                        failed = True
+                    else:
+                        strict_valid, reason = order_is_valid(
+                            unit.location(), ConvoyMove(unit.order.destination), strict_convoys_supports=True
+                        )
 
+                        if not strict_valid: # move is valid but no convoy, so it is a failed move
+                            unit.order = Hold()
+                            failed_convoy = True
+                        else:
+                            unit.order = ConvoyMove(unit.order.destination)
+                else:
+                    unit.order = Hold()
+                    failed = True
+
+            if failed:
                 self.failed_or_invalid_units.add(MapperInformation(unit))
-                unit.order = Hold()
+            order = AdjudicableOrder(unit)
+            if failed_convoy:
+                order.failed_convoy = True
+            
+            self.orders.add(order)
 
-        self.orders = {AdjudicableOrder(unit) for unit in board.units}
         self.orders_by_province = {order.current_province.name: order for order in self.orders}
         self.moves_by_destination: dict[str, set[AdjudicableOrder]] = dict()
         for order in self.orders:
@@ -354,6 +404,26 @@ class MovesAdjudicator(Adjudicator):
 
         self._dependencies: list[AdjudicableOrder] = []
 
+        self._find_convoy_kidnappings()
+
+    def _find_convoy_kidnappings(self):
+        for order in self.orders:
+            if order.type != OrderType.MOVE:
+                continue
+
+            if (len(self.orders_by_province[order.source_province.name].convoys) == 0):
+                continue
+
+            # According to the 1971 ruling in DATC, the army only is kidnapped if 
+            # 1. the army's destination is moving back at it
+            # 2.  the convoy isn't disrupted
+
+            if order.destination_province.name in self.orders_by_province:
+                attacked_order = self.orders_by_province[order.destination_province.name]
+                if (attacked_order.destination_province == order.source_province):
+                    if (self._adjudicate_convoys_for_order(order) == Resolution.SUCCEEDS):
+                        order.is_convoy = True
+
     def run(self) -> Board:
         for order in self.orders:
             order.state = ResolutionState.UNRESOLVED
@@ -365,11 +435,6 @@ class MovesAdjudicator(Adjudicator):
     def _update_board(self):
         if not all(order.state == ResolutionState.RESOLVED for order in self.orders):
             raise RuntimeError("Cannot update board until all orders are resolved!")
-
-        bounces_and_occupied = set()
-        for order in self.orders:
-            if order.type == OrderType.MOVE:
-                bounces_and_occupied.add(order.destination_province)
 
         for order in self.orders:
             if order.type == OrderType.CORE and order.resolution == Resolution.SUCCEEDS:
@@ -385,10 +450,14 @@ class MovesAdjudicator(Adjudicator):
                 # Dislodge whatever is there
                 order.destination_province.dislodged_unit = order.destination_province.unit
                 # TODO - remove provinces where a bounce occurred from retreat options
+                # TODO - remove sea provinces on the wrong coast too
+                # see DATC 4.A.5
                 if order.destination_province.dislodged_unit is not None:
-                    order.destination_province.dislodged_unit.retreat_options = order.destination_province.adjacent - {
-                        order.source_province
-                    }
+                    order.destination_province.dislodged_unit.retreat_options = order.destination_province.adjacent
+                    if not order.is_convoy:
+                        order.destination_province.dislodged_unit.retreat_options -= {
+                            order.source_province
+                        }
                 # Move us there
                 order.base_unit.province = order.destination_province
                 if isinstance(order.raw_destination, Coast):
@@ -413,15 +482,12 @@ class MovesAdjudicator(Adjudicator):
                 province.half_core = None
             province.corer = None
 
-        for unit in self._board.units:
-            bounces_and_occupied.add(unit.province)
+        contested = self._find_contested_areas()
 
         for unit in self._board.units:
             unit.order = None
             if unit.retreat_options is not None:
-                #TODO: Don't remove provinces from the retreat list where a unit is overpowered
-                #      by an attack coming from its intended destination
-                unit.retreat_options -= bounces_and_occupied
+                unit.retreat_options -= contested
                 if unit.unit_type == UnitType.ARMY:
                     unit.retreat_options = {x for x in unit.retreat_options if x.type != ProvinceType.SEA}
                 else:
@@ -432,15 +498,36 @@ class MovesAdjudicator(Adjudicator):
                 if unit.province.unit == unit and unit.province.owner != unit.player:
                     self._board.change_owner(unit.province, unit.player)
 
-    def _adjudicate_convoys_for_order(
-        self, order: AdjudicableOrder, exclude_province: Province | None = None
-    ) -> Resolution:
+    def _find_contested_areas(self):
+        bounces_and_occupied = set()
+        for order in self.orders:
+            if order.type == OrderType.MOVE:
+                if order.is_convoy:
+                    # unsuccessful convoys don't bounce
+                    if order.resolution == Resolution.SUCCEEDS:
+                        bounces_and_occupied.add(order.destination_province)
+                else:
+                    # TODO duplicated head on code
+                    if order.destination_province.name in self.orders_by_province:
+                        attacked_order = self.orders_by_province[order.destination_province.name]
+                        if (attacked_order.type == OrderType.MOVE and attacked_order.destination_province == order.current_province):
+                            # if this is a head on attack, and the unit lost the head on, then the area is not contested
+                            head_on = not attacked_order.is_convoy and not order.is_convoy
+                            if (head_on and order.resolution == Resolution.FAILS):
+                                continue
+
+                    bounces_and_occupied.add(order.destination_province)
+
+        for unit in self._board.units:
+            bounces_and_occupied.add(unit.province)
+
+        return bounces_and_occupied
+
+    def _adjudicate_convoys_for_order(self, order: AdjudicableOrder) -> Resolution:
         # Breadth-first search to determine if there is a convoy connection for order.
         # Only considers it a success if it passes through at least one fleet to get to the destination
         assert order.type == OrderType.MOVE
         visited: set[str] = set()
-        if exclude_province:
-            visited.add(exclude_province.name)
         to_visit = collections.deque()
         to_visit.append(order.source_province)
         while 0 < len(to_visit):
@@ -471,7 +558,7 @@ class MovesAdjudicator(Adjudicator):
             for move_here in moves_here:
                 if move_here.country == order.country:
                     continue
-                if not move_here.requires_convoy:
+                if not move_here.is_convoy:
                     if move_here.current_province != order.destination_province:
                         return Resolution.FAILS
                     else:
@@ -480,74 +567,86 @@ class MovesAdjudicator(Adjudicator):
                         if self._resolve_order(move_here) == Resolution.SUCCEEDS:
                             return Resolution.FAILS
                 else:
-                    if (
-                        self._adjudicate_convoys_for_order(move_here, exclude_province=order.destination_province)
-                        == Resolution.SUCCEEDS
-                    ):
+                    # decide to fail convoys that cut support to their attack
+                    if (self._adjudicate_convoys_for_order(move_here) == Resolution.SUCCEEDS and 
+                        move_here.current_province != order.destination_province):
                         return Resolution.FAILS
             return Resolution.SUCCEEDS
         elif order.type == OrderType.CONVOY:
             moves_here = self.moves_by_destination.get(order.current_province.name, set())
             for move_here in moves_here:
-                if self._resolve_order(move_here) == Resolution.SUCCEEDS:
+                # see https://webdiplomacy.net/doc/DATC_v3_0.html#5.D
+                if self._adjudicate_order(move_here) == Resolution.SUCCEEDS:
                     return Resolution.FAILS
             return Resolution.SUCCEEDS
+        # Algorithm from https://diplom.org/Zine/S2009M/Kruijswijk/DipMath_Chp2.htm
         elif order.type == OrderType.MOVE:
-            if order.requires_convoy:
-                if self._adjudicate_convoys_for_order(order) == Resolution.FAILS:
-                    return Resolution.FAILS
-            # X -> Z, Y -> Z scenario
-            orders_to_overcome = self.moves_by_destination[order.destination_province.name] - {order}
-            # X -> Y, Y -> Z scenario
-            opponent_strength = 0
+            return self._adjudicate_move_order(order)
 
-            if order.destination_province.name in self.orders_by_province:
-                attacked_order = self.orders_by_province[order.destination_province.name]
-                if attacked_order.type == OrderType.MOVE:
-                    if attacked_order.destination_province != order.current_province:
-                        if self._resolve_order(attacked_order) == Resolution.FAILS:
-                            if attacked_order.country == order.country:
-                                return Resolution.FAILS
-                            opponent_strength = 1
-                        else:
-                            # A -> B, B -> C, C -> B, if B succeeds then C can't effect A
-                            orders_to_overcome = {order for order in orders_to_overcome if order.source_province != attacked_order.destination_province}
-                    else:
-                        # the units don't bounce because at least one of them is convoyed
-                        if (
-                            attacked_order.convoys
-                            and self._adjudicate_convoys_for_order(attacked_order) == Resolution.SUCCEEDS
-                        ) or (order.convoys and self._adjudicate_convoys_for_order(order) == Resolution.SUCCEEDS):
-                            pass
-                        else:
-                            if attacked_order.country == order.country:
-                                return Resolution.FAILS
+    def _adjudicate_move_order(self, order: AdjudicableOrder) -> Resolution:
+        # check that convoy path work
+        if order.is_convoy:
+            if self._adjudicate_convoys_for_order(order) == Resolution.FAILS:
+                return Resolution.FAILS
+        
+        # X -> Z, Y -> Z scenario, prevent strength
+        orders_to_overcome = self.moves_by_destination[order.destination_province.name] - {order}
+        # X -> Y, Y -> Z scenario
+        attacked_order: AdjudicableOrder | None = None
 
-                            orders_to_overcome.add(attacked_order)
-                else:
-                    if attacked_order.country == order.country:
-                        return Resolution.FAILS
-                    # Unit hold strength
-                    orders_to_overcome.add(attacked_order)
+        head_on = False
+        if order.destination_province.name in self.orders_by_province:
+            attacked_order = self.orders_by_province[order.destination_province.name]
 
-            current_strength = 1
+            if (attacked_order.type == OrderType.MOVE and attacked_order.destination_province == order.current_province):
+                # only head on if not convoy
+                head_on = not attacked_order.is_convoy and not order.is_convoy
+
+        attack_strength = 1
+        attacked_move = (attacked_order == None or attacked_order.type == OrderType.MOVE and self._resolve_order(attacked_order) == Resolution.SUCCEEDS)
+
+        if head_on or not attacked_move:
+            attacked_country = attacked_order.country
+
+            if attacked_country == order.country:
+                return Resolution.FAILS
+            
+            for support in order.supports:
+                if self._resolve_order(support) == Resolution.SUCCEEDS and attacked_country != support.country:
+                    attack_strength += 1
+
+            opponent_strength = 1
+            # count supports if it wasn't a failed move
+            if head_on or (attacked_order.type != OrderType.MOVE and not attacked_order.failed_convoy):
+                for support in attacked_order.supports:
+                    if self._resolve_order(support) == Resolution.SUCCEEDS:
+                        opponent_strength += 1
+
+            if (attack_strength <= opponent_strength):
+                return Resolution.FAILS
+        else:
             for support in order.supports:
                 if self._resolve_order(support) == Resolution.SUCCEEDS:
-                    current_strength += 1
-            # count a failed move as a hold that cannot be supported
+                    attack_strength += 1
 
-            for opponent in orders_to_overcome:
-                this_strength = 1
-                for support in opponent.supports:
-                    if self._resolve_order(support) == Resolution.SUCCEEDS:
-                        this_strength += 1
-                if this_strength > opponent_strength:
-                    opponent_strength = this_strength
-
-            if current_strength > opponent_strength:
-                return Resolution.SUCCEEDS
-            else:
+            # If A -> B, and B beats C head on then C can't affect A
+            if attacked_order != None:
+                if not attacked_order.is_convoy:
+                    orders_to_overcome = {order for order in orders_to_overcome if 
+                    order.source_province != attacked_order.destination_province or order.is_convoy}
+            
+        for opponent in orders_to_overcome:
+            # don't need to overcome failed convoys
+            if (opponent.is_convoy and self._adjudicate_convoys_for_order(opponent) == Resolution.FAILS):
+                continue
+            prevent_strength = 1
+            for support in opponent.supports:
+                if self._resolve_order(support) == Resolution.SUCCEEDS:
+                    prevent_strength += 1
+            if attack_strength <= prevent_strength:
                 return Resolution.FAILS
+        
+        return Resolution.SUCCEEDS
 
     def _resolve_order(self, order: AdjudicableOrder) -> Resolution:
         # logger.debug(f"Adjudicating order {order}")
@@ -567,7 +666,7 @@ class MovesAdjudicator(Adjudicator):
         first_result = self._adjudicate_order(order)
 
         if old_dependency_count == len(self._dependencies):
-            # Adjudication has not introduced new dependencies
+            # Adjudication has not introduced new dependencies, see backup rule
             if order.state != ResolutionState.RESOLVED:
                 order.resolution = first_result
                 order.state = ResolutionState.RESOLVED
@@ -607,18 +706,17 @@ class MovesAdjudicator(Adjudicator):
         # Deal with paradoxes and circular dependencies
         orders = self._dependencies[old_dependency_count:]
         self._dependencies = self._dependencies[:old_dependency_count]
-        logger.warning(f"I think there's a move paradox involving these moves: {orders}")
-        # Szykman rule - If any of these orders move into a convoy, fail all convoy moves
+        logger.warning(f"I think there's a move paradox involving these moves: {[str(x) for x in orders]}")
+        # Szykman rule - If any of these orders is a convoy, fail the order
         apply_szykman = False
         for order in orders:
-            if order.type == OrderType.MOVE:
-                destination_order = self.orders_by_province.get(order.destination_province.name)
-                if destination_order is not None and destination_order.type == OrderType.CONVOY:
-                    apply_szykman = True
-                    break
+            if order.type == OrderType.CONVOY:
+                apply_szykman = True
+                break
+
         if apply_szykman:
             for order in orders:
-                if order.type == OrderType.CONVOY or (order.type == OrderType.MOVE and order.requires_convoy):
+                if order.type == OrderType.CONVOY:
                     order.resolution = Resolution.FAILS
                     order.state = ResolutionState.RESOLVED
                 else:
