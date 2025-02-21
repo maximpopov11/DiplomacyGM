@@ -2,7 +2,7 @@ import copy
 import itertools
 import re
 import sys
-from xml.etree.ElementTree import ElementTree, Element
+from xml.etree.ElementTree import ElementTree, Element, register_namespace
 from xml.etree.ElementTree import tostring as elementToString
 
 import numpy as np
@@ -41,6 +41,11 @@ from diplomacy.map_parser.vector.transform import get_transform, MatrixTransform
 
 class Mapper:
     def __init__(self, board: Board):
+        register_namespace('', "http://www.w3.org/2000/svg")
+        register_namespace('inkscape', "http://www.inkscape.org/namespaces/inkscape")
+        register_namespace('sodipodi', "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd")
+        register_namespace('xlink', "http://www.w3.org/1999/xlink")
+        
         self.board: Board = board
         self.board_svg: ElementTree = etree.parse(self.board.data["file"])
         self.player_restriction: Player | None = None
