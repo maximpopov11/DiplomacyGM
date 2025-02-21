@@ -3,6 +3,7 @@ import itertools
 import re
 import sys
 from xml.etree.ElementTree import ElementTree, Element
+from xml.etree.ElementTree import tostring as elementToString
 
 import numpy as np
 from lxml import etree
@@ -124,16 +125,11 @@ class Mapper:
                     self._draw_player_order(player, build_order)
 
         self.draw_side_panel(self._moves_svg)
-        svg_file_name = f"{self.board.phase.name}_moves_map.svg"
-        self._moves_svg.write(svg_file_name)
-        return svg_file_name
+        return elementToString(self._moves_svg.getroot(), encoding="utf-8")
 
     def draw_current_map(self) -> str:
         logger.info("mapper.draw_current_map")
-
-        svg_file_name = f"{self.board.phase.name}_map.svg"
-        self.state_svg.write(svg_file_name)
-        return svg_file_name
+        return elementToString(self.state_svg.getroot(), encoding="utf-8")
 
     def get_pretty_date(self) -> str:
         # TODO: Get the start date from somewhere in the board/in a config file

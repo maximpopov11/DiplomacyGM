@@ -4,6 +4,8 @@ import re
 import time
 from typing import Callable
 import inspect
+import zipfile
+import io
 
 import discord
 from discord import HTTPException
@@ -64,9 +66,9 @@ async def _handle_command(
     ctx.message.content = re.sub(r"[‘’`´′‛]", "'", ctx.message.content)
 
     if inspect.iscoroutinefunction(function):
-        response, file_name = await function(ctx, manager)
+        response, file = await function(ctx, manager)
     else:
-        response, file_name = function(ctx, manager)
+        response, file = function(ctx, manager)
     while 2000 < len(response):
         # Try to find an even line break to split the message on
         cutoff = response.rfind("\n", 0, 2000)
@@ -74,12 +76,20 @@ async def _handle_command(
             cutoff = 2000
         await ctx.channel.send(response[:cutoff].strip())
         response = response[cutoff:].strip()
-    if file_name is not None:
-        try:
-            await ctx.channel.send(response, file=discord.File(file_name))
-        except HTTPException:
-            os.system(f"zip '{file_name}.zip' '{file_name}'")
-            await ctx.channel.send(response, file=discord.File(f"{file_name}.zip"))
+    if file is not None:
+        # zip compression without using files (disk is slow)
+
+        # We create a virtual file, write to it, and then restart it
+        # for some reason zipfile doesn't support this natively
+        vfile = io.BytesIO()
+        
+        zip = zipfile.ZipFile(vfile, mode="x", compression=zipfile.ZIP_DEFLATED, compresslevel=9)
+        zip.writestr("response.svg", file, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
+        zip.close()
+
+        vfile.seek(0)
+
+        await ctx.channel.send(response, file=discord.File(fp=vfile, filename="response.svg.zip"))
     else:
         await ctx.channel.send(response)
 
