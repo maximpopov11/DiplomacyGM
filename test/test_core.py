@@ -1,19 +1,9 @@
 import unittest
 
-from diplomacy.persistence.order import (
-    Support,
-)
 from diplomacy.persistence.unit import UnitType
 from test.utils import BoardBuilder
 
 class TestCore(unittest.TestCase):
-    # test - coring turns empty into half_core, 
-    # half_core into core
-    # fails when attacked by enemy unit
-    # fails when attacked by unit
-    # fails when attacked by convoy
-    # doesn't fail when attacked by disrupted convoy
-
     def test_core_1(self):
         """ 
             Coring should fail for non-SCs.
