@@ -80,7 +80,7 @@ class Mapper:
 
         self.highlight_retreating_units(self.state_svg)
 
-    def draw_moves_map(self, current_phase: phase.Phase, player_restriction: Player | None) -> str:
+    def draw_moves_map(self, current_phase: phase.Phase, player_restriction: Player | None) -> tuple[str, str]:
         logger.info("mapper.draw_moves_map")
 
         self._reset_moves_map()
@@ -133,11 +133,14 @@ class Mapper:
                     self._draw_player_order(player, build_order)
 
         self.draw_side_panel(self._moves_svg)
-        return elementToString(self._moves_svg.getroot(), encoding="utf-8")
+        
+        svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_moves_map"
+        return elementToString(self._moves_svg.getroot(), encoding="utf-8"), svg_file_name
 
-    def draw_current_map(self) -> str:
+    def draw_current_map(self) -> tuple[str, str]:
         logger.info("mapper.draw_current_map")
-        return elementToString(self.state_svg.getroot(), encoding="utf-8")
+        svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_map"
+        return elementToString(self.state_svg.getroot(), encoding="utf-8"), svg_file_name
 
     def get_pretty_date(self) -> str:
         # TODO: Get the start date from somewhere in the board/in a config file

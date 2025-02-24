@@ -18,7 +18,7 @@ _dislodge_unit_str = "dislodge unit"
 _make_units_claim_provinces_str = "make units claim provinces"
 
 
-def parse_edit_state(message: str, board: Board) -> tuple[str, str | None]:
+def parse_edit_state(message: str, board: Board) -> dict[str]:
     invalid: list[tuple[str, Exception]] = []
     commands = str.splitlines(message)
     if commands[0].strip() == ".edit":
@@ -36,9 +36,9 @@ def parse_edit_state(message: str, board: Board) -> tuple[str, str | None]:
     else:
         response = "Commands validated successfully. Results map updated."
 
-    svg_file_name = Mapper(board).draw_current_map()
+    file, file_name = Mapper(board).draw_current_map()
 
-    return response, svg_file_name
+    return {"message": response, "file": file, "file_name": file_name}
 
 
 def _parse_command(command: str, board: Board) -> None:

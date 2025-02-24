@@ -45,16 +45,16 @@ class Manager:
         self._database.total_delete(self._boards[server_id])
         del self._boards[server_id]
 
-    def draw_moves_map(self, server_id: int, player_restriction: Player | None) -> str:
+    def draw_moves_map(self, server_id: int, player_restriction: Player | None) -> tuple[str, str]:
         start = time.time()
 
-        svg = Mapper(self._boards[server_id]).draw_moves_map(self._boards[server_id].phase, player_restriction)
+        svg, file_name = Mapper(self._boards[server_id]).draw_moves_map(self._boards[server_id].phase, player_restriction)
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
-        return svg
+        return svg, file_name
 
-    def adjudicate(self, server_id: int) -> str:
+    def adjudicate(self, server_id: int) -> tuple[str, str]:
         start = time.time()
 
         # mapper = Mapper(self._boards[server_id])
@@ -69,13 +69,13 @@ class Manager:
         self._boards[server_id] = new_board
         self._database.save_board(server_id, new_board)
         mapper = Mapper(new_board)
-        svg = mapper.draw_current_map()
+        svg, file_name = mapper.draw_current_map()
 
         elapsed = time.time() - start
         logger.info(f"manager.adjudicate.{server_id}.{elapsed}s")
-        return svg
+        return svg, file_name
 
-    def rollback(self, server_id: int) -> tuple[str, str]:
+    def rollback(self, server_id: int) -> dict[str]:
         logger.info(f"Rolling back in server {server_id}")
         board = self._boards[server_id]
         # TODO: what happens if we're on the first phase?
@@ -91,9 +91,12 @@ class Manager:
         self._database.delete_board(board)
         self._boards[server_id] = old_board
         mapper = Mapper(old_board)
-        return f"Rolled back to {old_board.get_phase_and_year_string()}", mapper.draw_current_map()
+        
+        message = f"Rolled back to {old_board.get_phase_and_year_string()}"
+        file, file_name = mapper.draw_current_map()
+        return {"message": message, "file": file, "file_name": file_name}
 
-    def reload(self, server_id: int) -> tuple[str, str]:
+    def reload(self, server_id: int) -> dict[str]:
         logger.info(f"Reloading server {server_id}")
         board = self._boards[server_id]
 
@@ -103,4 +106,7 @@ class Manager:
 
         self._boards[server_id] = loaded_board
         mapper = Mapper(loaded_board)
-        return f"Reloaded board for phase {loaded_board.get_phase_and_year_string()}", mapper.draw_current_map()
+        
+        message = f"Reloaded board for phase {loaded_board.get_phase_and_year_string()}"
+        file, file_name = mapper.draw_current_map()
+        return {"message": message, "file": file, "file_name": file_name}
