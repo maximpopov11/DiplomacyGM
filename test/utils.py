@@ -1,5 +1,6 @@
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.order import (
+    Core,
     Hold,
     Move,
     RetreatMove,
@@ -150,7 +151,7 @@ class BoardBuilder():
         self.rumania = self._land("Rumania")
         self.rumania_c = self._coast("m", self.rumania)
         self.budapest = self._land("Budapest")
-        self.holland = self._land("Holland")
+        self.holland = self._land("Holland", sc=True)
         self.holland_c = self._coast("m", self.holland)
         self.edinburgh = self._land("Edinburgh")
         self.edinburgh_c = self._coast("m", self.edinburgh)
@@ -405,6 +406,17 @@ class BoardBuilder():
             unit = self.army(place, player)
 
         order = Move(to)
+        unit.order = order
+
+        return unit
+
+    def core(self, player: Player, type: UnitType, place: Location) -> Unit:
+        if (type == UnitType.FLEET):
+            unit = self.fleet(place, player)
+        else:
+            unit = self.army(place, player)
+
+        order = Core()
         unit.order = order
 
         return unit

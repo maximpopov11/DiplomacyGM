@@ -553,10 +553,11 @@ class MovesAdjudicator(Adjudicator):
             # Resolution is arbitrary for holds; they don't do anything
             return Resolution.SUCCEEDS
         elif order.type == OrderType.CORE or order.type == OrderType.SUPPORT:
-            # Both these orders fail if attacked by another nation, even if that order isn't successful
+            # Both these orders fail if attacked by nation, even if that order isn't successful
             moves_here = self.moves_by_destination.get(order.current_province.name, set()) - {order}
             for move_here in moves_here:
-                if move_here.country == order.country:
+                # coring should fail even if the attack comes from the same nation
+                if move_here.country == order.country and order.type == OrderType.SUPPORT:
                     continue
                 if not move_here.is_convoy:
                     if move_here.current_province != order.destination_province:

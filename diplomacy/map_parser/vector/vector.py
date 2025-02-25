@@ -166,6 +166,7 @@ class Parser:
             return
         if "high provinces" in self.data["overrides"]:
             for name, data in self.data["overrides"]["high provinces"].items():
+                high_provinces: list[Province] = []
                 for index in range(1, data["num"] + 1):
                     province = Province(
                         name + str(index),
@@ -181,6 +182,14 @@ class Parser:
                         None,
                     )
                     provinces = self.add_province_to_board(provinces, province)
+                    high_provinces.append(province)
+
+                # Add connections between each high province
+                for provinceA in high_provinces:
+                    for provinceB in high_provinces:
+                        if provinceA.name != provinceB.name:
+                            provinceA.adjacent.add(provinceB)
+
             for name, data in self.data["overrides"]["high provinces"].items():
                 adjacent = tuple(self.names_to_provinces(data["adjacencies"]))
                 for index in range(1, data["num"] + 1):
