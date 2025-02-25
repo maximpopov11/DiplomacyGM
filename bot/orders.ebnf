@@ -10,7 +10,6 @@ build_phase: ".order" (WS build?)? (NL (build? WS? NL) *)?
 order: move_order
     | hold_order
     | support_order
-    | convoy_move_order
     | convoy_order
     | core_order
 
@@ -25,8 +24,6 @@ move_order: unit WS MOVE WS province
 hold_order: unit WS HOLD
 
 support_order: unit WS ((SUPPORT WS (move_order | hold_order)) | ((SUPPORT_HOLD | SUPPORT) WS unit))
-
-convoy_move_order: unit WS CONVOY_MOVE WS province
 
 convoy_order: unit WS CONVOY WS move_order
 
@@ -60,19 +57,6 @@ MOVE.2 : "-"
        | "moves"
        | "moves to"
        | "into"
-
-CONVOY_MOVE.2 : "c-"
-        | "c–"
-        | "cm"
-        | "convoy -"
-        | "convoy –"
-        | "convoy ->"
-        | "convoy –>"
-        | "convoy to"
-        | "convoy m"
-        | "convoy move"
-        | "convoy moves"
-        | "convoy into"
 
 SUPPORT.2 : "s"
         | "support"
@@ -108,7 +92,7 @@ unit : (DESCRIPTOR)? province
 
 retreat_unit : (DESCRIPTOR)? province
 
-DESCRIPTOR.2 : /[afAF]/ WS
+DESCRIPTOR.2 : /a|army|cannon|f|fleet|boat|ship/i WS
 
 province : PROVINCE (WS PROVINCE) *
 

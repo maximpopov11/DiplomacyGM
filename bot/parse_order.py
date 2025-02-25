@@ -9,48 +9,6 @@ from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, Location, Coast, ProvinceType
 from diplomacy.persistence.unit import Unit, UnitType
 
-# TODO: Looks like these are used, but only in builds phase. Let's be consistent and move everything to the ebnf
-# _hold = "hold"
-# _move = "move"
-# _convoy_move = "convoy move"
-# _support = "support"
-# _convoy = "convoy"
-# _core = "core"
-# _retreat_move = "retreat move"
-# _retreat_disband = "retreat disband"
-#_build = "build"
-#_disband = "disband"
-
-#_order_dict = {
-    # _hold: ["h", "hold", "holds", "stand", "stands"],
-    # _move: ["-", "–", "->", "–>", ">", "to", "m", "move", "moves", "into"],
-    # _convoy_move: [
-    #     "c-",
-    #     "c–",
-    #     "c->",
-    #     "c–>",
-    #     "c>",
-    #     "cm",
-    #     "convoy -",
-    #     "convoy –",
-    #     "convoy ->",
-    #     "convoy –>",
-    #     "convoy >",
-    #     "convoy to",
-    #     "convoy m",
-    #     "convoy move",
-    #     "convoy moves",
-    #     "convoy into",
-    # ],
-    # _support: ["s", "support", "supports"],
-    # _convoy: ["c", "convoy", "convoys"],
-    # _core: ["core", "cores"],
-    # _retreat_move: ["-", "–", "->", "–>", "to", "m", "move", "moves", "r", "retreat", "retreats"],
-    # _retreat_disband: ["d", "disband", "disbands", "boom", "explodes", "dies"],
-    #_build: ["b", "build", "place"],
-    #_disband: ["d", "disband", "disbands", "drop", "drops", "remove"],
-#}
-
 def normalize_location(unit_type: UnitType, location: Location):
     if unit_type == UnitType.FLEET:
         if isinstance(location, Province):
@@ -155,10 +113,6 @@ class TreeToOrder(Transformer):
 
         return s[0], order.Move(loc)
 
-    # convoy moves aren't real
-    def convoy_move_order(self, s):
-        return s[0], order.Move(s[-1])
-
     def convoy_order(self, s):
         return s[0], order.ConvoyTransport(s[-1][0], s[-1][1].destination)
 
@@ -215,26 +169,12 @@ retreats_parser = Lark(ebnf, start="retreat_phase", parser="earley")
 builds_parser   = Lark(ebnf, start="build_phase", parser="earley")
 
 def parse_order(message: str, player_restriction: Player | None, board: Board) -> str:
-    # invalid: list[tuple[str, Exception]] = []
     if phase.is_builds(board.phase):
-        # for command in str.splitlines(message):
-        #     try:
-        #         if command.strip() != ".order":
-        #             _parse_player_order(get_keywords(command.lower()), player_restriction, board)
-        #     except Exception as error:
-        #         invalid.append((command, error))
         generator.set_state(board, player_restriction)
         cmd = builds_parser.parse(message.lower() + "\n")
         generator.transform(cmd)
         database = get_connection()
         database.save_build_orders_for_players(board, player_restriction)
-
-        # if invalid:
-        #     response = "The following orders were invalid:"
-        #     for command in invalid:
-        #         response += f"\n{command[0]} with error: {command[1]}"
-        # else:
-        #     response = 
 
         return "Orders validated successfully."
     elif phase.is_moves(board.phase) or phase.is_retreats(board.phase):
@@ -330,47 +270,6 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
                 unit.order = None
             return unit
         raise Exception(f"You control neither the unit nor dislodged unit in province {province.name}")
-
-
-def _parse_player_order(keywords: list[str], player_restriction: Player | None, board: Board) -> Player:
-    if keywords[0] == ".order":
-        keywords = keywords[1:]
-    command = keywords[0]
-    try:
-        location = board.get_location(keywords[1])
-    except KeyError as original_error:
-        keywords[1], keywords[2] = keywords[2], keywords[1]
-        try:
-            location = board.get_location(keywords[1])
-        except KeyError:
-            raise original_error
-
-    if player_restriction is not None and location.get_owner() != player_restriction:
-        raise PermissionError(f"{player_restriction} does not control {location.name}")
-
-    player = player_restriction
-    if player is None:
-        player = location.get_owner()
-    if player is None:
-        raise ValueError(f"{location.name} is not owned by anyone")
-
-    #if command in _order_dict[_build]:
-    #    unit_type = get_unit_type(keywords[2])
-    #    if unit_type == UnitType.FLEET:
-    #        if isinstance(location, Province):
-    #            location = location.coast()
-    #    player_order = order.Build(location, unit_type)
-    #    remove_player_order_for_location(board, player, location)
-    #    player.build_orders.add(player_order)
-    #    return player
-
-    #if command in _order_dict[_disband]:
-    #    player_order = order.Disband(location)
-    #    remove_player_order_for_location(board, player, location)
-    #    player.build_orders.add(player_order)
-    #    return player
-
-    raise RuntimeError("Build could not be parsed")
 
 
 def remove_player_order_for_location(board: Board, player: Player, location: Location) -> bool:
