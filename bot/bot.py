@@ -82,14 +82,15 @@ async def _handle_command(
         # We create a virtual file, write to it, and then restart it
         # for some reason zipfile doesn't support this natively
         vfile = io.BytesIO()
-        
+
         zip = zipfile.ZipFile(vfile, mode="x", compression=zipfile.ZIP_DEFLATED, compresslevel=9)
         zip.writestr("response.svg", file, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
         zip.close()
 
         vfile.seek(0)
 
-        await ctx.channel.send(response, file=discord.File(fp=vfile, filename="response.svg.zip"))
+        with discord.File(fp=vfile, filename="response.svg.zip") as discord_file:
+            await ctx.channel.send(response, file=discord_file)
     else:
         await ctx.channel.send(response)
 
@@ -268,11 +269,11 @@ async def create_game(ctx: discord.ext.commands.Context) -> None:
 async def archive(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.archive, ctx)
 
-@bot.command(
-        brief="permanently deletes a game, cannot be undone"
-)
+
+@bot.command(brief="permanently deletes a game, cannot be undone")
 async def delete_game(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.delete_game, ctx)
+
 
 def run():
     token = os.getenv("DISCORD_TOKEN")
