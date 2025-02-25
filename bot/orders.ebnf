@@ -37,7 +37,7 @@ disband_unit: ( unit WS DISBAND ) | ( DISBAND WS unit )
 
 build_unit: ( BUILD WS DESCRIPTOR province ) | ( BUILD WS province DESCRIPTOR )
 
-SUPPORT_HOLD.3 : /(support|supports|s)[ \-_]?(hold|holds|h|stand|stands)/
+SUPPORT_HOLD.3 : /(support|supports|s)[ \-_]?(hold|holds|h|stand|stands)/i
 
 HOLD.2 : "h"
        | "hold"
