@@ -4,7 +4,7 @@ from abc import abstractmethod
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from shapely import Polygon
+from shapely import Polygon, MultiPolygon
 
 if TYPE_CHECKING:
     from diplomacy.persistence import player
@@ -50,7 +50,7 @@ class Province(Location):
     def __init__(
         self,
         name: str,
-        coordinates: Polygon,
+        coordinates: Polygon | MultiPolygon,
         primary_unit_coordinate: tuple[float, float],
         retreat_unit_coordinate: tuple[float, float],
         province_type: ProvinceType,
@@ -90,6 +90,11 @@ class Province(Location):
 
     def set_coasts(self):
         """This should only be called once all province adjacencies have been set."""
+
+        # Externally set, i. e. by json_cheats()
+        if self.coasts:
+            return
+
         if self.type == ProvinceType.SEA:
             # seas don't have coasts
             return set()
@@ -156,6 +161,11 @@ class Coast(Location):
     def get_adjacent_coasts(self) -> set[Coast]:
         # TODO: (BETA) this will generate false positives (e.g. mini province keeping 2 big province coasts apart)
         adjacent_coasts: set[Coast] = set()
+        if self.province.type == ProvinceType.ISLAND:
+            for province2 in self.province.adjacent:
+                adjacent_coasts.update(province2.coasts)
+            return adjacent_coasts
+      
         for province2 in self.province.adjacent:
             for coast2 in province2.coasts:
                 if self.adjacent_seas & coast2.adjacent_seas:

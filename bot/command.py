@@ -1,24 +1,21 @@
-import itertools
 import logging
 import random
 from random import randrange
 
 from black.trans import defaultdict
 from discord import Guild
-from discord.ext import commands
 from discord import PermissionOverwrite
+from discord.ext import commands
 
 import bot.perms as perms
 from bot.config import is_bumble, temporary_bumbles
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
-from bot.utils import is_gm_channel, get_orders, is_admin
+from bot.utils import get_orders, is_admin
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
-
-import asyncio
-
+from diplomacy.persistence.province import Province
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +41,9 @@ def ping(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
 
 
 def bumble(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
-    word_of_bumble = random.choice(["".join(perm) for perm in itertools.permutations("bumble")])
+    list_of_bumble = list("bumble")
+    random.shuffle(list_of_bumble)
+    word_of_bumble = "".join(list_of_bumble)
 
     if is_bumble(ctx.author.name) and random.randrange(0, 10) == 0:
         word_of_bumble = "bumble"
@@ -177,6 +176,7 @@ def advice(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
                 "CaptainMeme advises balance of power play at this instance.",
                 "Ash Lael deems you a sufficiently apt liar, go use those skills!",
                 "Kwiksand suggests winning.",
+                "Ambrosius advises taking the opportunity you've been considering, for more will ensue.",
                 "The GMs suggest you input your orders so they don't need to hound you for them at the deadline.",
             ]
         )
@@ -240,18 +240,17 @@ def view_orders(player: Player | None, ctx: commands.Context, manager: Manager) 
     except RuntimeError as err:
         logger.error(f"View_orders text failed in game with id: {ctx.guild.id}", exc_info=err)
         order_text = "view_orders text failed"
-    if player is None:
-        try:
-            file_name = manager.draw_moves_map(ctx.guild.id, None)
-        except Exception as err:
-            logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
-            file_name = None
-        return order_text, file_name
+    return order_text, None
 
-    else:
-        # file_name = manager.draw_moves_map(ctx.guild.id, player)
-        return order_text, None
-
+@perms.gm("view map")
+def view_map(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+    # file_name = manager.draw_moves_map(ctx.guild.id, player)
+    try:
+        file_name = manager.draw_moves_map(ctx.guild.id, None)
+    except Exception as err:
+        logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
+        file_name = None
+    return "Map created successfully", file_name
 
 @perms.gm("adjudicate")
 def adjudicate(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
@@ -296,7 +295,12 @@ def edit(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
 
 @perms.gm("create a game")
 def create_game(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
-    return manager.create_game(ctx.guild.id), None
+    gametype = ctx.message.content.removeprefix(".create_game")
+    if gametype == "":
+        gametype = "impdip.json"
+    else:
+        gametype = gametype.removeprefix(" ") + ".json"
+    return manager.create_game(ctx.guild.id, gametype), None
 
 
 @perms.gm("unlock orders")
@@ -312,6 +316,10 @@ def disable_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | 
     board.orders_enabled = False
     return "Successful", None
 
+@perms.gm("delete the game")
+def delete_game(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+    manager.total_delete(ctx.guild.id)
+    return "Game deleted", None
 
 def info(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
     board = manager.get_board(ctx.guild.id)
@@ -324,19 +332,25 @@ def province_info(ctx: commands.Context, manager: Manager) -> tuple[str, str | N
     province_name = ctx.message.content.removeprefix(".province_info ").strip()
     if not province_name:
         raise ValueError("Usage: .province_info <province>")
-    province = board.get_province(province_name)
+    province = board.get_location(province_name)
     if province is None:
         raise ValueError(f"Could not find province {province_name}")
     # fmt: off
-    out = f"Province: {province.name}\n" + \
-        f"Type: {province.type.name}\n" + \
-        f"Coasts: {len(province.coasts)}\n" + \
-        f"Owner: {province.owner.name if province.owner else 'None'}\n" + \
-        f"Unit: {(province.unit.player.name + ' ' + province.unit.unit_type.name) if province.unit else 'None'}\n" + \
-        f"Center: {province.has_supply_center}\n" + \
-        f"Core: {province.core.name if province.core else 'None'}\n" + \
-        f"Half-Core: {province.half_core.name if province.half_core else 'None'}\n" + \
-        f"Adjacent Provinces:\n- " + "\n- ".join(sorted([adjacent.name for adjacent in province.adjacent])) + "\n"
+    if isinstance(province, Province):
+        out = f"Province: {province.name}\n" + \
+            f"Type: {province.type.name}\n" + \
+            f"Coasts: {len(province.coasts)}\n" + \
+            f"Owner: {province.owner.name if province.owner else 'None'}\n" + \
+            f"Unit: {(province.unit.player.name + ' ' + province.unit.unit_type.name) if province.unit else 'None'}\n" + \
+            f"Center: {province.has_supply_center}\n" + \
+            f"Core: {province.core.name if province.core else 'None'}\n" + \
+            f"Half-Core: {province.half_core.name if province.half_core else 'None'}\n" + \
+            f"Adjacent Provinces:\n- " + "\n- ".join(sorted([adjacent.name for adjacent in province.adjacent])) + "\n"
+    else:
+        out = f"""Province: {province.name}
+Type: COAST
+Adjacent Provinces:
+- """ + "\n- ".join(sorted([adjacent.name for adjacent in province.adjacent_seas])) + "\n"
     # fmt: on
     return out, None
 

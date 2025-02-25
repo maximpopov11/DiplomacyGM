@@ -2,13 +2,15 @@ import copy
 import itertools
 import re
 import sys
-from xml.etree.ElementTree import ElementTree, Element
+from xml.etree.ElementTree import ElementTree, Element, register_namespace
+from xml.etree.ElementTree import tostring as elementToString
 
 import numpy as np
 from lxml import etree
+import math
 
-from diplomacy.adjudicator import utils
-from diplomacy.map_parser.vector import config_svg as svgcfg
+# from diplomacy.adjudicator import utils
+# from diplomacy.map_parser.vector import config_svg as svgcfg
 
 from diplomacy.map_parser.vector.utils import get_element_color, get_svg_element, get_unit_coordinates
 from diplomacy.persistence import phase
@@ -31,37 +33,61 @@ from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import ProvinceType, Province, Coast, Location
 from diplomacy.persistence.unit import Unit, UnitType
 
-OUTPUTLAYER = "layer16"
-UNITLAYER = "layer17"
+from diplomacy.map_parser.vector.transform import get_transform, MatrixTransform, Translation
+
+# OUTPUTLAYER = "layer16"
+# UNITLAYER = "layer17"
 
 
 class Mapper:
     def __init__(self, board: Board):
+        register_namespace('', "http://www.w3.org/2000/svg")
+        register_namespace('inkscape', "http://www.inkscape.org/namespaces/inkscape")
+        register_namespace('sodipodi', "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd")
+        register_namespace('xlink', "http://www.w3.org/1999/xlink")
+        
         self.board: Board = board
-        self.board_svg: ElementTree = etree.parse(svgcfg.SVG_PATH)
+        self.board_svg: ElementTree = etree.parse(self.board.data["file"])
         self.player_restriction: Player | None = None
         self._initialize_scoreboard_locations()
 
-        utils.add_arrow_definition_to_svg(self.board_svg)
+        self.add_arrow_definition_to_svg(self.board_svg)
 
-        units_layer: Element = get_svg_element(self.board_svg, svgcfg.UNITS_LAYER_ID)
+        units_layer: Element = get_svg_element(self.board_svg, self.board.data["svg config"]["starting_units"])
         self.board_svg.getroot().remove(units_layer)
+
+        self.cached_elements = {}
+        for element_name in ["army", "fleet", "retreat_army", "retreat_fleet", "unit_output"]:
+            self.cached_elements[element_name] = get_svg_element(
+                self.board_svg, self.board.data["svg config"][element_name]
+            )
 
         # TODO: Switch to passing the SVG directly, as that's simpiler (self.svg = draw_units(svg)?)
         self._draw_units()
         self._color_provinces()
         self._color_centers()
         self.draw_side_panel(self.board_svg)
+        
+        for element_name in ["army", "fleet", "retreat_army", "retreat_fleet"]:
+            self.board_svg.getroot().remove(self.cached_elements[element_name])
 
         self._moves_svg = copy.deepcopy(self.board_svg)
+        self.cached_elements["unit_output_moves"] = get_svg_element(
+            self._moves_svg, self.board.data["svg config"]["unit_output"]
+        )
 
         self.state_svg = copy.deepcopy(self.board_svg)
 
         self.highlight_retreating_units(self.state_svg)
 
     def draw_moves_map(self, current_phase: phase.Phase, player_restriction: Player | None) -> str:
+        logger.info("mapper.draw_moves_map")
+
         self._reset_moves_map()
         self.player_restriction = player_restriction
+        
+        t = self._moves_svg.getroot()
+        arrow_layer = get_svg_element(t, self.board.data["svg config"]["arrow_output"])
         if not phase.is_builds(current_phase):
             for unit in self.board.units:
                 if player_restriction and unit.player != player_restriction:
@@ -78,7 +104,7 @@ class Mapper:
                 if isinstance(unit.order, (RetreatMove, Move, Support)):
                     new_locs = []
                     for endpoint in unit.order.destination.all_locs:
-                        new_locs += [utils.normalize(utils.get_closest_loc(unit_locs, endpoint))]
+                        new_locs += [self.normalize(self.get_closest_loc(unit_locs, endpoint))]
                     unit_locs = new_locs
                 try:
                     for loc in unit_locs:
@@ -88,15 +114,12 @@ class Mapper:
                             # copy it 3 times (-1, 0, +1)
                             lval = copy.deepcopy(val)
                             rval = copy.deepcopy(val)
-                            lval.attrib["transform"] = f"translate({-svgcfg.MAP_WIDTH}, 0)"
-                            rval.attrib["transform"] = f"translate({svgcfg.MAP_WIDTH}, 0)"
-                            t = self._moves_svg.getroot()
+                            lval.attrib["transform"] = f"translate({-self.board.data['svg config']['map_width']}, 0)"
+                            rval.attrib["transform"] = f"translate({self.board.data['svg config']['map_width']}, 0)"
 
-                            l = get_svg_element(t, OUTPUTLAYER)
-
-                            l.append(lval)
-                            l.append(rval)
-                            l.append(val)
+                            arrow_layer.append(lval)
+                            arrow_layer.append(rval)
+                            arrow_layer.append(val)
                 except Exception as err:
                     logger.error(f"Drawing move failed for {unit}", exc_info=err)
         else:
@@ -110,14 +133,11 @@ class Mapper:
                     self._draw_player_order(player, build_order)
 
         self.draw_side_panel(self._moves_svg)
-        svg_file_name = f"{self.board.phase.name}_moves_map.svg"
-        self._moves_svg.write(svg_file_name)
-        return svg_file_name
+        return elementToString(self._moves_svg.getroot(), encoding="utf-8")
 
     def draw_current_map(self) -> str:
-        svg_file_name = f"{self.board.phase.name}_map.svg"
-        self.state_svg.write(svg_file_name)
-        return svg_file_name
+        logger.info("mapper.draw_current_map")
+        return elementToString(self.state_svg.getroot(), encoding="utf-8")
 
     def get_pretty_date(self) -> str:
         # TODO: Get the start date from somewhere in the board/in a config file
@@ -135,7 +155,7 @@ class Mapper:
         2-4: "current", "victory", "start" text labels in that order
         5-7: SC counts in that same order
         """
-        all_power_banners_element = get_svg_element(svg.getroot(), svgcfg.POWER_BANNERS_LAYER_ID)
+        all_power_banners_element = get_svg_element(svg.getroot(), self.board.data["svg config"]["power_banners"])
         for i, player in enumerate(self.board.get_players_by_score()):
             for power_element in all_power_banners_element:
                 # match the correct svg element based on the color of the rectangle
@@ -145,7 +165,7 @@ class Mapper:
                     break
 
     def _draw_side_panel_date(self, svg: ElementTree) -> None:
-        date = get_svg_element(svg.getroot(), svgcfg.SEASON_TITLE_LAYER_ID)
+        date = get_svg_element(svg.getroot(), self.board.data["svg config"]["season"])
         # TODO: this is hacky; I don't know a better way
         date[0][0].text = self.get_pretty_date()
 
@@ -193,47 +213,47 @@ class Mapper:
 
     def _draw_hold(self, coordinate: tuple[float, float]) -> None:
         element = self._moves_svg.getroot()
-        drawn_order = utils.create_element(
+        drawn_order = self.create_element(
             "circle",
             {
                 "cx": coordinate[0],
                 "cy": coordinate[1],
-                "r": svgcfg.RADIUS,
+                "r": self.board.data["svg config"]["unit_radius"],
                 "fill": "none",
                 "stroke": "black",
-                "stroke-width": svgcfg.STROKE_WIDTH,
+                "stroke-width": self.board.data["svg config"]["order_stroke_width"],
             },
         )
         element.append(drawn_order)
 
     def _draw_core(self, coordinate: tuple[float, float]) -> None:
         element = self._moves_svg.getroot()
-        drawn_order = utils.create_element(
+        drawn_order = self.create_element(
             "rect",
             {
-                "x": coordinate[0] - svgcfg.RADIUS,
-                "y": coordinate[1] - svgcfg.RADIUS,
-                "width": svgcfg.RADIUS * 2,
-                "height": svgcfg.RADIUS * 2,
+                "x": coordinate[0] - self.board.data["svg config"]["unit_radius"],
+                "y": coordinate[1] - self.board.data["svg config"]["unit_radius"],
+                "width": self.board.data["svg config"]["unit_radius"] * 2,
+                "height": self.board.data["svg config"]["unit_radius"] * 2,
                 "fill": "none",
                 "stroke": "black",
-                "stroke-width": svgcfg.STROKE_WIDTH,
+                "stroke-width": self.board.data["svg config"]["order_stroke_width"],
                 "transform": f"rotate(45 {coordinate[0]} {coordinate[1]})",
             },
         )
         element.append(drawn_order)
 
     def _draw_retreat_move(self, order: RetreatMove, coordinate: tuple[float, float], use_moves_svg=True) -> None:
-        destination = utils.loc_to_point(order.destination, coordinate)
+        destination = self.loc_to_point(order.destination, coordinate)
         if order.destination.get_unit():
-            destination = utils.pull_coordinate(coordinate, destination)
-        order_path = utils.create_element(
+            destination = self.pull_coordinate(coordinate, destination)
+        order_path = self.create_element(
             "path",
             {
                 "d": f"M {coordinate[0]},{coordinate[1]} L {destination[0]},{destination[1]}",
                 "fill": "none",
                 "stroke": "red",
-                "stroke-width": svgcfg.STROKE_WIDTH,
+                "stroke-width": self.board.data["svg config"]["order_stroke_width"],
                 "stroke-linecap": "round",
                 "marker-end": "url(#redarrow)",
             },
@@ -268,13 +288,13 @@ class Mapper:
         return list(map((lambda t: (current.get_unit().location(),) + t), options))
 
     def _draw_path(self, d: str, marker_end="arrow", stroke_color="black"):
-        order_path = utils.create_element(
+        order_path = self.create_element(
             "path",
             {
                 "d": d,
                 "fill": "none",
                 "stroke": stroke_color,
-                "stroke-width": svgcfg.STROKE_WIDTH,
+                "stroke-width": self.board.data["svg config"]["order_stroke_width"],
                 "stroke-linecap": "round",
                 "marker-end": f"url(#{marker_end})",
             },
@@ -308,11 +328,11 @@ class Mapper:
             p = [coordinate]
             start = coordinate
             for loc in path[1:]:
-                p += [utils.loc_to_point(loc, start)]
+                p += [self.loc_to_point(loc, start)]
                 start = p[-1]
 
             if path[-1].get_unit():
-                p[-1] = utils.pull_coordinate(p[-2], p[-1])
+                p[-1] = self.pull_coordinate(p[-2], p[-1])
 
             p = np.array(p)
 
@@ -343,16 +363,16 @@ class Mapper:
         order: Support = unit.order
         x1 = coordinate[0]
         y1 = coordinate[1]
-        v2 = utils.loc_to_point(order.source.location(), coordinate)
+        v2 = self.loc_to_point(order.source.location(), coordinate)
         x2, y2 = v2
-        v3 = utils.loc_to_point(order.destination, v2)
+        v3 = self.loc_to_point(order.destination, v2)
         x3, y3 = v3
         marker_start = ""
         if order.destination.get_unit():
             if order.source.location() == order.destination:
-                (x3, y3) = utils.pull_coordinate((x1, y1), (x3, y3), svgcfg.RADIUS)
+                (x3, y3) = self.pull_coordinate((x1, y1), (x3, y3), self.board.data["svg config"]["unit_radius"])
             else:
-                (x3, y3) = utils.pull_coordinate((x2, y2), (x3, y3))
+                (x3, y3) = self.pull_coordinate((x2, y2), (x3, y3))
             if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)):
                 for coord in order.destination.all_locs:
                     self._draw_hold(coord)
@@ -369,17 +389,21 @@ class Mapper:
                 if id(order.destination.get_unit()) > id(unit):
                     marker_start = "url(#ball)"
                     # doesn't matter that v3 has been pulled, as it's still collinear
-                    (x1, y1) = (x2, y2) = utils.pull_coordinate((x3, y3), (x1, y1), svgcfg.RADIUS)
+                    (x1, y1) = (x2, y2) = self.pull_coordinate(
+                        (x3, y3), (x1, y1), self.board.data["svg config"]["unit_radius"]
+                    )
                 else:
                     return
-        drawn_order = utils.create_element(
+
+        dasharray_size = 2.5 * self.board.data["svg config"]["order_stroke_width"]
+        drawn_order = self.create_element(
             "path",
             {
                 "d": f"M {x1},{y1} Q {x2},{y2} {x3},{y3}",
                 "fill": "none",
                 "stroke": "black",
-                "stroke-dasharray": "5 5",
-                "stroke-width": svgcfg.STROKE_WIDTH,
+                "stroke-dasharray": f"{dasharray_size} {dasharray_size}",
+                "stroke-width": self.board.data["svg config"]["order_stroke_width"],
                 "stroke-linecap": "round",
                 "marker-start": marker_start,
                 "marker-end": f"url(#{'ball' if order.source.location() == order.destination else 'arrow'})",
@@ -389,22 +413,22 @@ class Mapper:
 
     def _draw_convoy(self, order: ConvoyTransport, coordinate: tuple[float, float]) -> None:
         element = self._moves_svg.getroot()
-        drawn_order = utils.create_element(
+        drawn_order = self.create_element(
             "circle",
             {
                 "cx": coordinate[0],
                 "cy": coordinate[1],
-                "r": svgcfg.RADIUS / 2,
+                "r": self.board.data["svg config"]["unit_radius"] / 2,
                 "fill": "none",
                 "stroke": "black",
-                "stroke-width": svgcfg.STROKE_WIDTH * 2 / 3,
+                "stroke-width": self.board.data["svg config"]["order_stroke_width"] * 2 / 3,
             },
         )
         element.append(drawn_order)
 
     def _draw_build(self, player, order: Build) -> None:
         element = self._moves_svg.getroot()
-        drawn_order = utils.create_element(
+        drawn_order = self.create_element(
             "circle",
             {
                 "cx": order.location.primary_unit_coordinate[0],
@@ -412,7 +436,7 @@ class Mapper:
                 "r": 10,
                 "fill": "none",
                 "stroke": "green",
-                "stroke-width": svgcfg.STROKE_WIDTH,
+                "stroke-width": self.board.data["svg config"]["order_stroke_width"],
             },
         )
 
@@ -426,23 +450,23 @@ class Mapper:
 
     def _draw_disband(self, coordinate: tuple[float, float], svg) -> None:
         element = svg.getroot()
-        drawn_order = utils.create_element(
+        drawn_order = self.create_element(
             "circle",
             {
                 "cx": coordinate[0],
                 "cy": coordinate[1],
-                "r": svgcfg.RADIUS,
+                "r": self.board.data["svg config"]["unit_radius"],
                 "fill": "none",
                 "stroke": "red",
-                "stroke-width": svgcfg.STROKE_WIDTH,
+                "stroke-width": self.board.data["svg config"]["order_stroke_width"],
             },
         )
         element.append(drawn_order)
 
     def _draw_force_disband(self, coordinate: tuple[float, float], svg) -> None:
         element = svg.getroot()
-        cross_width = svgcfg.STROKE_WIDTH / (2**0.5)
-        square_rad = svgcfg.RADIUS / (2**0.5)
+        cross_width = self.board.data["svg config"]["order_stroke_width"] / (2**0.5)
+        square_rad = self.board.data["svg config"]["unit_radius"] / (2**0.5)
         # two corner and a center point. Rotate and concat them to make the correct object
         init = np.array(
             [
@@ -453,7 +477,7 @@ class Mapper:
         )
         rotate_90 = np.array([[0, -1], [1, 0]])
         points = np.concatenate((init, init @ rotate_90, -init, -init @ rotate_90)) + coordinate
-        drawn_order = utils.create_element(
+        drawn_order = self.create_element(
             "polygon",
             {
                 "points": " ".join(map(lambda a: ",".join(map(str, a)), points)),
@@ -464,9 +488,9 @@ class Mapper:
         element.append(drawn_order)
 
     def _color_provinces(self) -> None:
-        province_layer = get_svg_element(self.board_svg, svgcfg.LAND_PROVINCE_LAYER_ID)
-        island_fill_layer = get_svg_element(self.board_svg, svgcfg.ISLAND_FILL_LAYER_ID)
-        island_ring_layer = get_svg_element(self.board_svg, svgcfg.ISLAND_RING_LAYER_ID)
+        province_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["land_layer"])
+        island_fill_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["island_fill_layer"])
+        island_ring_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["island_ring_layer"])
 
         visited_provinces: set[str] = set()
 
@@ -478,10 +502,10 @@ class Mapper:
                 continue
 
             visited_provinces.add(province.name)
-            color = svgcfg.NEUTRAL_PROVINCE_COLOR
+            color = self.board.data["svg config"]["neutral"]
             if province.owner:
                 color = province.owner.color
-            utils.color_element(province_element, color)
+            self.color_element(province_element, color)
 
         # Try to combine this with the code above? A lot of repeated stuff here
         for island_ring in island_ring_layer:
@@ -491,10 +515,10 @@ class Mapper:
                 print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
                 continue
 
-            color = svgcfg.NEUTRAL_PROVINCE_COLOR
+            color = self.board.data["svg config"]["neutral"]
             if province.owner:
                 color = province.owner.color
-            utils.color_element(island_ring, color, key="stroke")
+            self.color_element(island_ring, color, key="stroke")
 
         for province in self.board.provinces:
             if province.type == ProvinceType.SEA:
@@ -504,7 +528,7 @@ class Mapper:
             print(f"Warning: Province {province.name} was not recolored by mapper!")
 
     def _color_centers(self) -> None:
-        centers_layer = get_svg_element(self.board_svg, svgcfg.SUPPLY_CENTER_LAYER_ID)
+        centers_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["supply_center_icons"])
 
         for center_element in centers_layer:
             try:
@@ -537,25 +561,27 @@ class Mapper:
             #     pass
             # for path in center_element.getchildren():
             #     print(f"\t{path}")
-            #     utils.color_element(path, color)
+            #     self.color_element(path, color)
             for elem in center_element.getchildren():
-                if "{http://www.inkscape.org/namespaces/inkscape}label" in elem.attrib and elem.attrib["{http://www.inkscape.org/namespaces/inkscape}label"] in ["Halfcore Marker", "Core Marker"]:
+                if elem.attrib["id"].startswith("Capital_Marker"):
+                    pass
+                elif "{http://www.inkscape.org/namespaces/inkscape}label" in elem.attrib and elem.attrib[
+                    "{http://www.inkscape.org/namespaces/inkscape}label"
+                ] in ["Halfcore Marker", "Core Marker"]:
                     # Handling capitals is easy bc it's all marked
                     # TODO: Maybe make it split vertically?
                     # that might be hard to do
                     if elem.attrib["{http://www.inkscape.org/namespaces/inkscape}label"] == "Halfcore Marker":
-                        utils.color_element(elem, half_color)
+                        self.color_element(elem, half_color)
                     elif elem.attrib["{http://www.inkscape.org/namespaces/inkscape}label"] == "Core Marker":
-                        utils.color_element(elem, core_color)
+                        self.color_element(elem, core_color)
                 else:
                     if half_color != core_color:
                         corename = "None" if not province.core else province.core.name
                         halfname = "None" if not province.half_core else province.half_core.name
-                        utils.color_element(elem, f"url(#{halfname}_{corename})")
+                        self.color_element(elem, f"url(#{halfname}_{corename})")
                     else:
-                        utils.color_element(elem, core_color)
-
-
+                        self.color_element(elem, core_color)
 
     def _get_province_from_element_by_label(self, element: Element) -> Province:
         province_name = element.get("{http://www.inkscape.org/namespaces/inkscape}label")
@@ -574,9 +600,10 @@ class Mapper:
         unit_element = self._get_element_for_unit_type(unit.unit_type)
 
         for path in unit_element.getchildren():
-            utils.color_element(path, unit.player.color)
+            self.color_element(path, unit.player.color)
 
         current_coords = get_unit_coordinates(unit_element)
+        current_coords = get_transform(unit_element).transform(current_coords)
 
         if unit == unit.province.dislodged_unit:
             coord_list = unit.location().all_rets
@@ -584,15 +611,26 @@ class Mapper:
             coord_list = unit.location().all_locs
         for desired_coords in coord_list:
             elem = copy.deepcopy(unit_element)
-            elem.set(
-                "transform",
-                f"translate({desired_coords[0] - current_coords[0]},{desired_coords[1] - current_coords[1]})",
-            )
+
+            dx = desired_coords[0] - current_coords[0]
+            dy = desired_coords[1] - current_coords[1]
+
+            trans = get_transform(elem)
+            if isinstance(trans, MatrixTransform):
+                trans.x_c += dx
+                trans.y_c += dy
+            elif isinstance(trans, Translation):
+                trans.x_c += dx
+                trans.y_c += dy
+            else:
+                trans = Translation(None, (dx, dy))
+
+            elem.set("transform", str(trans))
+
             elem.set("id", unit.province.name)
             elem.set("{http://www.inkscape.org/namespaces/inkscape}label", unit.province.name)
 
-            tree = self.board_svg if not use_moves_svg else self._moves_svg
-            group = get_svg_element(tree, UNITLAYER)
+            group = self.cached_elements["unit_output"] if not use_moves_svg else self._moves_svg.getroot()
             group.append(elem)
 
     def highlight_retreating_units(self, svg):
@@ -603,24 +641,30 @@ class Mapper:
     def _get_element_for_unit_type(self, unit_type) -> Element:
         # Just copy a random phantom unit
         if unit_type == UnitType.ARMY:
-            layer: Element = get_svg_element(self.board_svg, svgcfg.PHANTOM_PRIMARY_ARMY_LAYER_ID)
+            layer: Element = self.cached_elements["army"]
         else:
-            layer: Element = get_svg_element(self.board_svg, svgcfg.PHANTOM_PRIMARY_FLEET_LAYER_ID)
+            layer: Element = self.cached_elements["fleet"]
         return copy.deepcopy(layer.getchildren()[0])
 
     def _draw_retreat_options(self, unit: Unit, svg):
         root = svg.getroot()
         if not unit.retreat_options:
-           self._draw_force_disband(unit.province.retreat_unit_coordinate, svg)
+            self._draw_force_disband(unit.province.retreat_unit_coordinate, svg)
         # if we're drawing possible retreat locs, why show it as dislodged at all?
         # else:
         #     self._draw_disband(unit.location().retreat_unit_coordinate, svg)
 
         for retreat_province in unit.retreat_options:
-            root.append(self._draw_retreat_move(RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False))
+            root.append(
+                self._draw_retreat_move(
+                    RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False
+                )
+            )
 
     def _initialize_scoreboard_locations(self) -> None:
-        all_power_banners_element = get_svg_element(self.board_svg.getroot(), svgcfg.POWER_BANNERS_LAYER_ID)
+        all_power_banners_element = get_svg_element(
+            self.board_svg.getroot(), self.board.data["svg config"]["power_banners"]
+        )
         self.scoreboard_power_locations: list[str] = []
         for power_element in all_power_banners_element:
             self.scoreboard_power_locations.append(power_element.get("transform"))
@@ -630,3 +674,156 @@ class Mapper:
         self.scoreboard_power_locations.sort(
             key=lambda loc: float(re.match(r"translate\((-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\)", loc).groups()[1])
         )
+
+    def add_arrow_definition_to_svg(self, svg: ElementTree) -> None:
+        defs: Element = svg.find("{http://www.w3.org/2000/svg}defs")
+        if defs is None:
+            defs = create_element("defs", {})
+            svg.getroot().append(defs)
+        # TODO: Check if 'arrow' id is already defined in defs
+        arrow_marker: Element = self.create_element(
+            "marker",
+            {
+                "id": "arrow",
+                "viewbox": "0 0 3 3",
+                "refX": "1.5",
+                "refY": "1.5",
+                "markerWidth": "3",
+                "markerHeight": "3",
+                "orient": "auto-start-reverse",
+            },
+        )
+        arrow_path: Element = self.create_element(
+            "path",
+            {"d": "M 0,0 L 3,1.5 L 0,3 z"},
+        )
+        arrow_marker.append(arrow_path)
+        defs.append(arrow_marker)
+        red_arrow_marker: Element = self.create_element(
+            "marker",
+            {
+                "id": "redarrow",
+                "viewbox": "0 0 3 3",
+                "refX": "1.5",
+                "refY": "1.5",
+                "markerWidth": "3",
+                "markerHeight": "3",
+                "orient": "auto-start-reverse",
+            },
+        )
+        red_arrow_path: Element = self.create_element(
+            "path",
+            {"d": "M 0,0 L 3,1.5 L 0,3 z", "fill": "red"},
+        )
+        red_arrow_marker.append(red_arrow_path)
+        defs.append(red_arrow_marker)
+
+        ball_marker: Element = self.create_element(
+            "marker",
+            {
+                "id": "ball",
+                "viewbox": "0 0 3 3",
+                # "refX": "1.5",
+                # "refY": "1.5",
+                "markerWidth": "3",
+                "markerHeight": "3",
+                "orient": "auto-start-reverse",
+            },
+        )
+        ball_def: Element = self.create_element(
+            "circle",
+            {"r": "2", "fill": "black"},
+        )
+        ball_marker.append(ball_def)
+        defs.append(ball_marker)
+
+        data = self.board.data["players"].copy()
+        data["None"] = {"color": "ffffff"}
+        for mapping in itertools.product(data, data):
+            gradient_def: Element = self.create_element("linearGradient", {"id": f"{mapping[0]}_{mapping[1]}"})
+            first: Element = self.create_element(
+                "stop", {"offset": "50%", "stop-color": f"#{data[mapping[0]]['color']}"}
+            )
+            second: Element = self.create_element(
+                "stop", {"offset": "50%", "stop-color": f"#{data[mapping[1]]['color']}"}
+            )
+            gradient_def.append(first)
+            gradient_def.append(second)
+            defs.append(gradient_def)
+
+    def color_element(self, element: Element, color: str, key="fill"):
+        if len(color) == 6:  # Potentially buggy hack; just assume everything with length 6 is rgb without #
+            color = f"#{color}"
+        if element.get(key) is not None:
+            element.set(key, color)
+        if element.get("style") is not None and key in element.get("style"):
+            style = element.get("style")
+            style = re.sub(key + r":#[0-9a-fA-F]{6}", f"{key}:{color}", style)
+            element.set("style", style)
+
+    def create_element(self, tag: str, attributes: dict[str, any]) -> etree.Element:
+        attributes_str = {key: str(val) for key, val in attributes.items()}
+        return etree.Element(tag, attributes_str)
+
+    # returns equivelent point within the map
+    def normalize(self, point: tuple[float, float]):
+        return (point[0] % self.board.data["svg config"]["map_width"], point[1])
+
+    # returns closest point in a set
+    # will wrap horizontally
+    def get_closest_loc(self, possiblities: tuple[tuple[float, float]], coord: tuple[float, float]):
+        possiblities = list(possiblities)
+        crossed_pos = []
+        crossed = []
+        for p in possiblities:
+            x = p[0]
+            cx = coord[0]
+            if abs(x - cx) > self.board.data["svg config"]["map_width"] / 2:
+                crossed += [1]
+                if x > cx:
+                    x -= self.board.data["svg config"]["map_width"]
+                else:
+                    x += self.board.data["svg config"]["map_width"]
+            else:
+                crossed += [0]
+            crossed_pos += [(x, p[1])]
+
+        crossed = np.array(crossed)
+        crossed_pos = np.array(crossed_pos)
+
+        dists = crossed_pos - coord
+        # penalty for crossing map is 500 px
+        short_ind = np.argmin(np.linalg.norm(dists, axis=1) + 500 * crossed)
+        return crossed_pos[short_ind].tolist()
+
+    def loc_to_point(self, loc: Location, current: tuple[float, float], use_retreats=False):
+        if not use_retreats:
+            return self.get_closest_loc(loc.all_locs, current)
+        else:
+            return self.get_closest_loc(loc.all_rets, current)
+
+    def pull_coordinate(
+        self, anchor: tuple[float, float], coordinate: tuple[float, float], pull=None, limit=0.25
+    ) -> tuple[float, float]:
+        """
+        Pull coordinate toward anchor by a small margin to give unit view breathing room. The pull will be limited to be
+        no more than the given percent of the distance because otherwise small province size areas are hard to see.
+        """
+
+        if pull is None:
+            pull = 1.5 * self.board.data["svg config"]["unit_radius"]
+
+        ax, ay = anchor
+        cx, cy = coordinate
+        dx = ax - cx
+        dy = ay - cy
+
+        distance = math.sqrt(dx**2 + dy**2)
+        if distance == 0:
+            return coordinate
+
+        # if the area is small, the pull can become too large of the percent of the total arrow length
+        pull = min(pull, distance * limit)
+
+        scale = pull / distance
+        return cx + dx * scale, cy + dy * scale

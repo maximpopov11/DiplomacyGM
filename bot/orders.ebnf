@@ -58,6 +58,7 @@ MOVE.2 : "-"
        | "m"
        | "move"
        | "moves"
+       | "moves to"
        | "into"
 
 CONVOY_MOVE.2 : "c-"

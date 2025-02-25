@@ -1,18 +1,17 @@
 import re
+import logging
 
 from diplomacy.persistence.phase import Phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, Coast, Location
 from diplomacy.persistence.unit import Unit, UnitType
 
+logger = logging.getLogger(__name__)
+
 
 class Board:
     def __init__(
-        self,
-        players: set[Player],
-        provinces: set[Province],
-        units: set[Unit],
-        phase: Phase,
+        self, players: set[Player], provinces: set[Province], units: set[Unit], phase: Phase, data, datafile: str
     ):
         self.players: set[Player] = players
         self.provinces: set[Province] = provinces
@@ -22,6 +21,8 @@ class Board:
         self.board_id = 0
         self.fish = 0
         self.orders_enabled: bool = True
+        self.data = data
+        self.datafile = datafile
 
     # TODO: we could have this as a dict ready on the variant
     def get_player(self, name: str) -> Player:

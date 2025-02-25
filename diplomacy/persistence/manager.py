@@ -1,8 +1,9 @@
 import logging
+import time
 
 from diplomacy.adjudicator.adjudicator import make_adjudicator
 from diplomacy.adjudicator.mapper import Mapper
-from diplomacy.map_parser.vector.vector import oneTrueParser
+from diplomacy.map_parser.vector.vector import get_parser
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db import database
@@ -23,16 +24,16 @@ class Manager:
     def list_servers(self) -> set[int]:
         return set(self._boards.keys())
 
-    def create_game(self, server_id: int) -> str:
+    def create_game(self, server_id: int, gametype: str = "impdip.json") -> str:
         if self._boards.get(server_id):
             raise RuntimeError("A game already exists in this server.")
 
-        logger.info(f"Creating new [ImpDip] game in server {server_id}")
-        self._boards[server_id] = oneTrueParser.parse()
+        logger.info(f"Creating new game in server {server_id}")
+        self._boards[server_id] = get_parser(gametype).parse()
         self._boards[server_id].board_id = server_id
         self._database.save_board(server_id, self._boards[server_id])
 
-        return "ImpDip game created"
+        return f"{self._boards[server_id].data['name']} game created"
 
     def get_board(self, server_id: int) -> Board:
         board = self._boards.get(server_id)
@@ -40,10 +41,22 @@ class Manager:
             raise RuntimeError("There is no existing game this this server.")
         return board
 
+    def total_delete(self, server_id: int):
+        self._database.total_delete(self._boards[server_id])
+        del self._boards[server_id]
+
     def draw_moves_map(self, server_id: int, player_restriction: Player | None) -> str:
-        return Mapper(self._boards[server_id]).draw_moves_map(self._boards[server_id].phase, player_restriction)
+        start = time.time()
+
+        svg = Mapper(self._boards[server_id]).draw_moves_map(self._boards[server_id].phase, player_restriction)
+
+        elapsed = time.time() - start
+        logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
+        return svg
 
     def adjudicate(self, server_id: int) -> str:
+        start = time.time()
+
         # mapper = Mapper(self._boards[server_id])
         # mapper.draw_moves_map(None)
         adjudicator = make_adjudicator(self._boards[server_id])
@@ -56,7 +69,11 @@ class Manager:
         self._boards[server_id] = new_board
         self._database.save_board(server_id, new_board)
         mapper = Mapper(new_board)
-        return mapper.draw_current_map()
+        svg = mapper.draw_current_map()
+
+        elapsed = time.time() - start
+        logger.info(f"manager.adjudicate.{server_id}.{elapsed}s")
+        return svg
 
     def rollback(self, server_id: int) -> tuple[str, str]:
         logger.info(f"Rolling back in server {server_id}")
