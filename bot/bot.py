@@ -88,8 +88,7 @@ async def _handle_command(
 
             vfile.seek(0)
 
-            with discord.File(fp=vfile, filename="response.svg.zip") as discord_file:
-                await ctx.channel.send(response, file=discord_file)
+            await ctx.channel.send(response, file=discord.File(fp=vfile, filename="response.svg.zip"))
     else:
         await ctx.channel.send(response)
 
