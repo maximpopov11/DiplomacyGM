@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def get_svg_element(svg_root: ElementTree, element_id: str) -> Element:
     try:
-        return svg_root.xpath(f'//*[@id="{element_id}"]')[0]
+        return svg_root.find(f'*[@id="{element_id}"]')
     except:
         logger.error(f"{element_id} isn't contained in svg_root")
 

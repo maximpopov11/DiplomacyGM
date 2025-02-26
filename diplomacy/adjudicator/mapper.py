@@ -54,7 +54,7 @@ class Mapper:
         self.add_arrow_definition_to_svg(self.board_svg)
 
         units_layer: Element = get_svg_element(self.board_svg, self.board.data["svg config"]["starting_units"])
-        self.board_svg.getroot().remove(units_layer)
+        units_layer.clear()
 
         self.cached_elements = {}
         for element_name in ["army", "fleet", "retreat_army", "retreat_fleet", "unit_output"]:
@@ -69,7 +69,7 @@ class Mapper:
         self.draw_side_panel(self.board_svg)
         
         for element_name in ["army", "fleet", "retreat_army", "retreat_fleet"]:
-            self.board_svg.getroot().remove(self.cached_elements[element_name])
+            self.cached_elements[element_name].clear()
 
         self._moves_svg = copy.deepcopy(self.board_svg)
         self.cached_elements["unit_output_moves"] = get_svg_element(
