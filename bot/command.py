@@ -26,7 +26,7 @@ ping_text_choices = [
 ]
 
 
-def ping(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
+def ping(ctx: commands.Context, _: Manager) -> str:
     response = "Beep Boop"
     if random.random() < 0.1:
         author = ctx.message.author
@@ -37,10 +37,10 @@ def ping(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
         if not name:
             name = author.name
         response = name + " " + random.choice(ping_text_choices) + content
-    return response, None
+    return response
 
 
-def bumble(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def bumble(ctx: commands.Context, manager: Manager) -> str:
     list_of_bumble = list("bumble")
     random.shuffle(list_of_bumble)
     word_of_bumble = "".join(list_of_bumble)
@@ -59,10 +59,10 @@ def bumble(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
 
     board = manager.get_board(ctx.guild.id)
     board.fish -= 1
-    return f"**{word_of_bumble}**", None
+    return f"**{word_of_bumble}**"
 
 
-def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def fish(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
     fish_num = random.randrange(0, 20)
 
@@ -110,7 +110,7 @@ def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
                 # Sometimes Bumbles are so bad at fishing they debumblify
                 debumblify = True
                 fish_num = randrange(10, 20)
-                return "", None
+                return ""
             else:
                 # Bumbles that lose fish lose a lot of them
                 fish_num *= randrange(3, 10)
@@ -129,17 +129,17 @@ def fish(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
         temporary_bumbles.remove(ctx.author.name)
         fish_message = f"\n Your luck has run out! {fish_message}\nBumble is sad, you must once again prove your worth by Bumbling!"
 
-    return fish_message, None
+    return fish_message
 
 
-def phish(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
+def phish(ctx: commands.Context, _: Manager) -> str:
     message = "No! Phishing is bad!"
     if is_bumble(ctx.author.name):
         message = "Please provide your firstborn pet and your soul for a chance at winning your next game!"
-    return message, None
+    return message
 
 
-def cheat(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def cheat(ctx: commands.Context, manager: Manager) -> str:
     message = "Cheating is disabled for this user."
     author = ctx.message.author.name
     board = manager.get_board(ctx.guild.id)
@@ -159,10 +159,10 @@ def cheat(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
             ]
         )
         message = f'Here\'s a helpful message I stole from the spectator chat: \n"{sample}"'
-    return message, None
+    return message
 
 
-def advice(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
+def advice(ctx: commands.Context, _: Manager) -> str:
     message = "You are not worthy of advice."
     if is_bumble(ctx.author.name):
         message = "Bumble suggests that you go fishing, although typically blasphemous, today is your lucky day!"
@@ -180,7 +180,7 @@ def advice(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
                 "The GMs suggest you input your orders so they don't need to hound you for them at the deadline.",
             ]
         )
-    return message, None
+    return message
 
 
 @perms.gm("botsay")
@@ -214,120 +214,120 @@ async def announce(ctx: commands.Context, servers: set[Guild | None]) -> None:
 
 
 @perms.player("order")
-def order(player: Player | None, ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def order(player: Player | None, ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
 
     if player and not board.orders_enabled:
-        return "Orders locked! If you think this is an error, contact a GM.", None
+        return "Orders locked! If you think this is an error, contact a GM."
 
-    return parse_order(ctx.message.content, player, board), None
+    return parse_order(ctx.message.content, player, board)
 
 
 @perms.player("remove orders")
-def remove_order(player: Player | None, ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def remove_order(player: Player | None, ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
 
     if player and not board.orders_enabled:
-        return "Orders locked! If you think this is an error, contact a GM.", None
+        return "Orders locked! If you think this is an error, contact a GM."
 
-    return parse_remove_order(ctx.message.content, player, board), None
+    return parse_remove_order(ctx.message.content, player, board)
 
 
 @perms.player("view orders")
-def view_orders(player: Player | None, ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def view_orders(player: Player | None, ctx: commands.Context, manager: Manager) -> str:
     try:
         order_text = get_orders(manager.get_board(ctx.guild.id), player)
     except RuntimeError as err:
         logger.error(f"View_orders text failed in game with id: {ctx.guild.id}", exc_info=err)
         order_text = "view_orders text failed"
-    return order_text, None
+    return order_text
 
 @perms.gm("view map")
-def view_map(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def view_map(ctx: commands.Context, manager: Manager) -> str | dict[str]:
     # file_name = manager.draw_moves_map(ctx.guild.id, player)
     try:
-        file_name = manager.draw_moves_map(ctx.guild.id, None)
+        file, file_name = manager.draw_moves_map(ctx.guild.id, None)
     except Exception as err:
         logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
-        file_name = None
-    return "Map created successfully", file_name
+        return "View_orders map failed"
+    return {"message": "Map created successfully", "file": file, "file_name": file_name}
 
 @perms.gm("adjudicate")
-def adjudicate(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
-    svg_file_name = manager.adjudicate(ctx.guild.id)
-    return "Adjudication completed successfully.", svg_file_name
+def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str]:
+    file, file_name = manager.adjudicate(ctx.guild.id)
+    return {"message": "Adjudication completed successfully", "file": file, "file_name": file_name}
 
 
 @perms.gm("rollback")
-def rollback(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def rollback(ctx: commands.Context, manager: Manager) -> dict[str]:
     return manager.rollback(ctx.guild.id)
 
 
 @perms.gm("reload")
-def reload(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def reload(ctx: commands.Context, manager: Manager) -> dict[str]:
     return manager.reload(ctx.guild.id)
 
 
 @perms.gm("remove all orders")
-def remove_all(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def remove_all(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
     for unit in board.units:
         unit.order = None
 
     database = get_connection()
     database.save_order_for_units(board, board.units)
-    return "Successful", None
+    return "Successful"
 
 
 # @perms.gm("get scoreboard")
-def get_scoreboard(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def get_scoreboard(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
     response = ""
     for player in board.get_players_by_score():
         response += f"\n__{player.name}__: {len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
-    return response, None
+    return response
 
 
 @perms.gm("edit")
-def edit(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def edit(ctx: commands.Context, manager: Manager) -> dict[str]:
     return parse_edit_state(ctx.message.content, manager.get_board(ctx.guild.id))
 
 
 @perms.gm("create a game")
-def create_game(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def create_game(ctx: commands.Context, manager: Manager) -> str:
     gametype = ctx.message.content.removeprefix(".create_game")
     if gametype == "":
         gametype = "impdip.json"
     else:
         gametype = gametype.removeprefix(" ") + ".json"
-    return manager.create_game(ctx.guild.id, gametype), None
+    return manager.create_game(ctx.guild.id, gametype)
 
 
 @perms.gm("unlock orders")
-def enable_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def enable_orders(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
     board.orders_enabled = True
-    return "Successful", None
+    return "Successful"
 
 
 @perms.gm("lock orders")
-def disable_orders(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def disable_orders(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
     board.orders_enabled = False
-    return "Successful", None
+    return "Successful"
 
 @perms.gm("delete the game")
-def delete_game(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def delete_game(ctx: commands.Context, manager: Manager) -> str:
     manager.total_delete(ctx.guild.id)
-    return "Game deleted", None
+    return "Game deleted"
 
-def info(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def info(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
     out = "Phase: " + str(board.phase) + "\nOrders are: " + ("Open" if board.orders_enabled else "Locked")
-    return out, None
+    return out
 
 
-def province_info(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def province_info(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
     province_name = ctx.message.content.removeprefix(".province_info ").strip()
     if not province_name:
@@ -352,10 +352,10 @@ Type: COAST
 Adjacent Provinces:
 - """ + "\n- ".join(sorted([adjacent.name for adjacent in province.adjacent_seas])) + "\n"
     # fmt: on
-    return out, None
+    return out
 
 
-def all_province_data(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
+def all_province_data(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
 
     province_by_owner = defaultdict(list)
@@ -372,14 +372,14 @@ def all_province_data(ctx: commands.Context, manager: Manager) -> tuple[str, str
             data += f"{province}, "
         data += "\n\n"
 
-    return data, None
+    return data
 
 
 # needed due to async
 from bot.utils import is_gm, is_gm_channel
 
 
-async def archive(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
+async def archive(ctx: commands.Context, _: Manager) -> str:
 
     if not is_gm(ctx.message.author):
         raise PermissionError(f"You cannot archive because you are not a GM.")
@@ -389,7 +389,7 @@ async def archive(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
 
     categories = [channel.category for channel in ctx.message.channel_mentions]
     if not categories:
-        return "This channel is not part of a category.", None
+        return "This channel is not part of a category."
 
     for category in categories:
         for channel in category.channels:
@@ -402,4 +402,4 @@ async def archive(ctx: commands.Context, _: Manager) -> tuple[str, str | None]:
             # Apply the updated overwrites
             await channel.edit(overwrites=overwrites)
 
-    return f"The following catagories have been archived: {' '.join([catagory.name for catagory in categories])}", None
+    return f"The following catagories have been archived: {' '.join([catagory.name for catagory in categories])}"

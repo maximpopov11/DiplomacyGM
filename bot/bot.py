@@ -18,6 +18,8 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix=".", intents=intents)
 logger = logging.getLogger(__name__)
+discord_message_limit = 2000
+discord_file_limit = 10 * (2**20)
 
 manager = Manager()
 
@@ -66,35 +68,42 @@ async def _handle_command(
     ctx.message.content = re.sub(r"[‘’`´′‛]", "'", ctx.message.content)
 
     if inspect.iscoroutinefunction(function):
-        response, file = await function(ctx, manager)
+        response = await function(ctx, manager)
     else:
-        response, file = function(ctx, manager)
-    while 2000 < len(response):
+        response = function(ctx, manager)
+    
+    if type(response) is dict:
+        message, file, file_name = response["message"], response["file"], response["file_name"]
+    else:
+        message, file = response, None
+    
+    while discord_message_limit < len(message):
         # Try to find an even line break to split the message on
-        cutoff = response.rfind("\n", 0, 2000)
+        cutoff = message.rfind("\n", 0, discord_message_limit)
         if cutoff == -1:
-            cutoff = 2000
-        await ctx.channel.send(response[:cutoff].strip())
-        response = response[cutoff:].strip()
-    if file is not None:
+            cutoff = discord_message_limit
+        await ctx.channel.send(message[:cutoff].strip())
+        message = message[cutoff:].strip()
+    if file is not None and len(file) > discord_file_limit:
         # zip compression without using files (disk is slow)
 
         # We create a virtual file, write to it, and then restart it
         # for some reason zipfile doesn't support this natively
         with io.BytesIO() as vfile:
             zip_file = zipfile.ZipFile(vfile, mode="x", compression=zipfile.ZIP_DEFLATED, compresslevel=9)
-            zip_file.writestr("response.svg", file, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
+            zip_file.writestr(f"{file_name}.svg", file, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
             zip_file.close()
-
             vfile.seek(0)
-
-            await ctx.channel.send(response, file=discord.File(fp=vfile, filename="response.svg.zip"))
+            await ctx.channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}.zip"))
+    elif file is not None:
+        with io.BytesIO(file) as vfile:
+            await ctx.channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}.svg"))
     else:
-        await ctx.channel.send(response)
+        await ctx.channel.send(message)
 
     elapsed = time.time() - start
     logger.debug(
-        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{response} | {elapsed}s"
+        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{message} | {elapsed}s"
     )
 
 
