@@ -106,7 +106,7 @@ def parse_path(path_string: str, layer_translation: Transform, this_translation:
             if command.lower() == "z":
                 if start == None:
                     raise Exception("Invalid geometry: got 'z' on first element in a subgeometry")
-                province_coordinates[-1].append(start)
+                province_coordinates[-1].append(layer_translation.transform(this_translation.transform(start)))
                 start = None
                 current_index += 1
                 if current_index < len(path):
