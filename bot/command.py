@@ -190,7 +190,7 @@ async def botsay(ctx: commands.Context, _: Manager) -> None:
         return
     channel = ctx.message.channel_mentions[0]
     content = ctx.message.content
-    content = content.replace(".botsay", "").replace(channel.mention, "").strip()
+    content = content.removeprefix(".botsay").replace(channel.mention, "").strip()
     if len(content) == 0:
         return
     await ctx.message.add_reaction("👍")
