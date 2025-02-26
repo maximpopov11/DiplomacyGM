@@ -299,8 +299,8 @@ class RetreatsAdjudicator(Adjudicator):
             if unit != unit.province.dislodged_unit:
                 continue
 
-            if isinstance(unit.order, RetreatMove) and unit.order.destination in unit.retreat_options:
-                destination_province = get_base_province_from_location(unit.order.destination)
+            destination_province = get_base_province_from_location(unit.order.destination)
+            if isinstance(unit.order, RetreatMove) and destination_province in unit.retreat_options:
                 if destination_province.name not in retreats_by_destination:
                     retreats_by_destination[destination_province.name] = set()
                 retreats_by_destination[destination_province.name].add(unit)
