@@ -1,6 +1,7 @@
 import logging
 import os
-
+from dotenv.main import load_dotenv
+load_dotenv()
 from bot import bot
 
 log_level = logging.getLevelNamesMapping().get(os.getenv("log_level", "INFO"))

@@ -6,6 +6,8 @@ from typing import Callable
 import inspect
 import zipfile
 import io
+from dotenv.main import load_dotenv
+load_dotenv()
 
 import discord
 from discord import HTTPException
