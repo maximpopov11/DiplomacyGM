@@ -48,7 +48,9 @@ class Manager:
     def draw_moves_map(self, server_id: int, player_restriction: Player | None) -> tuple[str, str]:
         start = time.time()
 
-        svg, file_name = Mapper(self._boards[server_id]).draw_moves_map(self._boards[server_id].phase, player_restriction)
+        svg, file_name = Mapper(self._boards[server_id]).draw_moves_map(
+            self._boards[server_id].phase, player_restriction
+        )
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
@@ -84,14 +86,14 @@ class Manager:
         if board.phase.name == "Spring Moves":
             last_phase_year -= 1
 
-        old_board = self._database.get_board(board.board_id, last_phase, last_phase_year, board.fish)
+        old_board = self._database.get_board(board.board_id, last_phase, last_phase_year, board.fish, board.datafile)
         if old_board is None:
             raise ValueError(f"There is no {last_phase_year} {last_phase.name} board for this server")
 
         self._database.delete_board(board)
         self._boards[server_id] = old_board
         mapper = Mapper(old_board)
-        
+
         message = f"Rolled back to {old_board.get_phase_and_year_string()}"
         file, file_name = mapper.draw_current_map()
         return {"message": message, "file": file, "file_name": file_name}
@@ -100,13 +102,13 @@ class Manager:
         logger.info(f"Reloading server {server_id}")
         board = self._boards[server_id]
 
-        loaded_board = self._database.get_board(server_id, board.phase, board.year, board.fish)
+        loaded_board = self._database.get_board(server_id, board.phase, board.year, board.fish, board.datafile)
         if loaded_board is None:
             raise ValueError(f"There is no {board.year} {board.phase.name} board for this server")
 
         self._boards[server_id] = loaded_board
         mapper = Mapper(loaded_board)
-        
+
         message = f"Reloaded board for phase {loaded_board.get_phase_and_year_string()}"
         file, file_name = mapper.draw_current_map()
         return {"message": message, "file": file, "file_name": file_name}

@@ -69,7 +69,7 @@ class _DatabaseConnection:
             if fish is None:
                 fish = 0
 
-            board = self._get_board(data_file, board_id, current_phase, year, fish, cursor)
+            board = self._get_board(board_id, current_phase, year, fish, data_file, cursor)
 
             boards[board_id] = board
 
@@ -77,7 +77,7 @@ class _DatabaseConnection:
         logger.info("Successfully loaded")
         return boards
 
-    def get_board(self, board_id: int, board_phase: phase.Phase, year: int, fish: int) -> Board | None:
+    def get_board(self, board_id: int, board_phase: phase.Phase, year: int, fish: int, data_file: str) -> Board | None:
         cursor = self._connection.cursor()
 
         board_data = cursor.execute(
@@ -87,11 +87,13 @@ class _DatabaseConnection:
             cursor.close()
             return None
 
-        board = self._get_board(board_id, board_phase, year, fish, cursor)
+        board = self._get_board(board_id, board_phase, year, fish, data_file, cursor)
         cursor.close()
         return board
 
-    def _get_board(self, data_file: str, board_id: int, board_phase: phase.Phase, year: int, fish: int, cursor) -> Board:
+    def _get_board(
+        self, board_id: int, board_phase: phase.Phase, year: int, fish: int, data_file: str, cursor
+    ) -> Board:
         logger.info(f"Loading board with ID {board_id}")
         # TODO - we should eventually store things like coords, adjacencies, etc
         #  so we don't have to reparse the whole board each time
@@ -415,25 +417,14 @@ class _DatabaseConnection:
         )
         cursor.close()
         self._connection.commit()
-    
+
     def total_delete(self, board: Board):
         cursor = self._connection.cursor()
-        cursor.execute(
-            "DELETE FROM boards WHERE board_id=?", (board.board_id,)
-        )
-        cursor.execute(
-            "DELETE FROM provinces WHERE board_id=?", (board.board_id,)
-        )
-        cursor.execute(
-            "DELETE FROM units WHERE board_id=?", (board.board_id,)
-        )
-        cursor.execute(
-            "DELETE FROM builds WHERE board_id=?", (board.board_id,)
-        )
-        cursor.execute(
-            "DELETE FROM retreat_options WHERE board_id=?",
-            (board.board_id,)
-        )
+        cursor.execute("DELETE FROM boards WHERE board_id=?", (board.board_id,))
+        cursor.execute("DELETE FROM provinces WHERE board_id=?", (board.board_id,))
+        cursor.execute("DELETE FROM units WHERE board_id=?", (board.board_id,))
+        cursor.execute("DELETE FROM builds WHERE board_id=?", (board.board_id,))
+        cursor.execute("DELETE FROM retreat_options WHERE board_id=?", (board.board_id,))
         cursor.close()
         self._connection.commit()
 
