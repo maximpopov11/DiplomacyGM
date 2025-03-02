@@ -71,12 +71,12 @@ async def _handle_command(
         response = await function(ctx, manager)
     else:
         response = function(ctx, manager)
-    
+
     if type(response) is dict:
         message, file, file_name = response["message"], response["file"], response["file_name"]
     else:
         message, file = response, None
-    
+
     while discord_message_limit < len(message):
         # Try to find an even line break to split the message on
         cutoff = message.rfind("\n", 0, discord_message_limit)
@@ -112,29 +112,29 @@ async def ping(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.ping, ctx)
 
 
-@bot.command(hidden=True)
+# @bot.command(hidden=True)
 async def bumble(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.bumble, ctx)
 
 
-@bot.command(hidden=True)
+# @bot.command(hidden=True)
 async def fish(ctx: discord.ext.commands.Context) -> None:
     await ctx.message.add_reaction("🐟")
     await _handle_command(command.fish, ctx)
 
 
-@bot.command(hidden=True)
+# @bot.command(hidden=True)
 async def phish(ctx: discord.ext.commands.Context) -> None:
     await ctx.message.add_reaction("🐟")
     await _handle_command(command.phish, ctx)
 
 
-@bot.command(hidden=True)
+# @bot.command(hidden=True)
 async def cheat(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.cheat, ctx)
 
 
-@bot.command(hidden=True)
+# @bot.command(hidden=True)
 async def advice(ctx: discord.ext.commands.Context) -> None:
     await _handle_command(command.advice, ctx)
 
