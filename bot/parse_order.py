@@ -142,7 +142,7 @@ class TreeToOrder(Transformer):
         unit, order = command
         if self.player_restriction is not None and unit.player != self.player_restriction:
             raise PermissionError(
-                f"{self.player_restriction.name} does not control the unit in {unit.province.name}, it belongs to {unit.player.name}"
+                f"{self.player_restriction.name()} does not control the unit in {unit.province.name()}, it belongs to {unit.player.name()}"
             )
         unit.order = order
         return unit
@@ -152,7 +152,7 @@ class TreeToOrder(Transformer):
         unit, order = command
         if self.player_restriction is not None and unit.player != self.player_restriction:
             raise PermissionError(
-                f"{self.player_restriction.name} does not control the unit in {unit.province.name}, it belongs to {unit.player.name}"
+                f"{self.player_restriction.name()} does not control the unit in {unit.province.name()}, it belongs to {unit.player.name()}"
             )
         unit.order = order
         return unit
@@ -243,7 +243,7 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
         player = province.owner
         if player_restriction is not None and player != player_restriction:
             raise PermissionError(
-                f"{player_restriction.name} does not control the unit in {location} which belongs to {player.name}"
+                f"{player_restriction.name()} does not control the unit in {location} which belongs to {player.name()}"
             )
 
         remove_player_order_for_location(board, player, province)
@@ -251,9 +251,9 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
         if coast is None:
             if province.coasts:
                 return str(province.coast())
-            return province.name
+            return province.name()
         else:
-            return province.name + " " + coast.name
+            return province.name() + " " + coast.name()
     else:
         # remove unit's order
         # assert that the command user is authorized to order this unit
@@ -269,7 +269,7 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
             if player_restriction is None or player == player_restriction:
                 unit.order = None
             return unit
-        raise Exception(f"You control neither the unit nor dislodged unit in province {province.name}")
+        raise Exception(f"You control neither the unit nor dislodged unit in province {province.name()}")
 
 
 def remove_player_order_for_location(board: Board, player: Player, location: Location) -> bool:
@@ -280,7 +280,7 @@ def remove_player_order_for_location(board: Board, player: Player, location: Loc
             database = get_connection()
             database.execute_arbitrary_sql(
                 "DELETE FROM builds WHERE board_id=? and phase=? and location=?",
-                (board.board_id, board.get_phase_and_year_string(), player_order.location.name),
+                (board.board_id, board.get_phase_and_year_string(), player_order.location.name()),
             )
             return True
     return False

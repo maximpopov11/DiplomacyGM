@@ -115,10 +115,10 @@ class PlayerOrder(Order):
         self.location: Location = location
 
     def __hash__(self):
-        return hash(self.location.name)
+        return hash(self.location.name())
 
     def __eq__(self, other):
-        return isinstance(other, type(self)) and self.location.name == other.location.name
+        return isinstance(other, type(self)) and self.location.name() == other.location.name()
 
 
 class Build(PlayerOrder):

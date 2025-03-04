@@ -15,7 +15,7 @@ def player(description: str = "run this command"):
         def f(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
             player = get_player_by_role(ctx.message.author, manager, ctx.guild.id)
             if player:
-                if not is_player_channel(player.name, ctx.channel):
+                if not is_player_channel(player.name(), ctx.channel):
                     raise PermissionError(f"You cannot {description} as a player outside of your orders channel.")
             else:
                 if not is_gm(ctx.message.author):

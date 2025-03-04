@@ -9,7 +9,7 @@ from diplomacy.persistence.order import (
     Build,
     Disband,
 )
-from diplomacy.persistence.province import Location, Coast, Province, ProvinceType
+from diplomacy.persistence.province import CoastInfo, Location, Coast, Province, ProvinceInfo, ProvinceType
 from diplomacy.persistence.unit import UnitType, Unit
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.phase import Phase
@@ -315,18 +315,24 @@ class BoardBuilder():
         return self._province(name, ProvinceType.SEA, sc)
 
     def _province(self, name: str, type: ProvinceType, sc):
-        province = Province(
+        info = ProvinceInfo(
             name=name,
-            coordinates=None,
+            province_type=type,
+            geometry=None,
+            has_supply_center=sc,
             primary_unit_coordinate=(0,0),
             retreat_unit_coordinate=(0,0),
-            province_type=type,
-            has_supply_center=sc,
             adjacent=set(),
             coasts=set(),
-            core=None,
-            owner=None,
-            local_unit=None,
+            initial_core=None,
+            initial_owner=None,
+            initial_unit=None
+        )
+
+        province = Province(
+            info = info,
+            adjacent=set(),
+            coasts=set()
         )
 
         self.board.provinces.add(province)
@@ -334,12 +340,18 @@ class BoardBuilder():
         return province
     
     def _coast(self, suffix: str, P: Province):
-        assert P.type == ProvinceType.LAND
-    
-        coast = Coast(
-            name=f"{P.name}({suffix})",
+        assert P.info.type == ProvinceType.LAND
+
+        info = CoastInfo(
+            name=f"{P.name()}({suffix})",
             primary_unit_coordinate=None,
             retreat_unit_coordinate=None,
+            adjacent_seas=set(),
+            province=P.info
+        )
+    
+        coast = Coast(
+            info = info,
             adjacent_seas=set(),
             province=P
         )
@@ -349,7 +361,7 @@ class BoardBuilder():
         return coast
 
     def army(self, land: Province, player: Player) -> Unit:
-        assert land.type == ProvinceType.LAND or ProvinceType.ISLAND
+        assert land.info.type == ProvinceType.LAND or ProvinceType.ISLAND
 
         unit = Unit(
             UnitType.ARMY,
@@ -368,11 +380,11 @@ class BoardBuilder():
         return unit
     
     def inject_centers(self, player: Player, c: int):
-        player.centers = set([self._land(f"{player.name}{c}", sc=True) for i in range(c)])
+        player.centers = set([self._land(f"{player.name()}{c}", sc=True) for i in range(c)])
     
     def fleet(self, loc: Coast | Province, player: Player):
         if (isinstance(loc, Province)):
-            assert loc.type == ProvinceType.SEA or loc.type == ProvinceType.ISLAND
+            assert loc.info.type == ProvinceType.SEA or loc.info.type == ProvinceType.ISLAND
 
             unit = Unit(
                 UnitType.FLEET,
@@ -575,27 +587,28 @@ class BoardBuilder():
                 assert False % "Unknown illegal location type"
 
         for order in adj.orders:
+            print(order)
             if (order.resolution == Resolution.SUCCEEDS):
                 succeeded_units.append(order.current_province)
             else:
                 failed_units.append(order.current_province)
 
         for illegal in self._listIllegal:
-            test.assertTrue(illegal in illegal_units, f"Move by {illegal.name} expected to be illegal")
+            test.assertTrue(illegal in illegal_units, f"Move by {illegal.name()} expected to be illegal")
         for notillegal in self._listNotIllegal:
-            test.assertTrue(notillegal not in illegal_units, f"Move by {notillegal.name} expected not to be illegal")
+            test.assertTrue(notillegal not in illegal_units, f"Move by {notillegal.name()} expected not to be illegal")
 
         for fail in self._listFail:
-            test.assertTrue(fail in failed_units, f"Move by {fail.name} expected to fail")
+            test.assertTrue(fail in failed_units, f"Move by {fail.name()} expected to fail")
         for succeed in self._listSuccess:
-            test.assertTrue(succeed in succeeded_units, f"Move by {succeed.name} expected to succeed")
+            test.assertTrue(succeed in succeeded_units, f"Move by {succeed.name()} expected to succeed")
 
         adj._update_board()
 
         for dislodge in self._listDislodge:
-            test.assertTrue(dislodge.dislodged_unit != None, f"Expected dislodged unit in {dislodge.name}")
+            test.assertTrue(dislodge.dislodged_unit != None, f"Expected dislodged unit in {dislodge.name()}")
         for notdislodge in self._listNotDislodge:
-            test.assertTrue(notdislodge.dislodged_unit == None, f"Expected no dislodged unit in {notdislodge.name}")
+            test.assertTrue(notdislodge.dislodged_unit == None, f"Expected no dislodged unit in {notdislodge.name()}")
 
 
         return adj

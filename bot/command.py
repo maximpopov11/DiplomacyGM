@@ -147,14 +147,14 @@ def cheat(ctx: commands.Context, manager: Manager) -> str:
         sample = random.choice(
             [
                 f"It looks like {author} is getting coalitioned this turn :cry:",
-                f"{author} is talking about stabbing {random.choice(list(board.players)).name} again",
+                f"{author} is talking about stabbing {random.choice(list(board.players)).name()} again",
                 f"looks like he's throwing to {author}... shame",
                 "yeah",
                 "People in this game are not voiding enough",
-                f"I can't believe {author} is moving to {random.choice(list(board.provinces)).name}",
+                f"I can't believe {author} is moving to {random.choice(list(board.provinces)).name()}",
                 f"{author} has a bunch of invalid orders",
                 f"No one noticed that {author} overbuilt?",
-                f"{random.choice(list(board.players)).name} is in a perfect position to stab {author}",
+                f"{random.choice(list(board.players)).name()} is in a perfect position to stab {author}",
                 ".bumble",
             ]
         )
@@ -341,20 +341,20 @@ def province_info(ctx: commands.Context, manager: Manager) -> str:
         raise ValueError(f"Could not find province {province_name}")
     # fmt: off
     if isinstance(province, Province):
-        out = f"Province: {province.name}\n" + \
-            f"Type: {province.type.name}\n" + \
+        out = f"Province: {province.name()}\n" + \
+            f"Type: {province.info.type.name}\n" + \
             f"Coasts: {len(province.coasts)}\n" + \
-            f"Owner: {province.owner.name if province.owner else 'None'}\n" + \
-            f"Unit: {(province.unit.player.name + ' ' + province.unit.unit_type.name) if province.unit else 'None'}\n" + \
-            f"Center: {province.has_supply_center}\n" + \
-            f"Core: {province.core.name if province.core else 'None'}\n" + \
-            f"Half-Core: {province.half_core.name if province.half_core else 'None'}\n" + \
-            f"Adjacent Provinces:\n- " + "\n- ".join(sorted([adjacent.name for adjacent in province.adjacent])) + "\n"
+            f"Owner: {province.owner.name() if province.owner else 'None'}\n" + \
+            f"Unit: {(province.unit.player.name() + ' ' + province.unit.unit_type.name) if province.unit else 'None'}\n" + \
+            f"Center: {province.info.has_supply_center}\n" + \
+            f"Core: {province.core.name() if province.core else 'None'}\n" + \
+            f"Half-Core: {province.half_core.name() if province.half_core else 'None'}\n" + \
+            f"Adjacent Provinces:\n- " + "\n- ".join(sorted([adjacent.name() for adjacent in province.adjacent])) + "\n"
     else:
-        out = f"""Province: {province.name}
+        out = f"""Province: {province.name()}
 Type: COAST
 Adjacent Provinces:
-- """ + "\n- ".join(sorted([adjacent.name for adjacent in province.adjacent_seas])) + "\n"
+- """ + "\n- ".join(sorted([adjacent.name() for adjacent in province.adjacent_seas])) + "\n"
     # fmt: on
     return out
 

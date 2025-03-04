@@ -15,11 +15,24 @@ class UnitType(Enum):
     FLEET = "F"
 
 
+class UnitInfo:
+    def __init__(
+        self,
+        unit_type: UnitType,
+        owner: player.PlayerInfo,
+        current_province: province.ProvinceInfo,
+        coast: province.CoastInfo | None,
+    ):
+        self.unit_type: UnitType = unit_type
+        self.player: player.PlayerInfo = owner
+        self.province: province.Province = current_province
+        self.coast: province.CoastInfo | None = coast
+
 class Unit:
     def __init__(
         self,
         unit_type: UnitType,
-        owner: player.Player,
+        owner: player.PlayerInfo,
         current_province: province.Province,
         coast: province.Coast | None,
         retreat_options: set[province.Province] | None,

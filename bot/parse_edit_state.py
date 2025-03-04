@@ -101,7 +101,7 @@ def _set_province_core(keywords: list[str], board: Board) -> None:
     province.core = player
     get_connection().execute_arbitrary_sql(
         "UPDATE provinces SET core=? WHERE board_id=? and phase=? and province_name=?",
-        (player.name if player is not None else None, board.board_id, board.get_phase_and_year_string(), province.name),
+        (player.name() if player is not None else None, board.board_id, board.get_phase_and_year_string(), province.name()),
     )
 
 
@@ -111,7 +111,7 @@ def _set_province_half_core(keywords: list[str], board: Board) -> None:
     province.half_core = player
     get_connection().execute_arbitrary_sql(
         "UPDATE provinces SET half_core=? WHERE board_id=? and phase=? and province_name=?",
-        (player.name if player is not None else None, board.board_id, board.get_phase_and_year_string(), province.name),
+        (player.name() if player is not None else None, board.board_id, board.get_phase_and_year_string(), province.name()),
     )
 
 
@@ -121,7 +121,7 @@ def _set_province_owner(keywords: list[str], board: Board) -> None:
     board.change_owner(province, player)
     get_connection().execute_arbitrary_sql(
         "UPDATE provinces SET owner=? WHERE board_id=? and phase=? and province_name=?",
-        (player.name if player is not None else None, board.board_id, board.get_phase_and_year_string(), province.name),
+        (player.name() if player is not None else None, board.board_id, board.get_phase_and_year_string(), province.name()),
     )
 
 
@@ -137,11 +137,11 @@ def _create_unit(keywords: list[str], board: Board) -> None:
         (
             board.board_id,
             board.get_phase_and_year_string(),
-            unit.location().name,
+            unit.location().name(),
             False,
-            player.name,
+            player.name(),
             unit_type == UnitType.ARMY,
-            player.name,
+            player.name(),
             unit_type == UnitType.ARMY,
         ),
     )
@@ -161,18 +161,18 @@ def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
             (
                 board.board_id,
                 board.get_phase_and_year_string(),
-                unit.location().name,
+                unit.location().name(),
                 True,
-                player.name,
+                player.name(),
                 unit_type == UnitType.ARMY,
-                player.name,
+                player.name(),
                 unit_type == UnitType.ARMY,
             ),
         )
         get_connection().executemany_arbitrary_sql(
             "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
             [
-                (board.board_id, board.get_phase_and_year_string(), unit.location().name, option.name)
+                (board.board_id, board.get_phase_and_year_string(), unit.location().name(), option.name())
                 for option in retreat_options
             ],
         )
@@ -185,7 +185,7 @@ def _delete_unit(keywords: list[str], board: Board) -> None:
     unit = board.delete_unit(province)
     get_connection().execute_arbitrary_sql(
         "DELETE FROM units WHERE board_id=? and phase=? and location=? and is_dislodged=?",
-        (board.board_id, board.get_phase_and_year_string(), unit.location().name, False),
+        (board.board_id, board.get_phase_and_year_string(), unit.location().name(), False),
     )
 
 
@@ -194,11 +194,11 @@ def _delete_dislodged_unit(keywords: list[str], board: Board) -> None:
     unit = board.delete_dislodged_unit(province)
     get_connection().execute_arbitrary_sql(
         "DELETE FROM units WHERE board_id=? and phase=? and location=? and is_dislodged=?",
-        (board.board_id, board.get_phase_and_year_string(), unit.location().name, True),
+        (board.board_id, board.get_phase_and_year_string(), unit.location().name(), True),
     )
     get_connection().execute_arbitrary_sql(
         "DELETE FROM retreat_options WHERE board_id=? and phase=? and origin=?",
-        (board.board_id, board.get_phase_and_year_string(), unit.location().name),
+        (board.board_id, board.get_phase_and_year_string(), unit.location().name()),
     )
 
 
@@ -210,16 +210,16 @@ def _move_unit(keywords: list[str], board: Board) -> None:
     board.move_unit(unit, new_location)
     get_connection().execute_arbitrary_sql(
         "DELETE FROM units WHERE board_id=? and phase=? and location=? and is_dislodged=?",
-        (board.board_id, board.get_phase_and_year_string(), old_location.name, False),
+        (board.board_id, board.get_phase_and_year_string(), old_location.name(), False),
     )
     get_connection().execute_arbitrary_sql(
         "INSERT INTO units (board_id, phase, location, is_dislodged, owner, is_army) VALUES (?, ?, ?, ?, ?, ?)",
         (
             board.board_id,
             board.get_phase_and_year_string(),
-            unit.location().name,
+            unit.location().name(),
             False,
-            unit.player.name,
+            unit.player.name(),
             unit.unit_type == UnitType.ARMY,
         ),
     )
@@ -238,7 +238,7 @@ def _dislodge_unit(keywords: list[str], board: Board) -> None:
         unit = board.delete_unit(province)
         get_connection().execute_arbitrary_sql(
             "UPDATE units SET is_dislodged = True where board_id=? and phase=? and location=?",
-            (board.board_id, board.get_phase_and_year_string(), province.name),
+            (board.board_id, board.get_phase_and_year_string(), province.name()),
         )
     else:
         raise RuntimeError("Cannot create a dislodged unit in move phase")
@@ -253,5 +253,5 @@ def _make_units_claim_provinces(keywords, board):
             board.change_owner(unit.province, unit.player)
             get_connection().execute_arbitrary_sql(
                 "UPDATE provinces SET owner=? WHERE board_id=? and phase=? and province_name=?",
-                (unit.player.name, board.board_id, board.get_phase_and_year_string(), unit.province.name),
+                (unit.player.name(), board.board_id, board.get_phase_and_year_string(), unit.province.name()),
             )

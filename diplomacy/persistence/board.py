@@ -1,13 +1,13 @@
 import re
 import logging
 
+from diplomacy.persistence import phase
 from diplomacy.persistence.phase import Phase
-from diplomacy.persistence.player import Player
-from diplomacy.persistence.province import Province, Coast, Location
-from diplomacy.persistence.unit import Unit, UnitType
+from diplomacy.persistence.player import Player, PlayerInfo
+from diplomacy.persistence.province import CoastInfo, Province, Coast, Location, ProvinceInfo
+from diplomacy.persistence.unit import Unit, UnitInfo, UnitType
 
 logger = logging.getLogger(__name__)
-
 
 class Board:
     def __init__(
@@ -24,35 +24,36 @@ class Board:
         self.data = data
         self.datafile = datafile
 
+        self.name_to_players = {(player.name().lower()): player for player in self.players}
+        self.name_to_province: dict[str, Province] = {}
+        self.name_to_coast: dict[str, Coast] = {}
+        for province in self.provinces:
+            self.name_to_province[province.name().lower()] = province
+            for coast in province.coasts:
+                self.name_to_coast[coast.name().lower()] = coast
+
     # TODO: we could have this as a dict ready on the variant
-    def get_player(self, name: str) -> Player:
+    def get_player(self, name: str) -> Player | None:
         # we ignore capitalization because this is primarily used for user input
-        return next((player for player in self.players if player.name.lower() == name.lower()), None)
+        return self.name_to_players.get(name.lower(), None)
 
     def get_players_by_score(self) -> list[Player]:
         return sorted(self.players, key=lambda sort_player: sort_player.score(), reverse=True)
 
     # TODO: we could have this as a dict ready on the variant
-    def get_province(self, name: str) -> Province:
+    def get_province(self, name: str) -> Province | None:
         # we ignore capitalization because this is primarily used for user input
-        return next((province for province in self.provinces if province.name.lower() == name.lower()), None)
+        return self.name_to_province.get(name.lower(), None)
 
     def get_province_and_coast(self, name: str) -> tuple[Province, Coast | None]:
         # TODO: (BETA) we build this everywhere, let's just have one live on the Board on init
         # we ignore capitalization because this is primarily used for user input
         name = name.lower()
-        name_to_province: dict[str, Province] = {}
-        name_to_coast: dict[str, Coast] = {}
-        for province in self.provinces:
-            name_to_province[province.name.lower()] = province
-            for coast in province.coasts:
-                name_to_coast[coast.name.lower()] = coast
-
-        coast = name_to_coast.get(name)
+        coast = self.name_to_coast.get(name)
         if coast:
             return coast.province, coast
-        elif name in name_to_province:
-            return name_to_province[name], None
+        elif name in self.name_to_province:
+            return self.name_to_province[name], None
         else:
             return None, None
     
@@ -88,7 +89,7 @@ class Board:
     def get_build_counts(self) -> list[tuple[str, int]]:
         build_counts = []
         for player in self.players:
-            build_counts.append((player.name, len(player.centers) - len(player.units)))
+            build_counts.append((player.name(), len(player.centers) - len(player.units)))
         build_counts = sorted(build_counts, key=lambda counts: counts[1])
         return build_counts
 
@@ -96,7 +97,7 @@ class Board:
         return f"{self.year} {self.phase.name}"
 
     def change_owner(self, province: Province, player: Player):
-        if province.has_supply_center:
+        if province.info.has_supply_center:
             if province.owner:
                 province.owner.centers.remove(province)
             if player:
@@ -128,7 +129,7 @@ class Board:
             new_coast = new_location
 
         if new_province.unit:
-            raise RuntimeError(f"{new_province.name} already has a unit")
+            raise RuntimeError(f"{new_province.name()} already has a unit")
         new_province.unit = unit
         unit.province.unit = None
         unit.province = new_province
@@ -168,3 +169,91 @@ class Board:
             unit.province.dislodged_unit = None
             unit.player.units.remove(unit)
             self.units.remove(unit)
+
+class ParserResult:
+    def __init__(
+        self, player_infos: set[PlayerInfo], province_infos: set[ProvinceInfo], data, datafile: str
+    ):
+        self.player_infos: set[Player] = player_infos
+        self.province_infos = province_infos
+        self.data = data
+        self.datafile = datafile
+
+        self.year = 0
+        self.board_id = 0
+        self.fish = 0
+        self.orders_enabled: bool = True
+        self.data = data
+        self.datafile = datafile
+
+    def to_board(self) -> Board:
+
+        self.info_to_players: dict[PlayerInfo, Player] = {}
+        self.info_to_provinces: dict[ProvinceInfo, Province] = {}
+        self.info_to_coasts: dict[CoastInfo, Coast] = {}
+
+        for info in self.player_infos:
+            self.info_to_players[info] = Player(info, set(), set())
+
+        for info in self.province_infos:
+            unit_info = info.initial_unit
+            if unit_info:
+                unit = Unit(
+                    unit_type=unit_info.unit_type,
+                    owner=self.info_to_players[unit_info.player],
+                    current_province=None,
+                    coast=self.info_to_coasts.get(unit_info.coast),
+                    retreat_options=None
+                )
+            else:
+                unit = None
+
+            province = Province(
+                info=info,
+                adjacent=set(),
+                coasts=set(),
+                core=self.info_to_players.get(info.initial_core),
+                owner=self.info_to_players.get(info.initial_owner),
+                unit=unit
+            )
+
+            if unit_info:
+                unit.province = province
+                self.info_to_players[unit_info.player].units.add(unit)
+
+            self.info_to_provinces[info] = province
+            # print(province.name())
+
+        players: list[Player] = list(self.info_to_players.values())
+        provinces: list[Province] = list(self.info_to_provinces.values())
+
+        for province in provinces:
+            info = province.info
+            # set adjacent provinces
+            for adjacent_info in info.adjacent:
+                province.adjacent.add(self.info_to_provinces[adjacent_info])
+
+            # set coasts
+            for coast_info in info.coasts:
+                coast = Coast(
+                    info=coast_info,
+                    adjacent_seas=set(),
+                    province=province
+                )
+                self.info_to_coasts[coast_info] = coast
+
+                for adjacent_info in coast_info.adjacent_seas:
+                    coast.adjacent_seas.add(self.info_to_provinces[adjacent_info])
+
+                province.coasts.add(coast)
+
+
+        units: set[Unit] = set()
+        for province in provinces:
+            if province.unit:
+                units.add(province.unit)
+            if province.owner and province.info.has_supply_center:
+                province.owner.centers.add(province)
+
+
+        return Board(players, provinces, units, phase.initial(), self.data, self.datafile)

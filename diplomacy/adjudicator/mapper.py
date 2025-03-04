@@ -96,14 +96,14 @@ class Mapper:
                     continue
 
                 if phase.is_retreats(current_phase):
-                    unit_locs = unit.location().all_rets
+                    unit_locs = unit.location().all_rets()
                 else:
-                    unit_locs = unit.location().all_locs
+                    unit_locs = unit.location().all_locs()
 
                 # TODO: Maybe there's a better way to handle convoys?
                 if isinstance(unit.order, (RetreatMove, Move, Support)):
                     new_locs = []
-                    for endpoint in unit.order.destination.all_locs:
+                    for endpoint in unit.order.destination.all_locs():
                         new_locs += [self.normalize(self.get_closest_loc(unit_locs, endpoint))]
                     unit_locs = new_locs
                 try:
@@ -209,7 +209,7 @@ class Mapper:
         if isinstance(order, Build):
             self._draw_build(player, order)
         elif isinstance(order, Disband):
-            for coord in order.location.all_locs:
+            for coord in order.location.all_locs():
                 self._draw_force_disband(coord, self._moves_svg)
         else:
             logger.error(f"Could not draw player order {order}")
@@ -279,7 +279,7 @@ class Mapper:
                     )
                 ]
             if (
-                possibility.type == ProvinceType.SEA
+                possibility.info.type == ProvinceType.SEA
                 and possibility.unit is not None
                 and (self.player_restriction is None or possibility.unit.player == self.player_restriction)
                 and possibility.unit.unit_type == UnitType.FLEET
@@ -326,6 +326,17 @@ class Mapper:
         if False:
             if len(valid_convoys):
                 valid_convoys = valid_convoys[0:1]
+
+        # draw hold at destination unit if got attacked
+        # FIXME - if the destination unit is attacked multiple times, this leads to multiple circles being drawn.
+        order: Move = unit.order
+        destunit = order.destination.get_unit()
+        if destunit:
+            destorder = destunit.order
+            if isinstance(destorder, (ConvoyTransport, Support)):
+                for coord in destunit.location().all_locs():
+                    self._draw_hold(coord)
+
         valid_convoys = self.get_shortest_paths(valid_convoys)
         for path in valid_convoys:
             p = [coordinate]
@@ -377,7 +388,7 @@ class Mapper:
             else:
                 (x3, y3) = self.pull_coordinate((x2, y2), (x3, y3))
             if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)):
-                for coord in order.destination.all_locs:
+                for coord in order.destination.all_locs():
                     self._draw_hold(coord)
             # if two units are support-holding each other
             destorder = order.destination.get_unit().order
@@ -504,7 +515,7 @@ class Mapper:
                 print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
                 continue
 
-            visited_provinces.add(province.name)
+            visited_provinces.add(province.name())
             color = self.board.data["svg config"]["neutral"]
             if province.owner:
                 color = province.owner.color
@@ -524,11 +535,11 @@ class Mapper:
             self.color_element(island_ring, color, key="stroke")
 
         for province in self.board.provinces:
-            if province.type == ProvinceType.SEA:
+            if province.info.type == ProvinceType.SEA:
                 continue
-            if province.name in visited_provinces:
+            if province.name() in visited_provinces:
                 continue
-            print(f"Warning: Province {province.name} was not recolored by mapper!")
+            print(f"Warning: Province {province.name()} was not recolored by mapper!")
 
     def _color_centers(self) -> None:
         centers_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["supply_center_icons"])
@@ -540,8 +551,8 @@ class Mapper:
                 print(f"Error during recoloring centers: {ex}", file=sys.stderr)
                 continue
 
-            if not province.has_supply_center:
-                print(f"Province {province.name} says it has no supply center, but it does", file=sys.stderr)
+            if not province.info.has_supply_center:
+                print(f"Province {province.name()} says it has no supply center, but it does", file=sys.stderr)
                 continue
 
             if province.core:
@@ -609,9 +620,9 @@ class Mapper:
         current_coords = get_transform(unit_element).transform(current_coords)
 
         if unit == unit.province.dislodged_unit:
-            coord_list = unit.location().all_rets
+            coord_list = unit.location().all_rets()
         else:
-            coord_list = unit.location().all_locs
+            coord_list = unit.location().all_locs()
         for desired_coords in coord_list:
             elem = copy.deepcopy(unit_element)
 
@@ -630,8 +641,8 @@ class Mapper:
 
             elem.set("transform", str(trans))
 
-            elem.set("id", unit.province.name)
-            elem.set("{http://www.inkscape.org/namespaces/inkscape}label", unit.province.name)
+            elem.set("id", unit.province.name())
+            elem.set("{http://www.inkscape.org/namespaces/inkscape}label", unit.province.name())
 
             group = self.cached_elements["unit_output"] if not use_moves_svg else self._moves_svg.getroot()
             group.append(elem)
@@ -801,9 +812,9 @@ class Mapper:
 
     def loc_to_point(self, loc: Location, current: tuple[float, float], use_retreats=False):
         if not use_retreats:
-            return self.get_closest_loc(loc.all_locs, current)
+            return self.get_closest_loc(loc.all_locs(), current)
         else:
-            return self.get_closest_loc(loc.all_rets, current)
+            return self.get_closest_loc(loc.all_rets(), current)
 
     def pull_coordinate(
         self, anchor: tuple[float, float], coordinate: tuple[float, float], pull=None, limit=0.25

@@ -4,7 +4,6 @@ from xml.etree.ElementTree import Element, ElementTree
 
 from diplomacy.map_parser.vector.transform import Transform, EmptyTransform, get_transform
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.unit import UnitType
 import logging
 
 logger = logging.getLogger(__name__)
