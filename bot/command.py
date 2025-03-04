@@ -256,7 +256,14 @@ def view_map(ctx: commands.Context, manager: Manager) -> str | dict[str]:
 
 @perms.gm("adjudicate")
 def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str]:
+    snapshot_before = tracemalloc.take_snapshot()
     file, file_name = manager.adjudicate(ctx.guild.id)
+    snapshot_after = tracemalloc.take_snapshot()
+    stats = snapshot_after.compare_to(snapshot_before, 'lineno')
+    log_message = "**Memory usage details:**\n"
+    for stat in stats[:5]:
+        log_message += f"{stat}\n"
+    print(log_message)
     return {"message": "Adjudication completed successfully", "file": file, "file_name": file_name}
 
 
