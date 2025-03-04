@@ -124,6 +124,12 @@ class ProvinceInfo:
             self.coasts.add(CoastInfo(name, None, None, coast_set, self))
 
 
+    def coast(self) -> Coast:
+        if len(self.coasts) != 1:
+            raise RuntimeError(f"Cannot get coast of a province with num coasts {len(self.coasts)} != 1")
+        return next(coast for coast in self.coasts)
+
+
 
 class Province(Location):
     def __init__(
