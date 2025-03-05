@@ -67,10 +67,7 @@ async def _handle_command(
     # People input apostrophes that don't match what the province names are, we can catch all of that here
     ctx.message.content = re.sub(r"[‘’`´′‛]", "'", ctx.message.content)
 
-    if inspect.iscoroutinefunction(function):
-        response = await function(ctx, manager)
-    else:
-        response = function(ctx, manager)
+    response = await function(ctx, manager)
     
     if type(response) is dict:
         message, file, file_name = response["message"], response["file"], response["file_name"]
