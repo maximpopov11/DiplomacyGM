@@ -40,7 +40,7 @@ _winter_builds = "winter builds"
 
 
 def is_admin(author: commands.Context.author) -> bool:
-    return author.name in ["eebopmasch", "icecream_guy", "_bumble"]
+    return author.name in ["eebopmasch", "icecream_guy", "_bumble", "thisisflare", "eelisha"]
 
 
 def is_gm(author: commands.Context.author) -> bool:

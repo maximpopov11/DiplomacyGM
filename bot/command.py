@@ -242,6 +242,7 @@ async def view_orders(player: Player | None, ctx: commands.Context, manager: Man
         order_text = "view_orders text failed"
     return order_text
 
+
 @perms.gm("view map")
 async def view_map(ctx: commands.Context, manager: Manager) -> str | dict[str]:
     # file_name = manager.draw_moves_map(ctx.guild.id, player)
@@ -251,6 +252,7 @@ async def view_map(ctx: commands.Context, manager: Manager) -> str | dict[str]:
         logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
         return "View_orders map failed"
     return {"message": "Map created successfully", "file": file, "file_name": file_name}
+
 
 @perms.gm("adjudicate")
 async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str]:
@@ -315,6 +317,7 @@ async def disable_orders(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
     board.orders_enabled = False
     return "Successful"
+
 
 @perms.gm("delete the game")
 async def delete_game(ctx: commands.Context, manager: Manager) -> str:
