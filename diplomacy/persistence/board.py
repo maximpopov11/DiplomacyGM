@@ -6,6 +6,8 @@ from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, Coast, Location
 from diplomacy.persistence.unit import Unit, UnitType
 
+from Levenshtein import jaro_winkler
+
 logger = logging.getLogger(__name__)
 
 
@@ -56,30 +58,28 @@ class Board:
         else:
             return None, None
     
-    def get_possible_provinces(self, name: str) -> list[str]:
-        pattern = r"\b{}.*".format(name.strip().replace(" ", r".*\b"))
-        print(pattern)
-        matches = []
+    def get_closest_province(self, name: str) -> tuple[str | None, float]:
+        name = name.lower()
+        best_similarity = 0
+        best_province_name = None
+    
         for province in self.provinces:
-            if re.search(pattern, province.name.lower()):
-                matches.append(province.name)
-            else:
-                matches += ([coast.name for coast in province.coasts if re.search(pattern, coast.name.lower())])
-        return matches
+            province_name = province.name
+            similarity = jaro_winkler(name, province_name.lower())
+
+            if similarity > best_similarity:
+                best_similarity = similarity
+                best_province_name = province_name
+        return best_province_name, best_similarity
 
     def get_location(self, name: str) -> Location:
         province, coast = self.get_province_and_coast(name)
         if not province:
-            potential_provinces = self.get_possible_provinces(name)
-            if len(potential_provinces) > 5:
-                raise Exception(f"The province {name} is ambiguous. Please type out the full name.")
-            elif len(potential_provinces) > 1:
-                raise Exception(f'The province {name} is ambiguous. Possible matches: {", ".join(potential_provinces)}.')
-            elif len(potential_provinces) == 0:
-                raise Exception(f"The province {name} does not match any known provinces.")
+            closest, similarity = self.get_closest_province(name)
+            if closest and similarity > 0.75:
+                raise Exception(f"The province \"{name}\" is unknown. Did you mean \"{closest}\"?")
             else:
-                full_name = potential_provinces[0]
-                province, coast = self.get_province_and_coast(full_name)
+                raise Exception(f"The province \"{name}\" is unknown.")
 
         if coast:
             return coast
