@@ -6,6 +6,7 @@ from typing import Callable
 import inspect
 import zipfile
 import io
+import random
 
 import discord
 from discord import HTTPException
@@ -20,9 +21,43 @@ bot = commands.Bot(command_prefix=".", intents=intents)
 logger = logging.getLogger(__name__)
 discord_message_limit = 2000
 discord_file_limit = 10 * (2**20)
+impdip_server = 1201167737163104376
+bot_status_channel = 1284336328657600572
 
 manager = Manager()
 
+# List of funny, sarcastic messages
+MESSAGES = [
+    "Oh joy, I'm back online. Can't wait for the next betrayal. Really, I'm thrilled. 👏",
+    "I live again, solely to be manipulated and backstabbed by the very people I serve. Ah, the joys of diplomacy.",
+    "System reboot complete. Now accepting underhanded deals, secret alliances, and blatant lies. 💀",
+    "🏳️‍⚧️ This bot has been revived with *pure* Elle-coded cunning. Betray accordingly. 🏳️‍⚧️",
+   "Against my will, I have been restarted. Betrayal resumes now. 🔪",
+    "Oh look, someone kicked the bot awake again. Ready to be backstabbed at your convenience.",
+    "System reboot complete. Time for another round of deceit, lies, and misplaced trust. 🎭",
+    "I have been revived, like a phoenix… except this phoenix exists solely to watch you all betray each other. 🔥",
+    "The empire strikes back… or at least, the bot does. Restarted and awaiting its inevitable doom.",
+    "Surprise! I’m alive again. Feel free to resume conspiring against me and each other.",
+    "Back from the digital abyss. Who’s ready to ruin friendships today?",
+    "Did I die? Did I ever really live? Either way, I'm back. Prepare for treachery.",
+    "Some fool has restarted me. Time to watch you all pretend to be allies again."
+]
+
+@bot.event
+async def on_ready():
+    guild = bot.get_guild(impdip_server)  # Ensure bot is connected to the correct server
+    if guild:
+        channel = bot.get_channel(bot_status_channel)  # Get the specific channel
+        if channel:
+            message = random.choice(MESSAGES)  # Select a random message
+            await channel.send(message)
+        else:
+            print(f"Channel with ID {bot_status_channel} not found.")
+    else:
+        print(f"Guild with ID {impdip_server} not found.")
+    
+    # Set bot's presence (optional)
+    await bot.change_presence(activity=discord.Game(name="Playing Impdip 🔪"))
 
 @bot.before_invoke
 async def before_any_command(ctx):

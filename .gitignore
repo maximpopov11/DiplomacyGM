@@ -16,3 +16,4 @@ __pycache__
 *.zip
 
 test.py
+.env
