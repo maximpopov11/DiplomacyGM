@@ -58,7 +58,7 @@ class Board:
 
     def get_possible_provinces(self, name: str) -> list[str]:
         # pattern = r"\b{}.*".format(name.strip().replace(" ", r".*\b"))
-        pattern = rf"^{re.escape(name.strip()).replace("\\ ", r"\S*\s*")}.*$"
+        pattern = r"^{}.*$".format(re.escape(name.strip()).replace("\\ ", r"\S*\s*"))
         print(pattern)
         matches = []
         for province in self.provinces:

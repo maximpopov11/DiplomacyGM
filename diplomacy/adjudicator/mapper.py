@@ -41,11 +41,11 @@ from diplomacy.map_parser.vector.transform import get_transform, MatrixTransform
 
 class Mapper:
     def __init__(self, board: Board):
-        register_namespace('', "http://www.w3.org/2000/svg")
-        register_namespace('inkscape', "http://www.inkscape.org/namespaces/inkscape")
-        register_namespace('sodipodi', "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd")
-        register_namespace('xlink', "http://www.w3.org/1999/xlink")
-        
+        register_namespace("", "http://www.w3.org/2000/svg")
+        register_namespace("inkscape", "http://www.inkscape.org/namespaces/inkscape")
+        register_namespace("sodipodi", "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd")
+        register_namespace("xlink", "http://www.w3.org/1999/xlink")
+
         self.board: Board = board
         self.board_svg: ElementTree = etree.parse(self.board.data["file"])
         self.player_restriction: Player | None = None
@@ -67,9 +67,9 @@ class Mapper:
         self._color_provinces()
         self._color_centers()
         self.draw_side_panel(self.board_svg)
-        
-        for element_name in ["army", "fleet", "retreat_army", "retreat_fleet"]:
-            self.cached_elements[element_name].clear()
+
+        # for element_name in ["army", "fleet", "retreat_army", "retreat_fleet"]:
+        #     self.cached_elements[element_name].clear()
 
         self._moves_svg = copy.deepcopy(self.board_svg)
         self.cached_elements["unit_output_moves"] = get_svg_element(
@@ -85,7 +85,7 @@ class Mapper:
 
         self._reset_moves_map()
         self.player_restriction = player_restriction
-        
+
         t = self._moves_svg.getroot()
         arrow_layer = get_svg_element(t, self.board.data["svg config"]["arrow_output"])
         if not phase.is_builds(current_phase):
@@ -133,7 +133,7 @@ class Mapper:
                     self._draw_player_order(player, build_order)
 
         self.draw_side_panel(self._moves_svg)
-        
+
         svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_moves_map"
         return elementToString(self._moves_svg.getroot(), encoding="utf-8"), svg_file_name
 
