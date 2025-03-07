@@ -57,7 +57,7 @@ async def on_ready():
         print(f"Guild with ID {impdip_server} not found.")
     
     # Set bot's presence (optional)
-    await bot.change_presence(activity=discord.Game(name="Playing Impdip 🔪"))
+    await bot.change_presence(activity=discord.Game(name="Impdip 🔪"))
 
 @bot.before_invoke
 async def before_any_command(ctx):
