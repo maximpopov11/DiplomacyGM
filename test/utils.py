@@ -11,7 +11,7 @@ from diplomacy.persistence.order import (
 )
 from diplomacy.persistence.province import CoastInfo, Location, Coast, Province, ProvinceInfo, ProvinceType
 from diplomacy.persistence.unit import UnitType, Unit
-from diplomacy.persistence.player import Player
+from diplomacy.persistence.player import Player, PlayerInfo
 from diplomacy.persistence.phase import Phase
 from diplomacy.adjudicator.adjudicator import MovesAdjudicator, RetreatsAdjudicator, BuildsAdjudicator, ResolutionState, Resolution
 
@@ -296,11 +296,15 @@ class BoardBuilder():
         self.rumania_c.adjacent_seas = set([self.black_sea])
 
     def _player(self, name):
-        player = Player(
+        info = PlayerInfo(
             name=name,
             color="",
             vscc = 0,
             iscc = 0,
+        )
+
+        player = Player(
+            info = info,
             centers = set(),
             units=set()
         )
@@ -332,7 +336,10 @@ class BoardBuilder():
         province = Province(
             info = info,
             adjacent=set(),
-            coasts=set()
+            coasts=set(),
+            core = None,
+            owner = None,
+            unit = None
         )
 
         self.board.provinces.add(province)
