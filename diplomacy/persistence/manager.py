@@ -29,7 +29,7 @@ class Manager:
             raise RuntimeError("A game already exists in this server.")
 
         logger.info(f"Creating new game in server {server_id}")
-        self._boards[server_id] = get_parser(gametype).parse()
+        self._boards[server_id] = get_parser(gametype).to_board()
         self._boards[server_id].board_id = server_id
         self._database.save_board(server_id, self._boards[server_id])
 

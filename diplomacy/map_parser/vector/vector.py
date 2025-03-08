@@ -13,11 +13,10 @@ from shapely.geometry import Point
 
 from diplomacy.map_parser.vector.transform import get_transform
 from diplomacy.map_parser.vector.utils import get_player, get_unit_coordinates, get_svg_element, parse_path
-from diplomacy.persistence import phase
-from diplomacy.persistence.board import Board
-from diplomacy.persistence.player import Player
-from diplomacy.persistence.province import Province, ProvinceType, Coast
-from diplomacy.persistence.unit import Unit, UnitType
+from diplomacy.persistence.board import ParserResult
+from diplomacy.persistence.player import PlayerInfo
+from diplomacy.persistence.province import CoastInfo, Province, ProvinceInfo, ProvinceType, Coast
+from diplomacy.persistence.unit import Unit, UnitInfo, UnitType
 
 # TODO: (BETA) all attribute getting should be in utils which we import and call utils.my_unit()
 # TODO: (BETA) consistent in bracket formatting
@@ -58,13 +57,10 @@ class Parser:
         self.phantom_primary_fleets_layer: Element = get_svg_element(svg_root, self.layers["fleet"])
         self.phantom_retreat_fleets_layer: Element = get_svg_element(svg_root, self.layers["retreat_fleet"])
 
-        self.color_to_player: dict[str, Player | None] = {}
-        self.name_to_province: dict[str, Province] = {}
+        self.color_to_player: dict[str, PlayerInfo | None] = {}
+        self.name_to_province: dict[str, ProvinceInfo] = {}
 
-        self.cache_provinces: set[Province] | None = None
-        self.cache_adjacencies: set[tuple[str, str]] | None = None
-
-    def parse(self) -> Board:
+    def parse(self) -> ParserResult:
         logger.debug("map_parser.vector.parse.start")
         start = time.time()
 
@@ -73,7 +69,7 @@ class Parser:
             color = data["color"]
             vscc = data["vscc"]
             iscc = data["iscc"]
-            player = Player(name, color, vscc, iscc, set(), set())
+            player = PlayerInfo(name, color, vscc, iscc)
             players.add(player)
             self.color_to_player[color] = player
 
@@ -81,12 +77,6 @@ class Parser:
         self.color_to_player[self.data["svg config"]["neutral_sc"]] = None
 
         provinces = self._get_provinces()
-
-        units = set()
-        for province in provinces:
-            unit = province.unit
-            if unit:
-                units.add(unit)
 
         elapsed = time.time() - start
         logger.info(f"map_parser.vector.parse: {elapsed}s")
@@ -107,9 +97,11 @@ class Parser:
             if province.primary_unit_coordinate == None:
                 logger.warning(f"Province {province.name} has no unit coord. Setting to 0,0 ...")
                 province.primary_unit_coordinate = (0, 0)
+                province.all_locs.add(province.primary_unit_coordinate)
             if province.retreat_unit_coordinate == None:
                 logger.warning(f"Province {province.name} has no retreat coord. Setting to 0,0 ...")
                 province.retreat_unit_coordinate = (0, 0)
+                province.all_rets.add(province.retreat_unit_coordinate)
 
         for province in provinces:
             for coast in province.coasts:
@@ -118,68 +110,69 @@ class Parser:
                 if coast.primary_unit_coordinate == None:
                     logger.warning(f"Province {coast.name} has no unit coord. Setting to 0,0 ...")
                     coast.primary_unit_coordinate = (0, 0)
+                    coast.all_locs.add(coast.primary_unit_coordinate)
                 if coast.retreat_unit_coordinate == None:
                     logger.warning(f"Province {coast.name} has no retreat coord. Setting to 0,0 ...")
                     coast.retreat_unit_coordinate = (0, 0)
+                    coast.all_rets.add(coast.retreat_unit_coordinate)
 
 
-        return Board(players, provinces, units, phase.initial(), self.data, self.datafile)
+        return ParserResult(players, provinces, self.data, self.datafile)
 
-    def read_map(self) -> tuple[set[Province], set[tuple[str, str]]]:
-        if self.cache_provinces is None:
-            # set coordinates and names
-            raw_provinces: set[Province] = self._get_province_coordinates()
-            cache = []
-            self.cache_provinces = set()
-            for province in raw_provinces:
-                if province.name in cache:
-                    logger.warning(f"{province.name} repeats in map, ignoring...")
-                    continue
-                cache.append(province.name)
-                self.cache_provinces.add(province)
+    def read_map(self) -> tuple[set[ProvinceInfo], set[tuple[str, str]]]:
+        # set coordinates and names
+        raw_provinces: set[ProvinceInfo] = self._get_province_coordinates()
+        seen = []
+        
+        provinces = set()
+        for province in raw_provinces:
+            if province.name in seen:
+                logger.warning(f"{province.name} repeats in map, ignoring...")
+                continue
+            seen.append(province.name)
+            provinces.add(province)
 
-            if not self.layers["province_labels"]:
-                self._initialize_province_names(self.cache_provinces)
+        if not self.layers["province_labels"]:
+            self._initialize_province_names(provinces)
 
-        provinces = copy.deepcopy(self.cache_provinces)
         for province in provinces:
             self.name_to_province[province.name] = province
 
-        if self.cache_adjacencies is None:
-            # set adjacencies
-            self.cache_adjacencies = self._get_adjacencies(provinces)
-        adjacencies = copy.deepcopy(self.cache_adjacencies)
+        adjacencies = self._get_adjacencies(provinces)
 
         return (provinces, adjacencies)
 
     def names_to_provinces(self, names: set[str]):
         return map((lambda n: self.name_to_province[n]), names)
 
-    def add_province_to_board(self, provinces: set[Province], province: Province) -> set[Province]:
-        provinces = {x for x in provinces if x.name != province.name}
+    def add_province_to_board(self, provinces: set[ProvinceInfo], province: ProvinceInfo) -> set[ProvinceInfo]:
+        for x in provinces:
+            if x.name == province.name:
+                raise RuntimeError("Two provinces of the same name")
+
         provinces.add(province)
         self.name_to_province[province.name] = province
         return provinces
 
-    def json_cheats(self, provinces: set[Province]) -> set[Province]:
+    def json_cheats(self, provinces: set[ProvinceInfo]) -> set[ProvinceInfo]:
         if not "overrides" in self.data:
             return
         if "high provinces" in self.data["overrides"]:
             for name, data in self.data["overrides"]["high provinces"].items():
-                high_provinces: list[Province] = []
+                high_provinces: list[ProvinceInfo] = []
                 for index in range(1, data["num"] + 1):
-                    province = Province(
-                        name + str(index),
-                        shapely.Polygon(),
-                        None,
-                        None,
-                        getattr(ProvinceType, data["type"]),
-                        False,
-                        set(),
-                        set(),
-                        None,
-                        None,
-                        None,
+                    province = ProvinceInfo(
+                        name=(name + str(index)),
+                        province_type=getattr(ProvinceType, data["type"]),
+                        has_supply_center=False,
+                        primary_unit_coordinate=None,
+                        retreat_unit_coordinate=None,
+                        adjacent=set(),
+                        coasts=set(),
+                        geometry=shapely.Polygon(),
+                        initial_core=None,
+                        initial_owner=None,
+                        initial_unit=None,
                     )
                     provinces = self.add_province_to_board(provinces, province)
                     high_provinces.append(province)
@@ -220,7 +213,7 @@ class Parser:
                 if "coasts" in data:
                     province.coasts = set()
                     for coast_name, coast_adjacent in data["coasts"].items():
-                        coast = Coast(f"{name} {coast_name}", None, None, set(self.names_to_provinces(coast_adjacent)), province)
+                        coast = CoastInfo(f"{name} {coast_name}", None, None, set(self.names_to_provinces(coast_adjacent)), province)
                         province.coasts.add(coast)
                 if "unit_loc" in data:
                     for coordinate in data["unit_loc"]:
@@ -235,7 +228,7 @@ class Parser:
 
         return provinces
 
-    def _get_provinces(self) -> set[Province]:
+    def _get_provinces(self) -> set[ProvinceInfo]:
         provinces, adjacencies = self.read_map()
         for name1, name2 in adjacencies:
             province1 = self.name_to_province[name1]
@@ -278,7 +271,7 @@ class Parser:
 
         return provinces
 
-    def _get_province_coordinates(self) -> set[Province]:
+    def _get_province_coordinates(self) -> set[ProvinceInfo]:
         # TODO: (BETA) don't hardcode translation
         land_provinces = self._create_provinces_type(self.land_layer, ProvinceType.LAND)
         island_provinces = self._create_provinces_type(self.island_layer, ProvinceType.ISLAND)
@@ -290,7 +283,7 @@ class Parser:
         self,
         provinces_layer: Element,
         province_type: ProvinceType,
-    ) -> set[Province]:
+    ) -> set[ProvinceInfo]:
         provinces = set()
         prev_names = set()
         for province_data in provinces_layer.getchildren():
@@ -321,18 +314,18 @@ class Parser:
             if self.layers["province_labels"]:
                 name = self._get_province_name(province_data)
 
-            province = Province(
-                name,
-                poly,
-                None,
-                None,
-                province_type,
-                False,
-                set(),
-                set(),
-                None,
-                None,
-                None,
+            province = ProvinceInfo(
+                name=name,
+                province_type=province_type,
+                geometry=poly,
+                has_supply_center=False,
+                primary_unit_coordinate=None,
+                retreat_unit_coordinate=None,
+                adjacent=set(),
+                coasts=set(),
+                initial_core=None,
+                initial_owner=None,
+                initial_unit=None,
             )
 
             provinces.add(province)
@@ -341,14 +334,14 @@ class Parser:
     def _initialize_province_owners(self, provinces_layer: Element) -> None:
         for province_data in provinces_layer.getchildren():
             name = self._get_province_name(province_data)
-            self.name_to_province[name].owner = get_player(province_data, self.color_to_player)
+            self.name_to_province[name].initial_owner = get_player(province_data, self.color_to_player)
 
     # Sets province names given the names layer
-    def _initialize_province_names(self, provinces: set[Province]) -> None:
+    def _initialize_province_names(self, provinces: set[ProvinceInfo]) -> None:
         def get_coordinates(name_data: Element) -> tuple[float, float]:
             return float(name_data.get("x")), float(name_data.get("y"))
 
-        def set_province_name(province: Province, name_data: Element) -> None:
+        def set_province_name(province: ProvinceInfo, name_data: Element) -> None:
             if province.name is not None:
                 raise RuntimeError(f"Province already has name: {province.name}")
             province.name = name_data.findall(".//svg:tspan", namespaces=NAMESPACE)[0].text
@@ -364,19 +357,15 @@ class Parser:
                 raise RuntimeError(f"{name} already has a supply center")
             province.has_supply_center = True
 
-            owner = province.owner
-            if owner:
-                owner.centers.add(province)
-
             # TODO: (BETA): we cheat assume core = owner if exists because capital center symbols work different
-            core = province.owner
+            core = province.initial_owner
             # if not core:
             #     core_data = center_data.findall(".//svg:circle", namespaces=NAMESPACE)[1]
             #     core = get_player(core_data, self.color_to_player)
-            province.core = core
+            province.initial_core = core
 
     # Sets province supply center values
-    def _initialize_supply_centers(self, provinces: set[Province]) -> None:
+    def _initialize_supply_centers(self, provinces: set[ProvinceInfo]) -> None:
 
         def get_coordinates(supply_center_data: Element) -> tuple[float | None, float | None]:
             circles = supply_center_data.findall(".//svg:circle", namespaces=NAMESPACE)
@@ -387,23 +376,23 @@ class Parser:
             trans = get_transform(supply_center_data)
             return trans.transform(base_coordinates)
 
-        def set_province_supply_center(province: Province, _: Element) -> None:
+        def set_province_supply_center(province: ProvinceInfo, _: Element) -> None:
             if province.has_supply_center:
                 raise RuntimeError(f"{province.name} already has a supply center")
             province.has_supply_center = True
 
         initialize_province_resident_data(provinces, self.centers_layer, get_coordinates, set_province_supply_center)
 
-    def _set_province_unit(self, province: Province, unit_data: Element, coast: Coast = None) -> Unit:
-        if province.unit:
+    def _set_province_unit(self, province: ProvinceInfo, unit_data: Element, coast: Coast = None) -> Unit:
+        if province.initial_unit:
             return
             raise RuntimeError(f"{province.name} already has a unit")
 
         unit_type = self._get_unit_type(unit_data)
 
         # assume that all starting units are on provinces colored in to their color
-        player = province.owner
-        if province.owner == None:
+        player = province.initial_owner
+        if province.initial_owner == None:
             raise Exception(f"{province.name} has a unit, but isn't owned by any country")
 
         # color_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
@@ -412,9 +401,9 @@ class Parser:
         if not coast and unit_type == UnitType.FLEET:
             coast = next((coast for coast in province.coasts), None)
 
-        unit = Unit(unit_type, player, province, coast, None)
-        province.unit = unit
-        unit.player.units.add(unit)
+        unit = UnitInfo(unit_type, player, province, coast)
+        province.initial_unit = unit
+        # unit.player.units.add(unit)
         return unit
 
     def _initialize_units_assisted(self) -> None:
@@ -426,7 +415,7 @@ class Parser:
             self._set_province_unit(province, unit_data, coast)
 
     # Sets province unit values
-    def _initialize_units(self, provinces: set[Province]) -> None:
+    def _initialize_units(self, provinces: set[ProvinceInfo]) -> None:
         def get_coordinates(unit_data: Element) -> tuple[float | None, float | None]:
             base_coordinates = tuple(
                 map(float, unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get("d").split()[1].split(","))
@@ -487,10 +476,10 @@ class Parser:
     def _get_province_name(self, province_data: Element) -> str:
         return province_data.get(f"{NAMESPACE.get('inkscape')}label")
 
-    def _get_province(self, province_data: Element) -> Province:
+    def _get_province(self, province_data: Element) -> ProvinceInfo:
         return self.name_to_province[self._get_province_name(province_data)]
 
-    def _get_province_and_coast(self, province_name: str) -> tuple[Province, Coast | None]:
+    def _get_province_and_coast(self, province_name: str) -> tuple[ProvinceInfo, Coast | None]:
         coast_suffix: str | None = None
         coast_names = {" (nc)", " (sc)", " (ec)", " (wc)"}
 
@@ -508,7 +497,7 @@ class Parser:
         return province, coast
 
     # Returns province adjacency set
-    def _get_adjacencies(self, provinces: set[Province]) -> set[tuple[str, str]]:
+    def _get_adjacencies(self, provinces: set[ProvinceInfo]) -> set[tuple[str, str]]:
         adjacencies = set()
         try:
             f = open(f"config/{self.datafile}_adjacencies.txt", "r")
@@ -561,7 +550,7 @@ class Parser:
 # function: method in Province that, given the province and a child element corresponding to that province, initializes
 # that data in the Province
 def initialize_province_resident_data(
-    provinces: set[Province],
+    provinces: set[ProvinceInfo],
     resident_dataset: list[Element],
     get_coordinates: Callable[[Element], tuple[float, float]],
     resident_data_callback: Callable[[Province, Element], None],
@@ -594,10 +583,10 @@ def initialize_province_resident_data(
 parsers = {}
 
 
-def get_parser(name: str) -> Parser:
+def get_parser(name: str) -> ParserResult:
     if name not in parsers:
         logger.info(f"Creating new Parser for board named {name}")
-        parsers[name] = Parser(name)
+        parsers[name] = Parser(name).parse()
     return parsers[name]
 
 

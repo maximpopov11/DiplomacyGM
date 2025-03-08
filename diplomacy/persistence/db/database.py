@@ -97,7 +97,7 @@ class _DatabaseConnection:
         logger.info(f"Loading board with ID {board_id}")
         # TODO - we should eventually store things like coords, adjacencies, etc
         #  so we don't have to reparse the whole board each time
-        board = get_parser(data_file).parse()
+        board = get_parser(data_file).to_board()
         board.phase = board_phase
         board.year = year
         board.fish = fish
@@ -106,10 +106,10 @@ class _DatabaseConnection:
         player_data = cursor.execute("SELECT player_name, color FROM players WHERE board_id=?", (board_id,)).fetchall()
         player_info_by_name = {player_name: color for player_name, color in player_data}
         for player in board.players:
-            if player.name not in player_info_by_name:
-                logger.warning(f"Couldn't find player {player.name} in DB")
+            if player.name() not in player_info_by_name:
+                logger.warning(f"Couldn't find player {player.name()} in DB")
                 continue
-            color = player_info_by_name[player.name]
+            color = player_info_by_name[player.name()]
             player.color = color
             player.units = set()
             player.centers = set()
@@ -119,7 +119,7 @@ class _DatabaseConnection:
                 "SELECT player, location, is_build, is_army FROM builds WHERE board_id=? and phase=?",
                 (board_id, board.get_phase_and_year_string()),
             ).fetchall()
-            player_by_name = {player.name: player for player in board.players}
+            player_by_name = {player.name(): player for player in board.players}
             for player_name, location, is_build, is_army in builds_data:
                 if player_name not in player_by_name:
                     logger.warning(f"Unknown player: {player_name}")
@@ -143,17 +143,17 @@ class _DatabaseConnection:
             (board_id, board.get_phase_and_year_string()),
         ).fetchall()
         for province in board.provinces:
-            if province.name not in province_info_by_name:
-                logger.warning(f"Couldn't find province {province.name} in DB")
+            if province.name() not in province_info_by_name:
+                logger.warning(f"Couldn't find province {province.name()} in DB")
                 continue
 
-            owner, core, half_core = province_info_by_name[province.name]
+            owner, core, half_core = province_info_by_name[province.name()]
 
             if owner is not None:
                 owner_player = board.get_player(owner)
                 province.owner = owner_player
 
-                if province.has_supply_center:
+                if province.info.has_supply_center:
                     owner_player.centers.add(province)
             else:
                 province.owner = None
@@ -242,7 +242,7 @@ class _DatabaseConnection:
         )
         cursor.executemany(
             "INSERT INTO players (board_id, player_name, color) VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
-            [(board_id, player.name, player.color) for player in board.players],
+            [(board_id, player.name(), player.color) for player in board.players],
         )
 
         # cache = []
@@ -261,9 +261,9 @@ class _DatabaseConnection:
 
         cache = []
         for p in board.provinces:
-            if p.name in cache:
-                print(f"{p.name} repeats!!!")
-            cache.append(p.name)
+            if p.name() in cache:
+                print(f"{p.name()} repeats!!!")
+            cache.append(p.name())
 
         cursor.executemany(
             "INSERT INTO provinces (board_id, phase, province_name, owner, core, half_core) VALUES (?, ?, ?, ?, ?, ?)",
@@ -271,10 +271,10 @@ class _DatabaseConnection:
                 (
                     board_id,
                     board.get_phase_and_year_string(),
-                    province.name,
-                    province.owner.name if province.owner else None,
-                    province.core.name if province.core else None,
-                    province.half_core.name if province.half_core else None,
+                    province.name(),
+                    province.owner.name() if province.owner else None,
+                    province.core.name() if province.core else None,
+                    province.half_core.name() if province.half_core else None,
                 )
                 for province in board.provinces
             ],
@@ -285,8 +285,8 @@ class _DatabaseConnection:
                 (
                     board_id,
                     board.get_phase_and_year_string(),
-                    player.name,
-                    build_order.location.name,
+                    player.name(),
+                    build_order.location.name(),
                     isinstance(build_order, Build),
                     getattr(build_order, "unit_type", None) == UnitType.ARMY,
                 )
@@ -301,9 +301,9 @@ class _DatabaseConnection:
                 (
                     board_id,
                     board.get_phase_and_year_string(),
-                    unit.location().name,
+                    unit.location().name(),
                     unit == unit.province.dislodged_unit,
-                    unit.player.name,
+                    unit.player.name(),
                     unit.unit_type == UnitType.ARMY,
                     unit.order.__class__.__name__ if unit.order is not None else None,
                     getattr(getattr(unit.order, "destination", None), "name", None) if unit.order is not None else None,
@@ -319,7 +319,7 @@ class _DatabaseConnection:
         cursor.executemany(
             "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
             [
-                (board_id, board.get_phase_and_year_string(), unit.location().name, retreat_option.name)
+                (board_id, board.get_phase_and_year_string(), unit.location().name(), retreat_option.name())
                 for unit in board.units
                 if unit.retreat_options is not None
                 for retreat_option in unit.retreat_options
@@ -336,15 +336,15 @@ class _DatabaseConnection:
             [
                 (
                     unit.order.__class__.__name__ if unit.order is not None else None,
-                    getattr(getattr(unit.order, "destination", None), "name", None) if unit.order is not None else None,
+                    getattr(getattr(getattr(unit.order, "destination", None), "info", None), "name", None) if unit.order is not None else None,
                     (
-                        getattr(getattr(getattr(unit.order, "source", None), "province", None), "name", None)
+                        getattr(getattr(getattr(getattr(unit.order, "source", None), "province", None), "info", None), "name", None)
                         if unit.order is not None
                         else None
                     ),
                     board.board_id,
                     board.get_phase_and_year_string(),
-                    unit.location().name,
+                    unit.location().name(),
                     unit.province.dislodged_unit == unit,
                 )
                 for unit in units
@@ -353,7 +353,7 @@ class _DatabaseConnection:
         cursor.executemany(
             "DELETE FROM retreat_options WHERE board_id=? and phase=? and origin=?",
             [
-                (board.board_id, board.get_phase_and_year_string(), unit.location().name)
+                (board.board_id, board.get_phase_and_year_string(), unit.location().name())
                 for unit in units
                 if unit.retreat_options is not None
             ],
@@ -361,7 +361,7 @@ class _DatabaseConnection:
         cursor.executemany(
             "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
             [
-                (board.board_id, board.get_phase_and_year_string(), unit.location().name, retreat_option.name)
+                (board.board_id, board.get_phase_and_year_string(), unit.location().name(), retreat_option.name())
                 for unit in units
                 if unit.retreat_options is not None
                 for retreat_option in unit.retreat_options
@@ -383,8 +383,8 @@ class _DatabaseConnection:
                 (
                     board.board_id,
                     board.get_phase_and_year_string(),
-                    player.name,
-                    build_order.location.name,
+                    player.name(),
+                    build_order.location.name(),
                     isinstance(build_order, Build),
                     getattr(build_order, "unit_type", None) == UnitType.ARMY,
                     isinstance(build_order, Build),

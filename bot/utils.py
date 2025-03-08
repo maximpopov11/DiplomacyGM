@@ -57,7 +57,7 @@ def is_gm_channel(channel: commands.Context.channel) -> bool:
 def get_player_by_role(author: commands.Context.author, manager: Manager, server_id: int) -> Player | None:
     for role in author.roles:
         for player in manager.get_board(server_id).players:
-            if player.name == role.name:
+            if player.name() == role.name:
                 return player
     return None
 
@@ -72,7 +72,7 @@ def get_player_by_channel(channel: commands.Context.channel, manager: Manager, s
 
 def get_player_by_name(name: str, manager: Manager, server_id: int) -> Player | None:
     for player in manager.get_board(server_id).players:
-        if player.name.lower() == name.strip().lower():
+        if player.name().lower() == name.strip().lower():
             return player
     return None
 
@@ -122,9 +122,9 @@ def get_unit_type(command: str) -> UnitType | None:
 def get_orders(board: Board, player_restriction: Player | None) -> str:
     if phase.is_builds(board.phase):
         response = "Received orders:"
-        for player in sorted(board.players, key=lambda sort_player: sort_player.name):
+        for player in sorted(board.players, key=lambda sort_player: sort_player.name()):
             if not player_restriction or player == player_restriction:
-                response += f"\n**{player.name}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
+                response += f"\n**{player.name()}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
                 for unit in player.build_orders:
                     response += f"\n{unit}"
         return response
@@ -137,7 +137,7 @@ def get_orders(board: Board, player_restriction: Player | None) -> str:
 
         response = ""
 
-        for player in sorted(players, key=lambda p: p.name):
+        for player in sorted(players, key=lambda p: p.name()):
             if phase.is_retreats(board.phase):
                 in_moves = lambda u: u == u.province.dislodged_unit
             else:
@@ -146,14 +146,14 @@ def get_orders(board: Board, player_restriction: Player | None) -> str:
             ordered = [unit for unit in moving_units if unit.order is not None]
             missing = [unit for unit in moving_units if unit.order is None]
 
-            response += f"**{player.name}** ({len(ordered)}/{len(moving_units)})\n"
+            response += f"**{player.name()}** ({len(ordered)}/{len(moving_units)})\n"
             if missing:
                 response += f"__Missing Orders:__\n"
-                for unit in sorted(missing, key=lambda _unit: _unit.province.name):
+                for unit in sorted(missing, key=lambda _unit: _unit.province.name()):
                     response += f"{unit}\n"
             if ordered:
                 response += f"__Submitted Orders:__\n"
-                for unit in sorted(ordered, key=lambda _unit: _unit.province.name):
+                for unit in sorted(ordered, key=lambda _unit: _unit.province.name()):
                     response += f"{unit} {unit.order}\n"
 
         return response
