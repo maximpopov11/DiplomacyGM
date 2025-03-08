@@ -62,29 +62,11 @@ class Board:
         print(pattern)
         matches = []
         for province in self.provinces:
-<<<<<<< HEAD
             if re.search(pattern, province.name.lower()):
                 matches.append(province.name)
             else:
                 matches += ([coast.name for coast in province.coasts if re.search(pattern, coast.name.lower())])
         return matches
-||||||| parent of 22d9793 (fix more)
-            province_name = province.name
-            similarity = jaro_winkler(name, province_name.lower())
-
-            if similarity > best_similarity:
-                best_similarity = similarity
-                best_province_name = province_name
-        return best_province_name, best_similarity
-=======
-            province_name = province.name()
-            similarity = jaro_winkler(name, province_name.lower())
-
-            if similarity > best_similarity:
-                best_similarity = similarity
-                best_province_name = province_name
-        return best_province_name, best_similarity
->>>>>>> 22d9793 (fix more)
 
     def get_location(self, name: str) -> Location:
         province, coast = self.get_province_and_coast(name)
