@@ -367,7 +367,7 @@ def all_province_data(ctx: commands.Context, manager: Manager) -> str:
         owner = province.owner
         if not owner:
             owner = "None"
-        province_by_owner[owner].append(province.name)
+        province_by_owner[owner].append(province.name())
 
     data = ""
     for owner, provinces in province_by_owner.items():

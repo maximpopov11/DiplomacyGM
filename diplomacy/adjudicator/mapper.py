@@ -591,8 +591,8 @@ class Mapper:
                         self.color_element(elem, core_color)
                 else:
                     if half_color != core_color:
-                        corename = "None" if not province.core else province.core.name
-                        halfname = "None" if not province.half_core else province.half_core.name
+                        corename = "None" if not province.core else province.core.name()
+                        halfname = "None" if not province.half_core else province.half_core.name()
                         self.color_element(elem, f"url(#{halfname}_{corename})")
                     else:
                         self.color_element(elem, core_color)

@@ -244,12 +244,12 @@ def _dislodge_unit(keywords: list[str], board: Board) -> None:
         raise RuntimeError("Cannot create a dislodged unit in move phase")
 
 
-def _make_units_claim_provinces(keywords, board):
+def _make_units_claim_provinces(keywords, board: Board):
     claim_centers = False
     if keywords:
         claim_centers = keywords[0].lower() == "true"
     for unit in board.units:
-        if claim_centers or not unit.province.has_supply_center:
+        if claim_centers or not unit.province.info.has_supply_center:
             board.change_owner(unit.province, unit.player)
             get_connection().execute_arbitrary_sql(
                 "UPDATE provinces SET owner=? WHERE board_id=? and phase=? and province_name=?",
