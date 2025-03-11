@@ -2,6 +2,7 @@ import logging
 import time
 
 from diplomacy.adjudicator.adjudicator import make_adjudicator
+from diplomacy.adjudicator.fogofwarmapper import FOWMapper
 from diplomacy.adjudicator.mapper import Mapper
 from diplomacy.map_parser.vector.vector import get_parser
 from diplomacy.persistence import phase
@@ -75,6 +76,16 @@ class Manager:
 
         elapsed = time.time() - start
         logger.info(f"manager.adjudicate.{server_id}.{elapsed}s")
+        return svg, file_name
+
+    def fog_of_war(self, server_id: int, player_restriction: Player) -> tuple[str, str]:
+        start = time.time()
+
+        mapper = FOWMapper(self._boards[server_id], player_restriction)
+        svg, file_name = mapper.draw_current_map()
+
+        elapsed = time.time() - start
+        logger.info(f"manager.fog_of_war.{server_id}.{elapsed}s")
         return svg, file_name
 
     def rollback(self, server_id: int) -> dict[str]:

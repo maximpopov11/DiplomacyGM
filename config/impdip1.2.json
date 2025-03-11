@@ -1,6 +1,6 @@
 {
     "name": "Imp Dip",
-    "file": "assets/impdip.1.1.svg",
+    "file": "assets/impdip.1.2.svg",
     "svg config": {
         "land_layer": "layer6",
         "island_ring_layer": "layer9",
@@ -35,8 +35,6 @@
         "map_width": 4375,
         "unit_radius": 10,
         "order_stroke_width": 2,
-        "unknown": "808080",
-        "unknown_sea": "3e4c54",
         "neutral": "c6b7ab",
         "neutral_sc": "ffffff",
         "loc_x_offset": 7.7655,
@@ -47,27 +45,32 @@
             "NAO": {
                 "num": 5,
                 "type": "SEA",
-                "adjacencies": ["Robertstorg", "Brattahlid", "Greenland Sea", "Rockall Rise", "Iberian Current", "Seewarte Seamounts", "SAO1", "SAO2", "SAO3", "SAO4", "SAO5", "Sargasso Sea", "Bermuda", "Massachusetts Bay", "St. Marguerite Baie", "Strait of Belle Isle", "Labrador Sea", "Azores"]
+                "adjacencies": ["Brattahlid", "Greenland Sea", "Rockall Rise", "Iberian Current", "Seewarte Seamounts", "SAO1", "SAO2", "SAO3", "SAO4", "SAO5", "Sargasso Sea", "Bermuda", "Massachusetts Bay", "St. Marguerite Baie", "Strait of Belle Isle", "Labrador Sea", "Azores"]
             },
             "SAO": {
                 "num": 5,
                 "type": "SEA",
-                "adjacencies": ["NAO1", "NAO2", "NAO3", "NAO4", "NAO5", "Seewarte Seamounts", "Serra Leoa Rise", "Manden", "Gold Coast", "Guinea Rise", "Angola Basin", "St. Helena", "Cape Basin", "Cape Khoe", "Southern Sea", "Argentine Basin", "Guanabara Bay", "Todos os Santos Bay", "Mauritsstad", "St. Marcos Bay", "Guiana Current", "Sargasso Sea"]
+                "adjacencies": ["NAO1", "NAO2", "NAO3", "NAO4", "NAO5", "Seewarte Seamounts", "Serra Leoa Rise", "Manden", "Gold Coast", "Angola Basin", "St. Helena", "Cape Basin", "Cape Khoe", "Southern Sea", "Argentine Basin", "Guanabara Bay", "Todos os Santos Bay", "Mauritsstad", "St. Marcos Bay", "Guiana Current", "Sargasso Sea"]
             },
             "NPO": {
                 "num": 5,
                 "type": "SEA",
-                "adjacencies": ["SPO1", "SPO2", "SPO3", "SPO4", "SPO5", "Solomon Islands", "Halmahera Sea", "Philippine Sea", "Kuroshio Current", "Edo", "Tsugaru Strait", "Kuril Sea", "Sea of Okhotsk", "Koryaks", "Chukchi Sea", "North Equatorial Current", "Hawai'i", "Berlanga Ridge", "Guatemala Basin"]
+                "adjacencies": ["SPO1", "SPO2", "SPO3", "Solomon Islands", "Halmahera Sea", "Philippine Sea", "Kuroshio Current", "Edo", "Tsugaru Strait", "Kuril Sea", "Sea of Okhotsk", "Koryaks", "Chukchi Sea", "North Equatorial Current", "Hawai'i", "Berlanga Ridge", "Guatemala Basin"]
             },
             "SPO": {
-                "num": 5,
+                "num": 3,
                 "type": "SEA",
-                "adjacencies": ["NPO1", "NPO2", "NPO3", "NPO4", "NPO5", "Guatemala Basin", "Galapagos", "Colon Ridge", "Trujillo", "Peru Basin", "Nazca Ridge", "Roggeveen Basin", "Chiloe", "Mar de Hoces", "Antarctic Basin", "Aotearoa", "Wurruk", "Coral Sea", "Solomon Islands"]
+                "adjacencies": ["NPO1", "NPO2", "NPO3", "NPO4", "NPO5", "Guatemala Basin", "Galapagos", "Colon Ridge", "Peru Basin", "Nazca Ridge", "Roggeveen Basin", "Chiloe", "Mar de Hoces", "Antarctic Basin", "Aotearoa", "Wurruk", "Coral Sea", "Solomon Islands"]
             },
             "INO": {
                 "num": 5,
                 "type": "SEA",
                 "adjacencies": ["Somali Basin", "Laccadive Plateau", "Maldives", "Gulf of Mannar", "Ceylon", "Gulf of Ceylon", "Cocos Basin", "Sumatra", "Mentawai Strait", "Timor Sea", "New Holland", "Great Australian Bight", "Antarctic Basin", "Crozet Basin", "Reunion", "Mascarene Sea", "Seychelles Sea"]
+            },
+            "SIB": {
+                "num": 3,
+                "type": "LAND",
+                "adjacencies": []
             }
         },
         "provinces": {
@@ -204,14 +207,6 @@
                 "unit_loc": [[4215.260, 1510.000]],
                 "retreat_unit_loc": [[4227.260, 1522.000]]
             },
-            "SPO4": {
-                "unit_loc": [[4099.759, 1577.737]],
-                "retreat_unit_loc": [[4111.759, 1589.737]]
-            },
-            "SPO5": {
-                "unit_loc": [[4176.760, 1577.678]],
-                "retreat_unit_loc": [[4188.760, 1589.678]]
-            },
             "Chukchi Sea": {
                 "unit_loc": [[28.000, 241.000]],
                 "retreat_unit_loc": [[72.908, 186.392]]
@@ -339,6 +334,11 @@
             "color": "ca7a59",
             "vscc": 36,
             "iscc": 5
+        },
+        "Guarani": {
+            "color": "078690",
+            "vscc": 50,
+            "iscc": 3
         }
     }
 }

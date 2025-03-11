@@ -12,7 +12,7 @@ import bot.perms as perms
 from bot.config import is_bumble, temporary_bumbles
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
-from bot.utils import get_orders, get_player_by_channel, is_admin, is_gm
+from bot.utils import get_orders, get_player_by_channel, get_player_by_channel, is_admin, is_gm
 from diplomacy.adjudicator.utils import svg_to_png
 from diplomacy.persistence import phase
 from diplomacy.persistence.db.database import get_connection
@@ -262,6 +262,21 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
         return "View_orders map failed"
     return {"message": "Map created successfully", "file": file, "file_name": file_name}
 
+# @perms.gm("view map")
+def fow(ctx: commands.Context, manager: Manager) -> str | dict[str]:
+    if not is_gm(ctx.message.author):
+        raise PermissionError(f"You cannot generate the fog of war map because you are not a GM.")
+
+    id = ctx.guild.id
+    player = get_player_by_channel(ctx.channel, manager, id)
+
+    # file_name = manager.draw_moves_map(ctx.guild.id, player)
+    try:
+        file, file_name = manager.fog_of_war(ctx.guild.id, player)
+    except Exception as err:
+        logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
+        return "View_orders map failed"
+    return {"message": "Map created successfully", "file": file, "file_name": file_name}
 
 @perms.gm("adjudicate")
 async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str]:

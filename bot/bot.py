@@ -228,6 +228,10 @@ async def view_orders(ctx: commands.Context) -> None:
 async def view_map(ctx: commands.Context) -> None:
     await _handle_command(command.view_map, ctx)
 
+@bot.command(brief="Fow.")
+async def fow(ctx: discord.ext.commands.Context) -> None:
+    await _handle_command(command.fow, ctx)
+
 
 @bot.command(brief="Adjudicates the game and outputs the moves and results maps.",
     description="""
