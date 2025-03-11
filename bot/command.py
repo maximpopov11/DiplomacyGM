@@ -485,7 +485,6 @@ async def ping_players(ctx: commands.Context, manager: Manager):
 
     return "Successful"
 
-@perms.gm("archive")
 async def archive(ctx: commands.Context, _: Manager) -> str:
     if not is_gm(ctx.message.author):
         raise PermissionError(f"You cannot archive because you are not a GM.")
