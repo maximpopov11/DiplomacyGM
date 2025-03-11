@@ -387,10 +387,10 @@ from bot.utils import is_gm, is_gm_channel
 
 async def ping_players(ctx: commands.Context, manager: Manager):
     if not is_gm(ctx.message.author):
-        raise PermissionError(f"You cannot archive because you are not a GM.")
+        raise PermissionError(f"You cannot ping players because you are not a GM.")
 
     if not is_gm_channel(ctx.channel):
-        raise PermissionError(f"You cannot archive in a non-GM channel.")
+        raise PermissionError(f"You cannot ping players in a non-GM channel.")
 
     player_category = None
 
