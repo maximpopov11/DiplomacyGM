@@ -504,7 +504,7 @@ async def ping_players(ctx: commands.Context, manager: Manager):
                 unit_text = "unit"
 
             if missing:
-                response = f"Hey **{"".join([u.mention for u in users])}**, you are missing moves for the following {len(missing)} {unit_text}:"
+                response = f"Hey **{''.join([u.mention for u in users])}**, you are missing moves for the following {len(missing)} {unit_text}:"
                 for unit in sorted(missing, key=lambda _unit: _unit.province.name):
                     response += f"\n{unit}"
 
