@@ -31,7 +31,7 @@ ping_text_choices = [
 ]
 
 
-def ping(ctx: commands.Context, _: Manager) -> str:
+async def ping(ctx: commands.Context, _: Manager) -> str:
     response = "Beep Boop"
     if random.random() < 0.1:
         author = ctx.message.author
@@ -45,7 +45,7 @@ def ping(ctx: commands.Context, _: Manager) -> str:
     return response
 
 
-def bumble(ctx: commands.Context, manager: Manager) -> str:
+async def bumble(ctx: commands.Context, manager: Manager) -> str:
     list_of_bumble = list("bumble")
     random.shuffle(list_of_bumble)
     word_of_bumble = "".join(list_of_bumble)
@@ -67,7 +67,7 @@ def bumble(ctx: commands.Context, manager: Manager) -> str:
     return f"**{word_of_bumble}**"
 
 
-def fish(ctx: commands.Context, manager: Manager) -> str:
+async def fish(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
     fish_num = random.randrange(0, 20)
 
@@ -137,14 +137,14 @@ def fish(ctx: commands.Context, manager: Manager) -> str:
     return fish_message
 
 
-def phish(ctx: commands.Context, _: Manager) -> str:
+async def phish(ctx: commands.Context, _: Manager) -> str:
     message = "No! Phishing is bad!"
     if is_bumble(ctx.author.name):
         message = "Please provide your firstborn pet and your soul for a chance at winning your next game!"
     return message
 
 
-def cheat(ctx: commands.Context, manager: Manager) -> str:
+async def cheat(ctx: commands.Context, manager: Manager) -> str:
     message = "Cheating is disabled for this user."
     author = ctx.message.author.name
     board = manager.get_board(ctx.guild.id)
@@ -167,7 +167,7 @@ def cheat(ctx: commands.Context, manager: Manager) -> str:
     return message
 
 
-def advice(ctx: commands.Context, _: Manager) -> str:
+async def advice(ctx: commands.Context, _: Manager) -> str:
     message = "You are not worthy of advice."
     if is_bumble(ctx.author.name):
         message = "Bumble suggests that you go fishing, although typically blasphemous, today is your lucky day!"
@@ -219,7 +219,7 @@ async def announce(ctx: commands.Context, servers: set[Guild | None]) -> None:
 
 
 @perms.player("order")
-def order(player: Player | None, ctx: commands.Context, manager: Manager) -> str:
+async def order(player: Player | None, ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
 
     if player and not board.orders_enabled:
@@ -229,7 +229,7 @@ def order(player: Player | None, ctx: commands.Context, manager: Manager) -> str
 
 
 @perms.player("remove orders")
-def remove_order(player: Player | None, ctx: commands.Context, manager: Manager) -> str:
+async def remove_order(player: Player | None, ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
 
     if player and not board.orders_enabled:
@@ -239,7 +239,7 @@ def remove_order(player: Player | None, ctx: commands.Context, manager: Manager)
 
 
 @perms.player("view orders")
-def view_orders(player: Player | None, ctx: commands.Context, manager: Manager) -> str:
+async def view_orders(player: Player | None, ctx: commands.Context, manager: Manager) -> str:
     try:
         order_text = get_orders(manager.get_board(ctx.guild.id), player)
     except RuntimeError as err:
@@ -249,7 +249,7 @@ def view_orders(player: Player | None, ctx: commands.Context, manager: Manager) 
 
 
 @perms.gm("view map")
-def view_map(ctx: commands.Context, manager: Manager) -> str | dict[str]:
+async def view_map(ctx: commands.Context, manager: Manager) -> str | dict[str]:
     # file_name = manager.draw_moves_map(ctx.guild.id, player)
     try:
         file, file_name = manager.draw_moves_map(ctx.guild.id, None)
@@ -260,23 +260,23 @@ def view_map(ctx: commands.Context, manager: Manager) -> str | dict[str]:
 
 
 @perms.gm("adjudicate")
-def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str]:
+async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str]:
     file, file_name = manager.adjudicate(ctx.guild.id)
     return {"message": "Adjudication completed successfully", "file": file, "file_name": file_name}
 
 
 @perms.gm("rollback")
-def rollback(ctx: commands.Context, manager: Manager) -> dict[str]:
+async def rollback(ctx: commands.Context, manager: Manager) -> dict[str]:
     return manager.rollback(ctx.guild.id)
 
 
 @perms.gm("reload")
-def reload(ctx: commands.Context, manager: Manager) -> dict[str]:
+async def reload(ctx: commands.Context, manager: Manager) -> dict[str]:
     return manager.reload(ctx.guild.id)
 
 
 @perms.gm("remove all orders")
-def remove_all(ctx: commands.Context, manager: Manager) -> str:
+async def remove_all(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
     for unit in board.units:
         unit.order = None
@@ -287,7 +287,7 @@ def remove_all(ctx: commands.Context, manager: Manager) -> str:
 
 
 # @perms.gm("get scoreboard")
-def get_scoreboard(ctx: commands.Context, manager: Manager) -> str:
+async def get_scoreboard(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
     response = ""
     for player in board.get_players_by_score():
@@ -296,12 +296,12 @@ def get_scoreboard(ctx: commands.Context, manager: Manager) -> str:
 
 
 @perms.gm("edit")
-def edit(ctx: commands.Context, manager: Manager) -> dict[str]:
+async def edit(ctx: commands.Context, manager: Manager) -> dict[str]:
     return parse_edit_state(ctx.message.content, manager.get_board(ctx.guild.id))
 
 
 @perms.gm("create a game")
-def create_game(ctx: commands.Context, manager: Manager) -> str:
+async def create_game(ctx: commands.Context, manager: Manager) -> str:
     gametype = ctx.message.content.removeprefix(".create_game")
     if gametype == "":
         gametype = "impdip.json"
@@ -311,32 +311,31 @@ def create_game(ctx: commands.Context, manager: Manager) -> str:
 
 
 @perms.gm("unlock orders")
-def enable_orders(ctx: commands.Context, manager: Manager) -> str:
+async def enable_orders(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
     board.orders_enabled = True
     return "Successful"
 
 
 @perms.gm("lock orders")
-def disable_orders(ctx: commands.Context, manager: Manager) -> str:
+async def disable_orders(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
     board.orders_enabled = False
     return "Successful"
 
 
 @perms.gm("delete the game")
-def delete_game(ctx: commands.Context, manager: Manager) -> str:
+async def delete_game(ctx: commands.Context, manager: Manager) -> str:
     manager.total_delete(ctx.guild.id)
     return "Game deleted"
 
-
-def info(ctx: commands.Context, manager: Manager) -> str:
+async def info(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
     out = "Phase: " + str(board.phase) + "\nOrders are: " + ("Open" if board.orders_enabled else "Locked")
     return out
 
 
-def province_info(ctx: commands.Context, manager: Manager) -> str:
+async def province_info(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
 
     if not board.orders_enabled:
@@ -371,7 +370,7 @@ Adjacent Provinces:
     return out
 
 
-def all_province_data(ctx: commands.Context, manager: Manager) -> str:
+async def all_province_data(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
 
     province_by_owner = defaultdict(list)
