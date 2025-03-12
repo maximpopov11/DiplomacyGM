@@ -3,17 +3,20 @@ import random
 from random import randrange
 
 from black.trans import defaultdict
-from discord import Guild
+from discord import Guild, Role
 from discord import PermissionOverwrite
 from discord.ext import commands
 
+from bot import config
 import bot.perms as perms
 from bot.config import is_bumble, temporary_bumbles
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
-from bot.utils import get_orders, is_admin, is_gm
+from bot.utils import get_orders, get_player_by_channel, is_admin, is_gm
+from diplomacy.persistence import phase
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.manager import Manager
+from diplomacy.persistence.order import Build, Disband
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province
 
@@ -389,9 +392,107 @@ def all_province_data(ctx: commands.Context, manager: Manager) -> str:
 # needed due to async
 from bot.utils import is_gm, is_gm_channel
 
+async def ping_players(ctx: commands.Context, manager: Manager):
+    if not is_gm(ctx.message.author):
+        raise PermissionError(f"You cannot ping players because you are not a GM.")
+
+    if not is_gm_channel(ctx.channel):
+        raise PermissionError(f"You cannot ping players in a non-GM channel.")
+
+    player_category = None
+
+    # TODO construct on board
+    guild = ctx.guild
+    guild_id = guild.id
+    board = manager.get_board(guild_id)
+
+    for category in guild.categories:
+        if config.is_player_category(category.name):
+            player_category = category
+            break
+
+    if not player_category:
+        return "No player category found"
+
+    name_to_player: dict[str, Player] = {}
+    player_to_role: dict[str, Role] = {}
+    for player in board.players:
+        name_to_player[player.name] = player
+    
+    for role in guild.roles:
+        player = name_to_player.get(role.name)
+        if player:
+            player_to_role[player] = role
+
+    response = None
+
+    for channel in category.channels:
+        player = get_player_by_channel(channel, manager, guild.id)
+
+        if not player:
+            continue
+
+        role = player_to_role.get(player)
+        if not role:
+            logger.warning(f"Missing player role for player {player.name} in guild {guild_id}")
+            continue
+
+        if phase.is_builds(board.phase):
+            count = len(player.centers) - len(player.units)
+
+            current = 0
+            has_disbands = False
+            has_builds = False
+            for order in player.build_orders:
+                if isinstance(order, Disband):
+                    current -= 1
+                    has_disbands = True
+                elif isinstance(order, Build):
+                    current += 1
+                    has_builds = True
+
+            difference = abs(current-count)
+            if difference != 1:
+                order_text = "orders"
+            else:
+                order_text = "order"
+
+            if has_builds and has_disbands:
+                response = f"Hey {role.mention}, you have both build and disband orders. Please get this looked at."
+            elif count >= 0:
+                available_centers = [center for center in player.centers if center.unit == None and center.core == player]
+                available = min(len(available_centers), count)
+
+                difference = abs(current - available)
+                if current > available:
+                    response = f"Hey {role.mention}, you have {difference} more build {order_text} than possible. Please get this looked at."
+                # elif current < available:
+                #     response = f"Hey {role.mention}, you have {difference} less build {order_text} than necessary. Make sure that you want to waive."
+            elif count <= 0:
+                if current < count:
+                    response = f"Hey {role.mention}, you have {difference} more disband {order_text} than necessary. Please get this looked at."
+                elif current > count:
+                    response = f"Hey {role.mention}, you have {difference} less disband {order_text} than possible. Please get this looked at."
+        else:
+            if phase.is_retreats(board.phase):
+                in_moves = lambda u: u == u.province.dislodged_unit
+            else:
+                in_moves = lambda _: True
+
+            missing = [unit for unit in player.units if unit.order is None and in_moves(unit)]
+
+            if missing:
+                response = f"Hey **{role.mention}**, you are missing moves for the following {len(missing)} units:\n"
+                for unit in sorted(missing, key=lambda _unit: _unit.province.name):
+                    response += f"{unit}\n"
+
+        if response:
+            await channel.send(response)
+            response = None
+
+    return "Successful"
 
 async def archive(ctx: commands.Context, _: Manager) -> str:
-
     if not is_gm(ctx.message.author):
         raise PermissionError(f"You cannot archive because you are not a GM.")
 
