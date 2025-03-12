@@ -17,6 +17,7 @@ from diplomacy.persistence.manager import Manager
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
 bot = commands.Bot(command_prefix=".", intents=intents)
 logger = logging.getLogger(__name__)
 discord_message_limit = 2000
@@ -312,7 +313,14 @@ async def create_game(ctx: commands.Context) -> None:
 async def archive(ctx: commands.Context) -> None:
     await _handle_command(command.archive, ctx)
 
-@bot.command(brief="pings players who don't have the expected number of orders.")
+@bot.command(
+    brief="pings players who don't have the expected number of orders.",
+    description="""Pings all players in their orders channl that satisfy the following constraints:
+    1. They have too many build orders, or too little or too many disband orders. As of now, waiving builds doesn't lead to a ping.
+    2. They are missing move orders or retreat orders.
+    You may also specify a timestamp to send a deadline to the players.
+    * .ping_players <timestamp>
+    """)
 async def ping_players(ctx: commands.Context) -> None:
     await _handle_command(command.ping_players, ctx)
 

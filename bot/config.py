@@ -16,6 +16,14 @@ _gm_roles: set[str] = {
 def is_gm_role(role: str) -> bool:
     return _is_member(role, _gm_roles)
 
+# Player roles which are allowed player to bot commands
+_player_roles: set[str] = {
+    "player",
+}
+
+def is_player_role(role: str) -> bool:
+    return _is_member(role, _player_roles)
+
 
 # Discord categories in which GM channels must be
 # (so that you can't create a fake GM channel with the right name)
