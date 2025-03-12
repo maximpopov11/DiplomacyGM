@@ -12,7 +12,7 @@ import bot.perms as perms
 from bot.config import is_bumble, temporary_bumbles
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
-from bot.utils import get_orders, get_player_by_channel, is_admin
+from bot.utils import get_orders, get_player_by_channel, is_admin, is_gm
 from diplomacy.persistence import phase
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.manager import Manager
@@ -336,7 +336,14 @@ def info(ctx: commands.Context, manager: Manager) -> str:
 
 def province_info(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
-    province_name = ctx.message.content.removeprefix(".province_info ").strip()
+
+    if not board.orders_enabled:
+        if not is_gm(ctx.message.author):
+            return "Orders locked! If you think this is an error, contact a GM."
+        if not is_gm_channel(ctx.channel):
+            return "You cannot use .province_info in a non-GM channel while orders are locked."
+ 
+    province_name = ctx.message.content.removeprefix(".province_info").strip()
     if not province_name:
         raise ValueError("Usage: .province_info <province>")
     province = board.get_location(province_name)
