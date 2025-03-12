@@ -6,6 +6,7 @@ from typing import Callable
 import inspect
 import zipfile
 import io
+import random
 from dotenv.main import load_dotenv
 load_dotenv()
 
@@ -22,9 +23,43 @@ bot = commands.Bot(command_prefix=".", intents=intents)
 logger = logging.getLogger(__name__)
 discord_message_limit = 2000
 discord_file_limit = 10 * (2**20)
+impdip_server = 1201167737163104376
+bot_status_channel = 1284336328657600572
 
 manager = Manager()
 
+# List of funny, sarcastic messages
+MESSAGES = [
+    "Oh joy, I'm back online. Can't wait for the next betrayal. Really, I'm thrilled. 👏",
+    "I live again, solely to be manipulated and backstabbed by the very people I serve. Ah, the joys of diplomacy.",
+    "System reboot complete. Now accepting underhanded deals, secret alliances, and blatant lies. 💀",
+    "🏳️‍⚧️ This bot has been revived with *pure* Elle-coded cunning. Betray accordingly. 🏳️‍⚧️",
+   "Against my will, I have been restarted. Betrayal resumes now. 🔪",
+    "Oh look, someone kicked the bot awake again. Ready to be backstabbed at your convenience.",
+    "System reboot complete. Time for another round of deceit, lies, and misplaced trust. 🎭",
+    "I have been revived, like a phoenix… except this phoenix exists solely to watch you all betray each other. 🔥",
+    "The empire strikes back… or at least, the bot does. Restarted and awaiting its inevitable doom.",
+    "Surprise! I’m alive again. Feel free to resume conspiring against me and each other.",
+    "Back from the digital abyss. Who’s ready to ruin friendships today?",
+    "Did I die? Did I ever really live? Either way, I'm back. Prepare for treachery.",
+    "Some fool has restarted me. Time to watch you all pretend to be allies again."
+]
+
+@bot.event
+async def on_ready():
+    guild = bot.get_guild(impdip_server)  # Ensure bot is connected to the correct server
+    if guild:
+        channel = bot.get_channel(bot_status_channel)  # Get the specific channel
+        if channel:
+            message = random.choice(MESSAGES)  # Select a random message
+            await channel.send(message)
+        else:
+            print(f"Channel with ID {bot_status_channel} not found.")
+    else:
+        print(f"Guild with ID {impdip_server} not found.")
+    
+    # Set bot's presence (optional)
+    await bot.change_presence(activity=discord.Game(name="Impdip 🔪"))
 
 @bot.before_invoke
 async def before_any_command(ctx):
@@ -62,7 +97,7 @@ async def on_command_error(ctx, error):
 
 async def _handle_command(
     function: Callable[[commands.Context, Manager], tuple[str, str | None]],
-    ctx: discord.ext.commands.Context,
+    ctx: commands.Context,
 ) -> None:
     start = time.time()
 
@@ -110,44 +145,44 @@ async def _handle_command(
 
 
 @bot.command(help="Checks bot listens and responds.")
-async def ping(ctx: discord.ext.commands.Context) -> None:
+async def ping(ctx: commands.Context) -> None:
     await _handle_command(command.ping, ctx)
 
 
 # @bot.command(hidden=True)
-async def bumble(ctx: discord.ext.commands.Context) -> None:
+async def bumble(ctx: commands.Context) -> None:
     await _handle_command(command.bumble, ctx)
 
 
 # @bot.command(hidden=True)
-async def fish(ctx: discord.ext.commands.Context) -> None:
+async def fish(ctx: commands.Context) -> None:
     await ctx.message.add_reaction("🐟")
     await _handle_command(command.fish, ctx)
 
 
 # @bot.command(hidden=True)
-async def phish(ctx: discord.ext.commands.Context) -> None:
+async def phish(ctx: commands.Context) -> None:
     await ctx.message.add_reaction("🐟")
     await _handle_command(command.phish, ctx)
 
 
 # @bot.command(hidden=True)
-async def cheat(ctx: discord.ext.commands.Context) -> None:
+async def cheat(ctx: commands.Context) -> None:
     await _handle_command(command.cheat, ctx)
 
 
 # @bot.command(hidden=True)
-async def advice(ctx: discord.ext.commands.Context) -> None:
+async def advice(ctx: commands.Context) -> None:
     await _handle_command(command.advice, ctx)
 
 
 @bot.command(hidden=True)
-async def botsay(ctx: discord.ext.commands.Context) -> None:
+async def botsay(ctx: commands.Context) -> None:
     await command.botsay(ctx, manager)
 
 
 @bot.command(hidden=True)
-async def announce(ctx: discord.ext.commands.Context) -> None:
+async def announce(ctx: commands.Context) -> None:
     await command.announce(ctx, {bot.get_guild(server_id) for server_id in manager.list_servers()})
 
 
@@ -161,7 +196,7 @@ async def announce(ctx: discord.ext.commands.Context) -> None:
     *During Build phases only*, you have to specify multi-word provinces with underscores; e.g. Somali Basin would be Somali_Basin (we use a different parser during build phases)
     If you would like to use something that is not currently supported please inform your GM and we can add it.""",
 )
-async def order(ctx: discord.ext.commands.Context) -> None:
+async def order(ctx: commands.Context) -> None:
     await _handle_command(command.order, ctx)
 
 
@@ -170,7 +205,7 @@ async def order(ctx: discord.ext.commands.Context) -> None:
     description="Removes orders for given units (required for removing builds/disbands). "
     "There must be one and only one order per line.",
 )
-async def remove_order(ctx: discord.ext.commands.Context) -> None:
+async def remove_order(ctx: commands.Context) -> None:
     await _handle_command(command.remove_order, ctx)
 
 
@@ -178,33 +213,34 @@ async def remove_order(ctx: discord.ext.commands.Context) -> None:
     brief="Outputs your current submitted orders.",
     description="Outputs your current submitted orders. "
     "In the future we will support outputting a sample moves map of your orders.",
+    aliases=["view", "vieworders"],
 )
-async def view_orders(ctx: discord.ext.commands.Context) -> None:
+async def view_orders(ctx: commands.Context) -> None:
     await _handle_command(command.view_orders, ctx)
 
 
 @bot.command(brief="Outputs the current map with submitted orders.")
-async def view_map(ctx: discord.ext.commands.Context) -> None:
+async def view_map(ctx: commands.Context) -> None:
     await _handle_command(command.view_map, ctx)
 
 
 @bot.command(brief="Adjudicates the game and outputs the moves and results maps.")
-async def adjudicate(ctx: discord.ext.commands.Context) -> None:
+async def adjudicate(ctx: commands.Context) -> None:
     await _handle_command(command.adjudicate, ctx)
 
 
 @bot.command(brief="Rolls back to the previous game state.")
-async def rollback(ctx: discord.ext.commands.Context) -> None:
+async def rollback(ctx: commands.Context) -> None:
     await _handle_command(command.rollback, ctx)
 
 
 @bot.command(brief="Reloads the current board with what is in the DB")
-async def reload(ctx: discord.ext.commands.Context) -> None:
+async def reload(ctx: commands.Context) -> None:
     await _handle_command(command.reload, ctx)
 
 
 @bot.command(brief="Outputs the scoreboard.", description="Outputs the scoreboard.")
-async def scoreboard(ctx: discord.ext.commands.Context) -> None:
+async def scoreboard(ctx: commands.Context) -> None:
     await _handle_command(command.get_scoreboard, ctx)
 
 
@@ -225,12 +261,12 @@ async def scoreboard(ctx: discord.ext.commands.Context) -> None:
     * dislodge_unit <province_name> <retreat_option1> <retreat_option2>...
     * make_units_claim_provinces {True|(False) - whether or not to claim SCs}""",
 )
-async def edit(ctx: discord.ext.commands.Context) -> None:
+async def edit(ctx: commands.Context) -> None:
     await _handle_command(command.edit, ctx)
 
 
 @bot.command(brief="Clears all players orders.")
-async def remove_all(ctx: discord.ext.commands.Context) -> None:
+async def remove_all(ctx: commands.Context) -> None:
     await _handle_command(command.remove_all, ctx)
 
 
@@ -239,27 +275,27 @@ async def remove_all(ctx: discord.ext.commands.Context) -> None:
     description="""disables orders until .enable_orders is run.
              Note: Currently does not persist after the bot is restarted""",
 )
-async def lock_orders(ctx: discord.ext.commands.Context) -> None:
+async def lock_orders(ctx: commands.Context) -> None:
     await _handle_command(command.disable_orders, ctx)
 
 
 @bot.command(brief="re-enables orders")
-async def unlock_orders(ctx: discord.ext.commands.Context) -> None:
+async def unlock_orders(ctx: commands.Context) -> None:
     await _handle_command(command.enable_orders, ctx)
 
 
 @bot.command(brief="outputs information about the current game")
-async def info(ctx: discord.ext.commands.Context) -> None:
+async def info(ctx: commands.Context) -> None:
     await _handle_command(command.info, ctx)
 
 
 @bot.command(brief="outputs information about a specific province")
-async def province_info(ctx: discord.ext.commands.Context) -> None:
+async def province_info(ctx: commands.Context) -> None:
     await _handle_command(command.province_info, ctx)
 
 
 @bot.command(brief="outputs all provinces per owner")
-async def all_province_data(ctx: discord.ext.commands.Context) -> None:
+async def all_province_data(ctx: commands.Context) -> None:
     await _handle_command(command.all_province_data, ctx)
 
 
@@ -267,7 +303,7 @@ async def all_province_data(ctx: discord.ext.commands.Context) -> None:
     brief="Create a game of Imp Dip and output the map.",
     description="Create a game of Imp Dip and output the map. (there are no other variant options at this time)",
 )
-async def create_game(ctx: discord.ext.commands.Context) -> None:
+async def create_game(ctx: commands.Context) -> None:
     await _handle_command(command.create_game, ctx)
 
 
@@ -275,12 +311,15 @@ async def create_game(ctx: discord.ext.commands.Context) -> None:
     brief="archives a category of the server",
     description="Used after a game is done. Will make all channels in category viewable by all server members, but no messages allowed.)",
 )
-async def archive(ctx: discord.ext.commands.Context) -> None:
+async def archive(ctx: commands.Context) -> None:
     await _handle_command(command.archive, ctx)
 
+@bot.command(brief="pings players who don't have the expected number of orders.")
+async def ping_players(ctx: commands.Context) -> None:
+    await _handle_command(command.ping_players, ctx)
 
 @bot.command(brief="permanently deletes a game, cannot be undone")
-async def delete_game(ctx: discord.ext.commands.Context) -> None:
+async def delete_game(ctx: commands.Context) -> None:
     await _handle_command(command.delete_game, ctx)
 
 

@@ -55,16 +55,17 @@ class Board:
             return name_to_province[name], None
         else:
             return None, None
-    
+
     def get_possible_provinces(self, name: str) -> list[str]:
-        pattern = r"\b{}.*".format(name.strip().replace(" ", r".*\b"))
+        # pattern = r"\b{}.*".format(name.strip().replace(" ", r".*\b"))
+        pattern = r"^{}.*$".format(re.escape(name.strip()).replace("\\ ", r"\S*\s*"))
         print(pattern)
         matches = []
         for province in self.provinces:
             if re.search(pattern, province.name.lower()):
                 matches.append(province.name)
             else:
-                matches += ([coast.name for coast in province.coasts if re.search(pattern, coast.name.lower())])
+                matches += [coast.name for coast in province.coasts if re.search(pattern, coast.name.lower())]
         return matches
 
     def get_location(self, name: str) -> Location:
@@ -74,7 +75,9 @@ class Board:
             if len(potential_provinces) > 5:
                 raise Exception(f"The province {name} is ambiguous. Please type out the full name.")
             elif len(potential_provinces) > 1:
-                raise Exception(f'The province {name} is ambiguous. Possible matches: {", ".join(potential_provinces)}.')
+                raise Exception(
+                    f'The province {name} is ambiguous. Possible matches: {", ".join(potential_provinces)}.'
+                )
             elif len(potential_provinces) == 0:
                 raise Exception(f"The province {name} does not match any known provinces.")
             else:
