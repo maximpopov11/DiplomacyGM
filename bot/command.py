@@ -20,6 +20,8 @@ from diplomacy.persistence.order import Build, Disband
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province
 
+import re
+
 logger = logging.getLogger(__name__)
 
 ping_text_choices = [
@@ -401,7 +403,10 @@ async def ping_players(ctx: commands.Context, manager: Manager):
 
     player_category = None
 
-    # TODO construct on board
+    timestamp = re.match(r"<t:(\d+):[a-zA-Z]>", ctx.message.content.removeprefix(".ping_players").strip())
+    if timestamp:
+        timestamp = f"<t:{timestamp.group(1)}:R>"
+
     guild = ctx.guild
     guild_id = guild.id
     board = manager.get_board(guild_id)
@@ -417,12 +422,20 @@ async def ping_players(ctx: commands.Context, manager: Manager):
     name_to_player: dict[str, Player] = {}
     player_to_role: dict[str, Role] = {}
     for player in board.players:
-        name_to_player[player.name] = player
+        name_to_player[player.name.lower()] = player
     
+    player_roles: set[Role] = set()
+
     for role in guild.roles:
-        player = name_to_player.get(role.name)
+        if config.is_player_role(role.name):
+            player_roles.add(role)
+
+        player = name_to_player.get(role.name.lower())
         if player:
             player_to_role[player] = role
+
+    if len(player_roles) == 0:
+        return "No player role found"
 
     response = None
 
@@ -435,6 +448,12 @@ async def ping_players(ctx: commands.Context, manager: Manager):
         role = player_to_role.get(player)
         if not role:
             logger.warning(f"Missing player role for player {player.name} in guild {guild_id}")
+            continue
+
+        # Find users which have a player role to not ping spectators
+        users = set(filter(lambda m: len(set(m.roles) & player_roles) > 0, role.members))
+
+        if len(users) == 0:
             continue
 
         if phase.is_builds(board.phase):
@@ -472,7 +491,7 @@ async def ping_players(ctx: commands.Context, manager: Manager):
                 if current < count:
                     response = f"Hey {role.mention}, you have {difference} more disband {order_text} than necessary. Please get this looked at."
                 elif current > count:
-                    response = f"Hey {role.mention}, you have {difference} less disband {order_text} than possible. Please get this looked at."
+                    response = f"Hey {role.mention}, you have {difference} less disband {order_text} than required. Please get this looked at."
         else:
             if phase.is_retreats(board.phase):
                 in_moves = lambda u: u == u.province.dislodged_unit
@@ -480,13 +499,19 @@ async def ping_players(ctx: commands.Context, manager: Manager):
                 in_moves = lambda _: True
 
             missing = [unit for unit in player.units if unit.order is None and in_moves(unit)]
+            if len(missing) != 1:
+                unit_text = "units"
+            else:
+                unit_text = "unit"
 
             if missing:
-                response = f"Hey **{role.mention}**, you are missing moves for the following {len(missing)} units:\n"
+                response = f"Hey **{"".join([u.mention for u in users])}**, you are missing moves for the following {len(missing)} {unit_text}:"
                 for unit in sorted(missing, key=lambda _unit: _unit.province.name):
-                    response += f"{unit}\n"
+                    response += f"\n{unit}"
 
         if response:
+            if timestamp:
+                response += f"\n The orders deadline is {timestamp}."
             await channel.send(response)
             response = None
 
