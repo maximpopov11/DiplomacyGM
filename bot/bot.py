@@ -191,6 +191,8 @@ async def announce(ctx: commands.Context) -> None:
     If anything in the command errors, we recommend resubmitting the whole order message.
     *During Build phases only*, you have to specify multi-word provinces with underscores; e.g. Somali Basin would be Somali_Basin (we use a different parser during build phases)
     If you would like to use something that is not currently supported please inform your GM and we can add it.""",
+    aliases=["o, orders"],
+
 )
 async def order(ctx: commands.Context) -> None:
     await _handle_command(command.order, ctx)
@@ -200,6 +202,7 @@ async def order(ctx: commands.Context) -> None:
     brief="Removes orders for given units.",
     description="Removes orders for given units (required for removing builds/disbands). "
     "There must be one and only one order per line.",
+    aliases=["remove, rm, removeorders"]
 )
 async def remove_order(ctx: commands.Context) -> None:
     await _handle_command(command.remove_order, ctx)
@@ -209,7 +212,7 @@ async def remove_order(ctx: commands.Context) -> None:
     brief="Outputs your current submitted orders.",
     description="Outputs your current submitted orders. "
     "In the future we will support outputting a sample moves map of your orders.",
-    aliases=["view", "vieworders"],
+    aliases=["v, view", "vieworders"],
 )
 async def view_orders(ctx: commands.Context) -> None:
     await _handle_command(command.view_orders, ctx)
@@ -270,22 +273,32 @@ async def remove_all(ctx: commands.Context) -> None:
     brief="disables orders until .unlock_orders is run.",
     description="""disables orders until .enable_orders is run.
              Note: Currently does not persist after the bot is restarted""",
+    aliases=["lock"]
 )
 async def lock_orders(ctx: commands.Context) -> None:
     await _handle_command(command.disable_orders, ctx)
 
 
-@bot.command(brief="re-enables orders")
+@bot.command(
+    brief="re-enables orders",
+    aliases=["unlock"]
+)
 async def unlock_orders(ctx: commands.Context) -> None:
     await _handle_command(command.enable_orders, ctx)
 
 
-@bot.command(brief="outputs information about the current game")
+@bot.command(
+    brief="outputs information about the current game",
+    aliases=["i"]
+)
 async def info(ctx: commands.Context) -> None:
     await _handle_command(command.info, ctx)
 
 
-@bot.command(brief="outputs information about a specific province")
+@bot.command(
+    brief="outputs information about a specific province",
+    aliases=["province"],
+)
 async def province_info(ctx: commands.Context) -> None:
     await _handle_command(command.province_info, ctx)
 
