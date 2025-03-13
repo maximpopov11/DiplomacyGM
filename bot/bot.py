@@ -305,7 +305,8 @@ async def create_game(ctx: commands.Context) -> None:
 
 @bot.command(
     brief="archives a category of the server",
-    description="Used after a game is done. Will make all channels in category viewable by all server members, but no messages allowed.)",
+    description="Used after a game is done. Will make all channels in category viewable by all server members, but no messages allowed.
+    * .archive [link to any channel in category]",
 )
 async def archive(ctx: commands.Context) -> None:
     await _handle_command(command.archive, ctx)
