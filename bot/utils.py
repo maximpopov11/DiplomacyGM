@@ -7,6 +7,7 @@ from diplomacy.persistence.board import Board
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType, Unit
+from diplomacy.persistence.order import Build, Disband
 
 whitespace_dict = {
     "_",
@@ -127,6 +128,43 @@ def get_orders(board: Board, player_restriction: Player | None) -> str:
                 response += f"\n**{player.name}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
                 for unit in player.build_orders:
                     response += f"\n{unit}"
+
+                count = len(player.centers) - len(player.units)
+
+                current = 0
+                has_disbands = False
+                has_builds = False
+                for order in player.build_orders:
+                    if isinstance(order, Disband):
+                        current -= 1
+                        has_disbands = True
+                    elif isinstance(order, Build):
+                        current += 1
+                        has_builds = True
+
+                difference = abs(current-count)
+                if difference != 1:
+                    order_text = "orders"
+                else:
+                    order_text = "order"
+
+                if has_builds and has_disbands:
+                    response += f"\n__Warning__\nYou have both build and disband orders. Please get this looked at."
+                elif count >= 0:
+                    available_centers = [center for center in player.centers if center.unit == None and center.core == player]
+                    available = min(len(available_centers), count)
+
+                    difference = abs(current - available)
+                    if current > available:
+                        response += f"\n__Warning__\nYou have {difference} more build {order_text} than possible. Please get this looked at."
+                    elif current < available:
+                        response += f"\n__Warning__\nYou have {difference} less build {order_text} than necessary. Make sure that you want to waive."
+                elif count <= 0:
+                    if current < count:
+                        response += f"\n__Warning__\nYou have {difference} more disband {order_text} than necessary. Please get this looked at."
+                    elif current > count:
+                        response += f"\n__Warning__\nYou have {difference} less disband {order_text} than required. Please get this looked at."
+
         return response
     else:
 
