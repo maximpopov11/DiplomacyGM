@@ -8,3 +8,59 @@ Current limitations:
 
 If you find any bugs or inconsistencies or wish to see new features (for game-running work you would rather not do
 yourself or rather not subject your players to), please message icecream_guy on Discord.
+
+### Prerequisites - 
+
+- [python3.12 or newer](https://realpython.com/installing-python/)
+
+- [Git](https://github.com/git-guides/install-git)
+
+- [Pip package installer for Python](https://phoenixnap.com/kb/install-pip-windows)
+
+### Installation
+
+You should use [virtual environments](https://docs.python.org/3/tutorial/venv.html) to manage python packages. 
+
+To clone the repo and install dependencies, run the following on the Command Line (example commands are for Ubuntu 24.04) -
+
+```bash
+#Clone the bot locally
+git clone https://github.com/maximpopov11/DiplomacyGM.git
+cd DiplomacyGM
+
+#Create virtual environment
+virtualenv venv -p=3.12 
+
+#Start virtual environment
+source venv/bin/activate
+
+#This installs all the python dependancies the bot needs, only needed once.
+pip install -r requirements.txt
+
+#Copies 
+cp .env.template .env
+# Now edit .env and add the right inputs
+```
+
+### Running the bot
+
+```bash
+#Start virtual environment
+source venv/bin/activate
+
+#Run the bot
+python main.py
+
+#Stop virtual environment
+deactivate
+```
+
+### Discord Game Setup
+
+Use `.help` on your server to test the bot works. It also lists all the commands available.
+
+GM commands such as `.create_game` can only be used if you have a "GM role". This is any role with the name "heavenly angel", "gm" etc (See [bot/config.py](/bot/config.py) for full list)
+
+GM commands can also only be called in a channel named "admin-chat" in "gm channels" category.
+
+Player commands can only be called in "orders" category in channels named "france-orders" etc.
