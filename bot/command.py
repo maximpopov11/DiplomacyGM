@@ -484,8 +484,8 @@ async def ping_players(ctx: commands.Context, manager: Manager):
                 difference = abs(current - available)
                 if current > available:
                     response = f"Hey {role.mention}, you have {difference} more build {order_text} than possible. Please get this looked at."
-                # elif current < available:
-                #     response = f"Hey {role.mention}, you have {difference} less build {order_text} than necessary. Make sure that you want to waive."
+                elif current < available:
+                    response = f"Hey {role.mention}, you have {difference} less build {order_text} than necessary. Make sure that you want to waive."
             elif count <= 0:
                 if current < count:
                     response = f"Hey {role.mention}, you have {difference} more disband {order_text} than necessary. Please get this looked at."
