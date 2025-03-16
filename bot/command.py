@@ -476,21 +476,21 @@ async def ping_players(ctx: commands.Context, manager: Manager):
                 order_text = "order"
 
             if has_builds and has_disbands:
-                response = f"Hey {role.mention}, you have both build and disband orders. Please get this looked at."
+                response = f"Hey {''.join([u.mention for u in users])}, you have both build and disband orders. Please get this looked at."
             elif count >= 0:
                 available_centers = [center for center in player.centers if center.unit == None and center.core == player]
                 available = min(len(available_centers), count)
 
                 difference = abs(current - available)
                 if current > available:
-                    response = f"Hey {role.mention}, you have {difference} more build {order_text} than possible. Please get this looked at."
+                    response = f"Hey {''.join([u.mention for u in users])}, you have {difference} more build {order_text} than possible. Please get this looked at."
                 elif current < available:
-                    response = f"Hey {role.mention}, you have {difference} less build {order_text} than necessary. Make sure that you want to waive."
+                    response = f"Hey {''.join([u.mention for u in users])}, you have {difference} less build {order_text} than necessary. Make sure that you want to waive."
             elif count <= 0:
                 if current < count:
-                    response = f"Hey {role.mention}, you have {difference} more disband {order_text} than necessary. Please get this looked at."
+                    response = f"Hey {''.join([u.mention for u in users])}, you have {difference} more disband {order_text} than necessary. Please get this looked at."
                 elif current > count:
-                    response = f"Hey {role.mention}, you have {difference} less disband {order_text} than required. Please get this looked at."
+                    response = f"Hey {''.join([u.mention for u in users])}, you have {difference} less disband {order_text} than required. Please get this looked at."
         else:
             if phase.is_retreats(board.phase):
                 in_moves = lambda u: u == u.province.dislodged_unit
