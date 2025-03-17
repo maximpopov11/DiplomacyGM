@@ -7,6 +7,8 @@ import inspect
 import zipfile
 import io
 import random
+from dotenv.main import load_dotenv
+load_dotenv()
 
 import discord
 from discord import HTTPException
