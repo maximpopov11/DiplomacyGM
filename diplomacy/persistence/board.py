@@ -118,6 +118,8 @@ class Board:
         if retreat_options is not None:
             province.dislodged_unit = unit
         else:
+            if province.unit:
+                raise RuntimeError(f"{province.name} already has a unit")
             province.unit = unit
         player.units.add(unit)
         self.units.add(unit)
