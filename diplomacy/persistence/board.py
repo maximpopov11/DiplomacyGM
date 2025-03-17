@@ -117,7 +117,7 @@ class Board:
         unit = Unit(unit_type, player, province, coast, retreat_options)
         if retreat_options is not None:
             if province.dislodged_unit:
-                raise RuntimeError(f"{province.name} already has a disloged unit")
+                raise RuntimeError(f"{province.name} already has a dislodged unit")
             province.dislodged_unit = unit
         else:
             if province.unit:
