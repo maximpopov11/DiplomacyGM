@@ -24,6 +24,7 @@ WORKDIR /root/DiplomacyGM
 RUN pip install --upgrade pip
 RUN pip install -r ./requirements.txt
 
+RUN mv ./assets/fonts/TTF /usr/share/fonts/TTF
 
 ENTRYPOINT ["python3"]
 CMD ["main.py"]
