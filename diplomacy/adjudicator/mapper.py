@@ -139,12 +139,12 @@ class Mapper:
         for element_name in ["army", "fleet"]:
             get_svg_element(self._moves_svg, self.board.data["svg config"][element_name]).clear()
 
-        svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_moves_map"
+        svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_moves_map.svg"
         return elementToString(self._moves_svg.getroot(), encoding="utf-8"), svg_file_name
 
     def draw_current_map(self) -> tuple[str, str]:
         logger.info("mapper.draw_current_map")
-        svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_map"
+        svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_map.svg"
         return elementToString(self.state_svg.getroot(), encoding="utf-8"), svg_file_name
 
     def get_pretty_date(self) -> str:

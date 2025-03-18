@@ -13,6 +13,7 @@ from bot.config import is_bumble, temporary_bumbles
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
 from bot.utils import get_orders, get_player_by_channel, is_admin, is_gm
+from diplomacy.adjudicator.utils import svg_to_png
 from diplomacy.persistence import phase
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.manager import Manager
@@ -248,11 +249,14 @@ async def view_orders(player: Player | None, ctx: commands.Context, manager: Man
     return order_text
 
 
-@perms.gm("view map")
-async def view_map(ctx: commands.Context, manager: Manager) -> str | dict[str]:
-    # file_name = manager.draw_moves_map(ctx.guild.id, player)
+@perms.player("view map")
+async def view_map(player: Player | None, ctx: commands.Context, manager: Manager) -> str | dict[str]:
+    return_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() == "true"
+
     try:
-        file, file_name = manager.draw_moves_map(ctx.guild.id, None)
+        file, file_name = manager.draw_moves_map(ctx.guild.id, player)
+        if not return_svg or player:
+            file, file_name = svg_to_png(file, file_name)
     except Exception as err:
         logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
         return "View_orders map failed"
@@ -261,7 +265,10 @@ async def view_map(ctx: commands.Context, manager: Manager) -> str | dict[str]:
 
 @perms.gm("adjudicate")
 async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str]:
+    return_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() == "true"
     file, file_name = manager.adjudicate(ctx.guild.id)
+    if not return_svg:
+        file, file_name = svg_to_png(file, file_name)
     return {"message": "Adjudication completed successfully", "file": file, "file_name": file_name}
 
 
@@ -486,7 +493,7 @@ async def ping_players(ctx: commands.Context, manager: Manager):
                     response = f"Hey {''.join([u.mention for u in users])}, you have {difference} more build {order_text} than possible. Please get this looked at."
                 elif current < available:
                     response = f"Hey {''.join([u.mention for u in users])}, you have {difference} less build {order_text} than necessary. Make sure that you want to waive."
-            elif count <= 0:
+            elif count < 0:
                 if current < count:
                     response = f"Hey {''.join([u.mention for u in users])}, you have {difference} more disband {order_text} than necessary. Please get this looked at."
                 elif current > count:
