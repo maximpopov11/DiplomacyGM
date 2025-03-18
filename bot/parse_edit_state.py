@@ -153,6 +153,8 @@ def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
         player = board.get_player(keywords[1])
         province, coast = board.get_province_and_coast(keywords[2])
         retreat_options = set([board.get_province(province_name) for province_name in keywords[3:]])
+        if not all(retreat_options):
+                raise ValueError(f"Could not find at least one province in retreat options.")
         unit = board.create_unit(unit_type, player, province, coast, retreat_options)
         get_connection().execute_arbitrary_sql(
             "INSERT INTO units (board_id, phase, location, is_dislodged, owner, is_army) "
@@ -234,6 +236,8 @@ def _dislodge_unit(keywords: list[str], board: Board) -> None:
         if unit == None:
             raise RuntimeError("No unit to dislodge in province")
         retreat_options = set([board.get_province(province_name) for province_name in keywords[1:]])
+        if not all(retreat_options):
+                raise ValueError(f"Could not find at least one province in retreat options.")
         dislodged_unit = board.create_unit(unit.unit_type, unit.player, unit.province, unit.coast, retreat_options)
         unit = board.delete_unit(province)
         get_connection().execute_arbitrary_sql(
