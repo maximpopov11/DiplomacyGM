@@ -248,10 +248,11 @@ async def view_orders(player: Player | None, ctx: commands.Context, manager: Man
     return order_text
 
 
-@perms.player("view map")
-async def view_map(player: Player | None, ctx: commands.Context, manager: Manager) -> str | dict[str]:
+@perms.gm("view map")
+async def view_map(ctx: commands.Context, manager: Manager) -> str | dict[str]:
+    # file_name = manager.draw_moves_map(ctx.guild.id, player)
     try:
-        file, file_name = manager.draw_moves_map(ctx.guild.id, player)
+        file, file_name = manager.draw_moves_map(ctx.guild.id, None)
     except Exception as err:
         logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
         return "View_orders map failed"

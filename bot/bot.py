@@ -58,7 +58,7 @@ async def on_ready():
             print(f"Channel with ID {bot_status_channel} not found.")
     else:
         print(f"Guild with ID {impdip_server} not found.")
-
+    
     # Set bot's presence (optional)
     await bot.change_presence(activity=discord.Game(name="Impdip 🔪"))
 
@@ -209,18 +209,15 @@ async def remove_order(ctx: commands.Context) -> None:
 
 @bot.command(
     brief="Outputs your current submitted orders.",
-    description="Outputs your current submitted orders. ",
+    description="Outputs your current submitted orders. "
+    "In the future we will support outputting a sample moves map of your orders.",
     aliases=["view", "vieworders"],
 )
 async def view_orders(ctx: commands.Context) -> None:
     await _handle_command(command.view_orders, ctx)
 
 
-@bot.command(
-    brief="Outputs the current map with submitted orders.",
-    description="For admins, all submitted orders are displayed. For a player, only their own orders are displayed.",
-    aliases=["viewmap", "vm"],
-)
+@bot.command(brief="Outputs the current map with submitted orders.")
 async def view_map(ctx: commands.Context) -> None:
     await _handle_command(command.view_map, ctx)
 
