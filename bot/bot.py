@@ -221,7 +221,7 @@ async def view_orders(ctx: commands.Context) -> None:
     description="""
     For GMs, all submitted orders are displayed. For a player, only their own orders are displayed.
     GMs may append true as an argument to this to instead get the svg.
-    * view_map {True|(False) - whether or not to claim SCs}
+    * view_map {True|(False) - whether or not to display as an .svg}
     """,
     aliases=["viewmap", "vm"],
 )
