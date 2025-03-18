@@ -67,9 +67,9 @@ class Mapper:
         self._color_provinces()
         self._color_centers()
         self.draw_side_panel(self.board_svg)
-
-        # for element_name in ["army", "fleet", "retreat_army", "retreat_fleet"]:
-        #     self.cached_elements[element_name].clear()
+        
+        for element_name in ["retreat_army", "retreat_fleet", "sea_borders", "island_borders"]:
+            get_svg_element(self.board_svg, self.board.data["svg config"][element_name]).clear()
 
         self._moves_svg = copy.deepcopy(self.board_svg)
         self.cached_elements["unit_output_moves"] = get_svg_element(
@@ -77,6 +77,8 @@ class Mapper:
         )
 
         self.state_svg = copy.deepcopy(self.board_svg)
+        for element_name in ["army", "fleet"]:
+            get_svg_element(self.state_svg, self.board.data["svg config"][element_name]).clear()
 
         self.highlight_retreating_units(self.state_svg)
 
@@ -133,6 +135,9 @@ class Mapper:
                     self._draw_player_order(player, build_order)
 
         self.draw_side_panel(self._moves_svg)
+        
+        for element_name in ["army", "fleet"]:
+            get_svg_element(self._moves_svg, self.board.data["svg config"][element_name]).clear()
 
         svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_moves_map"
         return elementToString(self._moves_svg.getroot(), encoding="utf-8"), svg_file_name
