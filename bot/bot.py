@@ -229,7 +229,12 @@ async def view_map(ctx: commands.Context) -> None:
     await _handle_command(command.view_map, ctx)
 
 
-@bot.command(brief="Adjudicates the game and outputs the moves and results maps.")
+@bot.command(brief="Adjudicates the game and outputs the moves and results maps.",
+    description="""
+    GMs may append true as an argument to this command to instead get the base svg file.
+    * adjudicate {True|(False) - whether or not to display as an .svg}
+    """
+)
 async def adjudicate(ctx: commands.Context) -> None:
     await _handle_command(command.adjudicate, ctx)
 
