@@ -1,5 +1,6 @@
 from bot.utils import get_unit_type, get_keywords
 from diplomacy.adjudicator.mapper import Mapper
+from diplomacy.adjudicator.utils import svg_to_png
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import get_connection
@@ -36,7 +37,7 @@ def parse_edit_state(message: str, board: Board) -> dict[str]:
     else:
         response = "Commands validated successfully. Results map updated."
 
-    file, file_name = Mapper(board).draw_current_map()
+    file, file_name = svg_to_png(Mapper(board).draw_current_map())
 
     return {"message": response, "file": file, "file_name": file_name}
 

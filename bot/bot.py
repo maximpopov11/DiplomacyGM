@@ -126,13 +126,13 @@ async def _handle_command(
         # for some reason zipfile doesn't support this natively
         with io.BytesIO() as vfile:
             zip_file = zipfile.ZipFile(vfile, mode="x", compression=zipfile.ZIP_DEFLATED, compresslevel=9)
-            zip_file.writestr(f"{file_name}.svg", file, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
+            zip_file.writestr(f"{file_name}", file, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
             zip_file.close()
             vfile.seek(0)
             await ctx.channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}.zip"))
     elif file is not None:
         with io.BytesIO(file) as vfile:
-            await ctx.channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}.svg"))
+            await ctx.channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}"))
     else:
         await ctx.channel.send(message)
 
@@ -209,15 +209,22 @@ async def remove_order(ctx: commands.Context) -> None:
 
 @bot.command(
     brief="Outputs your current submitted orders.",
-    description="Outputs your current submitted orders. "
-    "In the future we will support outputting a sample moves map of your orders.",
+    description="Outputs your current submitted orders.",
     aliases=["view", "vieworders"],
 )
 async def view_orders(ctx: commands.Context) -> None:
     await _handle_command(command.view_orders, ctx)
 
 
-@bot.command(brief="Outputs the current map with submitted orders.")
+@bot.command(
+    brief="Outputs the current map with submitted orders.",
+    description="""
+    For GMs, all submitted orders are displayed. For a player, only their own orders are displayed.
+    GMs may append true as an argument to this to instead get the svg.
+    * view_map {True|(False) - whether or not to claim SCs}
+    """,
+    aliases=["viewmap", "vm"],
+)
 async def view_map(ctx: commands.Context) -> None:
     await _handle_command(command.view_map, ctx)
 
