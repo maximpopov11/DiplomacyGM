@@ -212,7 +212,7 @@ async def remove_order(ctx: commands.Context) -> None:
     brief="Outputs your current submitted orders.",
     description="Outputs your current submitted orders. "
     "In the future we will support outputting a sample moves map of your orders.",
-    aliases=["v, view", "vieworders"],
+    aliases=["v", "view", "vieworders", "view-orders"],
 )
 async def view_orders(ctx: commands.Context) -> None:
     await _handle_command(command.view_orders, ctx)
