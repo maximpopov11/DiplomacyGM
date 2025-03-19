@@ -130,7 +130,7 @@
         },
         "Dorians": {
             "color": "bc80bd",
-            "vscc": 42,
+            "vscc": 44,
             "iscc": 10
         },
         "Egypt": {
@@ -155,7 +155,7 @@
         },
         "Ionia": {
             "color": "98e98f",
-            "vscc": 44,
+            "vscc": 42,
             "iscc": 11
         },
         "Lydia": {
@@ -165,7 +165,7 @@
         },
         "Phoenicia": {
             "color": "ffff73",
-            "vscc": 34,
+            "vscc": 37,
             "iscc": 7
         },
         "Scythia": {

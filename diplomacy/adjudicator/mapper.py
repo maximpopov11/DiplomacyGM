@@ -68,7 +68,7 @@ class Mapper:
         self._color_centers()
         self.draw_side_panel(self.board_svg)
         
-        for element_name in ["retreat_army", "retreat_fleet", "sea_borders", "island_borders"]:
+        for element_name in ["retreat_army", "retreat_fleet", "island_borders"]:
             get_svg_element(self.board_svg, self.board.data["svg config"][element_name]).clear()
 
         self._moves_svg = copy.deepcopy(self.board_svg)
