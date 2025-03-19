@@ -257,8 +257,8 @@
         },
         "Inuit": {
             "color": "afc5d8",
-            "vscc": 36,
-            "iscc": 5
+            "vscc": 42,
+            "iscc": 7
         },
         "Guarani": {
             "color": "078690",
@@ -307,13 +307,13 @@
         },
         "Qing": {
             "color": "f36678",
-            "vscc": 36,
-            "iscc": 5
+            "vscc": 32,
+            "iscc": 4
         },
         "Russia": {
             "color": "547352",
-            "vscc": 48,
-            "iscc": 10
+            "vscc": 44,
+            "iscc": 8
         },
         "Safavid": {
             "color": "5a887f",
