@@ -3,7 +3,7 @@ import os
 
 def svg_to_png(svg: bytes, file_name: str):
 
-    p = Popen(["inkscape", "--pipe", "--export-type=png"], stdout=PIPE, stdin=PIPE, stderr=PIPE)
+    p = Popen(["inkscape", "--pipe", "--export-type=png", "--export-dpi=200"], stdout=PIPE, stdin=PIPE, stderr=PIPE)
     data = p.communicate(input=svg)[0]
 
     # Stupid inkscape error fix, not good but works
