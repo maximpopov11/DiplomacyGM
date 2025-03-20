@@ -1,5 +1,4 @@
 from subprocess import Popen, PIPE, STDOUT
-import affine
 import os
 
 def svg_to_png(svg: bytes, file_name: str):
