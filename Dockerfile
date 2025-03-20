@@ -8,14 +8,11 @@ RUN apt-get update && apt-get install -y \
 
 RUN apt-get update
 
-# Install rust
-RUN curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh -s -- -y
-
 # Create python venv
 RUN python -m venv /opt/venv
 
-# Adding python venv and cargo to PATH
-ENV PATH="/opt/venv/bin:/root/.cargo/bin:${PATH}"
+# Adding python venv to PATH
+ENV PATH="/opt/venv/bin:${PATH}"
 
 # Copying over files and changing working directory
 COPY . /root/DiplomacyGM/
@@ -25,8 +22,8 @@ WORKDIR /root/DiplomacyGM
 RUN pip install --upgrade pip
 RUN pip install -r ./requirements.txt
 
-# Copying Fonts from assets, these are needed for words on maps
-RUN mv ./assets/fonts/TTF /usr/share/fonts/TTF
+# Copying Fonts from assets if they exist, these are needed for words on maps to look nice
+RUN [ -e ./assets/fonts/TTF ]  &&  mv ./assets/fonts/TTF /usr/share/fonts/TTF || echo 0
 
 ENTRYPOINT ["python3"]
 CMD ["main.py"]
