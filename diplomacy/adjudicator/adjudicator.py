@@ -459,7 +459,7 @@ class MovesAdjudicator(Adjudicator):
                 # TODO - remove sea provinces on the wrong coast too
                 # see DATC 4.A.5
                 if order.destination_province.dislodged_unit is not None:
-                    order.destination_province.dislodged_unit.retreat_options = order.destination_province.adjacent
+                    order.destination_province.dislodged_unit.retreat_options = order.destination_province.adjacent.copy()
                     if not order.is_convoy:
                         order.destination_province.dislodged_unit.retreat_options -= {order.source_province}
                 # Move us there
