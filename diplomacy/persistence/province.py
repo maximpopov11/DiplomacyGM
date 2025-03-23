@@ -171,3 +171,6 @@ class Coast(Location):
                 if self.adjacent_seas & coast2.adjacent_seas:
                     adjacent_coasts.add(coast2)
         return adjacent_coasts
+
+    def get_adjacent_locations(self) -> set[Location]:
+        return self.adjacent_seas.union(self.get_adjacent_coasts())

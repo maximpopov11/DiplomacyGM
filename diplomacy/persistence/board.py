@@ -35,7 +35,8 @@ class Board:
     # TODO: we could have this as a dict ready on the variant
     def get_province(self, name: str) -> Province:
         # we ignore capitalization because this is primarily used for user input
-        return next((province for province in self.provinces if province.name.lower() == name.lower()), None)
+        province, _ = self.get_province_and_coast(name)
+        return province
 
     def get_province_and_coast(self, name: str) -> tuple[Province, Coast | None]:
         # TODO: (BETA) we build this everywhere, let's just have one live on the Board on init
@@ -53,8 +54,25 @@ class Board:
             return coast.province, coast
         elif name in name_to_province:
             return name_to_province[name], None
+
+        potential_provinces = self.get_possible_provinces(name)
+        if len(potential_provinces) > 5:
+            raise Exception(f"The province {name} is ambiguous. Please type out the full name.")
+        elif len(potential_provinces) > 1:
+            raise Exception(
+                f'The province {name} is ambiguous. Possible matches: {", ".join(potential_provinces)}.'
+            )
+        elif len(potential_provinces) == 0:
+            raise Exception(f"The province {name} does not match any known provinces.")
         else:
-            return None, None
+            full_name = potential_provinces[0].lower()
+            coast = name_to_coast.get(full_name)
+            if coast:
+                return coast.province, coast
+            elif full_name in name_to_province:
+                return name_to_province[full_name], None
+            else:
+                raise Exception(f"Unknown issue occurred when attempting to find the province {name}.")
 
     def get_possible_provinces(self, name: str) -> list[str]:
         # pattern = r"\b{}.*".format(name.strip().replace(" ", r".*\b"))
@@ -70,19 +88,6 @@ class Board:
 
     def get_location(self, name: str) -> Location:
         province, coast = self.get_province_and_coast(name)
-        if not province:
-            potential_provinces = self.get_possible_provinces(name)
-            if len(potential_provinces) > 5:
-                raise Exception(f"The province {name} is ambiguous. Please type out the full name.")
-            elif len(potential_provinces) > 1:
-                raise Exception(
-                    f'The province {name} is ambiguous. Possible matches: {", ".join(potential_provinces)}.'
-                )
-            elif len(potential_provinces) == 0:
-                raise Exception(f"The province {name} does not match any known provinces.")
-            else:
-                full_name = potential_provinces[0]
-                province, coast = self.get_province_and_coast(full_name)
 
         if coast:
             return coast
