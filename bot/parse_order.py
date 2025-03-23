@@ -1,4 +1,6 @@
-from lark import Lark, Transformer
+import logging
+from lark import Lark, Transformer, UnexpectedEOF
+from lark.exceptions import VisitError
 
 from bot.utils import get_unit_type, get_keywords, _manage_coast_signature
 from diplomacy.adjudicator.defs import get_base_province_from_location
@@ -8,6 +10,8 @@ from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, Location, Coast, ProvinceType
 from diplomacy.persistence.unit import Unit, UnitType
+
+logger = logging.getLogger(__name__)
 
 def normalize_location(unit_type: UnitType, location: Location):
     if unit_type == UnitType.FLEET:
@@ -27,13 +31,7 @@ class TreeToOrder(Transformer):
     def set_state(self, board: Board, player_restriction: Player | None):
         self.board = board
         self.player_restriction = player_restriction
-
-    def movement_phase(self, statements):
-        return set([x for x in statements if isinstance(x, Unit)])
-
-    def retreat_phase(self, statements):
-        return set([x for x in statements if isinstance(x, Unit)])
-
+        
     def province(self, s) -> Location:
         name = " ".join(s[::2]).replace("_", " ").strip()
         name = _manage_coast_signature(name)
@@ -92,18 +90,12 @@ class TreeToOrder(Transformer):
         return u.location(), u.player, order.Disband(u.location())
     
     def build(self, s):
-        return s[0]
-
-    def build_phase(self, s):
-        orders = [x for x in s if isinstance(x, tuple)]
-        for build_order in orders:
-            if self.player_restriction is not None and self.player_restriction != build_order[1]:
-                raise Exception(f"Cannot issue order for {build_order[0].name} as you do not control it")
-        
-
-        for build_order in orders:
-            remove_player_order_for_location(self.board, build_order[1], build_order[0])
-            build_order[1].build_orders.add(build_order[2])
+        build_order = s[0]
+        if self.player_restriction is not None and self.player_restriction != build_order[1]:
+            raise Exception(f"Cannot issue order for {build_order[0].name} as you do not control it")
+        remove_player_order_for_location(self.board, build_order[1], build_order[0])
+        build_order[1].build_orders.add(build_order[2])
+        return build_order[0]
 
 
     # format for all of these is (unit, order)
@@ -164,19 +156,31 @@ generator = TreeToOrder()
 with open("bot/orders.ebnf", "r") as f:
     ebnf = f.read()
 
-movement_parser = Lark(ebnf, start="movement_phase", parser="earley")
-retreats_parser = Lark(ebnf, start="retreat_phase", parser="earley")
-builds_parser   = Lark(ebnf, start="build_phase", parser="earley")
+movement_parser = Lark(ebnf, start="order", parser="earley")
+retreats_parser = Lark(ebnf, start="retreat", parser="earley")
+builds_parser   = Lark(ebnf, start="build", parser="earley")
 
 def parse_order(message: str, player_restriction: Player | None, board: Board) -> str:
+    orderlist = message.lower().replace(".order", "").strip().splitlines()
+    orderoutput = []
+    errors = []
     if phase.is_builds(board.phase):
         generator.set_state(board, player_restriction)
-        cmd = builds_parser.parse(message.lower() + "\n")
-        generator.transform(cmd)
+        for order in orderlist:
+            try:
+                cmd = builds_parser.parse(order)
+                generator.transform(cmd)
+                orderoutput.append(f"\u001b[0;32m{order}")
+            except VisitError as e:
+                logger.info(e)
+                orderoutput.append(f"\u001b[0;31m{order}")
+                errors.append(f"`{order}`: {str(e).splitlines()[-1]}")
+            except UnexpectedEOF as e:
+                logger.info(e)
+                orderoutput.append(f"\u001b[0;31m{order}")
+                errors.append(f"`{order}`: Please fix this order and try again")
         database = get_connection()
         database.save_build_orders_for_players(board, player_restriction)
-
-        return "Orders validated successfully."
     elif phase.is_moves(board.phase) or phase.is_retreats(board.phase):
         if phase.is_moves(board.phase):
             parser = movement_parser
@@ -184,15 +188,31 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
             parser = retreats_parser
 
         generator.set_state(board, player_restriction)
-        cmd = parser.parse(message.lower() + "\n")
-        movement = generator.transform(cmd)
+        movement = []
+        for order in orderlist:
+            try:
+                logger.info(order)
+                cmd = parser.parse(order)
+                movement.append(generator.transform(cmd))
+                orderoutput.append(f"\u001b[0;32m{order}")
+            except VisitError as e:
+                logger.info(e)
+                orderoutput.append(f"\u001b[0;31m{order}")
+                errors.append(f"`{order}`: {str(e).splitlines()[-1]}")
+            except UnexpectedEOF as e:
+                logger.info(e)
+                orderoutput.append(f"\u001b[0;31m{order}")
+                errors.append(f"`{order}`: Please fix this order and try again")
 
         database = get_connection()
         database.save_order_for_units(board, movement)
-
-        return "Orders validated successfully"
     else:
         return "The game is in an unknown phase. Something has gone very wrong with the bot. Please report this to a gm"
+        
+    output = "```ansi\n" + "\n".join(orderoutput) + "\n```"
+    if errors:
+        output += "\n" + "\n".join(errors)
+    return output
 
 
 def parse_remove_order(message: str, player_restriction: Player | None, board: Board) -> str:

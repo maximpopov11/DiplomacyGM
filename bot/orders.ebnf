@@ -1,11 +1,4 @@
 WS: /[ \t]+/
-NL: "\n"
-
-movement_phase: ".order" (WS order?)? (NL (order? WS? NL) *)?
-
-retreat_phase: ".order" (WS retreat?)? (NL (retreat? WS? NL) *)?
-
-build_phase: ".order" (WS build?)? (NL (build? WS? NL) *)?
 
 order: move_order
     | hold_order
@@ -67,7 +60,7 @@ CONVOY.2 : "c"
         | "convoys"
 
 CORE.2 : "core"
-    | "cores"
+       | "cores"
 
 RETREAT.2 : MOVE
           | "r"
@@ -94,6 +87,6 @@ retreat_unit : (DESCRIPTOR)? province
 
 DESCRIPTOR.2 : /a|army|cannon|f|fleet|boat|ship/i WS
 
-province : PROVINCE (WS PROVINCE) ~0..3
+province : PROVINCE (WS PROVINCE) ~ 0..3
 
-PROVINCE : /(?![fFaA]\s)[a-zA-Z0-9\._'-]+(?=\s)/
+PROVINCE : /(?![fFaA]\s)[a-zA-Z0-9\._'-]+/
