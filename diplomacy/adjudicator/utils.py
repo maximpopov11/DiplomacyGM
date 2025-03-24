@@ -1,10 +1,14 @@
-from subprocess import Popen, PIPE, STDOUT
+import asyncio
+from subprocess import PIPE
 import os
 
-def svg_to_png(svg: bytes, file_name: str):
+svg_export_limit = asyncio.Semaphore(int(os.getenv("simultaneous_svg_exports_limit")))
 
-    p = Popen(["inkscape", "--pipe", "--export-type=png", "--export-dpi=200"], stdout=PIPE, stdin=PIPE, stderr=PIPE)
-    data = p.communicate(input=svg)[0]
+async def svg_to_png(svg: bytes, file_name: str):
+    async with svg_export_limit:
+        p = await asyncio.create_subprocess_shell("inkscape --pipe --export-type=png --export-dpi=200", stdout=PIPE, stdin=PIPE, stderr=PIPE)
+        data = await p.communicate(input=svg)
+    data = data[0]
 
     # Stupid inkscape error fix, not good but works
     # Inkscape can throw warnings in stdout, this should remove those warnings, leaving us with a valid png
