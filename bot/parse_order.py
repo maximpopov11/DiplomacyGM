@@ -47,6 +47,10 @@ class TreeToOrder(Transformer):
 
         return unit
 
+    def maybe_unit(self, s) -> Unit:
+        # ignore the fleet/army signifier, if exists
+        return s[-1].get_unit()
+        
     def retreat_unit(self, s) -> Unit:
         # ignore the fleet/army signifier, if exists
         unit = s[-1].dislodged_unit
@@ -58,6 +62,9 @@ class TreeToOrder(Transformer):
         return unit
 
     def hold_order(self, s):
+        return s[0], order.Hold()
+
+    def maybe_hold_order(self, s):
         return s[0], order.Hold()
 
     def core_order(self, s):
@@ -99,6 +106,15 @@ class TreeToOrder(Transformer):
 
 
     # format for all of these is (unit, order)
+
+    def maybe_move_order(self, s):
+        if s[0] is None:
+            return None, order.Move(None)
+
+        loc = normalize_location(s[0].unit_type, s[-1])
+
+        return s[0], order.Move(loc)
+
 
     def move_order(self, s):
         loc = normalize_location(s[0].unit_type, s[-1])

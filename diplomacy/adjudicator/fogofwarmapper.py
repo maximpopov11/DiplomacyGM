@@ -12,7 +12,6 @@ import math
 # from diplomacy.adjudicator import utils
 # from diplomacy.map_parser.vector import config_svg as svgcfg
 
-from diplomacy.adjudicator.adjudicator import get_adjacent_provinces
 from diplomacy.map_parser.vector.utils import get_element_color, get_svg_element, get_unit_coordinates
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
@@ -64,13 +63,7 @@ class FOWMapper:
             )
 
         self.restriction = restriction
-        self.adjacent_provinces: set[Province] = set()
-        for unit in restriction.units:
-            for adjacent in get_adjacent_provinces(unit.location()):
-                self.adjacent_provinces.add(adjacent)
-            self.adjacent_provinces.add(unit.province)
-
-        print(self.adjacent_provinces)
+        self.adjacent_provinces: set[Province] = self.board.get_visible_provinces(restriction)
 
         # TODO: Switch to passing the SVG directly, as that's simpiler (self.svg = draw_units(svg)?)
         self._draw_units()
@@ -100,6 +93,9 @@ class FOWMapper:
         arrow_layer = get_svg_element(t, self.board.data["svg config"]["arrow_output"])
         if not phase.is_builds(current_phase):
             for unit in self.board.units:
+                if unit.province not in self.adjacent_provinces:
+                    continue
+
                 if player_restriction and unit.player != player_restriction:
                     continue
                 if phase.is_retreats(current_phase) and unit.province.dislodged_unit != unit:
@@ -144,12 +140,12 @@ class FOWMapper:
 
         self.draw_side_panel(self._moves_svg)
         
-        svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_moves_map"
+        svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_moves_map.svg"
         return elementToString(self._moves_svg.getroot(), encoding="utf-8"), svg_file_name
 
     def draw_current_map(self) -> tuple[str, str]:
         logger.info("mapper.draw_current_map")
-        svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_map"
+        svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_map.svg"
         return elementToString(self.state_svg.getroot(), encoding="utf-8"), svg_file_name
 
     def get_pretty_date(self) -> str:
@@ -174,10 +170,10 @@ class FOWMapper:
                 # match the correct svg element based on the color of the rectangle
                 if get_element_color(power_element[0]) == player.color:
                     power_element.set("transform", self.scoreboard_power_locations[i])
-                    text = "???"
                     if player == self.restriction:
-                        text = str(len(player.centers))
-                    power_element[5][0].text = text
+                        power_element[5][0].text = str(len(player.centers))
+                    else:
+                        power_element[5][0].text = "???"
                     break
 
     def _draw_side_panel_date(self, svg: ElementTree) -> None:
@@ -284,6 +280,9 @@ class FOWMapper:
         options = []
         new_checked = already_checked + (current,)
         for possibility in current.adjacent:
+            if possibility not in self.adjacent_provinces:
+                continue
+
             if possibility == destination:
                 return [
                     (
@@ -389,9 +388,9 @@ class FOWMapper:
                 (x3, y3) = self.pull_coordinate((x1, y1), (x3, y3), self.board.data["svg config"]["unit_radius"])
             else:
                 (x3, y3) = self.pull_coordinate((x2, y2), (x3, y3))
-            if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)):
-                for coord in order.destination.all_locs:
-                    self._draw_hold(coord)
+            # if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)):
+            #     for coord in order.destination.all_locs:
+            #         self._draw_hold(coord)
             # if two units are support-holding each other
             destorder = order.destination.get_unit().order
 
@@ -507,7 +506,8 @@ class FOWMapper:
         province_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["land_layer"])
         island_fill_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["island_fill_layer"])
         island_ring_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["island_ring_layer"])
-        sea_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["island_ring_layer"])
+        sea_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["sea_borders"])
+        island_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["island_borders"])
 
         visited_provinces: set[str] = set()
 
@@ -526,6 +526,30 @@ class FOWMapper:
                 color = province.owner.color
             self.color_element(province_element, color)
 
+        for province_element in sea_layer:
+            try:
+                province = self._get_province_from_element_by_label(province_element)
+            except ValueError as ex:
+                print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
+                continue
+
+            if province in self.adjacent_provinces:
+                sea_layer.remove(province_element)
+
+            visited_provinces.add(province.name)
+
+        for province_element in island_layer:
+            try:
+                province = self._get_province_from_element_by_label(province_element)
+            except ValueError as ex:
+                print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
+                continue
+
+            if province in self.adjacent_provinces:
+                island_layer.remove(province_element)
+
+            visited_provinces.add(province.name)
+
         # Try to combine this with the code above? A lot of repeated stuff here
         for island_ring in island_ring_layer:
             try:
@@ -542,9 +566,6 @@ class FOWMapper:
             self.color_element(island_ring, color, key="stroke")
 
         for province in self.board.provinces:
-            if province.type == ProvinceType.SEA:
-                if province not in self.adjacent_provinces:
-                    color = self.board.data["svg config"]["unknown_sea"]
             if province.name in visited_provinces:
                 continue
             print(f"Warning: Province {province.name} was not recolored by mapper!")

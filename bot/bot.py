@@ -307,6 +307,10 @@ async def info(ctx: commands.Context) -> None:
 async def province_info(ctx: commands.Context) -> None:
     await _handle_command(command.province_info, ctx)
 
+@bot.command(brief="outputs the provinces you can see")
+async def visible_info(ctx: commands.Context) -> None:
+    await _handle_command(command.visible_provinces, ctx)
+
 
 @bot.command(brief="outputs all provinces per owner")
 async def all_province_data(ctx: commands.Context) -> None:
@@ -339,6 +343,10 @@ async def archive(ctx: commands.Context) -> None:
     """)
 async def ping_players(ctx: commands.Context) -> None:
     await _handle_command(command.ping_players, ctx)
+
+@bot.command(brief="bpbppslp")
+async def publish(ctx: commands.Context) -> None:
+    await _handle_command(command.publish_orders, ctx)
 
 @bot.command(brief="permanently deletes a game, cannot be undone")
 async def delete_game(ctx: commands.Context) -> None:

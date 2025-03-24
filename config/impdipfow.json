@@ -1,6 +1,6 @@
 {
     "name": "Imp Dip",
-    "file": "assets/impdip.1.2.svg",
+    "file": "assets/impdipfow.svg",
     "svg config": {
         "land_layer": "layer6",
         "island_ring_layer": "layer9",
@@ -37,6 +37,7 @@
         "order_stroke_width": 2,
         "neutral": "c6b7ab",
         "neutral_sc": "ffffff",
+        "unknown": "808080",
         "loc_x_offset": 7.7655,
         "loc_y_offset": 7.033
     },
@@ -45,32 +46,32 @@
             "NAO": {
                 "num": 5,
                 "type": "SEA",
-                "adjacencies": ["Brattahlid", "Greenland Sea", "Rockall Rise", "Iberian Current", "Seewarte Seamounts", "SAO1", "SAO2", "SAO3", "SAO4", "SAO5", "Sargasso Sea", "Bermuda", "Massachusetts Bay", "St. Marguerite Baie", "Strait of Belle Isle", "Labrador Sea", "Azores"]
+                "adjacencies": ["SAO1", "SAO2", "SAO3", "SAO4", "SAO5", "Brattahlid", "Tunumiisut", "Greenland Sea", "Rockall Rise", "Iberian Current", "Azores", "Madeira Plain", "Canary Basin", "Leeward Sea", "Sargasso Sea", "Bermuda", "Massachusetts Bay", "St. Marguerite Baie", "Strait of Belle Isle", "Labrador Sea", "Frederikshaab"]
             },
             "SAO": {
                 "num": 5,
                 "type": "SEA",
-                "adjacencies": ["NAO1", "NAO2", "NAO3", "NAO4", "NAO5", "Seewarte Seamounts", "Serra Leoa Rise", "Manden", "Gold Coast", "Angola Basin", "St. Helena", "Cape Basin", "Cape Khoe", "Southern Sea", "Argentine Basin", "Guanabara Bay", "Todos os Santos Bay", "Mauritsstad", "St. Marcos Bay", "Guiana Current", "Sargasso Sea"]
+                "adjacencies": ["NAO1", "NAO2", "NAO3", "NAO4", "NAO5", "SPO1", "SPO2", "SPO3", "Leeward Sea", "Guiana Current", "St. Marcos Bay", "Mauritsstad", "Todos os Santos Bay", "Guanabara Bay", "Rio Grande Rise", "Argentine Basin", "Bahia Grande", "Southern Sea", "Cape Khoe", "Cape Basin", "St. Helena", "Angola Basin", "Gold Coast", "Manden", "Serra Leoa Rise", "Seewarte Seamounts", "Canary Basin"]
             },
             "NPO": {
                 "num": 5,
                 "type": "SEA",
-                "adjacencies": ["SPO1", "SPO2", "SPO3", "Solomon Islands", "Halmahera Sea", "Philippine Sea", "Kuroshio Current", "Edo", "Tsugaru Strait", "Kuril Sea", "Sea of Okhotsk", "Koryaks", "Chukchi Sea", "North Equatorial Current", "Hawai'i", "Berlanga Ridge", "Guatemala Basin"]
+                "adjacencies": ["SPO1", "SPO2", "SPO3", "Peru Basin", "Galapagos", "Guatemala Basin", "Berlanga Ridge", "Hawai'i", "North Equatorial Current", "Chukchi Sea", "Karaginskiy Gulf", "Koryaks", "Kuril Sea", "Tsugaru Strait", "Edo", "Kuroshio Current", "Philippine Sea", "Halmahera Sea", "Solomon Islands"]
             },
             "SPO": {
                 "num": 3,
                 "type": "SEA",
-                "adjacencies": ["NPO1", "NPO2", "NPO3", "NPO4", "NPO5", "Guatemala Basin", "Galapagos", "Colon Ridge", "Peru Basin", "Nazca Ridge", "Roggeveen Basin", "Chiloe", "Mar de Hoces", "Antarctic Basin", "Aotearoa", "Wurruk", "Coral Sea", "Solomon Islands"]
+                "adjacencies": ["NPO1", "NPO2", "NPO3", "NPO4", "NPO5", "SAO1", "SAO2", "SAO3", "SAO4", "SAO5", "Solomon Islands", "Coral Sea", "Wurruk", "Antarctic Basin", "Aotearoa", "Bahia Grande", "Mar de Hoces", "Chiloe", "Roggeveen Basin", "Peru Basin"]
             },
             "INO": {
                 "num": 5,
                 "type": "SEA",
-                "adjacencies": ["Somali Basin", "Laccadive Plateau", "Maldives", "Gulf of Mannar", "Ceylon", "Gulf of Ceylon", "Cocos Basin", "Sumatra", "Mentawai Strait", "Timor Sea", "New Holland", "Great Australian Bight", "Antarctic Basin", "Crozet Basin", "Reunion", "Mascarene Sea", "Seychelles Sea"]
+                "adjacencies": ["New Holland", "Timor Sea", "Mentawai Strait", "Sumatra", "Cocos Basin", "Gulf of Ceylon", "Ceylon", "Gulf of Mannar", "Maldives", "Laccadive Plateau", "Somali Basin", "Seychelles Sea", "Mascarene Sea", "Reunion", "Crozet Basin", "Antarctic Basin", "Great Australian Bight"]
             },
             "SIB": {
                 "num": 3,
                 "type": "LAND",
-                "adjacencies": []
+                "adjacencies": ["Verkhoturye", "Yamalia", "Taymyr", "Yenisei", "Krasnoyarsk", "Zaisan", "Balkhash", "Turkestan", "Alimuly"]
             }
         },
         "provinces": {
@@ -85,6 +86,75 @@
             },
             "Greenland Sea": {
                 "remove_adjacencies": ["Edinburgh"]
+            },
+            "Windward Passage": {
+                "remove_adjacencies": ["Bahamas"]
+            },
+            "Bahamas": {
+                "remove_adjacencies": ["Windward Passage", "Baracoa"]
+            },
+            "Cabo Verde": {
+                "remove_adjacencies": ["Senegal Estuary"]
+            },
+            "Senegal Estuary": {
+                "remove_adjacencies": ["Cabo Verde"]
+            },
+            "Seychelles Sea": {
+                "remove_adjacencies": ["Baidoa"]
+            },
+            "Baidoa": {
+                "remove_adjacencies": ["Seychelles Sea"]
+            },
+            "Soyo": {
+                "remove_adjacencies": ["Lopez Bay"]
+            },
+            "Lopez Bay": {
+                "remove_adjacencies": ["Soyo"]
+            },
+            "Juventud": {
+                "remove_adjacencies": ["Bahamas Channel"]
+            },
+            "Bahamas Channel": {
+                "remove_adjacencies": ["Juventud"]
+            },
+            "Baracoa": {
+                "remove_adjacencies": ["Bahamas"]
+            },
+            "Mogadishu": {
+                "remove_adjacencies": ["Somali Basin"]
+            },
+            "Somali Basin": {
+                "remove_adjacencies": ["Mogadishu"]
+            },
+            "Sea of Azores": {
+                "remove_adjacencies": ["Anfa"]
+            },
+            "Anfa": {
+                "remove_adjacencies": ["Sea of Azores"]
+            },
+            "Bremen": {
+                "remove_adjacencies": ["Skagerrak"]
+            },
+            "Skagerrak": {
+                "remove_adjacencies": ["Bremen"]
+            },
+            "Cormantin": {
+                "remove_adjacencies": ["Gulf of Guinea"]
+            },
+            "Gulf of Guinea": {
+                "remove_adjacencies": ["Cormantin"]
+            },
+            "Angola Basin": {
+                "remove_adjacencies": ["Luanda"]
+            },
+            "Luanda": {
+                "remove_adjacencies": ["Angola Basin"]
+            },
+            "Gulf of Khambhat": {
+                "remove_adjacencies": ["Goa"]
+            },
+            "Goa": {
+                "remove_adjacencies": ["Gulf of Khambhat"]
             },
             "Panama": {
                 "coasts": {
@@ -154,10 +224,10 @@
                     ]
                 }
             },
-            "Chukchis": {
+            "Kereks": {
                 "coasts": {
                     "ec": [
-                        "Chukchi Sea"
+                        "Karaginskiy Gulf"
                     ],
                     "wc": [
                         "Sea of Okhotsk"
@@ -257,15 +327,20 @@
         },
         "Inuit": {
             "color": "afc5d8",
-            "vscc": 36,
-            "iscc": 5
+            "vscc": 42,
+            "iscc": 7
+        },
+        "Guarani": {
+            "color": "078690",
+            "vscc": 32,
+            "iscc": 4
         },
         "Kongo": {
             "color": "924cb3",
             "vscc": 32,
             "iscc": 4
         },
-        "Mapuche-Tehuelche": {
+        "Mapuche": {
             "color": "81889d",
             "vscc": 32,
             "iscc": 4
@@ -302,13 +377,13 @@
         },
         "Qing": {
             "color": "f36678",
-            "vscc": 36,
-            "iscc": 5
+            "vscc": 32,
+            "iscc": 4
         },
         "Russia": {
             "color": "547352",
-            "vscc": 48,
-            "iscc": 10
+            "vscc": 44,
+            "iscc": 8
         },
         "Safavid": {
             "color": "5a887f",
@@ -334,11 +409,6 @@
             "color": "ca7a59",
             "vscc": 36,
             "iscc": 5
-        },
-        "Guarani": {
-            "color": "078690",
-            "vscc": 50,
-            "iscc": 3
         }
     }
 }

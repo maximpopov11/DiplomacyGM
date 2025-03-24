@@ -1,6 +1,7 @@
 import re
 import logging
 
+from diplomacy.adjudicator.adjacencies import get_adjacent_provinces
 from diplomacy.persistence.phase import Phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, Coast, Location
@@ -55,6 +56,20 @@ class Board:
             return name_to_province[name], None
         else:
             return None, None
+
+    def get_visible_provinces(self, player: Player) -> set[Province]:
+        visible: set[Province] = set()
+        for unit in player.units:
+            visible.update(get_adjacent_provinces(unit.location()))
+            visible.add(unit.province)
+
+        for province in player.centers:
+            if province.core == player:
+                visible.update(province.adjacent)
+            visible.add(province)
+
+        return visible
+
 
     def get_possible_provinces(self, name: str) -> list[str]:
         # pattern = r"\b{}.*".format(name.strip().replace(" ", r".*\b"))

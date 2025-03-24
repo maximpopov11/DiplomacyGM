@@ -2,6 +2,7 @@ import abc
 import collections
 import logging
 
+from diplomacy.adjudicator.adjacencies import get_adjacent_provinces
 from diplomacy.adjudicator.defs import (
     ResolutionState,
     Resolution,
@@ -31,33 +32,6 @@ from diplomacy.persistence.unit import UnitType, Unit
 logger = logging.getLogger(__name__)
 
 
-# TODO - move this somewhere that makes more sense
-def get_adjacent_provinces(location: Location) -> set[Province]:
-    if isinstance(location, Coast):
-        return location.adjacent_seas | {coast.province for coast in location.get_adjacent_coasts()}
-    if isinstance(location, Province):
-        return location.adjacent
-    raise ValueError(f"Location {location} should be Coast or Province")
-
-
-def get_destination_province_from_unit(unit: Unit) -> Province | None:
-    if unit.order is None:
-        return None
-    if isinstance(unit.order, Hold) or isinstance(unit.order, Core):
-        return unit.province
-    try:
-        # noinspection PyUnresolvedReferences
-        destination: Location = unit.order.destination
-        return get_base_province_from_location(destination)
-    except AttributeError:
-        return None
-
-
-def get_source_province_from_unit(unit: Unit) -> Province:
-    order = unit.order
-    if issubclass(order.__class__, ComplexOrder):
-        return order.source.province
-    return unit.province
 
 
 def convoy_is_possible(start: Province, end: Province, check_fleet_orders=False) -> bool:

@@ -321,6 +321,10 @@ class Parser:
             if self.layers["province_labels"]:
                 name = self._get_province_name(province_data)
 
+            # skip high province
+            if any(char.isdigit() for char in name):
+                continue
+
             province = Province(
                 name,
                 poly,
