@@ -210,18 +210,16 @@ class _DatabaseConnection:
                     destination_province, destination_coast = board.get_province_and_coast(order_destination)
                     if destination_coast is not None:
                         destination_province = destination_coast
-                source_unit = None
                 if order_source is not None:
                     source_province, source_coast = board.get_province_and_coast(order_source)
                     if source_coast is not None:
                         source_province = source_coast
-                    source_unit = source_province.unit
                 if order_class in [Hold, Core, RetreatDisband]:
                     order = order_class()
                 elif order_class in [Move, ConvoyMove, RetreatMove]:
                     order = order_class(destination=destination_province)
                 elif order_class in [Support, ConvoyTransport]:
-                    order = order_class(destination=destination_province, source=source_unit)
+                    order = order_class(destination=destination_province, source=source_province)
                 else:
                     raise ValueError(f"Could not parse {order_class}")
 
@@ -338,7 +336,7 @@ class _DatabaseConnection:
                     unit.order.__class__.__name__ if unit.order is not None else None,
                     getattr(getattr(unit.order, "destination", None), "name", None) if unit.order is not None else None,
                     (
-                        getattr(getattr(getattr(unit.order, "source", None), "province", None), "name", None)
+                        getattr(getattr(unit.order, "source", None), "name", None)
                         if unit.order is not None
                         else None
                     ),

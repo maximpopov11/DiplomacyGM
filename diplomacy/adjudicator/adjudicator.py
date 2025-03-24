@@ -323,6 +323,21 @@ class MovesAdjudicator(Adjudicator):
     def __init__(self, board: Board):
         super().__init__(board)
 
+        # stupid band-aid where we fix all orders which have a support or convoy
+        for unit in board.units:
+            if isinstance(unit.order, Support) or isinstance(unit.order, ConvoyTransport):
+                source = unit.order.source
+                source_unit = source.get_unit()
+
+                invalid = (source_unit == None or (source_unit.unit_type == UnitType.FLEET and isinstance(source, Province)) or 
+                (source_unit.unit_type == UnitType.ARMY and isinstance(source, Coast)))
+
+                if not invalid:
+                    unit.order.source = unit.order.source.get_unit()
+                else:
+                    unit.order = Hold()
+                    self.failed_or_invalid_units.add(MapperInformation(unit))
+ 
         self.orders = set()
 
         for unit in board.units:

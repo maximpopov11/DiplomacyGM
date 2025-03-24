@@ -37,6 +37,14 @@ class TreeToOrder(Transformer):
         name = _manage_coast_signature(name)
         return self.board.get_location(name)
 
+    def l_unit(self, s) -> Location:
+        # ignore the fleet/army signifier, if exists
+        unit = s[-1]
+        if unit is not None and not isinstance(unit, Location):
+            raise Exception("This shouldn't happen")
+
+        return unit
+
     def unit(self, s) -> Unit:
         # ignore the fleet/army signifier, if exists
         unit = s[-1].get_unit()
@@ -47,10 +55,6 @@ class TreeToOrder(Transformer):
 
         return unit
 
-    def maybe_unit(self, s) -> Unit:
-        # ignore the fleet/army signifier, if exists
-        return s[-1].get_unit()
-        
     def retreat_unit(self, s) -> Unit:
         # ignore the fleet/army signifier, if exists
         unit = s[-1].dislodged_unit
@@ -61,10 +65,11 @@ class TreeToOrder(Transformer):
 
         return unit
 
-    def hold_order(self, s):
+    def l_hold_order(self, s):
         return s[0], order.Hold()
 
-    def maybe_hold_order(self, s):
+
+    def hold_order(self, s):
         return s[0], order.Hold()
 
     def core_order(self, s):
@@ -106,15 +111,8 @@ class TreeToOrder(Transformer):
 
 
     # format for all of these is (unit, order)
-
-    def maybe_move_order(self, s):
-        if s[0] is None:
-            return None, order.Move(None)
-
-        loc = normalize_location(s[0].unit_type, s[-1])
-
-        return s[0], order.Move(loc)
-
+    def l_move_order(self, s):
+        return s[0], order.Move(s[-1])
 
     def move_order(self, s):
         loc = normalize_location(s[0].unit_type, s[-1])
@@ -125,7 +123,7 @@ class TreeToOrder(Transformer):
         return s[0], order.ConvoyTransport(s[-1][0], s[-1][1].destination)
 
     def support_order(self, s):
-        if isinstance(s[-1], Unit):
+        if isinstance(s[-1], Location):
             unit = s[-1]
             unit_order = order.Hold()
         else:
@@ -135,7 +133,7 @@ class TreeToOrder(Transformer):
         if isinstance(unit_order, order.Move):
             return s[0], order.Support(unit, unit_order.destination)
         elif isinstance(unit_order, order.Hold):
-            return s[0], order.Support(unit, unit.location())
+            return s[0], order.Support(unit, unit)
         else:
             raise ValueError("Unknown type of support. Something has broken in the bot. Please report this")
 
@@ -207,6 +205,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
         movement = []
         for order in orderlist:
             try:
+                print(f"AAA{order}AAA")
                 logger.info(order)
                 cmd = parser.parse(order)
                 movement.append(generator.transform(cmd))

@@ -12,6 +12,7 @@ import math
 # from diplomacy.adjudicator import utils
 # from diplomacy.map_parser.vector import config_svg as svgcfg
 
+from diplomacy.adjudicator.defs import get_base_province_from_location
 from diplomacy.map_parser.vector.utils import get_element_color, get_svg_element, get_unit_coordinates
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
@@ -296,7 +297,7 @@ class FOWMapper:
                 and (self.player_restriction is None or possibility.unit.player == self.player_restriction)
                 and possibility.unit.unit_type == UnitType.FLEET
                 and isinstance(possibility.unit.order, ConvoyTransport)
-                and possibility.unit.order.source.province is source
+                and get_base_province_from_location(possibility.unit.order.source) is source
                 and possibility.unit.order.destination is destination
             ):
                 options += self._path_helper(source, destination, possibility, new_checked)
@@ -378,13 +379,13 @@ class FOWMapper:
         order: Support = unit.order
         x1 = coordinate[0]
         y1 = coordinate[1]
-        v2 = self.loc_to_point(order.source.location(), coordinate)
+        v2 = self.loc_to_point(order.source, coordinate)
         x2, y2 = v2
         v3 = self.loc_to_point(order.destination, v2)
         x3, y3 = v3
         marker_start = ""
         if order.destination.get_unit():
-            if order.source.location() == order.destination:
+            if order.source == order.destination:
                 (x3, y3) = self.pull_coordinate((x1, y1), (x3, y3), self.board.data["svg config"]["unit_radius"])
             else:
                 (x3, y3) = self.pull_coordinate((x2, y2), (x3, y3))
@@ -396,8 +397,8 @@ class FOWMapper:
 
             if (
                 isinstance(order.destination.get_unit().order, Support)
-                and destorder.source.location() == destorder.destination == unit.location()
-                and order.source.location() == order.destination
+                and destorder.source == destorder.destination == unit.location()
+                and order.source == order.destination
             ):
                 # This check is so we only do it once, so it doesn't overlay
                 # it doesn't matter which one is the origin & which is the dest
@@ -421,7 +422,7 @@ class FOWMapper:
                 "stroke-width": self.board.data["svg config"]["order_stroke_width"],
                 "stroke-linecap": "round",
                 "marker-start": marker_start,
-                "marker-end": f"url(#{'ball' if order.source.location() == order.destination else 'arrow'})",
+                "marker-end": f"url(#{'ball' if order.source == order.destination else 'arrow'})",
             },
         )
         return drawn_order

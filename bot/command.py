@@ -273,10 +273,10 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str]:
     publish = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() == "true"
     if publish:
         await publish_orders(ctx, manager)
+    await send_order_logs(ctx, manager)
     manager.adjudicate(ctx.guild.id)
     if publish:
         await publish_current(ctx, manager)
-    await send_order_logs(ctx, manager)
 
     file, file_name = manager.draw_moves_map(ctx.guild.id, None)
     # if not return_svg:
@@ -465,7 +465,7 @@ async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_ca
         if not player:
             continue
         
-        message = f"Here is the {name} for {board.year + 1642} {board.phase.name}"
+        message = f"Here is your {name} for {board.year + 1642} {board.phase.name}"
         file, file_name = map_caller(manager, guild_id, player)
         file, file_name = svg_to_png(file, file_name)
 
