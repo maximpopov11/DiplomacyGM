@@ -8,4 +8,3 @@ def get_adjacent_provinces(location: Location) -> set[Province]:
     if isinstance(location, Province):
         return location.adjacent
     raise ValueError(f"Location {location} should be Coast or Province")
-

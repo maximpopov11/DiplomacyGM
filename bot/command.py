@@ -465,9 +465,9 @@ async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_ca
         if not player:
             continue
         
-        message = f"Here is your {name} for {board.year + 1642} {board.phase.name}"
+        message = f"Here is the {name} for {board.year + 1642} {board.phase.name}"
         file, file_name = map_caller(manager, guild_id, player)
-        file, file_name = svg_to_png(file, file_name)
+        file, file_name = await svg_to_png(file, file_name)
 
         # TODO export this properly?
         discord_file_limit = 10 * (2**20)
