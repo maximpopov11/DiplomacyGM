@@ -256,7 +256,7 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
     try:
         file, file_name = manager.draw_moves_map(ctx.guild.id, player)
         if not return_svg or player:
-            file, file_name = svg_to_png(file, file_name)
+            file, file_name = await svg_to_png(file, file_name)
     except Exception as err:
         logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
         return "View_orders map failed"
@@ -268,7 +268,7 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str]:
     return_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() == "true"
     file, file_name = manager.adjudicate(ctx.guild.id)
     if not return_svg:
-        file, file_name = svg_to_png(file, file_name)
+        file, file_name = await svg_to_png(file, file_name)
     return {"message": "Adjudication completed successfully", "file": file, "file_name": file_name}
 
 
