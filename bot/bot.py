@@ -228,10 +228,6 @@ async def view_orders(ctx: commands.Context) -> None:
 async def view_map(ctx: commands.Context) -> None:
     await _handle_command(command.view_map, ctx)
 
-@bot.command(brief="Fow.")
-async def fow(ctx: discord.ext.commands.Context) -> None:
-    await _handle_command(command.fow, ctx)
-
 
 @bot.command(brief="Adjudicates the game and outputs the moves and results maps.",
     description="""
@@ -343,10 +339,6 @@ async def archive(ctx: commands.Context) -> None:
     """)
 async def ping_players(ctx: commands.Context) -> None:
     await _handle_command(command.ping_players, ctx)
-
-@bot.command(brief="bpbppslp")
-async def publish(ctx: commands.Context) -> None:
-    await _handle_command(command.publish_orders, ctx)
 
 @bot.command(brief="permanently deletes a game, cannot be undone")
 async def delete_game(ctx: commands.Context) -> None:
