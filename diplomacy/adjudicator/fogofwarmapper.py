@@ -88,8 +88,6 @@ class FOWMapper:
 
         self.highlight_retreating_units(self.state_svg)
 
-
-
     def draw_moves_map(self, current_phase: phase.Phase, player_restriction: Player | None) -> tuple[str, str]:
         logger.info("mapper.draw_moves_map")
 
@@ -178,7 +176,7 @@ class FOWMapper:
                 # match the correct svg element based on the color of the rectangle
                 if get_element_color(power_element[0]) == player.color:
                     power_element.set("transform", self.scoreboard_power_locations[i])
-                    if player == self.restriction:
+                    if player == self.restriction or self.restriction == None:
                         power_element[5][0].text = str(len(player.centers))
                     else:
                         power_element[5][0].text = "???"
