@@ -126,8 +126,6 @@ async def send_message_and_file(channel: commands.Context.channel, message: str,
                 cutoff = discord_message_limit
             await channel.send(message[:cutoff].strip())
             message = message[cutoff:].strip()
-    else:
-        message = ""
     if file is not None and len(file) > discord_file_limit:
         # zip compression without using files (disk is slow)
 
@@ -142,7 +140,7 @@ async def send_message_and_file(channel: commands.Context.channel, message: str,
     elif file is not None:
         with io.BytesIO(file) as vfile:
             await channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}"))
-    else:
+    elif message is not None and len(message) > 0:
         await channel.send(message)
 
 
