@@ -388,7 +388,7 @@ async def province_info(player: Player | None, ctx: commands.Context, manager: M
         out = f"""Province: {province.name}
 Type: COAST
 Adjacent Provinces:
-- """ + "\n- ".join(sorted([adjacent.name for adjacent in province.adjacent_seas])) + "\n"
+- """ + "\n- ".join(sorted([adjacent.name for adjacent in province.get_adjacent_locations()])) + "\n"
     # fmt: on
     return out
 
