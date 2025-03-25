@@ -126,6 +126,8 @@ async def send_message_and_file(channel: commands.Context.channel, message: str,
                 cutoff = discord_message_limit
             await channel.send(message[:cutoff].strip())
             message = message[cutoff:].strip()
+    else:
+        message = ""
     if file is not None and len(file) > discord_file_limit:
         # zip compression without using files (disk is slow)
 
@@ -190,9 +192,11 @@ def get_filtered_orders(board: Board, player_restriction: Player) -> str:
         response = "Received orders:"
         for player in sorted(board.players, key=lambda sort_player: sort_player.name):
             if not player_restriction or player == player_restriction:
-                response += f"\n**{player.name}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
-                for unit in player.build_orders:
-                    if unit in visible:
+                visible = [order for order in player.build_orders if order.location.as_province() in visible]
+
+                if len(visible > 0):
+                    response += f"\n**{player.name}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
+                    for unit in visible:
                         response += f"\n{unit}"
         return response
     else:
@@ -205,17 +209,19 @@ def get_filtered_orders(board: Board, player_restriction: Player) -> str:
             else:
                 in_moves = lambda _: True
             moving_units = [unit for unit in player.units if in_moves(unit) and unit.province in visible]
-            ordered = [unit for unit in moving_units if unit.order is not None]
-            missing = [unit for unit in moving_units if unit.order is None]
 
-            response += f"**{player.name}** ({len(ordered)}/{len(moving_units)})\n"
-            if missing:
-                response += f"__Missing Orders:__\n"
-                for unit in sorted(missing, key=lambda _unit: _unit.province.name):
-                    response += f"{unit}\n"
-            if ordered:
-                response += f"__Submitted Orders:__\n"
-                for unit in sorted(ordered, key=lambda _unit: _unit.province.name):
-                    response += f"{unit} {unit.order}\n"
+            if len(moving_units) > 0:
+                ordered = [unit for unit in moving_units if unit.order is not None]
+                missing = [unit for unit in moving_units if unit.order is None]
+
+                response += f"**{player.name}** ({len(ordered)}/{len(moving_units)})\n"
+                if missing:
+                    response += f"__Missing Orders:__\n"
+                    for unit in sorted(missing, key=lambda _unit: _unit.province.name):
+                        response += f"{unit}\n"
+                if ordered:
+                    response += f"__Submitted Orders:__\n"
+                    for unit in sorted(ordered, key=lambda _unit: _unit.province.name):
+                        response += f"{unit} {unit.order}\n"
 
         return response

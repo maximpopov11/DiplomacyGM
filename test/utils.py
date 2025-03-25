@@ -559,8 +559,8 @@ class BoardBuilder():
         for order in adj.orders:
             adj._resolve_order(order)
 
-        for order in adj.orders:
-            print(order)
+        # for order in adj.orders:
+        #     print(order)
 
         illegal_units = []
         succeeded_units = []

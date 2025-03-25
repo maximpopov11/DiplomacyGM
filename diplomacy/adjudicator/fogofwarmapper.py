@@ -139,7 +139,8 @@ class FOWMapper:
                 players = {player_restriction}
             for player in players:
                 for build_order in player.build_orders:
-                    self._draw_player_order(player, build_order)
+                    if build_order.location.as_province() in self.adjacent_provinces:
+                        self._draw_player_order(player, build_order)
 
         self.draw_side_panel(self._moves_svg)
         
@@ -686,7 +687,7 @@ class FOWMapper:
 
     def highlight_retreating_units(self, svg):
         for unit in self.board.units:
-            if unit == unit.province.dislodged_unit:
+            if unit == unit.province.dislodged_unit and unit.province in self.adjacent_provinces:
                 self._draw_retreat_options(unit, svg)
 
     def _get_element_for_unit_type(self, unit_type) -> Element:
