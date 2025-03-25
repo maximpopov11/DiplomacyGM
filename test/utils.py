@@ -27,7 +27,8 @@ class BoardBuilder():
             units=set(),
             phase=Phase(f"{season} 1901", None, None),
             data=None,
-            datafile=None
+            datafile=None,
+            fow=False
         )
 
         # here an illegal move is one that is caught and turned into a hold order, which includes supports and convoys 
@@ -424,7 +425,7 @@ class BoardBuilder():
     def convoy(self, player: Player, place: Location, source: Unit, to: Location) -> Unit:
         unit = self.fleet(place, player)
         
-        order = ConvoyTransport(source, to)
+        order = ConvoyTransport(source.location(), to)
         unit.order = order
 
         return unit
@@ -435,7 +436,7 @@ class BoardBuilder():
         else:
             unit = self.army(place, player)
 
-        order = Support(source, to)
+        order = Support(source.location(), to)
         unit.order = order
 
         return unit
@@ -457,7 +458,7 @@ class BoardBuilder():
         else:
             unit = self.army(place, player)
 
-        order = Support(source, source.location())
+        order = Support(source.location(), source.location())
         unit.order = order
 
         return unit
@@ -558,8 +559,8 @@ class BoardBuilder():
         for order in adj.orders:
             adj._resolve_order(order)
 
-        # for order in adj.orders:
-        #     print(order)
+        for order in adj.orders:
+            print(order)
 
         illegal_units = []
         succeeded_units = []

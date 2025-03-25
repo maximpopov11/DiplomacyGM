@@ -89,13 +89,15 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
         return False, "Order is missing"
 
     if isinstance(order, Support) or isinstance(order, ConvoyTransport):
-        source = unit.order.source
+        source = order.source
         source_unit = source.get_unit()
 
-        invalid = (source_unit == None or (source_unit.unit_type == UnitType.FLEET and isinstance(source, Province)) or 
+        invalid = (source_unit == None or (source_unit.unit_type == UnitType.FLEET and isinstance(source, Province) and source.type == ProvinceType.LAND) or 
         (source_unit.unit_type == UnitType.ARMY and isinstance(source, Coast)))
 
         if invalid:
+            print(source)
+            print('invalido mario')
             return False, f"No unit for supporting / convoying at {source}"
 
     unit = location.as_province().unit
@@ -154,7 +156,7 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
             corresponding_order_is_move = isinstance(order.source.get_unit().order, Move) or isinstance(
                 order.source.get_unit().order, ConvoyMove
             )
-            if not corresponding_order_is_move or order.source.order.destination.as_province() != order.destination.as_province():
+            if not corresponding_order_is_move or order.source.get_unit().order.destination.as_province() != order.destination.as_province():
                 return False, f"Convoyed unit {order.source} did not make corresponding order"
         valid_move, reason = order_is_valid(
             order.source.as_province(), ConvoyMove(order.destination), strict_convoys_supports
@@ -179,8 +181,7 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
         is_support_hold = order.source.as_province() == order.destination.as_province()
         source_to_destination_valid = (
             is_support_hold
-            or order_is_valid(order
-                              .location(), Move(order.destination), strict_convoys_supports)[0]
+            or order_is_valid(order.source, Move(order.destination), strict_convoys_supports)[0]
             or order_is_valid(order.source, ConvoyMove(order.destination), strict_convoys_supports)[0]
         )
 

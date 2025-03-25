@@ -116,7 +116,7 @@ class TestDATC_A(unittest.TestCase):
         a_venice = b.move(b.italy, UnitType.ARMY, b.venice, b.trieste)
         a_tyrolia = b.supportMove(b.italy, UnitType.ARMY, b.tyrolia, a_venice, b.trieste)
         f_trieste = b.fleet(b.trieste_c, b.austria)
-        order = Support(f_trieste, b.trieste_c)
+        order = Support(b.trieste_c, b.trieste_c)
         f_trieste.order = order
 
         b.assertDislodge(f_trieste)

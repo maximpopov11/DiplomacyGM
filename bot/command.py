@@ -35,8 +35,6 @@ ping_text_choices = [
     "is being mind controlled by",
 ]
 
-discord_message_limit = 2000
-
 
 async def ping(ctx: commands.Context, _: Manager) -> str:
     response = "Beep Boop"
@@ -277,13 +275,13 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str]:
     board = manager.get_board(ctx.guild.id)
 
     return_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() == "true"
-    if board.fow:
-        await publish_orders(ctx, manager)
-        await send_order_logs(ctx, manager)
+    # if board.fow:
+    #     await publish_orders(ctx, manager)
+    #     await send_order_logs(ctx, manager)
     manager.adjudicate(ctx.guild.id)
 
-    if board.fow:
-        await publish_current(ctx, manager)
+    # if board.fow:
+    #     await publish_current(ctx, manager)
 
     file, file_name = manager.draw_moves_map(ctx.guild.id, None)
     if not return_svg:

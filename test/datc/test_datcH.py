@@ -522,7 +522,7 @@ class TestDATC_H(unittest.TestCase):
         
         b.assertForcedDisband(f_western_mediterranean)
         b.moves_adjudicate(self)
-        self.assertFalse(b.spain in f_western_mediterranean.retreat_options, "Spain should not be a retreat option")
+        self.assertFalse(not f_western_mediterranean.retreat_options or b.spain in f_western_mediterranean.retreat_options, "Spain should not be a retreat option")
         b.retreat(f_western_mediterranean, b.spain_sc)
 
         b.assertForcedDisband(f_western_mediterranean)
