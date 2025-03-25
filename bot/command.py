@@ -280,7 +280,10 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str]:
     if board.fow:
         await publish_current(ctx, manager)
 
-    file, file_name = manager.draw_moves_map(ctx.guild.id, None)
+    if not board.fow:
+        file, file_name = manager.draw_moves_map(ctx.guild.id, None)
+    else:
+        file, file_name = manager.draw_fow_moves_map(ctx.guild.id, None)
     if not return_svg:
         file, file_name = await svg_to_png(file, file_name)  
 
