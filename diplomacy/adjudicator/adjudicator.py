@@ -2,7 +2,6 @@ import abc
 import collections
 import logging
 
-from diplomacy.adjudicator.adjacencies import get_adjacent_provinces
 from diplomacy.adjudicator.defs import (
     ResolutionState,
     Resolution,
@@ -25,7 +24,7 @@ from diplomacy.persistence.order import (
     Build,
     Disband,
 )
-from diplomacy.persistence.province import Location, Coast, Province, ProvinceType
+from diplomacy.persistence.province import Location, Coast, Province, ProvinceType, get_adjacent_provinces
 from diplomacy.persistence.unit import UnitType, Unit
 
 logger = logging.getLogger(__name__)

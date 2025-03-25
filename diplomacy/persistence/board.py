@@ -1,10 +1,9 @@
 import re
 import logging
 
-from diplomacy.adjudicator.adjacencies import get_adjacent_provinces
 from diplomacy.persistence.phase import Phase
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.province import Province, Coast, Location
+from diplomacy.persistence.province import Province, Coast, Location, get_adjacent_provinces
 from diplomacy.persistence.unit import Unit, UnitType
 
 logger = logging.getLogger(__name__)
