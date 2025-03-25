@@ -187,12 +187,12 @@ def get_orders(board: Board, player_restriction: Player | None) -> str:
 def get_filtered_orders(board: Board, player_restriction: Player) -> str:
     visible = board.get_visible_provinces(player_restriction)
     if phase.is_builds(board.phase):
-        response = "Received orders:"
+        response = ""
         for player in sorted(board.players, key=lambda sort_player: sort_player.name):
             if not player_restriction or player == player_restriction:
                 visible = [order for order in player.build_orders if order.location.as_province() in visible]
 
-                if len(visible > 0):
+                if len(visible) > 0:
                     response += f"\n**{player.name}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
                     for unit in visible:
                         response += f"\n{unit}"
