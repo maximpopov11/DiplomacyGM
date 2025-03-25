@@ -12,7 +12,6 @@ import math
 # from diplomacy.adjudicator import utils
 # from diplomacy.map_parser.vector import config_svg as svgcfg
 
-from diplomacy.adjudicator.defs import get_base_province_from_location
 from diplomacy.map_parser.vector.utils import get_element_color, get_svg_element, get_unit_coordinates
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
@@ -64,7 +63,10 @@ class FOWMapper:
             )
 
         self.restriction = restriction
-        self.adjacent_provinces: set[Province] = self.board.get_visible_provinces(restriction)
+        if restriction != None:
+            self.adjacent_provinces: set[Province] = self.board.get_visible_provinces(restriction)
+        else:
+            self.adjacent_provinces: set[Province] = self.board.provinces
 
         # TODO: Switch to passing the SVG directly, as that's simpiler (self.svg = draw_units(svg)?)
         self._draw_units()
@@ -297,7 +299,7 @@ class FOWMapper:
                 and (self.player_restriction is None or possibility.unit.player == self.player_restriction)
                 and possibility.unit.unit_type == UnitType.FLEET
                 and isinstance(possibility.unit.order, ConvoyTransport)
-                and get_base_province_from_location(possibility.unit.order.source) is source
+                and possibility.unit.order.source.as_province() is source
                 and possibility.unit.order.destination is destination
             ):
                 options += self._path_helper(source, destination, possibility, new_checked)

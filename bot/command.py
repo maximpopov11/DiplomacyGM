@@ -16,7 +16,7 @@ import bot.perms as perms
 from bot.config import is_bumble, temporary_bumbles
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
-from bot.utils import get_filtered_orders, get_orders, get_player_by_channel, get_player_by_channel, is_admin, is_gm
+from bot.utils import get_filtered_orders, get_orders, get_player_by_channel, get_player_by_channel, is_admin, send_message_and_file
 from diplomacy.adjudicator.utils import svg_to_png
 from diplomacy.persistence import phase
 from diplomacy.persistence.db.database import get_connection
@@ -258,9 +258,13 @@ async def view_orders(player: Player | None, ctx: commands.Context, manager: Man
 @perms.player("view map")
 async def view_map(player: Player | None, ctx: commands.Context, manager: Manager) -> str | dict[str]:
     return_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() == "true"
+    board = manager.get_board(ctx.guild.id)
 
     try:
-        file, file_name = manager.draw_moves_map(ctx.guild.id, player)
+        if not board.fow:
+            file, file_name = manager.draw_moves_map(ctx.guild.id, player)
+        else:
+            file, file_name = manager.draw_fow_players_moves_map(ctx.guild.id, player)
         if not return_svg or player:
             file, file_name = await svg_to_png(file, file_name)
     except Exception as err:
@@ -270,17 +274,20 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
 
 @perms.gm("adjudicate")
 async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str]:
-    publish = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() == "true"
-    if publish:
+    board = manager.get_board(ctx.guild.id)
+
+    return_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() == "true"
+    if board.fow:
         await publish_orders(ctx, manager)
-    await send_order_logs(ctx, manager)
+        await send_order_logs(ctx, manager)
     manager.adjudicate(ctx.guild.id)
-    if publish:
+
+    if board.fow:
         await publish_current(ctx, manager)
 
     file, file_name = manager.draw_moves_map(ctx.guild.id, None)
-    # if not return_svg:
-    file, file_name = await svg_to_png(file, file_name)  
+    if not return_svg:
+        file, file_name = await svg_to_png(file, file_name)  
 
     return {"message": "Adjudication completed successfully", "file": file, "file_name": file_name}
 
@@ -308,6 +315,10 @@ async def remove_all(ctx: commands.Context, manager: Manager) -> str:
 @perms.gm("get scoreboard")
 async def get_scoreboard(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
+
+    if board.fow:
+        perms.gm_perms_check("get scoreboard")
+
     response = ""
     for player in board.get_players_by_score():
         response += f"\n__{player.name}__: {len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
@@ -350,19 +361,15 @@ async def delete_game(ctx: commands.Context, manager: Manager) -> str:
 
 async def info(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
-    out = "Phase: " + str(board.phase) + "\nOrders are: " + ("Open" if board.orders_enabled else "Locked")
-    return out
+    return "Phase: " + str(board.phase) + "\nOrders are: " + ("Open" if board.orders_enabled else "Locked") + "\nFog of War: " + str(board.fow)
 
 
-@perms.player("view province info")
-async def province_info(player: Player | None, ctx: commands.Context, manager: Manager) -> str:
+async def province_info(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
 
     if not board.orders_enabled:
-        if not is_gm(ctx.message.author):
-            return "Orders locked! If you think this is an error, contact a GM."
-        if not is_gm_channel(ctx.channel):
-            return "You cannot use .province_info in a non-GM channel while orders are locked."
+        perms.gm_context_check(ctx, "Orders locked! If you think this is an error, contact a GM.", 
+            "You cannot use .province_info in a non-GM channel while orders are locked.")
  
     province_name = ctx.message.content.removeprefix(".province_info").strip()
     if not province_name:
@@ -370,9 +377,14 @@ async def province_info(player: Player | None, ctx: commands.Context, manager: M
     province = board.get_location(province_name)
     if province is None:
         raise ValueError(f"Could not find province {province_name}")
-    if player and province not in board.get_visible_provinces(player):
-        return f"Province {province.name} is not visible to you"
 
+
+    # FOW permissions
+    if board.fow:
+        player = perms.get_player_by_context(ctx, manager, "get province info")
+        if player and not province in board.get_visible_provinces(player):
+            return f"Province {province.name} is not visible to you"
+    
     # fmt: off
     if isinstance(province, Province):
         out = f"Province: {province.name}\n" + \
@@ -395,10 +407,10 @@ Adjacent Provinces:
 
 @perms.player("view visible provinces")
 async def visible_provinces(player: Player | None, ctx: commands.Context, manager: Manager) -> str:
-    if not player:
-        return "gah"
-
     board = manager.get_board(ctx.guild.id)
+
+    if not player or not board.fow:
+        return "This command only works for players in fog of war games."
 
     visible_provinces = board.get_visible_provinces(player)
 
@@ -435,12 +447,6 @@ async def publish_orders(ctx: commands.Context, manager: Manager,):
     await publish_map(ctx, manager, "moves map", lambda m, s, p: m.draw_fow_moves_map(s,p))
 
 async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_caller: Callable[[Manager, int, Player], tuple[str, str]]):
-    if not is_gm(ctx.message.author):
-        raise PermissionError(f"You cannot ping players because you are not a GM.")
-
-    if not is_gm_channel(ctx.channel):
-        raise PermissionError(f"You cannot ping players in a non-GM channel.")
-
     player_category = None
 
     guild = ctx.guild
@@ -469,32 +475,9 @@ async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_ca
         file, file_name = map_caller(manager, guild_id, player)
         file, file_name = await svg_to_png(file, file_name)
 
-        # TODO export this properly?
-        discord_file_limit = 10 * (2**20)
-        if file is not None and len(file) > discord_file_limit:
-            # zip compression without using files (disk is slow)
-
-            # We create a virtual file, write to it, and then restart it
-            # for some reason zipfile doesn't support this natively
-            with io.BytesIO() as vfile:
-                zip_file = zipfile.ZipFile(vfile, mode="x", compression=zipfile.ZIP_DEFLATED, compresslevel=9)
-                zip_file.writestr(f"{file_name}", file, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
-                zip_file.close()
-                vfile.seek(0)
-                await channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}.zip"))
-        elif file is not None:
-            with io.BytesIO(file) as vfile:
-                await channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}"))
-        else:
-            await channel.send(message)
+        await send_message_and_file(channel, message, file, file_name)
 
 async def send_order_logs(ctx: commands.Context, manager: Manager):
-    if not is_gm(ctx.message.author):
-        raise PermissionError(f"You cannot ping players because you are not a GM.")
-
-    if not is_gm_channel(ctx.channel):
-        raise PermissionError(f"You cannot ping players in a non-GM channel.")
-
     player_category = None
 
     guild = ctx.guild
@@ -521,25 +504,13 @@ async def send_order_logs(ctx: commands.Context, manager: Manager):
         
         message = get_filtered_orders(board, player)
 
-        while discord_message_limit < len(message):
-            # Try to find an even line break to split the message on
-            cutoff = message.rfind("\n", 0, discord_message_limit)
-            if cutoff == -1:
-                cutoff = discord_message_limit
-            await channel.send(message[:cutoff].strip())
-            message = message[cutoff:].strip()
-
-        await channel.send(message)
+        await send_message_and_file(channel, message, None, None)
 
     return "Successful"
 
 
 async def ping_players(ctx: commands.Context, manager: Manager):
-    if not is_gm(ctx.message.author):
-        raise PermissionError(f"You cannot ping players because you are not a GM.")
-
-    if not is_gm_channel(ctx.channel):
-        raise PermissionError(f"You cannot ping players in a non-GM channel.")
+    perms.gm_perms_check(ctx, "ping players")
 
     player_category = None
 
@@ -658,11 +629,7 @@ async def ping_players(ctx: commands.Context, manager: Manager):
     return "Successful"
 
 async def archive(ctx: commands.Context, _: Manager) -> str:
-    if not is_gm(ctx.message.author):
-        raise PermissionError(f"You cannot archive because you are not a GM.")
-
-    if not is_gm_channel(ctx.channel):
-        raise PermissionError(f"You cannot archive in a non-GM channel.")
+    perms.gm_perms_check(ctx, "archive")
 
     categories = [channel.category for channel in ctx.message.channel_mentions]
     if not categories:

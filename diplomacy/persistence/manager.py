@@ -49,14 +49,9 @@ class Manager:
     def draw_moves_map(self, server_id: int, player_restriction: Player | None) -> tuple[str, str]:
         start = time.time()
 
-        if player_restriction:
-            svg, file_name = FOWMapper(self._boards[server_id], player_restriction).draw_moves_map(
-                self._boards[server_id].phase, player_restriction
-            )
-        else:
-            svg, file_name = Mapper(self._boards[server_id]).draw_moves_map(
-                self._boards[server_id].phase, None
-            )
+        svg, file_name = Mapper(self._boards[server_id]).draw_moves_map(
+            self._boards[server_id].phase, player_restriction
+        )
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
@@ -89,6 +84,21 @@ class Manager:
         logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
         return svg, file_name
 
+    def draw_fow_players_moves_map(self, server_id: int, player_restriction: Player | None) -> tuple[str, str]:
+        start = time.time()
+
+        if player_restriction:
+            svg, file_name = FOWMapper(self._boards[server_id], player_restriction).draw_moves_map(
+                self._boards[server_id].phase, player_restriction
+            )
+        else:
+            svg, file_name = FOWMapper(self._boards[server_id], None).draw_moves_map(
+                self._boards[server_id].phase, None
+            )
+
+        elapsed = time.time() - start
+        logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
+        return svg, file_name
 
     def draw_fow_moves_map(self, server_id: int, player_restriction: Player | None) -> tuple[str, str]:
         start = time.time()

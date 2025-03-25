@@ -3,7 +3,6 @@ from lark import Lark, Transformer, UnexpectedEOF
 from lark.exceptions import VisitError
 
 from bot.utils import get_unit_type, get_keywords, _manage_coast_signature
-from diplomacy.adjudicator.defs import get_base_province_from_location
 from diplomacy.persistence import order, phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import get_connection
@@ -37,13 +36,18 @@ class TreeToOrder(Transformer):
         name = _manage_coast_signature(name)
         return self.board.get_location(name)
 
+    # used for supports, specifically FoW
     def l_unit(self, s) -> Location:
         # ignore the fleet/army signifier, if exists
-        unit = s[-1]
-        if unit is not None and not isinstance(unit, Location):
-            raise Exception("This shouldn't happen")
+        loc = s[-1]
+        if loc is not None and not self.board.fow:
+            unit = loc.get_unit()
+            if unit is None:
+                raise ValueError(f"No unit in {s[-1]}")
+            if not isinstance(unit, Unit):
+                raise Exception(f"Didn't get a unit or None from get_unit(), please report this")
 
-        return unit
+        return loc
 
     def unit(self, s) -> Unit:
         # ignore the fleet/army signifier, if exists
@@ -64,10 +68,6 @@ class TreeToOrder(Transformer):
             raise Exception(f"Didn't get a unit or None from get_unit(), please report this")
 
         return unit
-
-    def l_hold_order(self, s):
-        return s[0], order.Hold()
-
 
     def hold_order(self, s):
         return s[0], order.Hold()
@@ -111,8 +111,18 @@ class TreeToOrder(Transformer):
 
 
     # format for all of these is (unit, order)
+    def l_hold_order(self, s):
+        return s[0], order.Hold()
+    
     def l_move_order(self, s):
-        return s[0], order.Move(s[-1])
+        # normalize position for non fow
+        if not self.board.fow:
+            unit_type = s[0].get_unit().unit_type
+            loc = normalize_location(unit_type, s[-1])
+        else:
+            loc = s[-1]
+
+        return s[0], order.Move(loc)
 
     def move_order(self, s):
         loc = normalize_location(s[0].unit_type, s[-1])
@@ -124,16 +134,16 @@ class TreeToOrder(Transformer):
 
     def support_order(self, s):
         if isinstance(s[-1], Location):
-            unit = s[-1]
+            loc = s[-1]
             unit_order = order.Hold()
         else:
-            unit = s[-1][0]
+            loc = s[-1][0]
             unit_order = s[-1][1]
 
         if isinstance(unit_order, order.Move):
-            return s[0], order.Support(unit, unit_order.destination)
+            return s[0], order.Support(loc, unit_order.destination)
         elif isinstance(unit_order, order.Hold):
-            return s[0], order.Support(unit, unit)
+            return s[0], order.Support(loc, loc)
         else:
             raise ValueError("Unknown type of support. Something has broken in the bot. Please report this")
 
@@ -205,7 +215,6 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
         movement = []
         for order in orderlist:
             try:
-                print(f"AAA{order}AAA")
                 logger.info(order)
                 cmd = parser.parse(order)
                 movement.append(generator.transform(cmd))
@@ -308,9 +317,9 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
 
 
 def remove_player_order_for_location(board: Board, player: Player, location: Location) -> bool:
-    base_province = get_base_province_from_location(location)
+    base_province = location.as_province()
     for player_order in player.build_orders:
-        if get_base_province_from_location(player_order.location) == base_province:
+        if player_order.location.as_province() == base_province:
             player.build_orders.remove(player_order)
             database = get_connection()
             database.execute_arbitrary_sql(

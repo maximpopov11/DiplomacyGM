@@ -1,3 +1,6 @@
+import io
+import zipfile
+import discord
 from discord.ext import commands
 
 from bot import config
@@ -32,12 +35,8 @@ unit_dict = {
     _fleet: ["f", "fleet", "boat", "ship"],
 }
 
-_spring_moves = "spring moves"
-_spring_retreats = "spring retreats"
-_fall_moves = "fall moves"
-_fall_retreats = "fall retreats"
-_winter_builds = "winter builds"
-
+discord_message_limit = 2000
+discord_file_limit = 10 * (2**20)
 
 def is_admin(author: commands.Context.author) -> bool:
     return author.name in ["eebopmasch", "icecream_guy", "_bumble", "thisisflare", "eelisha"]
@@ -117,6 +116,32 @@ def get_unit_type(command: str) -> UnitType | None:
     if command in unit_dict[_fleet]:
         return UnitType.FLEET
     return None
+
+async def send_message_and_file(channel: commands.Context.channel, message: str, file: str, file_name: str):
+    if message:
+        while discord_message_limit < len(message):
+            # Try to find an even line break to split the message on
+            cutoff = message.rfind("\n", 0, discord_message_limit)
+            if cutoff == -1:
+                cutoff = discord_message_limit
+            await channel.send(message[:cutoff].strip())
+            message = message[cutoff:].strip()
+    if file is not None and len(file) > discord_file_limit:
+        # zip compression without using files (disk is slow)
+
+        # We create a virtual file, write to it, and then restart it
+        # for some reason zipfile doesn't support this natively
+        with io.BytesIO() as vfile:
+            zip_file = zipfile.ZipFile(vfile, mode="x", compression=zipfile.ZIP_DEFLATED, compresslevel=9)
+            zip_file.writestr(f"{file_name}", file, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
+            zip_file.close()
+            vfile.seek(0)
+            await channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}.zip"))
+    elif file is not None:
+        with io.BytesIO(file) as vfile:
+            await channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}"))
+    else:
+        await channel.send(message)
 
 
 def get_orders(board: Board, player_restriction: Player | None) -> str:

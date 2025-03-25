@@ -8,6 +8,8 @@ import zipfile
 import io
 import random
 from dotenv.main import load_dotenv
+
+from bot.utils import send_message_and_file
 load_dotenv()
 
 import discord
@@ -22,8 +24,6 @@ intents.message_content = True
 intents.members = True
 bot = commands.Bot(command_prefix=".", intents=intents)
 logger = logging.getLogger(__name__)
-discord_message_limit = 2000
-discord_file_limit = 10 * (2**20)
 impdip_server = 1201167737163104376
 bot_status_channel = 1284336328657600572
 
@@ -110,31 +110,9 @@ async def _handle_command(
     if type(response) is dict:
         message, file, file_name = response["message"], response["file"], response["file_name"]
     else:
-        message, file = response, None
+        message, file, file_name = response, None, None
 
-    while discord_message_limit < len(message):
-        # Try to find an even line break to split the message on
-        cutoff = message.rfind("\n", 0, discord_message_limit)
-        if cutoff == -1:
-            cutoff = discord_message_limit
-        await ctx.channel.send(message[:cutoff].strip())
-        message = message[cutoff:].strip()
-    if file is not None and len(file) > discord_file_limit:
-        # zip compression without using files (disk is slow)
-
-        # We create a virtual file, write to it, and then restart it
-        # for some reason zipfile doesn't support this natively
-        with io.BytesIO() as vfile:
-            zip_file = zipfile.ZipFile(vfile, mode="x", compression=zipfile.ZIP_DEFLATED, compresslevel=9)
-            zip_file.writestr(f"{file_name}", file, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
-            zip_file.close()
-            vfile.seek(0)
-            await ctx.channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}.zip"))
-    elif file is not None:
-        with io.BytesIO(file) as vfile:
-            await ctx.channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}"))
-    else:
-        await ctx.channel.send(message)
+    await send_message_and_file(ctx.channel, message, file, file_name)
 
     elapsed = time.time() - start
     logger.debug(
@@ -339,6 +317,7 @@ async def archive(ctx: commands.Context) -> None:
     """)
 async def ping_players(ctx: commands.Context) -> None:
     await _handle_command(command.ping_players, ctx)
+
 
 @bot.command(brief="permanently deletes a game, cannot be undone")
 async def delete_game(ctx: commands.Context) -> None:

@@ -26,9 +26,9 @@ class UnitOrder(Order):
 class ComplexOrder(UnitOrder):
     """Complex orders are orders that operate on other orders (supports and convoys)."""
 
-    def __init__(self, source: Location | Unit):
+    def __init__(self, source: Location):
         super().__init__()
-        self.source: Location | Unit = source
+        self.source: Location = source
 
 
 class Hold(UnitOrder):
