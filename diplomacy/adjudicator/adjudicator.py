@@ -96,8 +96,6 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
         (source_unit.unit_type == UnitType.ARMY and isinstance(source, Coast)))
 
         if invalid:
-            print(source)
-            print('invalido mario')
             return False, f"No unit for supporting / convoying at {source}"
 
     unit = location.as_province().unit

@@ -1,14 +1,11 @@
-import io
 import logging
 import random
 from random import randrange
 from typing import Callable
-import zipfile
 
 from black.trans import defaultdict
 from discord import Guild, Role
 from discord import PermissionOverwrite
-import discord
 from discord.ext import commands
 
 from bot import config
@@ -275,13 +272,13 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str]:
     board = manager.get_board(ctx.guild.id)
 
     return_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() == "true"
-    # if board.fow:
-    #     await publish_orders(ctx, manager)
-    #     await send_order_logs(ctx, manager)
+    if board.fow:
+        await publish_orders(ctx, manager)
+        await send_order_logs(ctx, manager)
     manager.adjudicate(ctx.guild.id)
 
-    # if board.fow:
-    #     await publish_current(ctx, manager)
+    if board.fow:
+        await publish_current(ctx, manager)
 
     file, file_name = manager.draw_moves_map(ctx.guild.id, None)
     if not return_svg:
@@ -436,8 +433,9 @@ async def all_province_data(ctx: commands.Context, manager: Manager) -> str:
 
 
 # needed due to async
-from bot.utils import is_gm, is_gm_channel
+from bot.utils import is_gm_channel
 
+# for fog of war
 async def publish_current(ctx: commands.Context, manager: Manager):
     await publish_map(ctx, manager, "starting map", lambda m, s, p: m.draw_fow_current_map(s,p))
 

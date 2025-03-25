@@ -318,7 +318,6 @@ async def archive(ctx: commands.Context) -> None:
 async def ping_players(ctx: commands.Context) -> None:
     await _handle_command(command.ping_players, ctx)
 
-
 @bot.command(brief="permanently deletes a game, cannot be undone")
 async def delete_game(ctx: commands.Context) -> None:
     await _handle_command(command.delete_game, ctx)
