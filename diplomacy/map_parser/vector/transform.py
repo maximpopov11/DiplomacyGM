@@ -1,5 +1,4 @@
 import re
-from abc import abstractmethod
 from xml.etree.ElementTree import Element
 import numpy as np
 
@@ -7,8 +6,8 @@ class TransGL3:
     def __init__(self, transform_string: str | Element | None=None):
         if transform_string is None:
             transform_string = ""
-        if isinstance(transform_string, Element):
-            transform_string = transform_string.get("transform", None)
+        if not isinstance(transform_string, str):
+            transform_string = transform_string.get("transform", "")
         
         x_dx = 1
         y_dy = 1
@@ -49,10 +48,11 @@ class TransGL3:
             [x_dy, y_dy, 0],
             [x_c , y_c , 1]
         ])
+        return self
 
     def transform(self, point: tuple[float, float]) -> tuple[float, float]:
-        point = point + [1]
-        return (point @ self.matrix)[:2].tolist()
+        point = np.concatenate((point, (1,)))
+        return tuple((point @ self.matrix)[:2].tolist())
 
     # represents a convolution
     # (t1 * t2).transform(p) == t1.transform(t2.transform(p))
