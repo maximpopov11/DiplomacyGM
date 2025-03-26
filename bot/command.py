@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import random
 from random import randrange
@@ -277,8 +278,8 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str]:
         await send_order_logs(ctx, manager)
     manager.adjudicate(ctx.guild.id)
 
-    # if board.fow:
-    #     await publish_current(ctx, manager)
+    if board.fow:
+        await publish_current(ctx, manager)
 
     if not board.fow:
         file, file_name = manager.draw_moves_map(ctx.guild.id, None)
@@ -310,7 +311,6 @@ async def remove_all(ctx: commands.Context, manager: Manager) -> str:
     return "Successful"
 
 
-@perms.gm("get scoreboard")
 async def get_scoreboard(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
 
@@ -471,18 +471,20 @@ async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_ca
     name_to_player: dict[str, Player] = {}
     for player in board.players:
         name_to_player[player.name.lower()] = player
-    
+
+
     for channel in category.channels:
         player = get_player_by_channel(channel, manager, guild.id)
 
         if not player:
             continue
-        
+
         message = f"Here is the {name} for {board.year + 1642} {board.phase.name}"
         file, file_name = map_caller(manager, guild_id, player)
-        file, file_name = await svg_to_png(file, file_name)
-
-        await send_message_and_file(channel, message, file, file_name)
+        png_generation_task = asyncio.create_task(svg_to_png(file, file_name))
+        png_generation_task.add_done_callback(
+            lambda future, cid=channel: asyncio.create_task(send_message_and_file(cid, message, *future.result()))
+        )
 
 async def send_order_logs(ctx: commands.Context, manager: Manager):
     player_category = None
