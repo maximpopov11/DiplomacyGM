@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import random
 from random import randrange
@@ -463,7 +464,9 @@ async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_ca
     name_to_player: dict[str, Player] = {}
     for player in board.players:
         name_to_player[player.name.lower()] = player
-    
+
+    to_compute = []
+
     for channel in category.channels:
         player = get_player_by_channel(channel, manager, guild.id)
 
@@ -474,7 +477,9 @@ async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_ca
         file, file_name = map_caller(manager, guild_id, player)
         file, file_name = await svg_to_png(file, file_name)
 
-        await send_message_and_file(channel, message, file, file_name)
+        to_compute.append(send_message_and_file(channel, message, file, file_name))
+
+    await asyncio.gather(*to_compute)
 
 async def send_order_logs(ctx: commands.Context, manager: Manager):
     player_category = None
