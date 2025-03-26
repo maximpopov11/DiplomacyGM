@@ -310,7 +310,6 @@ async def remove_all(ctx: commands.Context, manager: Manager) -> str:
     return "Successful"
 
 
-@perms.gm("get scoreboard")
 async def get_scoreboard(ctx: commands.Context, manager: Manager) -> str:
     board = manager.get_board(ctx.guild.id)
 
