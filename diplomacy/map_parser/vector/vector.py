@@ -372,9 +372,9 @@ class Parser:
 
             # TODO: (BETA): we cheat assume core = owner if exists because capital center symbols work different
             core = province.owner
-            # if not core:
-            #     core_data = center_data.findall(".//svg:circle", namespaces=NAMESPACE)[1]
-            #     core = get_player(core_data, self.color_to_player)
+            if not core:
+                core_data = center_data.findall(".//svg:circle", namespaces=NAMESPACE)[1]
+                core = get_player(core_data, self.color_to_player)
             province.core = core
 
     # Sets province supply center values
