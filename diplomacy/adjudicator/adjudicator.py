@@ -91,11 +91,10 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
         source = order.source
         source_unit = source.get_unit()
 
-        invalid = (source_unit == None or (source_unit.unit_type == UnitType.FLEET and isinstance(source, Province) and source.type == ProvinceType.LAND) or 
-        (source_unit.unit_type == UnitType.ARMY and isinstance(source, Coast)))
-
-        if invalid:
+        if source_unit == None:
             return False, f"No unit for supporting / convoying at {source}"
+
+        order.source = source_unit.location()
 
     unit = location.as_province().unit
     if unit is None:
