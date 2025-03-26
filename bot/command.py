@@ -277,8 +277,8 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str]:
         await send_order_logs(ctx, manager)
     manager.adjudicate(ctx.guild.id)
 
-    if board.fow:
-        await publish_current(ctx, manager)
+    # if board.fow:
+    #     await publish_current(ctx, manager)
 
     if not board.fow:
         file, file_name = manager.draw_moves_map(ctx.guild.id, None)
