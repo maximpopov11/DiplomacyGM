@@ -372,7 +372,7 @@ async def province_info(ctx: commands.Context, manager: Manager) -> str:
     province_name = ctx.message.content.removeprefix(".province_info").strip()
     if not province_name:
         raise ValueError("Usage: .province_info <province>")
-    province = board.get_location(province_name)
+    province, coast = board.get_province_and_coast(province_name)
     if province is None:
         raise ValueError(f"Could not find province {province_name}")
 
@@ -384,7 +384,7 @@ async def province_info(ctx: commands.Context, manager: Manager) -> str:
             return f"Province {province.name} is not visible to you"
     
     # fmt: off
-    if isinstance(province, Province):
+    if not coast:
         out = f"Province: {province.name}\n" + \
             f"Type: {province.type.name}\n" + \
             f"Coasts: {len(province.coasts)}\n" + \
@@ -395,10 +395,18 @@ async def province_info(ctx: commands.Context, manager: Manager) -> str:
             f"Half-Core: {province.half_core.name if province.half_core else 'None'}\n" + \
             f"Adjacent Provinces:\n- " + "\n- ".join(sorted([adjacent.name for adjacent in province.adjacent])) + "\n"
     else:
-        out = f"""Province: {province.name}
-Type: COAST
-Adjacent Provinces:
-- """ + "\n- ".join(sorted([adjacent.name for adjacent in province.get_adjacent_locations()])) + "\n"
+        coast_unit = None
+        if province.unit:
+            if province.unit.coast == coast:
+                coast_unit = province.unit
+
+        out = f"Province: {coast.name}\n" + \
+            "Type: COAST\n" + \
+            f"Coast Unit: {(coast_unit.player.name + ' ' + coast_unit.unit_type.name) if coast_unit else 'None'}\n" + \
+            f"Province Unit: {(province.unit.player.name + ' ' + province.unit.unit_type.name) if province.unit else 'None'}\n" + \
+            "Adjacent Provinces:\n" + \
+            "- " + \
+            "\n- ".join(sorted([adjacent.name for adjacent in coast.get_adjacent_locations()])) + "\n"
     # fmt: on
     return out
 
