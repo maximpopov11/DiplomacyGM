@@ -3,7 +3,7 @@ import logging
 
 from diplomacy.persistence.phase import Phase
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.province import Province, Coast, Location
+from diplomacy.persistence.province import Province, Coast, Location, get_adjacent_provinces
 from diplomacy.persistence.unit import Unit, UnitType
 
 logger = logging.getLogger(__name__)
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class Board:
     def __init__(
-        self, players: set[Player], provinces: set[Province], units: set[Unit], phase: Phase, data, datafile: str
+        self, players: set[Player], provinces: set[Province], units: set[Unit], phase: Phase, data, datafile: str, fow: bool
     ):
         self.players: set[Player] = players
         self.provinces: set[Province] = provinces
@@ -23,6 +23,7 @@ class Board:
         self.orders_enabled: bool = True
         self.data = data
         self.datafile = datafile
+        self.fow = fow
 
     # TODO: we could have this as a dict ready on the variant
     def get_player(self, name: str) -> Player:
@@ -73,6 +74,20 @@ class Board:
                 return name_to_province[full_name], None
             else:
                 raise Exception(f"Unknown issue occurred when attempting to find the province {name}.")
+
+    def get_visible_provinces(self, player: Player) -> set[Province]:
+        visible: set[Province] = set()
+        for unit in player.units:
+            visible.update(get_adjacent_provinces(unit.location()))
+            visible.add(unit.province)
+
+        for province in player.centers:
+            if province.core == player:
+                visible.update(province.adjacent)
+            visible.add(province)
+
+        return visible
+
 
     def get_possible_provinces(self, name: str) -> list[str]:
         # pattern = r"\b{}.*".format(name.strip().replace(" ", r".*\b"))

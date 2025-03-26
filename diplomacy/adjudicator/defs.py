@@ -52,19 +52,19 @@ class AdjudicableOrder:
             self.type = OrderType.CORE
         elif isinstance(unit.order, Move) or isinstance(unit.order, ConvoyMove):
             self.type = OrderType.MOVE
-            self.destination_province = get_base_province_from_location(unit.order.destination)
+            self.destination_province = unit.order.destination.as_province()
             self.raw_destination = unit.order.destination
             if isinstance(unit.order, ConvoyMove):
                 self.is_convoy = True
         elif isinstance(unit.order, Support):
             self.type = OrderType.SUPPORT
-            self.source_province = unit.order.source.province
-            self.destination_province = get_base_province_from_location(unit.order.destination)
+            self.source_province = unit.order.source.as_province()
+            self.destination_province = unit.order.destination.as_province()
             self.raw_destination = unit.order.destination
         elif isinstance(unit.order, ConvoyTransport):
             self.type = OrderType.CONVOY
-            self.source_province = unit.order.source.province
-            self.destination_province = get_base_province_from_location(unit.order.destination)
+            self.source_province = unit.order.source.as_province()
+            self.destination_province = unit.order.destination.as_province()
             self.raw_destination = unit.order.destination
         else:
             raise ValueError(f"Can't parse {unit.order.__class__.__name__} to OrderType")
@@ -74,11 +74,3 @@ class AdjudicableOrder:
     def __str__(self):
         # This could be improved
         return f"{self.current_province} {self.type} {self.destination_province} [{self.state}:{self.resolution}]"
-
-
-def get_base_province_from_location(location: Location) -> Province:
-    if isinstance(location, Coast):
-        return location.province
-    if isinstance(location, Province):
-        return location
-    raise ValueError(f"Location {location} should be Coast or Province")

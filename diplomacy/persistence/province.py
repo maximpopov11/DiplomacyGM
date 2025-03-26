@@ -36,6 +36,10 @@ class Location:
     def get_unit(self) -> unit.Unit | None:
         pass
 
+    @abstractmethod
+    def as_province(self) -> Province:
+        pass
+
     def __str__(self):
         return self.name
 
@@ -82,6 +86,9 @@ class Province(Location):
 
     def get_unit(self) -> unit.Unit | None:
         return self.unit
+    
+    def as_province(self) -> Province:
+        return self
 
     def coast(self) -> Coast:
         if len(self.coasts) != 1:
@@ -157,6 +164,9 @@ class Coast(Location):
 
     def get_unit(self) -> unit.Unit | None:
         return self.province.get_unit()
+    
+    def as_province(self) -> Province:
+        return self.province
 
     def get_adjacent_coasts(self) -> set[Coast]:
         # TODO: (BETA) this will generate false positives (e.g. mini province keeping 2 big province coasts apart)
@@ -174,3 +184,11 @@ class Coast(Location):
 
     def get_adjacent_locations(self) -> set[Location]:
         return self.adjacent_seas.union(self.get_adjacent_coasts())
+
+
+def get_adjacent_provinces(location: Location) -> set[Province]:
+    if isinstance(location, Coast):
+        return location.adjacent_seas | {coast.province for coast in location.get_adjacent_coasts()}
+    if isinstance(location, Province):
+        return location.adjacent
+    raise ValueError(f"Location {location} should be Coast or Province")
