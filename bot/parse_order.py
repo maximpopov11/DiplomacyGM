@@ -185,14 +185,17 @@ retreats_parser = Lark(ebnf, start="retreat", parser="earley")
 builds_parser   = Lark(ebnf, start="build", parser="earley")
 
 def parse_order(message: str, player_restriction: Player | None, board: Board) -> str:
-    orderlist = message.lower().replace(".order", "").strip().splitlines()
+    ordertext = message.split(maxsplit=1)
+    if len(ordertext) == 1:
+        return "For information about entering orders, please use the [player guide](https://docs.google.com/document/d/1SNZgzDViPB-7M27dTF0SdmlVuu_KYlqqzX0FQ4tWc2M/edit#heading=h.7u3tx93dufet) for examples and syntax."
+    orderlist = ordertext[1].strip().splitlines()
     orderoutput = []
     errors = []
     if phase.is_builds(board.phase):
         generator.set_state(board, player_restriction)
         for order in orderlist:
             try:
-                cmd = builds_parser.parse(order.strip() + " ")
+                cmd = builds_parser.parse(order.strip().lower( + " ")
                 generator.transform(cmd)
                 orderoutput.append(f"\u001b[0;32m{order}")
             except VisitError as e:
@@ -216,7 +219,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
         for order in orderlist:
             try:
                 logger.info(order)
-                cmd = parser.parse(order.strip() + " ")
+                cmd = parser.parse(order.strip().lower( + " ")
                 movement.append(generator.transform(cmd))
                 orderoutput.append(f"\u001b[0;32m{order}")
             except VisitError as e:
@@ -236,6 +239,8 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
     output = "```ansi\n" + "\n".join(orderoutput) + "\n```"
     if errors:
         output += "\n" + "\n".join(errors)
+    else:
+        output += "\n" + "Orders validated successfully."
     return output
 
 
