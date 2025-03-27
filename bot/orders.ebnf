@@ -1,38 +1,38 @@
 WS: /[ \t]+/
 
-order: move_order
-    | hold_order
-    | support_order
-    | convoy_order
-    | core_order
+order: (move_order
+      | hold_order
+      | support_order
+      | convoy_order
+      | core_order) WS
+   
+retreat: (retreat_order
+        | disband_order) WS
 
-retreat: retreat_order
-       | disband_order
+build: (build_unit
+      | disband_unit) WS
 
-build: build_unit
-     | disband_unit
+move_order: unit WS MOVE WS province
 
-move_order: unit WS MOVE WS province WS
-
-hold_order: unit WS HOLD WS
+hold_order: unit WS HOLD
 
 l_move_order: l_unit WS MOVE WS province
 
 l_hold_order: l_unit WS HOLD
 
-support_order: unit WS ((SUPPORT WS (l_move_order | l_hold_order)) | ((SUPPORT_HOLD | SUPPORT) WS l_unit)) WS
+support_order: unit WS ((SUPPORT WS (l_move_order | l_hold_order)) | ((SUPPORT_HOLD | SUPPORT) WS l_unit))
 
-convoy_order: unit WS CONVOY WS l_move_order WS
+convoy_order: unit WS CONVOY WS l_move_order
 
-core_order: unit WS CORE WS
+core_order: unit WS CORE
 
-retreat_order: retreat_unit WS RETREAT WS province WS
+retreat_order: retreat_unit WS RETREAT WS province
 
-disband_order: ( retreat_unit WS DISBAND ) | ( DISBAND WS retreat_unit ) WS
+disband_order: ( retreat_unit WS DISBAND ) | ( DISBAND WS retreat_unit )
 
-disband_unit: ( unit WS DISBAND ) | ( DISBAND WS unit ) WS
+disband_unit: ( unit WS DISBAND ) | ( DISBAND WS unit )
 
-build_unit: ( BUILD WS DESCRIPTOR province ) | ( BUILD WS province DESCRIPTOR ) WS
+build_unit: ( BUILD WS DESCRIPTOR province ) | ( BUILD WS province DESCRIPTOR )
 
 SUPPORT_HOLD.3 : /(support|supports|s)[ \-_]?(hold|holds|h|stand|stands)/i
 
