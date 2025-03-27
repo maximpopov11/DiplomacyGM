@@ -154,7 +154,7 @@ class TreeToOrder(Transformer):
         return s[0], order.RetreatDisband()
 
     def order(self, order):
-        (command,) = order
+        command = order[0]
         unit, order = command
         if self.player_restriction is not None and unit.player != self.player_restriction:
             raise PermissionError(
@@ -164,7 +164,7 @@ class TreeToOrder(Transformer):
         return unit
 
     def retreat(self, order):
-        (command,) = order
+        command = order[0]
         unit, order = command
         if self.player_restriction is not None and unit.player != self.player_restriction:
             raise PermissionError(
