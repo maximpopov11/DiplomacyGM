@@ -195,7 +195,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
         generator.set_state(board, player_restriction)
         for order in orderlist:
             try:
-                cmd = builds_parser.parse(order.lower())
+                cmd = builds_parser.parse(order.strip().lower() + " ")
                 generator.transform(cmd)
                 orderoutput.append(f"\u001b[0;32m{order}")
             except VisitError as e:
@@ -219,7 +219,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
         for order in orderlist:
             try:
                 logger.info(order)
-                cmd = parser.parse(order.lower())
+                cmd = parser.parse(order.strip().lower() + " ")
                 movement.append(generator.transform(cmd))
                 orderoutput.append(f"\u001b[0;32m{order}")
             except VisitError as e:
