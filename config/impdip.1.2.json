@@ -60,7 +60,7 @@
             "SPO": {
                 "num": 3,
                 "type": "SEA",
-                "adjacencies": ["NPO1", "NPO2", "NPO3", "NPO4", "NPO5", "SAO1", "SAO2", "SAO3", "SAO4", "SAO5", "Solomon Islands", "Coral Sea", "Wurruk", "Antarctic Basin", "Aotearoa", "Bahia Grande", "Mar de Hoces", "Chiloe", "Roggeveen Basin", "Peru Basin"]
+                "adjacencies": ["NPO1", "NPO2", "NPO3", "NPO4", "NPO5", "SAO1", "SAO2", "SAO3", "SAO4", "SAO5", "Solomon Islands", "Coral Sea", "Wurruk", "Antarctic Basin", "Aotearoa", "Bahia Grande", "Mar de Hoces", "Chiloe", "Roggeveen Basin", "Peru Basin", "Kawesqar"]
             },
             "INO": {
                 "num": 5,
