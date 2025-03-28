@@ -12,7 +12,7 @@ from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.unit import UnitType, Unit
+from diplomacy.persistence.unit import UnitType
 
 whitespace_dict = {
     "_",

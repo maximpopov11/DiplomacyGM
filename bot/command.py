@@ -449,6 +449,7 @@ async def publish_current(ctx: commands.Context, manager: Manager):
 async def publish_orders(ctx: commands.Context, manager: Manager,):
     await publish_map(ctx, manager, "moves map", lambda m, s, p: m.draw_fow_moves_map(s,p))
 
+
 async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_caller: Callable[[Manager, int, Player], tuple[str, str]]):
     player_category = None
 
@@ -477,10 +478,18 @@ async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_ca
             continue
 
         message = f"Here is the {name} for {board.year + 1642} {board.phase.name}"
-        file, file_name = map_caller(manager, guild_id, player)
-        tasks.append(convert_svg_and_send_file(channel, message, file, file_name))
+        tasks.append(map_publish_task(lambda: map_caller(manager, guild_id, player), channel, message))
 
     await asyncio.gather(*tasks)
+
+# save at least one svg slot for others
+fow_export_limit = asyncio.Semaphore(max(int(os.getenv("simultaneous_svg_exports_limit")) - 1, 1))
+
+async def map_publish_task(map_maker, channel, message):
+    async with fow_export_limit:
+        file, file_name = map_maker()
+        file, file_name = await svg_to_png(file, file_name)
+        await send_message_and_file(channel, message, file, file_name)
 
 async def send_order_logs(ctx: commands.Context, manager: Manager):
     player_category = None
