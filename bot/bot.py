@@ -183,7 +183,7 @@ async def order(ctx: commands.Context) -> None:
     brief="Removes orders for given units.",
     description="Removes orders for given units (required for removing builds/disbands). "
     "There must be one and only one order per line.",
-    aliases=["remove, rm, removeorders"]
+    aliases=["remove", "rm", "removeorders"]
 )
 async def remove_order(ctx: commands.Context) -> None:
     await _handle_command(command.remove_order, ctx)
