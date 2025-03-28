@@ -3,7 +3,7 @@ import logging
 
 from diplomacy.persistence.phase import Phase
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.province import Province, Coast, Location
+from diplomacy.persistence.province import Province, Coast, Location, get_adjacent_provinces
 from diplomacy.persistence.unit import Unit, UnitType
 
 logger = logging.getLogger(__name__)
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class Board:
     def __init__(
-        self, players: set[Player], provinces: set[Province], units: set[Unit], phase: Phase, data, datafile: str
+        self, players: set[Player], provinces: set[Province], units: set[Unit], phase: Phase, data, datafile: str, fow: bool
     ):
         self.players: set[Player] = players
         self.provinces: set[Province] = provinces
@@ -23,6 +23,7 @@ class Board:
         self.orders_enabled: bool = True
         self.data = data
         self.datafile = datafile
+        self.fow = fow
 
     # TODO: we could have this as a dict ready on the variant
     def get_player(self, name: str) -> Player:
@@ -35,7 +36,8 @@ class Board:
     # TODO: we could have this as a dict ready on the variant
     def get_province(self, name: str) -> Province:
         # we ignore capitalization because this is primarily used for user input
-        return next((province for province in self.provinces if province.name.lower() == name.lower()), None)
+        province, _ = self.get_province_and_coast(name)
+        return province
 
     def get_province_and_coast(self, name: str) -> tuple[Province, Coast | None]:
         # TODO: (BETA) we build this everywhere, let's just have one live on the Board on init
@@ -53,8 +55,39 @@ class Board:
             return coast.province, coast
         elif name in name_to_province:
             return name_to_province[name], None
+
+        potential_provinces = self.get_possible_provinces(name)
+        if len(potential_provinces) > 5:
+            raise Exception(f"The province {name} is ambiguous. Please type out the full name.")
+        elif len(potential_provinces) > 1:
+            raise Exception(
+                f'The province {name} is ambiguous. Possible matches: {", ".join(potential_provinces)}.'
+            )
+        elif len(potential_provinces) == 0:
+            raise Exception(f"The province {name} does not match any known provinces.")
         else:
-            return None, None
+            full_name = potential_provinces[0].lower()
+            coast = name_to_coast.get(full_name)
+            if coast:
+                return coast.province, coast
+            elif full_name in name_to_province:
+                return name_to_province[full_name], None
+            else:
+                raise Exception(f"Unknown issue occurred when attempting to find the province {name}.")
+
+    def get_visible_provinces(self, player: Player) -> set[Province]:
+        visible: set[Province] = set()
+        for unit in player.units:
+            visible.update(get_adjacent_provinces(unit.location()))
+            visible.add(unit.province)
+
+        for province in player.centers:
+            if province.core == player:
+                visible.update(province.adjacent)
+            visible.add(province)
+
+        return visible
+
 
     def get_possible_provinces(self, name: str) -> list[str]:
         # pattern = r"\b{}.*".format(name.strip().replace(" ", r".*\b"))
@@ -70,19 +103,6 @@ class Board:
 
     def get_location(self, name: str) -> Location:
         province, coast = self.get_province_and_coast(name)
-        if not province:
-            potential_provinces = self.get_possible_provinces(name)
-            if len(potential_provinces) > 5:
-                raise Exception(f"The province {name} is ambiguous. Please type out the full name.")
-            elif len(potential_provinces) > 1:
-                raise Exception(
-                    f'The province {name} is ambiguous. Possible matches: {", ".join(potential_provinces)}.'
-                )
-            elif len(potential_provinces) == 0:
-                raise Exception(f"The province {name} does not match any known provinces.")
-            else:
-                full_name = potential_provinces[0]
-                province, coast = self.get_province_and_coast(full_name)
 
         if coast:
             return coast
@@ -116,8 +136,12 @@ class Board:
     ) -> Unit:
         unit = Unit(unit_type, player, province, coast, retreat_options)
         if retreat_options is not None:
+            if province.dislodged_unit:
+                raise RuntimeError(f"{province.name} already has a dislodged unit")
             province.dislodged_unit = unit
         else:
+            if province.unit:
+                raise RuntimeError(f"{province.name} already has a unit")
             province.unit = unit
         player.units.add(unit)
         self.units.add(unit)

@@ -3,10 +3,11 @@ import os
 import re
 import time
 from typing import Callable
-import inspect
-import zipfile
-import io
 import random
+from dotenv.main import load_dotenv
+
+from bot.utils import convert_svg_and_send_file, send_message_and_file
+load_dotenv()
 
 import discord
 from discord import HTTPException
@@ -20,8 +21,6 @@ intents.message_content = True
 intents.members = True
 bot = commands.Bot(command_prefix=".", intents=intents)
 logger = logging.getLogger(__name__)
-discord_message_limit = 2000
-discord_file_limit = 10 * (2**20)
 impdip_server = 1201167737163104376
 bot_status_channel = 1284336328657600572
 
@@ -106,33 +105,15 @@ async def _handle_command(
     response = await function(ctx, manager)
 
     if type(response) is dict:
-        message, file, file_name = response["message"], response["file"], response["file_name"]
+        message, file, file_name, svg_to_png = response["message"], response["file"], response["file_name"], response["svg_to_png"]
     else:
-        message, file = response, None
+        message, file, file_name, svg_to_png = response, None, None, False
 
-    while discord_message_limit < len(message):
-        # Try to find an even line break to split the message on
-        cutoff = message.rfind("\n", 0, discord_message_limit)
-        if cutoff == -1:
-            cutoff = discord_message_limit
-        await ctx.channel.send(message[:cutoff].strip())
-        message = message[cutoff:].strip()
-    if file is not None and len(file) > discord_file_limit:
-        # zip compression without using files (disk is slow)
 
-        # We create a virtual file, write to it, and then restart it
-        # for some reason zipfile doesn't support this natively
-        with io.BytesIO() as vfile:
-            zip_file = zipfile.ZipFile(vfile, mode="x", compression=zipfile.ZIP_DEFLATED, compresslevel=9)
-            zip_file.writestr(f"{file_name}.svg", file, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
-            zip_file.close()
-            vfile.seek(0)
-            await ctx.channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}.zip"))
-    elif file is not None:
-        with io.BytesIO(file) as vfile:
-            await ctx.channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}.svg"))
+    if svg_to_png:
+        await convert_svg_and_send_file(ctx.channel, message, file, file_name)
     else:
-        await ctx.channel.send(message)
+        await send_message_and_file(ctx.channel, message, file, file_name)
 
     elapsed = time.time() - start
     logger.debug(
@@ -218,12 +199,25 @@ async def view_orders(ctx: commands.Context) -> None:
     await _handle_command(command.view_orders, ctx)
 
 
-@bot.command(brief="Outputs the current map with submitted orders.")
+@bot.command(
+    brief="Outputs the current map with submitted orders.",
+    description="""
+    For GMs, all submitted orders are displayed. For a player, only their own orders are displayed.
+    GMs may append true as an argument to this to instead get the svg.
+    * view_map {True|(False) - whether or not to display as an .svg}
+    """,
+    aliases=["viewmap", "vm"],
+)
 async def view_map(ctx: commands.Context) -> None:
     await _handle_command(command.view_map, ctx)
 
 
-@bot.command(brief="Adjudicates the game and outputs the moves and results maps.")
+@bot.command(brief="Adjudicates the game and outputs the moves and results maps.",
+    description="""
+    GMs may append true as an argument to this command to instead get the base svg file.
+    * adjudicate {True|(False) - whether or not to display as an .svg}
+    """
+)
 async def adjudicate(ctx: commands.Context) -> None:
     await _handle_command(command.adjudicate, ctx)
 
@@ -302,6 +296,10 @@ async def info(ctx: commands.Context) -> None:
 async def province_info(ctx: commands.Context) -> None:
     await _handle_command(command.province_info, ctx)
 
+@bot.command(brief="outputs the provinces you can see")
+async def visible_info(ctx: commands.Context) -> None:
+    await _handle_command(command.visible_provinces, ctx)
+
 
 @bot.command(brief="outputs all provinces per owner")
 async def all_province_data(ctx: commands.Context) -> None:
@@ -318,8 +316,8 @@ async def create_game(ctx: commands.Context) -> None:
 
 @bot.command(
     brief="archives a category of the server",
-    description="Used after a game is done. Will make all channels in category viewable by all server members, but no messages allowed.
-    * .archive [link to any channel in category]",
+    description="""Used after a game is done. Will make all channels in category viewable by all server members, but no messages allowed.
+    * .archive [link to any channel in category]""",
 )
 async def archive(ctx: commands.Context) -> None:
     await _handle_command(command.archive, ctx)

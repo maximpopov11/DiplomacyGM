@@ -2,6 +2,7 @@ import logging
 import time
 
 from diplomacy.adjudicator.adjudicator import make_adjudicator
+from diplomacy.adjudicator.fogofwarmapper import FOWMapper
 from diplomacy.adjudicator.mapper import Mapper
 from diplomacy.map_parser.vector.vector import get_parser
 from diplomacy.persistence import phase
@@ -70,11 +71,53 @@ class Manager:
         logger.info("Adjudicator ran successfully")
         self._boards[server_id] = new_board
         self._database.save_board(server_id, new_board)
-        mapper = Mapper(new_board)
-        svg, file_name = mapper.draw_current_map()
 
         elapsed = time.time() - start
         logger.info(f"manager.adjudicate.{server_id}.{elapsed}s")
+
+    def draw_fow_current_map(self, server_id: int, player_restriction: Player | None) -> tuple[str, str]:
+        start = time.time()
+
+        svg, file_name = FOWMapper(self._boards[server_id], player_restriction).draw_current_map()
+
+        elapsed = time.time() - start
+        logger.info(f"manager.draw_fow_current_map.{server_id}.{elapsed}s")
+        return svg, file_name
+
+    def draw_current_map(self, server_id: int) -> tuple[str, str]:
+        start = time.time()
+
+        svg, file_name = Mapper(self._boards[server_id]).draw_current_map()
+
+        elapsed = time.time() - start
+        logger.info(f"manager.draw_current_map.{server_id}.{elapsed}s")
+        return svg, file_name
+
+    def draw_fow_players_moves_map(self, server_id: int, player_restriction: Player | None) -> tuple[str, str]:
+        start = time.time()
+
+        if player_restriction:
+            svg, file_name = FOWMapper(self._boards[server_id], player_restriction).draw_moves_map(
+                self._boards[server_id].phase, player_restriction
+            )
+        else:
+            svg, file_name = FOWMapper(self._boards[server_id], None).draw_moves_map(
+                self._boards[server_id].phase, None
+            )
+
+        elapsed = time.time() - start
+        logger.info(f"manager.draw_fow_players_moves_map.{server_id}.{elapsed}s")
+        return svg, file_name
+
+    def draw_fow_moves_map(self, server_id: int, player_restriction: Player | None) -> tuple[str, str]:
+        start = time.time()
+
+        svg, file_name = FOWMapper(self._boards[server_id], player_restriction).draw_moves_map(
+            self._boards[server_id].phase, None
+        )
+
+        elapsed = time.time() - start
+        logger.info(f"manager.draw_fow_moves_map.{server_id}.{elapsed}s")
         return svg, file_name
 
     def rollback(self, server_id: int) -> dict[str]:

@@ -1,13 +1,16 @@
-from lark import Lark, Transformer
+import logging
+from lark import Lark, Transformer, UnexpectedEOF
+from lark.exceptions import VisitError
 
 from bot.utils import get_unit_type, get_keywords, _manage_coast_signature
-from diplomacy.adjudicator.defs import get_base_province_from_location
 from diplomacy.persistence import order, phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, Location, Coast, ProvinceType
 from diplomacy.persistence.unit import Unit, UnitType
+
+logger = logging.getLogger(__name__)
 
 def normalize_location(unit_type: UnitType, location: Location):
     if unit_type == UnitType.FLEET:
@@ -27,17 +30,24 @@ class TreeToOrder(Transformer):
     def set_state(self, board: Board, player_restriction: Player | None):
         self.board = board
         self.player_restriction = player_restriction
-
-    def movement_phase(self, statements):
-        return set([x for x in statements if isinstance(x, Unit)])
-
-    def retreat_phase(self, statements):
-        return set([x for x in statements if isinstance(x, Unit)])
-
+        
     def province(self, s) -> Location:
         name = " ".join(s[::2]).replace("_", " ").strip()
         name = _manage_coast_signature(name)
         return self.board.get_location(name)
+
+    # used for supports, specifically FoW
+    def l_unit(self, s) -> Location:
+        # ignore the fleet/army signifier, if exists
+        loc = s[-1]
+        if loc is not None and not self.board.fow:
+            unit = loc.get_unit()
+            if unit is None:
+                raise ValueError(f"No unit in {s[-1]}")
+            if not isinstance(unit, Unit):
+                raise Exception(f"Didn't get a unit or None from get_unit(), please report this")
+
+        return loc
 
     def unit(self, s) -> Unit:
         # ignore the fleet/army signifier, if exists
@@ -92,21 +102,27 @@ class TreeToOrder(Transformer):
         return u.location(), u.player, order.Disband(u.location())
     
     def build(self, s):
-        return s[0]
-
-    def build_phase(self, s):
-        orders = [x for x in s if isinstance(x, tuple)]
-        for build_order in orders:
-            if self.player_restriction is not None and self.player_restriction != build_order[1]:
-                raise Exception(f"Cannot issue order for {build_order[0].name} as you do not control it")
-        
-
-        for build_order in orders:
-            remove_player_order_for_location(self.board, build_order[1], build_order[0])
-            build_order[1].build_orders.add(build_order[2])
+        build_order = s[0]
+        if self.player_restriction is not None and self.player_restriction != build_order[1]:
+            raise Exception(f"Cannot issue order for {build_order[0].name} as you do not control it")
+        remove_player_order_for_location(self.board, build_order[1], build_order[0])
+        build_order[1].build_orders.add(build_order[2])
+        return build_order[0]
 
 
     # format for all of these is (unit, order)
+    def l_hold_order(self, s):
+        return s[0], order.Hold()
+    
+    def l_move_order(self, s):
+        # normalize position for non fow
+        if not self.board.fow:
+            unit_type = s[0].get_unit().unit_type
+            loc = normalize_location(unit_type, s[-1])
+        else:
+            loc = s[-1]
+
+        return s[0], order.Move(loc)
 
     def move_order(self, s):
         loc = normalize_location(s[0].unit_type, s[-1])
@@ -117,17 +133,17 @@ class TreeToOrder(Transformer):
         return s[0], order.ConvoyTransport(s[-1][0], s[-1][1].destination)
 
     def support_order(self, s):
-        if isinstance(s[-1], Unit):
-            unit = s[-1]
+        if isinstance(s[-1], Location):
+            loc = s[-1]
             unit_order = order.Hold()
         else:
-            unit = s[-1][0]
+            loc = s[-1][0]
             unit_order = s[-1][1]
 
         if isinstance(unit_order, order.Move):
-            return s[0], order.Support(unit, unit_order.destination)
+            return s[0], order.Support(loc, unit_order.destination)
         elif isinstance(unit_order, order.Hold):
-            return s[0], order.Support(unit, unit.location())
+            return s[0], order.Support(loc, loc)
         else:
             raise ValueError("Unknown type of support. Something has broken in the bot. Please report this")
 
@@ -138,7 +154,7 @@ class TreeToOrder(Transformer):
         return s[0], order.RetreatDisband()
 
     def order(self, order):
-        (command,) = order
+        command = order[0]
         unit, order = command
         if self.player_restriction is not None and unit.player != self.player_restriction:
             raise PermissionError(
@@ -148,7 +164,7 @@ class TreeToOrder(Transformer):
         return unit
 
     def retreat(self, order):
-        (command,) = order
+        command = order[0]
         unit, order = command
         if self.player_restriction is not None and unit.player != self.player_restriction:
             raise PermissionError(
@@ -164,19 +180,34 @@ generator = TreeToOrder()
 with open("bot/orders.ebnf", "r") as f:
     ebnf = f.read()
 
-movement_parser = Lark(ebnf, start="movement_phase", parser="earley")
-retreats_parser = Lark(ebnf, start="retreat_phase", parser="earley")
-builds_parser   = Lark(ebnf, start="build_phase", parser="earley")
+movement_parser = Lark(ebnf, start="order", parser="earley")
+retreats_parser = Lark(ebnf, start="retreat", parser="earley")
+builds_parser   = Lark(ebnf, start="build", parser="earley")
 
 def parse_order(message: str, player_restriction: Player | None, board: Board) -> str:
+    ordertext = message.split(maxsplit=1)
+    if len(ordertext) == 1:
+        return "For information about entering orders, please use the [player guide](https://docs.google.com/document/d/1SNZgzDViPB-7M27dTF0SdmlVuu_KYlqqzX0FQ4tWc2M/edit#heading=h.7u3tx93dufet) for examples and syntax."
+    orderlist = ordertext[1].strip().splitlines()
+    orderoutput = []
+    errors = []
     if phase.is_builds(board.phase):
         generator.set_state(board, player_restriction)
-        cmd = builds_parser.parse(message.lower() + "\n")
-        generator.transform(cmd)
+        for order in orderlist:
+            try:
+                cmd = builds_parser.parse(order.strip().lower() + " ")
+                generator.transform(cmd)
+                orderoutput.append(f"\u001b[0;32m{order}")
+            except VisitError as e:
+                logger.info(e)
+                orderoutput.append(f"\u001b[0;31m{order}")
+                errors.append(f"`{order}`: {str(e).splitlines()[-1]}")
+            except UnexpectedEOF as e:
+                logger.info(e)
+                orderoutput.append(f"\u001b[0;31m{order}")
+                errors.append(f"`{order}`: Please fix this order and try again")
         database = get_connection()
         database.save_build_orders_for_players(board, player_restriction)
-
-        return "Orders validated successfully."
     elif phase.is_moves(board.phase) or phase.is_retreats(board.phase):
         if phase.is_moves(board.phase):
             parser = movement_parser
@@ -184,15 +215,33 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
             parser = retreats_parser
 
         generator.set_state(board, player_restriction)
-        cmd = parser.parse(message.lower() + "\n")
-        movement = generator.transform(cmd)
+        movement = []
+        for order in orderlist:
+            try:
+                logger.info(order)
+                cmd = parser.parse(order.strip().lower() + " ")
+                movement.append(generator.transform(cmd))
+                orderoutput.append(f"\u001b[0;32m{order}")
+            except VisitError as e:
+                logger.info(e)
+                orderoutput.append(f"\u001b[0;31m{order}")
+                errors.append(f"`{order}`: {str(e).splitlines()[-1]}")
+            except UnexpectedEOF as e:
+                logger.info(e)
+                orderoutput.append(f"\u001b[0;31m{order}")
+                errors.append(f"`{order}`: Please fix this order and try again")
 
         database = get_connection()
         database.save_order_for_units(board, movement)
-
-        return "Orders validated successfully"
     else:
         return "The game is in an unknown phase. Something has gone very wrong with the bot. Please report this to a gm"
+        
+    output = "```ansi\n" + "\n".join(orderoutput) + "\n```"
+    if errors:
+        output += "\n" + "\n".join(errors)
+    else:
+        output += "\n" + "Orders validated successfully."
+    return output
 
 
 def parse_remove_order(message: str, player_restriction: Player | None, board: Board) -> str:
@@ -273,9 +322,9 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
 
 
 def remove_player_order_for_location(board: Board, player: Player, location: Location) -> bool:
-    base_province = get_base_province_from_location(location)
+    base_province = location.as_province()
     for player_order in player.build_orders:
-        if get_base_province_from_location(player_order.location) == base_province:
+        if player_order.location.as_province() == base_province:
             player.build_orders.remove(player_order)
             database = get_connection()
             database.execute_arbitrary_sql(
