@@ -473,7 +473,7 @@ async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_ca
         file, file_name = map_caller(manager, guild_id, player)
         tasks.append(convert_svg_and_send_file(channel, message, file, file_name))
 
-    await asyncio.gather(*tasks, return_exceptions=True)
+    await asyncio.gather(*tasks)
 
 async def send_order_logs(ctx: commands.Context, manager: Manager):
     player_category = None
