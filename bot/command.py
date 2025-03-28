@@ -396,9 +396,8 @@ async def province_info(ctx: commands.Context, manager: Manager) -> str:
             f"Adjacent Provinces:\n- " + "\n- ".join(sorted([adjacent.name for adjacent in province.adjacent])) + "\n"
     else:
         coast_unit = None
-        if province.unit:
-            if province.unit.coast == coast:
-                coast_unit = province.unit
+        if province.unit and province.unit.coast == coast:
+            coast_unit = province.unit
 
         out = f"Province: {coast.name}\n" + \
             "Type: COAST\n" + \
