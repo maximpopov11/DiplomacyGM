@@ -191,7 +191,7 @@ async def announce(ctx: commands.Context) -> None:
     If anything in the command errors, we recommend resubmitting the whole order message.
     *During Build phases only*, you have to specify multi-word provinces with underscores; e.g. Somali Basin would be Somali_Basin (we use a different parser during build phases)
     If you would like to use something that is not currently supported please inform your GM and we can add it.""",
-    aliases=["o, orders"],
+    aliases=["o", "orders"],
 
 )
 async def order(ctx: commands.Context) -> None:
