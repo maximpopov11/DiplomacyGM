@@ -3,13 +3,10 @@ import os
 import re
 import time
 from typing import Callable
-import inspect
-import zipfile
-import io
 import random
 from dotenv.main import load_dotenv
 
-from bot.utils import send_message_and_file
+from bot.utils import convert_svg_and_send_file, send_message_and_file
 load_dotenv()
 
 import discord
@@ -108,11 +105,15 @@ async def _handle_command(
     response = await function(ctx, manager)
 
     if type(response) is dict:
-        message, file, file_name = response["message"], response["file"], response["file_name"]
+        message, file, file_name, svg_to_png = response["message"], response["file"], response["file_name"], response["svg_to_png"]
     else:
-        message, file, file_name = response, None, None
+        message, file, file_name, svg_to_png = response, None, None, False
 
-    await send_message_and_file(ctx.channel, message, file, file_name)
+
+    if svg_to_png:
+        await convert_svg_and_send_file(ctx.channel, message, file, file_name)
+    else:
+        await send_message_and_file(ctx.channel, message, file, file_name)
 
     elapsed = time.time() - start
     logger.debug(
