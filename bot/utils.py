@@ -230,7 +230,5 @@ svg_export_limit = asyncio.Semaphore(int(os.getenv("simultaneous_svg_exports_lim
 
 async def convert_svg_and_send_file(channel, message, file, file_name):
     async with svg_export_limit:
-        print(f"Processing {channel.name}")
         file, file_name = await svg_to_png(file, file_name)
         await send_message_and_file(channel, message, file, file_name)
-        print(f"Finished with {channel.name}")
