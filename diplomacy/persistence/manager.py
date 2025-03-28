@@ -84,6 +84,15 @@ class Manager:
         logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
         return svg, file_name
 
+    def draw_current_map(self, server_id: int) -> tuple[str, str]:
+        start = time.time()
+
+        svg, file_name = Mapper(self._boards[server_id]).draw_current_map()
+
+        elapsed = time.time() - start
+        logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
+        return svg, file_name
+
     def draw_fow_players_moves_map(self, server_id: int, player_restriction: Player | None) -> tuple[str, str]:
         start = time.time()
 
