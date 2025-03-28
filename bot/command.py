@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import random
 from random import randrange
 from typing import Callable
@@ -14,7 +15,7 @@ import bot.perms as perms
 from bot.config import is_bumble, temporary_bumbles
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
-from bot.utils import get_filtered_orders, get_orders, get_player_by_channel, get_player_by_channel, is_admin, send_message_and_file
+from bot.utils import convert_svg_and_send_file, get_filtered_orders, get_orders, get_player_by_channel, get_player_by_channel, is_admin, send_message_and_file
 from diplomacy.adjudicator.utils import svg_to_png
 from diplomacy.persistence import phase
 from diplomacy.persistence.db.database import get_connection
@@ -253,7 +254,7 @@ async def view_orders(player: Player | None, ctx: commands.Context, manager: Man
 
 @perms.player("view map")
 async def view_map(player: Player | None, ctx: commands.Context, manager: Manager) -> str | dict[str]:
-    return_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() == "true"
+    return_svg = player or ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() != "true"
     board = manager.get_board(ctx.guild.id)
 
     try:
@@ -261,18 +262,16 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
             file, file_name = manager.draw_moves_map(ctx.guild.id, player)
         else:
             file, file_name = manager.draw_fow_players_moves_map(ctx.guild.id, player)
-        if not return_svg or player:
-            file, file_name = await svg_to_png(file, file_name)
     except Exception as err:
         logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
         return "View_orders map failed"
-    return {"message": "Map created successfully", "file": file, "file_name": file_name}
+    return {"message": "Map created successfully", "file": file, "file_name": file_name, "svg_to_png": return_svg}
 
 @perms.gm("adjudicate")
 async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str]:
     board = manager.get_board(ctx.guild.id)
 
-    return_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() == "true"
+    return_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() != "true"
     if board.fow:
         await publish_orders(ctx, manager)
         await send_order_logs(ctx, manager)
@@ -285,10 +284,8 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str]:
         file, file_name = manager.draw_current_map(ctx.guild.id)
     else:
         file, file_name = manager.draw_fow_current_map(ctx.guild.id, None)
-    if not return_svg:
-        file, file_name = await svg_to_png(file, file_name)  
 
-    return {"message": "Adjudication completed successfully", "file": file, "file_name": file_name}
+    return {"message": "Adjudication completed successfully", "file": file, "file_name": file_name, "svg_to_png": return_svg}
 
 @perms.gm("rollback")
 async def rollback(ctx: commands.Context, manager: Manager) -> dict[str]:
@@ -464,6 +461,7 @@ async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_ca
     for player in board.players:
         name_to_player[player.name.lower()] = player
 
+    tasks = []
 
     for channel in category.channels:
         player = get_player_by_channel(channel, manager, guild.id)
@@ -473,10 +471,9 @@ async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_ca
 
         message = f"Here is the {name} for {board.year + 1642} {board.phase.name}"
         file, file_name = map_caller(manager, guild_id, player)
-        png_generation_task = asyncio.create_task(svg_to_png(file, file_name))
-        png_generation_task.add_done_callback(
-            lambda future, cid=channel: asyncio.create_task(send_message_and_file(cid, message, *future.result()))
-        )
+        tasks.append(convert_svg_and_send_file(channel, message, file, file_name))
+
+    await asyncio.gather(*tasks)
 
 async def send_order_logs(ctx: commands.Context, manager: Manager):
     player_category = None
