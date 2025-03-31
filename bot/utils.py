@@ -138,7 +138,7 @@ async def send_message_and_file(channel: commands.Context.channel, message: str,
                 if cutoff == -1:
                     cutoff = message.rfind(" ", 0, discord_embed_description_limit)
                     if cutoff == -1:
-                        cutoff = 0
+                        cutoff = discord_embed_description_limit
 
             embed = Embed(
                 description=message[:cutoff],
