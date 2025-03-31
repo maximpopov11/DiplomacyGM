@@ -143,6 +143,7 @@ async def send_message_and_file(channel: commands.Context.channel, message: str,
                 colour=Colour.from_str("#c410ee"),
             )
 
+            # check that embed totals arent over the total message embed character limit.
             if sum(map(len, embeds)) + len(embed) > discord_embed_total_limit:
                 await channel.send(embeds=embeds)
                 embeds = []
@@ -151,12 +152,7 @@ async def send_message_and_file(channel: commands.Context.channel, message: str,
 
             message = message[cutoff:].strip()
 
-        embeds[-1].set_footer(
-            text="DiploGM!",
-            icon_url="https://cdn.discordapp.com/icons/1201167737163104376/f78e67edebfdefad8f3ee057ad658acd.webp"
-                     "?size=96&quality=lossless"
-        )
-        embeds[-1].timestamp = datetime.datetime.now()
+    discord_file = None
     if file is not None and len(file) > discord_file_limit:
         # zip compression without using files (disk is slow)
 
@@ -167,12 +163,23 @@ async def send_message_and_file(channel: commands.Context.channel, message: str,
             zip_file.writestr(f"{file_name}", file, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
             zip_file.close()
             vfile.seek(0)
-            await channel.send(embeds=embeds, file=discord.File(fp=vfile, filename=f"{file_name}.zip"))
+            discord_file = discord.File(fp=vfile, filename=f"{file_name}.zip")
     elif file is not None:
         with io.BytesIO(file) as vfile:
-            await channel.send(embeds=embeds, file=discord.File(fp=vfile, filename=f"{file_name}"))
-    elif message is not None and len(embeds) > 0:
-        await channel.send(embeds=embeds)
+            discord_file =  discord.File(fp=vfile, filename=f"{file_name}")
+            if not embeds:
+                embeds = [Embed()]
+            embeds[-1].set_image(url=f"attachment://{discord_file.filename.replace(" ", "_")}")
+
+
+    embeds[-1].set_footer(
+        text="DiploGM",
+        icon_url="https://cdn.discordapp.com/icons/1201167737163104376/f78e67edebfdefad8f3ee057ad658acd.webp"
+                 "?size=96&quality=lossless"
+    )
+    embeds[-1].timestamp = datetime.datetime.now()
+
+    await channel.send(embeds=embeds, file=discord_file)
 
 
 def get_orders(board: Board, player_restriction: Player | None) -> str:
