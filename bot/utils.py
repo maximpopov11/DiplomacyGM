@@ -1,8 +1,10 @@
+import datetime
 import asyncio
 import io
 import os
 import zipfile
 import discord
+from discord import Embed, Colour
 from discord.ext import commands
 
 from bot import config
@@ -40,6 +42,8 @@ unit_dict = {
 
 discord_message_limit = 2000
 discord_file_limit = 10 * (2**20)
+discord_embed_description_limit = 4096
+discord_embed_total_limit = 6000
 
 def is_admin(author: commands.Context.author) -> bool:
     return author.name in ["eebopmasch", "icecream_guy", "_bumble", "thisisflare", "eelisha"]
@@ -121,14 +125,38 @@ def get_unit_type(command: str) -> UnitType | None:
     return None
 
 async def send_message_and_file(channel: commands.Context.channel, message: str, file: str, file_name: str):
+    embeds = []
     if message:
-        while discord_message_limit < len(message):
-            # Try to find an even line break to split the message on
-            cutoff = message.rfind("\n", 0, discord_message_limit)
-            if cutoff == -1:
-                cutoff = discord_message_limit
-            await channel.send(message[:cutoff].strip())
+        while 0 < len(message):
+
+
+            cutoff = discord_embed_description_limit
+            # Try to find an even line break to split the long messages on
+            if len(message) > discord_embed_description_limit:
+                cutoff = message.rfind("\n", 0, discord_embed_description_limit)
+                # otherwise split at limit
+                if cutoff == -1:
+                    cutoff = discord_embed_description_limit
+
+            embed = Embed(
+                description=message[:cutoff],
+                colour=Colour.from_str("#c410ee"),
+            )
+
+            if sum(map(len, embeds)) + len(embed) > discord_embed_total_limit:
+                await channel.send(embeds=embeds)
+                embeds = []
+
+            embeds.append(embed)
+
             message = message[cutoff:].strip()
+
+        embeds[-1].set_footer(
+            text="DiploGM!",
+            icon_url="https://cdn.discordapp.com/icons/1201167737163104376/f78e67edebfdefad8f3ee057ad658acd.webp"
+                     "?size=96&quality=lossless"
+        )
+        embeds[-1].timestamp = datetime.datetime.now()
     if file is not None and len(file) > discord_file_limit:
         # zip compression without using files (disk is slow)
 
@@ -139,12 +167,12 @@ async def send_message_and_file(channel: commands.Context.channel, message: str,
             zip_file.writestr(f"{file_name}", file, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
             zip_file.close()
             vfile.seek(0)
-            await channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}.zip"))
+            await channel.send(embeds=embeds, file=discord.File(fp=vfile, filename=f"{file_name}.zip"))
     elif file is not None:
         with io.BytesIO(file) as vfile:
-            await channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}"))
-    elif message is not None and len(message) > 0:
-        await channel.send(message)
+            await channel.send(embeds=embeds, file=discord.File(fp=vfile, filename=f"{file_name}"))
+    elif message is not None and len(embeds) > 0:
+        await channel.send(embeds=embeds)
 
 
 def get_orders(board: Board, player_restriction: Player | None) -> str:
