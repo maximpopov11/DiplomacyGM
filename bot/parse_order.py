@@ -198,6 +198,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
             "embed_colour": ERROR_COLOUR
         }
     orderlist = ordertext[1].strip().splitlines()
+    movement = []
     orderoutput = []
     errors = []
     if phase.is_builds(board.phase):
@@ -226,7 +227,6 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
             parser = retreats_parser
 
         generator.set_state(board, player_restriction)
-        movement = []
         for order in orderlist:
             if not order.strip():
                 continue
@@ -259,8 +259,6 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
     for line in orderoutput:
         paginator.add_line(line)
 
-
-
     match board.phase.name:
         case "Spring Moves":
             date = datetime.date(1642 + board.year, 3, 21)
@@ -279,12 +277,10 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
 
     time = datetime.datetime.combine(date, datetime.datetime.now().time())
 
-
-
     output = paginator.pages
     if errors:
         output[-1] += "\n" + "\n".join(errors)
-        if movement:
+        if len(movement) > 0:
             embed_colour = PARTIAL_ERROR_COLOUR
         else:
             embed_colour = ERROR_COLOUR
@@ -294,7 +290,6 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
             "time": time,
         }
     else:
-        # output = "\n# Orders validated successfully.\n" + output
         return {
                 "title": "**Orders validated successfully.**",
                 "messages": output,
