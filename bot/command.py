@@ -207,10 +207,8 @@ async def botsay(ctx: commands.Context, _: Manager) -> dict[str, ...]:
     logger.info(f"{ctx.message.author.name} asked me to say '{content}' in {channel.name}")
     return {"channel": channel, "message": content}
 
-
+@perms.admin("send a GM announcement")
 async def announce(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
-    if not is_admin(ctx.message.author) and is_gm_channel(ctx.channel):
-        raise PermissionError("You cannot {description} because you are not a GM.")
     await ctx.message.add_reaction("👍")
     servers = {ctx.bot.get_guild(server_id) for server_id in manager.list_servers()}
     content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
