@@ -4,8 +4,9 @@ import io
 import os
 import zipfile
 import discord
-from discord import Embed, Colour
+from discord import Embed, Colour, Guild
 from discord.ext import commands
+from discord.ext.commands import Context
 
 from bot import config
 
@@ -65,6 +66,12 @@ def get_player_by_role(author: commands.Context.author, manager: Manager, server
         for player in manager.get_board(server_id).players:
             if player.name == role.name:
                 return player
+    return None
+
+def get_role_by_player(player: Player, roles: Guild.roles) -> discord.Role | None:
+    for role in roles:
+        if role.name == player.name:
+            return role
     return None
 
 
@@ -218,12 +225,18 @@ async def send_message_and_file(
     await channel.send(embeds=embeds, file=discord_file)
 
 
-def get_orders(board: Board, player_restriction: Player | None) -> str:
+def get_orders(board: Board, player_restriction: Player | None, ctx: Context) -> str:
     if phase.is_builds(board.phase):
         response = "Received orders:"
         for player in sorted(board.players, key=lambda sort_player: sort_player.name):
             if not player_restriction or player == player_restriction:
-                response += f"\n**{player.name}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
+
+                if (player_role := get_role_by_player(player, ctx.guild.roles)) is not None:
+                    player_name = player_role.mention
+                else:
+                    player_name = player.name
+
+                response += f"\n**{player_name}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
                 for unit in player.build_orders:
                     response += f"\n{unit}"
         return response
@@ -245,7 +258,12 @@ def get_orders(board: Board, player_restriction: Player | None) -> str:
             ordered = [unit for unit in moving_units if unit.order is not None]
             missing = [unit for unit in moving_units if unit.order is None]
 
-            response += f"**{player.name}** ({len(ordered)}/{len(moving_units)})\n"
+            if (player_role := get_role_by_player(player, ctx.guild.roles)) is not None:
+                player_name = player_role.mention
+            else:
+                player_name = player.name
+
+            response += f"**{player_name}** ({len(ordered)}/{len(moving_units)})\n"
             if missing:
                 response += f"__Missing Orders:__\n"
                 for unit in sorted(missing, key=lambda _unit: _unit.province.name):
