@@ -373,10 +373,15 @@ async def delete_game(ctx: commands.Context, manager: Manager) -> dict[str, ...]
     return {"message": "Game deleted"}
 
 async def info(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
-    board = manager.get_board(ctx.guild.id)
-    message = ("Phase: " + str(board.phase) + "\nOrders are: " + ("Open" if board.orders_enabled else "Locked")
-               + "\nFog of War: " + str(board.fow))
-    return {"message": message }
+    try:
+        board = manager.get_board(ctx.guild.id)
+    except RuntimeError:
+        return {"message": "There is no existing game this this server."}
+    return {"message": ("Year: " + str(1642 + board.year) + "\n"
+               "Phase: " + str(board.phase) + "\n"
+               "Orders are: " + ("Open" if board.orders_enabled else "Locked") + "\n"
+               "Fog of War: " + str(board.fow))
+            }
 
 
 async def province_info(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
