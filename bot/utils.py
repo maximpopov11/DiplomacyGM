@@ -134,6 +134,7 @@ async def send_message_and_file(
         file: str = None,
         file_name: str = None,
         file_in_embed: bool = True,
+        time: datetime.datetime = None,
         **_
 ):
     if messages:
@@ -208,7 +209,11 @@ async def send_message_and_file(
         icon_url="https://cdn.discordapp.com/icons/1201167737163104376/f78e67edebfdefad8f3ee057ad658acd.webp"
                  "?size=96&quality=lossless"
     )
-    embeds[-1].timestamp = datetime.datetime.now()
+
+    if time is None:
+        datetime.datetime.now()
+
+    embeds[-1].timestamp = time
 
     await channel.send(embeds=embeds, file=discord_file)
 

@@ -260,6 +260,27 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
         paginator.add_line(line)
 
 
+
+    match board.phase.name:
+        case "Spring Moves":
+            date = datetime.date(1642 + board.year, 3, 21)
+        case "Spring Retreats":
+            date = datetime.date(1642 + board.year, 6, 7)
+
+        case "Fall Moves":
+            date = datetime.date(1642 + board.year, 9, 22)
+
+        case "Fall Retreats":
+            date = datetime.date(1642 + board.year, 12, 7)
+        case "Winter Builds":
+            date = datetime.date(1642 + board.year, 12, 22)
+        case _:
+            date = datetime.date(1642 + board.year, 1, 1)
+
+    time = datetime.datetime.combine(date, datetime.datetime.now().time())
+
+
+
     output = paginator.pages
     if errors:
         output[-1] += "\n" + "\n".join(errors)
@@ -270,12 +291,14 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
         return {
             "messages": output,
             "embed_colour": embed_colour,
+            "time": time,
         }
     else:
         # output = "\n# Orders validated successfully.\n" + output
         return {
                 "title": "**Orders validated successfully.**",
                 "messages": output,
+                "time": time,
         }
 
 def parse_remove_order(message: str, player_restriction: Player | None, board: Board) -> dict[str, ...]:
