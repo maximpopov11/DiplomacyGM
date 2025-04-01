@@ -40,7 +40,7 @@ async def ping(ctx: commands.Context, _: Manager) -> dict[str, ...]:
     response = "Beep Boop"
     if random.random() < 0.1:
         author = ctx.message.author
-        content = ctx.message.content.removeprefix(".ping")
+        content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
         if content == "":
             content = " nothing"
         name = author.nick
@@ -199,8 +199,8 @@ async def botsay(ctx: commands.Context, _: Manager) -> dict[str, ...]:
     if len(ctx.message.channel_mentions) == 0:
         return {"message": "No Channel Given"}
     channel = ctx.message.channel_mentions[0]
-    content = ctx.message.content
-    content = content.removeprefix(",botsay").replace(channel.mention, "").strip()
+    content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+    content = content.replace(channel.mention, "").strip()
     if len(content) == 0:
         return {"message": "No Message Given"}
     await ctx.message.add_reaction("👍")
@@ -213,7 +213,7 @@ async def announce(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
         raise PermissionError("You cannot {description} because you are not a GM.")
     await ctx.message.add_reaction("👍")
     servers = {ctx.bot.get_guild(server_id) for server_id in manager.list_servers()}
-    content = ctx.message.content.removeprefix(".announce").strip()
+    content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
     logger.info(f"{ctx.message.author.name} sent announcement '{content}'")
     message = "Annoucement sent to:"
     for server in servers:
@@ -244,7 +244,9 @@ async def remove_order(player: Player | None, ctx: commands.Context, manager: Ma
     if player and not board.orders_enabled:
         return {"message": "Orders locked! If you think this is an error, contact a GM."}
 
-    return {"message": parse_remove_order(ctx.message.content, player, board) }
+    content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+
+    return {"message": parse_remove_order(content, player, board) }
 
 
 @perms.player("view orders")
@@ -332,7 +334,7 @@ async def edit(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
 
 @perms.gm("create a game")
 async def create_game(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
-    gametype = ctx.message.content.removeprefix(".create_game")
+    gametype = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
     if gametype == "":
         gametype = "impdip.json"
     else:
@@ -373,7 +375,7 @@ async def province_info(ctx: commands.Context, manager: Manager) -> dict[str, ..
         perms.gm_context_check(ctx, "Orders locked! If you think this is an error, contact a GM.", 
             "You cannot use .province_info in a non-GM channel while orders are locked.")
  
-    province_name = ctx.message.content.removeprefix(".province_info").strip()
+    province_name = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
     if not province_name:
         return {"message": "Usage: .province_info <province>"}
     province, coast = board.get_province_and_coast(province_name)
@@ -537,7 +539,7 @@ async def ping_players(ctx: commands.Context, manager: Manager):
 
     player_category = None
 
-    timestamp = re.match(r"<t:(\d+):[a-zA-Z]>", ctx.message.content.removeprefix(".ping_players").strip())
+    timestamp = re.match(r"<t:(\d+):[a-zA-Z]>", ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip())
     if timestamp:
         timestamp = f"<t:{timestamp.group(1)}:R>"
 

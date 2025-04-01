@@ -250,7 +250,7 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
     updated_units: set[Unit] = set()
     provinces_with_removed_builds: set[str] = set()
     for command in commands:
-        if command.strip() == ".remove_order":
+        if command.isspace():
             continue
         try:
             removed = _parse_remove_order(command, player_restriction, board)
@@ -284,10 +284,8 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
 
 
 def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> Unit | str:
-    command = command.lower()
+    command = command.lower().strip()
     keywords: list[str] = get_keywords(command)
-    if keywords[0] == ".remove order":
-        keywords = keywords[1:]
     location = keywords[0]
     province, coast = board.get_province_and_coast(location)
 

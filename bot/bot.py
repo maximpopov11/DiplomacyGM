@@ -19,7 +19,7 @@ from diplomacy.persistence.manager import Manager
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-bot = commands.Bot(command_prefix=".", intents=intents)
+bot = commands.Bot(command_prefix=os.getenv("command_prefix", default="."), intents=intents)
 logger = logging.getLogger(__name__)
 impdip_server = 1201167737163104376
 bot_status_channel = 1284336328657600572
