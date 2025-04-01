@@ -289,7 +289,7 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
     manager.adjudicate(ctx.guild.id)
 
     if board.fow:
-        # await publish_current(ctx, manager)
+        await publish_current(ctx, manager)
         pass
 
     if not board.fow:

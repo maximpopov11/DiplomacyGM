@@ -158,8 +158,6 @@ async def send_message_and_file(
         embeds = []
     if message:
         while 0 < len(message):
-
-
             cutoff = discord_embed_description_limit
             # Try to find an even line break to split the long messages on
             if len(message) > discord_embed_description_limit:
@@ -192,6 +190,7 @@ async def send_message_and_file(
             colour=Colour.from_str(embed_colour)
         )]
 
+    print(f"FILE: {file_name}")
     discord_file = None
     if file is not None and len(file) > discord_file_limit:
         # zip compression without using files (disk is slow)
@@ -205,9 +204,11 @@ async def send_message_and_file(
             vfile.seek(0)
             discord_file = discord.File(fp=vfile, filename=f"{file_name}.zip")
     elif file is not None:
+        print('i got dat file')
         with io.BytesIO(file) as vfile:
-            discord_file =  discord.File(fp=vfile, filename=f"{file_name}")
+            discord_file = discord.File(fp=vfile, filename=f"{file_name}")
             if file_in_embed:
+                print("embedder")
                 embeds[-1].set_image(url=f"attachment://{discord_file.filename.replace(' ', '_')}")
 
 
@@ -221,6 +222,8 @@ async def send_message_and_file(
         datetime.datetime.now()
 
     embeds[-1].timestamp = time
+
+    print(discord_file)
 
     await channel.send(embeds=embeds, file=discord_file)
 
