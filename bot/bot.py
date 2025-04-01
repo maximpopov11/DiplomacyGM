@@ -2,7 +2,7 @@ import logging
 import os
 import re
 import time
-from typing import Callable
+from typing import Callable, Awaitable
 import random
 from dotenv.main import load_dotenv
 
@@ -90,11 +90,11 @@ async def on_command_error(ctx, error):
         await ctx.message.add_reaction("❌")
         await ctx.message.remove_reaction("👍", bot.user)
 
-        await ctx.send(error)
+        await send_message_and_file(ctx.channel, message=str(error))
 
 
 async def _handle_command(
-    function: Callable[[commands.Context, Manager], tuple[str, str | None]],
+    function: Callable[[commands.Context, Manager], Awaitable[dict[str, ...]]],
     ctx: commands.Context,
 ) -> None:
     start = time.time()
@@ -104,20 +104,21 @@ async def _handle_command(
 
     response = await function(ctx, manager)
 
-    if type(response) is dict:
-        message, file, file_name, svg_to_png = response["message"], response["file"], response["file_name"], response["svg_to_png"]
-    else:
-        message, file, file_name, svg_to_png = response, None, None, False
+    if "channel" not in response:
+        response["channel"] = ctx.channel
+
+    if "svg_to_png" not in response:
+        response["svg_to_png"] = False
 
 
-    if svg_to_png:
-        await convert_svg_and_send_file(ctx.channel, message, file, file_name)
+    if response["svg_to_png"]:
+        await convert_svg_and_send_file(response)
     else:
-        await send_message_and_file(ctx.channel, message, file, file_name)
+        await send_message_and_file(**response)
 
     elapsed = time.time() - start
     logger.debug(
-        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{message} | {elapsed}s"
+        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{response["message"] or response} | {elapsed}s"
     )
 
 
@@ -155,12 +156,12 @@ async def advice(ctx: commands.Context) -> None:
 
 @bot.command(hidden=True)
 async def botsay(ctx: commands.Context) -> None:
-    await command.botsay(ctx, manager)
+    await _handle_command(command.botsay, ctx)
 
 
 @bot.command(hidden=True)
 async def announce(ctx: commands.Context) -> None:
-    await command.announce(ctx, {bot.get_guild(server_id) for server_id in manager.list_servers()})
+    await _handle_command(command.announce, ctx)
 
 
 @bot.command(

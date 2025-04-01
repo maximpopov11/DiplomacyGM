@@ -124,7 +124,7 @@ def get_unit_type(command: str) -> UnitType | None:
         return UnitType.FLEET
     return None
 
-async def send_message_and_file(channel: commands.Context.channel, message: str, file: str, file_name: str):
+async def send_message_and_file(channel: commands.Context.channel, message: str = "", file: str = None, file_name: str = None, **_kwargs):
     embeds = []
     if message:
         while 0 < len(message):
@@ -142,7 +142,7 @@ async def send_message_and_file(channel: commands.Context.channel, message: str,
 
             embed = Embed(
                 description=message[:cutoff],
-                colour=Colour.from_str("#c410ee"),
+                colour=Colour.from_str("#fc71c4"),
             )
 
             # check that embed totals arent over the total message embed character limit.
@@ -265,7 +265,7 @@ def get_filtered_orders(board: Board, player_restriction: Player) -> str:
     
 svg_export_limit = asyncio.Semaphore(int(os.getenv("simultaneous_svg_exports_limit")))
 
-async def convert_svg_and_send_file(channel, message, file, file_name):
+async def convert_svg_and_send_file(response: dict[str, ...]):
     async with svg_export_limit:
-        file, file_name = await svg_to_png(file, file_name)
-        await send_message_and_file(channel, message, file, file_name)
+        response["file"], response["file_name"] = await svg_to_png(response["file"], response["file_name"])
+        await send_message_and_file(**response)
