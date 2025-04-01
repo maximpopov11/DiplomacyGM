@@ -1,9 +1,12 @@
+import datetime
 import asyncio
 import io
 import os
 import zipfile
 import discord
+from discord import Embed, Colour, Guild
 from discord.ext import commands
+from discord.ext.commands import Context
 
 from bot import config
 
@@ -40,6 +43,8 @@ unit_dict = {
 
 discord_message_limit = 2000
 discord_file_limit = 10 * (2**20)
+discord_embed_description_limit = 4096
+discord_embed_total_limit = 6000
 
 def is_admin(author: commands.Context.author) -> bool:
     return author.name in ["eebopmasch", "icecream_guy", "_bumble", "thisisflare", "eelisha"]
@@ -61,6 +66,12 @@ def get_player_by_role(author: commands.Context.author, manager: Manager, server
         for player in manager.get_board(server_id).players:
             if player.name == role.name:
                 return player
+    return None
+
+def get_role_by_player(player: Player, roles: Guild.roles) -> discord.Role | None:
+    for role in roles:
+        if role.name == player.name:
+            return role
     return None
 
 
@@ -120,15 +131,68 @@ def get_unit_type(command: str) -> UnitType | None:
         return UnitType.FLEET
     return None
 
-async def send_message_and_file(channel: commands.Context.channel, message: str, file: str, file_name: str):
+async def send_message_and_file(
+        *,
+        channel: commands.Context.channel,
+        title: str = None,
+        message: str = None,
+        messages: [str] = None,
+        embed_colour: str = "#fc71c4",
+        file: str = None,
+        file_name: str = None,
+        file_in_embed: bool = True,
+        time: datetime.datetime = None,
+        **_
+):
+    if messages:
+        embeds = [Embed(
+                title=title,
+                description=message,
+                colour=Colour.from_str(embed_colour),
+            ) for message in messages[:-1]]
+        # ensure only first embed has title
+        if len(messages) >= 2:
+            title = None
+        message = messages[-1]
+    else:
+        embeds = []
     if message:
-        while discord_message_limit < len(message):
-            # Try to find an even line break to split the message on
-            cutoff = message.rfind("\n", 0, discord_message_limit)
-            if cutoff == -1:
-                cutoff = discord_message_limit
-            await channel.send(message[:cutoff].strip())
+        while 0 < len(message):
+
+
+            cutoff = discord_embed_description_limit
+            # Try to find an even line break to split the long messages on
+            if len(message) > discord_embed_description_limit:
+                cutoff = message.rfind("\n", 0, discord_embed_description_limit)
+                # otherwise split at limit
+                if cutoff == -1:
+                    cutoff = message.rfind(" ", 0, discord_embed_description_limit)
+                    if cutoff == -1:
+                        cutoff = discord_embed_description_limit
+            embed = Embed(
+                title=title,
+                description=message[:cutoff],
+                colour=Colour.from_str(embed_colour),
+            )
+            # ensure only first embed has title
+            title = None
+
+            # check that embed totals arent over the total message embed character limit.
+            if sum(map(len, embeds)) + len(embed) > discord_embed_total_limit:
+                await channel.send(embeds=embeds)
+                embeds = []
+
+            embeds.append(embed)
+
             message = message[cutoff:].strip()
+
+    if not embeds:
+        embeds = [Embed(
+            title=title,
+            colour=Colour.from_str(embed_colour)
+        )]
+
+    discord_file = None
     if file is not None and len(file) > discord_file_limit:
         # zip compression without using files (disk is slow)
 
@@ -139,20 +203,40 @@ async def send_message_and_file(channel: commands.Context.channel, message: str,
             zip_file.writestr(f"{file_name}", file, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
             zip_file.close()
             vfile.seek(0)
-            await channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}.zip"))
+            discord_file = discord.File(fp=vfile, filename=f"{file_name}.zip")
     elif file is not None:
         with io.BytesIO(file) as vfile:
-            await channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}"))
-    elif message is not None and len(message) > 0:
-        await channel.send(message)
+            discord_file =  discord.File(fp=vfile, filename=f"{file_name}")
+            if file_in_embed:
+                embeds[-1].set_image(url=f"attachment://{discord_file.filename.replace(" ", "_")}")
 
 
-def get_orders(board: Board, player_restriction: Player | None) -> str:
+    embeds[-1].set_footer(
+        text="DiploGM",
+        icon_url="https://cdn.discordapp.com/icons/1201167737163104376/f78e67edebfdefad8f3ee057ad658acd.webp"
+                 "?size=96&quality=lossless"
+    )
+
+    if time is None:
+        datetime.datetime.now()
+
+    embeds[-1].timestamp = time
+
+    await channel.send(embeds=embeds, file=discord_file)
+
+
+def get_orders(board: Board, player_restriction: Player | None, ctx: Context) -> str:
     if phase.is_builds(board.phase):
         response = "Received orders:"
         for player in sorted(board.players, key=lambda sort_player: sort_player.name):
             if not player_restriction or player == player_restriction:
-                response += f"\n**{player.name}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
+
+                if (player_role := get_role_by_player(player, ctx.guild.roles)) is not None:
+                    player_name = player_role.mention
+                else:
+                    player_name = player.name
+
+                response += f"\n**{player_name}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
                 for unit in player.build_orders:
                     response += f"\n{unit}"
         return response
@@ -174,7 +258,12 @@ def get_orders(board: Board, player_restriction: Player | None) -> str:
             ordered = [unit for unit in moving_units if unit.order is not None]
             missing = [unit for unit in moving_units if unit.order is None]
 
-            response += f"**{player.name}** ({len(ordered)}/{len(moving_units)})\n"
+            if (player_role := get_role_by_player(player, ctx.guild.roles)) is not None:
+                player_name = player_role.mention
+            else:
+                player_name = player.name
+
+            response += f"**{player_name}** ({len(ordered)}/{len(moving_units)})\n"
             if missing:
                 response += f"__Missing Orders:__\n"
                 for unit in sorted(missing, key=lambda _unit: _unit.province.name):
@@ -228,7 +317,7 @@ def get_filtered_orders(board: Board, player_restriction: Player) -> str:
     
 svg_export_limit = asyncio.Semaphore(int(os.getenv("simultaneous_svg_exports_limit")))
 
-async def convert_svg_and_send_file(channel, message, file, file_name):
+async def convert_svg_and_send_file(response: dict[str, ...]):
     async with svg_export_limit:
-        file, file_name = await svg_to_png(file, file_name)
-        await send_message_and_file(channel, message, file, file_name)
+        response["file"], response["file_name"] = await svg_to_png(response["file"], response["file_name"])
+        await send_message_and_file(**response)

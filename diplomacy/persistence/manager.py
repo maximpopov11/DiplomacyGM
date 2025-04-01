@@ -57,7 +57,7 @@ class Manager:
         logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
         return svg, file_name
 
-    def adjudicate(self, server_id: int) -> tuple[str, str]:
+    def adjudicate(self, server_id: int) -> None:
         start = time.time()
 
         # mapper = Mapper(self._boards[server_id])
@@ -120,7 +120,7 @@ class Manager:
         logger.info(f"manager.draw_fow_moves_map.{server_id}.{elapsed}s")
         return svg, file_name
 
-    def rollback(self, server_id: int) -> dict[str]:
+    def rollback(self, server_id: int) -> dict[str, ...]:
         logger.info(f"Rolling back in server {server_id}")
         board = self._boards[server_id]
         # TODO: what happens if we're on the first phase?
@@ -141,7 +141,7 @@ class Manager:
         file, file_name = mapper.draw_current_map()
         return {"message": message, "file": file, "file_name": file_name, "svg_to_png": False}
 
-    def reload(self, server_id: int) -> dict[str]:
+    def reload(self, server_id: int) -> dict[str, ...]:
         logger.info(f"Reloading server {server_id}")
         board = self._boards[server_id]
 
