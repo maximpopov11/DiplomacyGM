@@ -272,7 +272,11 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
     if invalid:
         response = "The following order removals were invalid:"
         for command in invalid:
-            response += f"\n{command[0]} with error: {command[1]}"
+            response += f"\n- {command[0]} - {command[1]}"
+        if updated_units:
+            response += "\nOrders for the following units were removed:"
+            for unit in updated_units:
+                response += f"\n- {unit.province}"
     else:
         response = "Orders removed successfully."
 
@@ -311,14 +315,14 @@ def _parse_remove_order(command: str, player_restriction: Player, board: Board) 
             player = unit.player
             if player_restriction is None or player == player_restriction:
                 unit.order = None
-            return unit
+                return unit
         unit = province.dislodged_unit
         if unit is not None:
             player = unit.player
             if player_restriction is None or player == player_restriction:
                 unit.order = None
-            return unit
-        raise Exception(f"You control neither the unit nor dislodged unit in province {province.name}")
+                return unit
+        raise Exception(f"You control neither a unit nor a dislodged unit in {province.name}")
 
 
 def remove_player_order_for_location(board: Board, player: Player, location: Location) -> bool:
