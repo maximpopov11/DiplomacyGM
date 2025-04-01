@@ -208,7 +208,7 @@ async def send_message_and_file(
         with io.BytesIO(file) as vfile:
             discord_file =  discord.File(fp=vfile, filename=f"{file_name}")
             if file_in_embed:
-                embeds[-1].set_image(url=f"attachment://{discord_file.filename.replace(" ", "_")}")
+                embeds[-1].set_image(url=f"attachment://{discord_file.filename.replace(' ', '_')}")
 
 
     embeds[-1].set_footer(
