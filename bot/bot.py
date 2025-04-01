@@ -120,6 +120,9 @@ async def _handle_command(
     else:
         await send_message_and_file(**response)
 
+    if "file" in response:
+        response["file"] = f"{response["file"][:15]}..."
+
     elapsed = time.time() - start
     logger.debug(
         f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{response} | {elapsed}s"
