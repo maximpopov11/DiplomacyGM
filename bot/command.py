@@ -284,7 +284,7 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
 
     return_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() != "true"
     if board.fow:
-        # await publish_orders(ctx, manager)
+        await publish_moves(ctx, manager)
         await send_order_logs(ctx, manager)
     manager.adjudicate(ctx.guild.id)
 
@@ -471,7 +471,7 @@ from bot.utils import is_gm_channel
 async def publish_current(ctx: commands.Context, manager: Manager):
     await publish_map(ctx, manager, "starting map", lambda m, s, p: m.draw_fow_current_map(s,p))
 
-async def publish_orders(ctx: commands.Context, manager: Manager,):
+async def publish_moves(ctx: commands.Context, manager: Manager,):
     await publish_map(ctx, manager, "moves map", lambda m, s, p: m.draw_fow_moves_map(s,p))
 
 
