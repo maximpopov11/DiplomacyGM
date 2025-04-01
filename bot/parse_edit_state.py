@@ -18,7 +18,7 @@ _dislodge_unit_str = "dislodge unit"
 _make_units_claim_provinces_str = "make units claim provinces"
 
 
-def parse_edit_state(message: str, board: Board) -> dict[str]:
+def parse_edit_state(message: str, board: Board) -> dict[str, ...]:
     invalid: list[tuple[str, Exception]] = []
     commands = str.splitlines(message)
     if commands[0].strip() == ".edit":
