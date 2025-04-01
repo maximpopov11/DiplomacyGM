@@ -158,8 +158,6 @@ async def send_message_and_file(
         embeds = []
     if message:
         while 0 < len(message):
-
-
             cutoff = discord_embed_description_limit
             # Try to find an even line break to split the long messages on
             if len(message) > discord_embed_description_limit:
@@ -206,7 +204,7 @@ async def send_message_and_file(
             discord_file = discord.File(fp=vfile, filename=f"{file_name}.zip")
     elif file is not None:
         with io.BytesIO(file) as vfile:
-            discord_file =  discord.File(fp=vfile, filename=f"{file_name}")
+            discord_file = discord.File(fp=vfile, filename=f"{file_name}")
             if file_in_embed:
                 embeds[-1].set_image(url=f"attachment://{discord_file.filename.replace(' ', '_')}")
 

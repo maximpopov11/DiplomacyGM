@@ -114,6 +114,9 @@ async def _handle_command(
     if "svg_to_png" not in response:
         response["svg_to_png"] = False
 
+    # don't embed non svgs
+    if not response["svg_to_png"]:
+        response["file_in_embed"] = False
 
     if response["svg_to_png"]:
         await convert_svg_and_send_file(response)
