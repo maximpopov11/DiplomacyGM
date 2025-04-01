@@ -2,6 +2,7 @@ import logging
 from lark import Lark, Transformer, UnexpectedEOF
 from lark.exceptions import VisitError
 
+from bot.config import ERROR_COLOUR, PARTIAL_ERROR_COLOUR
 from bot.utils import get_unit_type, get_keywords, _manage_coast_signature
 from diplomacy.persistence import order, phase
 from diplomacy.persistence.board import Board
@@ -184,16 +185,23 @@ movement_parser = Lark(ebnf, start="order", parser="earley")
 retreats_parser = Lark(ebnf, start="retreat", parser="earley")
 builds_parser   = Lark(ebnf, start="build", parser="earley")
 
-def parse_order(message: str, player_restriction: Player | None, board: Board) -> str:
+def parse_order(message: str, player_restriction: Player | None, board: Board) -> dict[str, ...]:
     ordertext = message.split(maxsplit=1)
     if len(ordertext) == 1:
-        return "For information about entering orders, please use the [player guide](https://docs.google.com/document/d/1SNZgzDViPB-7M27dTF0SdmlVuu_KYlqqzX0FQ4tWc2M/edit#heading=h.7u3tx93dufet) for examples and syntax."
+        return {
+            "message": "For information about entering orders, please use the "
+                       "[player guide](https://docs.google.com/document/d/1SNZgzDViPB-7M27dTF0SdmlVuu_KYlqqzX0FQ4tWc2M/"
+                       "edit#heading=h.7u3tx93dufet) for examples and syntax.",
+            "embed_colour": ERROR_COLOUR
+        }
     orderlist = ordertext[1].strip().splitlines()
     orderoutput = []
     errors = []
     if phase.is_builds(board.phase):
         generator.set_state(board, player_restriction)
         for order in orderlist:
+            if not order.strip():
+                continue
             try:
                 cmd = builds_parser.parse(order.strip().lower() + " ")
                 generator.transform(cmd)
@@ -217,6 +225,8 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
         generator.set_state(board, player_restriction)
         movement = []
         for order in orderlist:
+            if not order.strip():
+                continue
             try:
                 logger.info(order)
                 cmd = parser.parse(order.strip().lower() + " ")
@@ -234,23 +244,39 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
         database = get_connection()
         database.save_order_for_units(board, movement)
     else:
-        return "The game is in an unknown phase. Something has gone very wrong with the bot. Please report this to a gm"
+        return {
+            "message": "The game is in an unknown phase. "
+                       "Something has gone very wrong with the bot. "
+                       "Please report this to a gm",
+            "embed_colour": ERROR_COLOUR,
+        }
         
     output = "```ansi\n" + "\n".join(orderoutput) + "\n```"
     if errors:
         output += "\n" + "\n".join(errors)
+        if movement:
+            embed_colour = PARTIAL_ERROR_COLOUR
+        else:
+            embed_colour = ERROR_COLOUR
+        return {
+            "message": output,
+            "embed_colour": embed_colour,
+        }
     else:
-        output += "\n" + "Orders validated successfully."
-    return output
+        # output = "\n# Orders validated successfully.\n" + output
+        return {
+                "title": "# Orders validated successfully.",
+                "message": output,
+        }
 
 
-def parse_remove_order(message: str, player_restriction: Player | None, board: Board) -> str:
+def parse_remove_order(message: str, player_restriction: Player | None, board: Board) -> dict[str, ...]:
     invalid: list[tuple[str, Exception]] = []
     commands = str.splitlines(message)
     updated_units: set[Unit] = set()
     provinces_with_removed_builds: set[str] = set()
     for command in commands:
-        if command.isspace():
+        if not command.strip():
             continue
         try:
             removed = _parse_remove_order(command, player_restriction, board)
@@ -271,16 +297,17 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
 
     if invalid:
         response = "The following order removals were invalid:"
+        response_colour = ERROR_COLOUR
         for command in invalid:
             response += f"\n- {command[0]} - {command[1]}"
         if updated_units:
             response += "\nOrders for the following units were removed:"
+            response_colour = PARTIAL_ERROR_COLOUR
             for unit in updated_units:
                 response += f"\n- {unit.province}"
+        return {"message": response, "embed_colour": response_colour}
     else:
-        response = "Orders removed successfully."
-
-    return response
+        return {"message": "Orders removed successfully."}
 
 
 def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> Unit | str:

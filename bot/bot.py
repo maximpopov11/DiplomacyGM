@@ -90,7 +90,7 @@ async def on_command_error(ctx, error):
         await ctx.message.add_reaction("❌")
         await ctx.message.remove_reaction("👍", bot.user)
 
-        await send_message_and_file(ctx.channel, message=str(error))
+        await send_message_and_file(channel=ctx.channel, message=str(error))
 
 
 async def _handle_command(
@@ -118,7 +118,7 @@ async def _handle_command(
 
     elapsed = time.time() - start
     logger.debug(
-        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{response["message"] or response} | {elapsed}s"
+        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{response} | {elapsed}s"
     )
 
 

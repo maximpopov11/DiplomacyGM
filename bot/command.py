@@ -12,7 +12,7 @@ from discord.ext import commands
 
 from bot import config
 import bot.perms as perms
-from bot.config import is_bumble, temporary_bumbles
+from bot.config import is_bumble, temporary_bumbles, ERROR_COLOUR
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
 from bot.utils import (convert_svg_and_send_file, get_filtered_orders, get_orders,
@@ -47,7 +47,7 @@ async def ping(ctx: commands.Context, _: Manager) -> dict[str, ...]:
         if not name:
             name = author.name
         response = name + " " + random.choice(ping_text_choices) + content
-    return {"message": response }
+    return {"title": response }
 
 
 async def bumble(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
@@ -232,9 +232,9 @@ async def order(player: Player | None, ctx: commands.Context, manager: Manager) 
     board = manager.get_board(ctx.guild.id)
 
     if player and not board.orders_enabled:
-        return {"message": "Orders locked! If you think this is an error, contact a GM."}
+        return {"message": "Orders locked! If you think this is an error, contact a GM.", "embed_colour": ERROR_COLOUR}
 
-    return {"message": parse_order(ctx.message.content, player, board) }
+    return parse_order(ctx.message.content, player, board)
 
 
 @perms.player("remove orders")
@@ -242,11 +242,11 @@ async def remove_order(player: Player | None, ctx: commands.Context, manager: Ma
     board = manager.get_board(ctx.guild.id)
 
     if player and not board.orders_enabled:
-        return {"message": "Orders locked! If you think this is an error, contact a GM."}
+        return {"message": "Orders locked! If you think this is an error, contact a GM.", "embed_colour": ERROR_COLOUR}
 
     content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
 
-    return {"message": parse_remove_order(content, player, board) }
+    return parse_remove_order(content, player, board)
 
 
 @perms.player("view orders")
@@ -255,7 +255,7 @@ async def view_orders(player: Player | None, ctx: commands.Context, manager: Man
         order_text = get_orders(manager.get_board(ctx.guild.id), player)
     except RuntimeError as err:
         logger.error(f"View_orders text failed in game with id: {ctx.guild.id}", exc_info=err)
-        order_text = "view_orders text failed"
+        return {"message": "view_orders text failed", "embed_colour": ERROR_COLOUR}
     return {"message": order_text }
 
 
@@ -271,8 +271,14 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
             file, file_name = manager.draw_fow_players_moves_map(ctx.guild.id, player)
     except Exception as err:
         logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
-        return {"message": "View_orders map failed" }
-    return {"message": "Map created successfully", "file": file, "file_name": file_name, "svg_to_png": return_svg}
+        return {"message": "View_orders map failed" , "embed_colour": ERROR_COLOUR}
+    return {
+        "message": "Map created successfully",
+        "file": file,
+        "file_name": file_name,
+        "svg_to_png": return_svg,
+        "file_in_embed": False,
+    }
 
 @perms.gm("adjudicate")
 async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
@@ -280,19 +286,26 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
 
     return_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() != "true"
     if board.fow:
-        await publish_orders(ctx, manager)
+        # await publish_orders(ctx, manager)
         await send_order_logs(ctx, manager)
     manager.adjudicate(ctx.guild.id)
 
     if board.fow:
-        await publish_current(ctx, manager)
+        # await publish_current(ctx, manager)
+        pass
 
     if not board.fow:
         file, file_name = manager.draw_current_map(ctx.guild.id)
     else:
         file, file_name = manager.draw_fow_current_map(ctx.guild.id, None)
 
-    return {"message": "Adjudication completed successfully", "file": file, "file_name": file_name, "svg_to_png": return_svg}
+    return {
+        "message": "Adjudication completed successfully",
+        "file": file,
+        "file_name": file_name,
+        "svg_to_png": return_svg,
+        "file_in_embed": False,
+    }
 
 @perms.gm("rollback")
 async def rollback(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
@@ -421,7 +434,7 @@ async def visible_provinces(player: Player | None, ctx: commands.Context, manage
     board = manager.get_board(ctx.guild.id)
 
     if not player or not board.fow:
-        return {"message": "This command only works for players in fog of war games."}
+        return {"message": "This command only works for players in fog of war games.", "embed_colour": ERROR_COLOUR}
 
     visible_provinces = board.get_visible_provinces(player)
 
@@ -500,7 +513,7 @@ async def map_publish_task(map_maker, channel, message):
     async with fow_export_limit:
         file, file_name = map_maker()
         file, file_name = await svg_to_png(file, file_name)
-        await send_message_and_file(channel, message, file, file_name)
+        await send_message_and_file(channel=channel, message=message, file=file, file_name=file_name, file_in_embed=False)
 
 async def send_order_logs(ctx: commands.Context, manager: Manager):
     player_category = None
@@ -529,7 +542,7 @@ async def send_order_logs(ctx: commands.Context, manager: Manager):
         
         message = get_filtered_orders(board, player)
 
-        await send_message_and_file(channel, message, None, None)
+        await send_message_and_file(channel=channel, message=message)
 
     return "Successful"
 
@@ -553,7 +566,7 @@ async def ping_players(ctx: commands.Context, manager: Manager):
             break
 
     if not player_category:
-        return {"message": "No player category found" }
+        return {"message": "No player category found", "embed_colour": ERROR_COLOUR }
 
     name_to_player: dict[str, Player] = {}
     player_to_role: dict[str, Role] = {}
@@ -571,7 +584,7 @@ async def ping_players(ctx: commands.Context, manager: Manager):
             player_to_role[player] = role
 
     if len(player_roles) == 0:
-        return {"message": "No player role found" }
+        return {"message": "No player role found", "embed_colour": ERROR_COLOUR }
 
     response = None
 
@@ -658,7 +671,7 @@ async def archive(ctx: commands.Context, _: Manager) -> dict[str, ...]:
 
     categories = [channel.category for channel in ctx.message.channel_mentions]
     if not categories:
-        return {"message": "This channel is not part of a category."}
+        return {"message": "This channel is not part of a category.", "embed_colour": ERROR_COLOUR}
 
     for category in categories:
         for channel in category.channels:

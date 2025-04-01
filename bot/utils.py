@@ -124,7 +124,17 @@ def get_unit_type(command: str) -> UnitType | None:
         return UnitType.FLEET
     return None
 
-async def send_message_and_file(channel: commands.Context.channel, message: str = "", file: str = None, file_name: str = None, **_kwargs):
+async def send_message_and_file(
+        *,
+        channel: commands.Context.channel,
+        title: str = None,
+        message: str = None,
+        embed_colour: str = "#fc71c4",
+        file: str = None,
+        file_name: str = None,
+        file_in_embed: bool = True,
+        **_
+):
     embeds = []
     if message:
         while 0 < len(message):
@@ -139,11 +149,13 @@ async def send_message_and_file(channel: commands.Context.channel, message: str 
                     cutoff = message.rfind(" ", 0, discord_embed_description_limit)
                     if cutoff == -1:
                         cutoff = discord_embed_description_limit
-
             embed = Embed(
+                title=title,
                 description=message[:cutoff],
-                colour=Colour.from_str("#fc71c4"),
+                colour=Colour.from_str(embed_colour),
             )
+            # ensure only first embed has title
+            title = None
 
             # check that embed totals arent over the total message embed character limit.
             if sum(map(len, embeds)) + len(embed) > discord_embed_total_limit:
@@ -153,6 +165,12 @@ async def send_message_and_file(channel: commands.Context.channel, message: str 
             embeds.append(embed)
 
             message = message[cutoff:].strip()
+
+    if not embeds:
+        embeds = [Embed(
+            title=title,
+            colour=Colour.from_str(embed_colour)
+        )]
 
     discord_file = None
     if file is not None and len(file) > discord_file_limit:
@@ -169,9 +187,8 @@ async def send_message_and_file(channel: commands.Context.channel, message: str 
     elif file is not None:
         with io.BytesIO(file) as vfile:
             discord_file =  discord.File(fp=vfile, filename=f"{file_name}")
-            if not embeds:
-                embeds = [Embed()]
-            embeds[-1].set_image(url=f"attachment://{discord_file.filename.replace(" ", "_")}")
+            if file_in_embed:
+                embeds[-1].set_image(url=f"attachment://{discord_file.filename.replace(" ", "_")}")
 
 
     embeds[-1].set_footer(

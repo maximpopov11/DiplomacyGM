@@ -1,3 +1,7 @@
+ERROR_COLOUR = "#FF0000"
+PARTIAL_ERROR_COLOUR = "#FF7700"
+
+
 # Capitalization is ignored in all definitions.
 # Please only insert lowercase names.
 def _is_member(string: str, group: set) -> bool:
