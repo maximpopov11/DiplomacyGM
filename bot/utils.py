@@ -129,13 +129,25 @@ async def send_message_and_file(
         channel: commands.Context.channel,
         title: str = None,
         message: str = None,
+        messages: [str] = None,
         embed_colour: str = "#fc71c4",
         file: str = None,
         file_name: str = None,
         file_in_embed: bool = True,
         **_
 ):
-    embeds = []
+    if messages:
+        embeds = [Embed(
+                title=title,
+                description=message,
+                colour=Colour.from_str(embed_colour),
+            ) for message in messages[:-1]]
+        # ensure only first embed has title
+        if len(messages) >= 2:
+            title = None
+        message = messages[-1]
+    else:
+        embeds = []
     if message:
         while 0 < len(message):
 

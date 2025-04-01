@@ -1,9 +1,12 @@
+import datetime
 import logging
+
+from discord.ext.commands import Paginator
 from lark import Lark, Transformer, UnexpectedEOF
 from lark.exceptions import VisitError
 
 from bot.config import ERROR_COLOUR, PARTIAL_ERROR_COLOUR
-from bot.utils import get_unit_type, get_keywords, _manage_coast_signature
+from bot.utils import get_unit_type, get_keywords, _manage_coast_signature, send_message_and_file
 from diplomacy.persistence import order, phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import get_connection
@@ -251,24 +254,29 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
             "embed_colour": ERROR_COLOUR,
         }
         
-    output = "```ansi\n" + "\n".join(orderoutput) + "\n```"
+
+    paginator = Paginator(prefix="```ansi\n", suffix="```", max_size=4096)
+    for line in orderoutput:
+        paginator.add_line(line)
+
+
+    output = paginator.pages
     if errors:
-        output += "\n" + "\n".join(errors)
+        output[-1] += "\n" + "\n".join(errors)
         if movement:
             embed_colour = PARTIAL_ERROR_COLOUR
         else:
             embed_colour = ERROR_COLOUR
         return {
-            "message": output,
+            "messages": output,
             "embed_colour": embed_colour,
         }
     else:
         # output = "\n# Orders validated successfully.\n" + output
         return {
-                "title": "# Orders validated successfully.",
-                "message": output,
+                "title": "**Orders validated successfully.**",
+                "messages": output,
         }
-
 
 def parse_remove_order(message: str, player_restriction: Player | None, board: Board) -> dict[str, ...]:
     invalid: list[tuple[str, Exception]] = []
