@@ -284,7 +284,7 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
 
     return_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() != "true"
     if board.fow:
-        # await publish_orders(ctx, manager)
+        await publish_orders(ctx, manager)
         await send_order_logs(ctx, manager)
     manager.adjudicate(ctx.guild.id)
 
