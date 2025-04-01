@@ -6,6 +6,7 @@ from typing import Callable, Awaitable
 import random
 from dotenv.main import load_dotenv
 
+from bot.config import ERROR_COLOUR
 from bot.utils import convert_svg_and_send_file, send_message_and_file
 load_dotenv()
 
@@ -90,7 +91,10 @@ async def on_command_error(ctx, error):
         await ctx.message.add_reaction("❌")
         await ctx.message.remove_reaction("👍", bot.user)
 
-        await send_message_and_file(channel=ctx.channel, message=str(error))
+        if type(error.original) == PermissionError:
+            await send_message_and_file(channel=ctx.channel, message=str(error.original), embed_colour=ERROR_COLOUR)
+        else:
+            await send_message_and_file(channel=ctx.channel, message=str(error), embed_colour=ERROR_COLOUR)
 
 
 async def _handle_command(
