@@ -250,11 +250,12 @@ async def remove_order(player: Player | None, ctx: commands.Context, manager: Ma
 @perms.player("view orders")
 async def view_orders(player: Player | None, ctx: commands.Context, manager: Manager) -> dict[str, ...]:
     try:
-        order_text = get_orders(manager.get_board(ctx.guild.id), player, ctx)
+        board = manager.get_board(ctx.guild.id)
+        order_text = get_orders(board, player, ctx)
     except RuntimeError as err:
         logger.error(f"View_orders text failed in game with id: {ctx.guild.id}", exc_info=err)
         return {"message": "view_orders text failed", "embed_colour": ERROR_COLOUR}
-    return {"message": order_text }
+    return {"title": f"{board.phase.name}" + " " + f"{str(1642 + board.year)}", "message": order_text }
 
 
 @perms.player("view map")
