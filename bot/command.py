@@ -16,7 +16,7 @@ from bot.config import is_bumble, temporary_bumbles, ERROR_COLOUR
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
 from bot.utils import (convert_svg_and_send_file, get_filtered_orders, get_orders,
-                       get_player_by_channel, get_player_by_channel, is_admin, send_message_and_file,
+                       get_orders_log, get_player_by_channel, is_admin, send_message_and_file,
                        get_role_by_player)
 from diplomacy.adjudicator.utils import svg_to_png
 from diplomacy.persistence import phase
@@ -256,8 +256,29 @@ async def view_orders(player: Player | None, ctx: commands.Context, manager: Man
     except RuntimeError as err:
         logger.error(f"View_orders text failed in game with id: {ctx.guild.id}", exc_info=err)
         return {"message": "view_orders text failed", "embed_colour": ERROR_COLOUR}
-    return {"title": f"{board.phase.name}" + " " + f"{str(1642 + board.year)}", "message": order_text }
+    return {"title": f"{board.phase.name} {str(1642 + board.year)}", "message": order_text }
 
+@perms.gm("publish orders")
+async def publish_orders(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
+    board = manager.get_previous_board(ctx.guild.id)
+    if not board:
+        return {"message": "Failed to get previous phase", "embed_colour": ERROR_COLOUR}
+
+    try:
+        order_text = get_orders(board, None, ctx)
+    except RuntimeError as err:
+        logger.error(f"View_orders text failed in game with id: {ctx.guild.id}", exc_info=err)
+        return {"message": "view_orders text failed", "embed_colour": ERROR_COLOUR}
+
+    orders_log = get_orders_log(ctx.guild)
+    if not orders_log:
+        return {"message": "Could not find orders log channel", "embed_colour": ERROR_COLOUR}
+    await send_message_and_file(
+        channel=orders_log,
+        title=f"{board.phase.name} {str(1642 + board.year)}",
+        message=order_text
+    )
+    return {"title": f"Sent Orders to {orders_log.mention}"}
 
 @perms.player("view map")
 async def view_map(player: Player | None, ctx: commands.Context, manager: Manager) -> dict[str, ...]:

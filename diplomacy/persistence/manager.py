@@ -141,6 +141,16 @@ class Manager:
         file, file_name = mapper.draw_current_map()
         return {"message": message, "file": file, "file_name": file_name, "svg_to_png": False}
 
+    def get_previous_board(self, server_id: int) -> Board | None:
+        board = self._boards[server_id]
+        # TODO: what happens if we're on the first phase?
+        last_phase = board.phase.previous
+        last_phase_year = board.year
+        if board.phase.name == "Spring Moves":
+            last_phase_year -= 1
+        old_board = self._database.get_board(board.board_id, last_phase, last_phase_year, board.fish, board.datafile)
+        return old_board
+
     def reload(self, server_id: int) -> dict[str, ...]:
         logger.info(f"Reloading server {server_id}")
         board = self._boards[server_id]

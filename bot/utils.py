@@ -5,6 +5,7 @@ import os
 import zipfile
 import discord
 from discord import Embed, Colour, Guild
+from discord.abc import GuildChannel
 from discord.ext import commands
 from discord.ext.commands import Context
 
@@ -89,6 +90,15 @@ def get_player_by_name(name: str, manager: Manager, server_id: int) -> Player | 
             return player
     return None
 
+def get_orders_log(guild: Guild) -> GuildChannel | None:
+    for channel in guild.channels:
+        # FIXME move "orders" and "gm channels" to bot.config
+        if (channel.name.lower() == "orders-log"
+                and channel.category is not None
+                and channel.category.name.lower() == "gm channels"
+        ):
+            return channel
+    return None
 
 def is_player_channel(player_role: str, channel: commands.Context.channel) -> bool:
     player_channel = player_role.lower() + config.player_channel_suffix
