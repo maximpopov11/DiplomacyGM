@@ -286,6 +286,8 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
     board = manager.get_board(ctx.guild.id)
 
     return_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() != "true"
+    await send_message_and_file(channel=ctx.channel, **await view_map(ctx, manager))
+    await send_message_and_file(channel=ctx.channel, **await view_orders(ctx, manager))
     if board.fow:
         await publish_moves(ctx, manager)
         await send_order_logs(ctx, manager)
