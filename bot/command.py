@@ -16,7 +16,8 @@ from bot.config import is_bumble, temporary_bumbles, ERROR_COLOUR
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
 from bot.utils import (convert_svg_and_send_file, get_filtered_orders, get_orders,
-                       get_player_by_channel, get_player_by_channel, is_admin, send_message_and_file)
+                       get_player_by_channel, get_player_by_channel, is_admin, send_message_and_file,
+                       get_role_by_player)
 from diplomacy.adjudicator.utils import svg_to_png
 from diplomacy.persistence import phase
 from diplomacy.persistence.db.database import get_connection
@@ -337,8 +338,16 @@ async def get_scoreboard(ctx: commands.Context, manager: Manager) -> dict[str, .
 
     response = ""
     for player in board.get_players_by_score():
-        response += f"\n__{player.name}__: {len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
-    return {"message": response }
+
+        if (player_role := get_role_by_player(player, ctx.guild.roles)) is not None:
+            player_name = player_role.mention
+        else:
+            player_name = player.name
+
+        response += (f"\n**{player_name}**: "
+                     f"{len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}"
+                     f"{len(player.centers) - len(player.units)})")
+    return {"title": f"{board.phase.name}" + " " + f"{str(1642 + board.year)}", "message": response }
 
 
 @perms.gm("edit")
