@@ -271,6 +271,7 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
         logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
         return {"message": "View_orders map failed" , "embed_colour": ERROR_COLOUR}
     return {
+        "title": board.phase.name + " " + str(1642 + board.year),
         "message": "Map created successfully",
         "file": file,
         "file_name": file_name,
@@ -298,7 +299,8 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
         file, file_name = manager.draw_fow_current_map(ctx.guild.id, None)
 
     return {
-        "message": "Adjudication completed successfully",
+        "title": board.phase.name + " " + str(1642 + board.year),
+        "message": "Adjudication has completed successfully",
         "file": file,
         "file_name": file_name,
         "svg_to_png": return_svg,
