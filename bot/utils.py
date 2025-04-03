@@ -1,7 +1,9 @@
 import datetime
 import asyncio
 import io
+import logging
 import os
+import time
 import zipfile
 import discord
 from typing import List, Tuple
@@ -142,13 +144,43 @@ def get_unit_type(command: str) -> UnitType | None:
         return UnitType.FLEET
     return None
 
+def log_command(
+        logger: logging.Logger,
+        ctx: discord.ext.commands.Context,
+        message: str,
+        *,
+        level=logging.INFO
+) -> None:
+    # FIXME Should probably delete this function and use a logging formatter instead
+
+    if level <= logging.DEBUG:
+        command_len_limit = -1
+    else:
+        command_len_limit = 40
+
+    # this might be too expensive?
+    command = ctx.message.content[:command_len_limit].encode('unicode_escape').decode('utf-8')
+    if len(ctx.message.content) > 40:
+        command.append("...")
+
+    # temporary handling for bad error messages should be removed when we are nolonger passing
+    # messages intended for Discord to this function. FIXME
+    message = message.encode('unicode_escape').decode('utf-8')
+
+    logger.log(
+        level,
+        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - "
+        f"'{command}' -> "
+        f"{message}"
+    )
+
 async def send_message_and_file(
         *,
         channel: commands.Context.channel,
         title: str = None,
         message: str = None,
         messages: [str] = None,
-        embed_colour: str = "#fc71c4",
+        embed_colour: str = None,
         file: str = None,
         file_name: str = None,
         file_in_embed: bool = None,
@@ -156,7 +188,9 @@ async def send_message_and_file(
         fields: List[Tuple[str, str]] = None,
         convert_svg: bool = False,
         **_
-):
+) -> None:
+    if not embed_colour:
+        embed_colour = "#fc71c4"
 
     if convert_svg:
         file, file_name = await svg_to_png(file, file_name)

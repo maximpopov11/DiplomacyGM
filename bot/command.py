@@ -17,7 +17,7 @@ from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
 from bot.utils import (get_filtered_orders, get_orders,
                        get_orders_log, get_player_by_channel, is_admin, send_message_and_file,
-                       get_role_by_player)
+                       get_role_by_player, log_command)
 from diplomacy.adjudicator.utils import svg_to_png
 from diplomacy.persistence import phase
 from diplomacy.persistence.db.database import get_connection
@@ -206,6 +206,7 @@ async def botsay(ctx: commands.Context, _: Manager) -> dict[str, ...]:
         return {"message": "No Message Given"}
     await ctx.message.add_reaction("👍")
     logger.info(f"{ctx.message.author.name} asked me to say '{content}' in {channel.name}")
+    log_command(logger, ctx, f"Sent Message into #{channel.name}")
     return {"channel": channel, "message": content}
 
 @perms.admin("send a GM announcement")
@@ -223,6 +224,7 @@ async def announce(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
             continue
         message += f"\n- {server.name}"
         await admin_chat_channel.send(f"__Announcement__\n{ctx.message.author.display_name} says:\n{content}")
+    log_command(logger, ctx, f"Sent Announcement into {len(servers)} servers")
     return {"message": message}
 
 
@@ -231,9 +233,15 @@ async def order(player: Player | None, ctx: commands.Context, manager: Manager) 
     board = manager.get_board(ctx.guild.id)
 
     if player and not board.orders_enabled:
+        log_command(logger, ctx, f"Orders locked - not processing")
         return {"message": "Orders locked! If you think this is an error, contact a GM.", "embed_colour": ERROR_COLOUR}
 
-    return parse_order(ctx.message.content, player, board)
+    message = parse_order(ctx.message.content, player, board)
+    if "title" in message:
+        log_command(logger, ctx, message=message["title"])
+    else:
+        log_command(logger, ctx, message=message["message"][:100])
+    return message
 
 
 @perms.player("remove orders")
@@ -241,11 +249,14 @@ async def remove_order(player: Player | None, ctx: commands.Context, manager: Ma
     board = manager.get_board(ctx.guild.id)
 
     if player and not board.orders_enabled:
+        log_command(logger, ctx, f"Orders locked - not processing")
         return {"message": "Orders locked! If you think this is an error, contact a GM.", "embed_colour": ERROR_COLOUR}
 
     content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
 
-    return parse_remove_order(content, player, board)
+    message = parse_remove_order(content, player, board)
+    log_command(logger, ctx, message=message["message"])
+    return message
 
 
 @perms.player("view orders")
@@ -253,9 +264,11 @@ async def view_orders(player: Player | None, ctx: commands.Context, manager: Man
     try:
         board = manager.get_board(ctx.guild.id)
         order_text = get_orders(board, player, ctx)
-    except RuntimeError as err:
-        logger.error(f"View_orders text failed in game with id: {ctx.guild.id}", exc_info=err)
+    except RuntimeError:
+        log_command(logger, ctx, message=f"Failed for an unknown reason", level=logging.WARN)
         return {"message": "view_orders text failed", "embed_colour": ERROR_COLOUR}
+
+    log_command(logger, ctx, message=f"Success - generated orders for {board.phase.name} {str(1642 + board.year)}")
     return {"title": f"{board.phase.name} {str(1642 + board.year)}", "message": order_text }
 
 @perms.gm("publish orders")
@@ -267,17 +280,19 @@ async def publish_orders(ctx: commands.Context, manager: Manager) -> dict[str, .
     try:
         order_text = get_orders(board, None, ctx, fields=True)
     except RuntimeError as err:
-        logger.error(f"View_orders text failed in game with id: {ctx.guild.id}", exc_info=err)
+        log_command(logger, ctx, message=f"Failed for an unknown reason", level=logging.WARN)
         return {"message": "view_orders text failed", "embed_colour": ERROR_COLOUR}
 
     orders_log = get_orders_log(ctx.guild)
     if not orders_log:
+        log_command(logger, ctx, message=f"Could not find orders log channel", level=logging.WARN)
         return {"message": "Could not find orders log channel", "embed_colour": ERROR_COLOUR}
     await send_message_and_file(
         channel=orders_log,
         title=f"{board.phase.name} {str(1642 + board.year)}",
         fields=order_text,
     )
+    log_command(logger, ctx, message=f"Successfully published orders")
     return {"title": f"Sent Orders to {orders_log.mention}"}
 
 @perms.player("view map")
@@ -291,10 +306,11 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
         else:
             file, file_name = manager.draw_fow_players_moves_map(ctx.guild.id, player)
     except Exception as err:
-        logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
+        log_command(logger, ctx, message=f"Failed to generate map for an unknown reason", level=logging.WARN)
         return {"message": "View_orders map failed" , "embed_colour": ERROR_COLOUR}
+    log_command(logger, ctx, message=f"Generated map for {board.phase.name} {str(1642 + board.year)}")
     return {
-        "title": board.phase.name + " " + str(1642 + board.year),
+        "title": f"{board.phase.name} {str(1642 + board.year)}",
         "message": "Map created successfully",
         "file": file,
         "file_name": file_name,
@@ -323,8 +339,9 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
     else:
         file, file_name = manager.draw_fow_current_map(ctx.guild.id, None)
 
+    log_command(logger, ctx, message=f"Adjudication Sucessful for {board.phase.name} {str(1642 + board.year)}")
     return {
-        "title": board.phase.name + " " + str(1642 + board.year),
+        "title": f"{board.phase.name} {str(1642 + board.year)}",
         "message": "Adjudication has completed successfully",
         "file": file,
         "file_name": file_name,
@@ -334,12 +351,16 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
 
 @perms.gm("rollback")
 async def rollback(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
-    return manager.rollback(ctx.guild.id)
+    message = manager.rollback(ctx.guild.id)
+    log_command(logger, ctx, message=message['message'])
+    return message
 
 
 @perms.gm("reload")
 async def reload(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
-    return manager.reload(ctx.guild.id)
+    message = manager.reload(ctx.guild.id)
+    log_command(logger, ctx, message=message['message'])
+    return message
 
 
 @perms.gm("remove all orders")
@@ -350,7 +371,8 @@ async def remove_all(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
 
     database = get_connection()
     database.save_order_for_units(board, board.units)
-    return {"message": "Successful" }
+    log_command(logger, ctx, message="Removed all Units")
+    return {"title": "Removed all Orders"}
 
 
 async def get_scoreboard(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
@@ -370,13 +392,16 @@ async def get_scoreboard(ctx: commands.Context, manager: Manager) -> dict[str, .
         response += (f"\n**{player_name}**: "
                      f"{len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}"
                      f"{len(player.centers) - len(player.units)})")
+    log_command(logger, ctx, message="Generated scoreboard")
     return {"title": f"{board.phase.name}" + " " + f"{str(1642 + board.year)}", "message": response }
 
 
 @perms.gm("edit")
 async def edit(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
     commands = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
-    return parse_edit_state(commands, manager.get_board(ctx.guild.id))
+    message = parse_edit_state(commands, manager.get_board(ctx.guild.id))
+    log_command(logger, ctx, message=message["title"])
+    return message
 
 
 @perms.gm("create a game")
@@ -386,33 +411,48 @@ async def create_game(ctx: commands.Context, manager: Manager) -> dict[str, ...]
         gametype = "impdip.json"
     else:
         gametype = gametype.removeprefix(" ") + ".json"
-    return {"message": manager.create_game(ctx.guild.id, gametype) }
+
+    message = manager.create_game(ctx.guild.id, gametype)
+    log_command(logger, ctx, message=message)
+    return {"message": message }
 
 
 @perms.gm("unlock orders")
 async def enable_orders(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
     board = manager.get_board(ctx.guild.id)
     board.orders_enabled = True
-    return {"message": "Successful" }
+    log_command(logger, ctx, message="Unlocked orders")
+    return {
+        "title": "Unlocked orders",
+        "message": f"{board.phase.name} {str(1642 + board.year)}",
+    }
 
 
 @perms.gm("lock orders")
 async def disable_orders(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
     board = manager.get_board(ctx.guild.id)
     board.orders_enabled = False
-    return {"message": "Successful" }
+    log_command(logger, ctx, message="Locked orders")
+    return {
+        "title": "Locked Orders",
+        "message": f"{board.phase.name} {str(1642 + board.year)}"
+    }
 
 
 @perms.gm("delete the game")
 async def delete_game(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
     manager.total_delete(ctx.guild.id)
+    log_command(logger, ctx, message=f"Deleted game")
     return {"message": "Game deleted"}
 
 async def info(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
     try:
         board = manager.get_board(ctx.guild.id)
     except RuntimeError:
+        log_command(logger, ctx, message="No existing game this this server.")
         return {"message": "There is no existing game this this server."}
+
+    log_command(logger, ctx, message=f"Displayed info - {str(1642 + board.year)}|{str(board.phase)}|{str(board.datafile)}|{'Open' if board.orders_enabled else 'Locked'}" )
     return {"message": ("Year: " + str(1642 + board.year) + "\n"
                "Phase: " + str(board.phase) + "\n"
                "Orders are: " + ("Open" if board.orders_enabled else "Locked") + "\n"
@@ -429,9 +469,11 @@ async def province_info(ctx: commands.Context, manager: Manager) -> dict[str, ..
  
     province_name = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
     if not province_name:
+        log_command(logger, ctx, message=f"No province given")
         return {"message": "Usage: .province_info <province>"}
     province, coast = board.get_province_and_coast(province_name)
     if province is None:
+        log_command(logger, ctx, message=f"Province `{province_name}` not found")
         return {"message": f"Could not find province {province_name}"}
 
 
@@ -439,6 +481,7 @@ async def province_info(ctx: commands.Context, manager: Manager) -> dict[str, ..
     if board.fow:
         player = perms.get_player_by_context(ctx, manager, "get province info")
         if player and not province in board.get_visible_provinces(player):
+            log_command(logger, ctx, message=f"Province `{province_name}` hidden by fow to player")
             return {"message": f"Province {province.name} is not visible to you" }
     
     # fmt: off
@@ -465,6 +508,7 @@ async def province_info(ctx: commands.Context, manager: Manager) -> dict[str, ..
             "- " + \
             "\n- ".join(sorted([adjacent.name for adjacent in coast.get_adjacent_locations()])) + "\n"
     # fmt: on
+    log_command(logger, ctx, message=f"Got info for {province_name}")
     return {"message": out }
 
 
@@ -472,11 +516,14 @@ async def province_info(ctx: commands.Context, manager: Manager) -> dict[str, ..
 async def visible_provinces(player: Player | None, ctx: commands.Context, manager: Manager) -> dict[str, ...]:
     board = manager.get_board(ctx.guild.id)
 
+
+
     if not player or not board.fow:
+        log_command(logger, ctx, message=f"No fog of war game")
         return {"message": "This command only works for players in fog of war games.", "embed_colour": ERROR_COLOUR}
 
     visible_provinces = board.get_visible_provinces(player)
-
+    log_command(logger, ctx, message=f"There are {len(visible_provinces)} visible provinces")
     return {"message": ", ".join([x.name for x in visible_provinces])}
 
 
@@ -487,7 +534,7 @@ async def all_province_data(ctx: commands.Context, manager: Manager) -> dict[str
     for province in board.provinces:
         owner = province.owner
         if not owner:
-            owner = "None"
+            owner = None
         province_by_owner[owner].append(province.name)
 
     message = ""
@@ -504,6 +551,7 @@ async def all_province_data(ctx: commands.Context, manager: Manager) -> dict[str
             message += f"{province}, "
         message += "\n\n"
 
+    log_command(logger, ctx, message=f"Found {sum(map(len, province_by_owner.values()))} provinces")
     return {"message": message }
 
 
@@ -613,6 +661,7 @@ async def ping_players(ctx: commands.Context, manager: Manager):
             break
 
     if not player_category:
+        log_command(logger, ctx, message=f"No player category found")
         return {"message": "No player category found", "embed_colour": ERROR_COLOUR }
 
     name_to_player: dict[str, Player] = {}
@@ -631,9 +680,11 @@ async def ping_players(ctx: commands.Context, manager: Manager):
             player_to_role[player] = role
 
     if len(player_roles) == 0:
+        log_command(logger, ctx, message=f"No player role found")
         return {"message": "No player role found", "embed_colour": ERROR_COLOUR }
 
     response = None
+    pinged_players = 0
 
     for channel in player_category.channels:
         player = get_player_by_channel(channel, manager, guild.id)
@@ -675,7 +726,7 @@ async def ping_players(ctx: commands.Context, manager: Manager):
             if has_builds and has_disbands:
                 response = f"Hey {''.join([u.mention for u in users])}, you have both build and disband orders. Please get this looked at."
             elif count >= 0:
-                available_centers = [center for center in player.centers if center.unit == None and center.core == player]
+                available_centers = [center for center in player.centers if center.unit is None and center.core == player]
                 available = min(len(available_centers), count)
 
                 difference = abs(current - available)
@@ -706,11 +757,13 @@ async def ping_players(ctx: commands.Context, manager: Manager):
                     response += f"\n{unit}"
 
         if response:
+            pinged_players += 1
             if timestamp:
                 response += f"\n The orders deadline is {timestamp}."
             await channel.send(response)
             response = None
 
+    log_command(logger, ctx, message=f"Pinged {pinged_players} players")
     return {"message": "Successful" }
 
 async def archive(ctx: commands.Context, _: Manager) -> dict[str, ...]:
@@ -732,4 +785,5 @@ async def archive(ctx: commands.Context, _: Manager) -> dict[str, ...]:
             await channel.edit(overwrites=overwrites)
 
     message = f"The following catagories have been archived: {' '.join([catagory.name for catagory in categories])}"
+    log_command(logger, ctx, message=f"Archived {len(categories)} Channels")
     return {"message": message }

@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import datetime
 import time
 from typing import Callable, Awaitable
 import random
@@ -11,7 +12,6 @@ from bot.utils import send_message_and_file
 load_dotenv()
 
 import discord
-from discord import HTTPException
 from discord.ext import commands
 
 from bot import command
@@ -56,7 +56,7 @@ async def on_ready():
             print(f"Channel with ID {bot_status_channel} not found.")
     else:
         print(f"Guild with ID {impdip_server} not found.")
-    
+
     # Set bot's presence (optional)
     await bot.change_presence(activity=discord.Game(name="Impdip 🔪"))
 
@@ -70,11 +70,19 @@ async def before_any_command(ctx):
 
 
 @bot.after_invoke
-async def after_any_command(ctx):
-    logger.debug(
-        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - complete"
+async def after_any_command(ctx: discord.ext.commands.Context):
+    time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
+
+    if time_spent.total_seconds() < 10:
+        level = logging.DEBUG
+    else:
+        level = logging.WARN
+
+    logger.log(
+        level,
+        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
+        f"complete in {time_spent}s"
     )
-    pass
 
 
 @bot.event
@@ -83,26 +91,34 @@ async def on_command_error(ctx, error):
         # we shouldn't do anything if the user says something like "..."
         pass
     else:
-        logger.error(
-            f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}': {repr(error)}",
-            exc_info=error,
-        )
+        time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
 
-        # mark the message as failed
-        await ctx.message.add_reaction("❌")
-        await ctx.message.remove_reaction("👍", bot.user)
+
+        try:
+            # mark the message as failed
+            await ctx.message.add_reaction("❌")
+            await ctx.message.remove_reaction("👍", bot.user)
+        except Exception:
+            # if reactions fail continue handling error
+            pass
 
         if type(error.original) == PermissionError:
+
             await send_message_and_file(channel=ctx.channel, message=str(error.original), embed_colour=ERROR_COLOUR)
         else:
+            logger.log(
+                logging.ERROR,
+                f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
+                f"errored in {time_spent}s"
+            )
             await send_message_and_file(channel=ctx.channel, message=str(error), embed_colour=ERROR_COLOUR)
+            raise error
 
 
 async def _handle_command(
     function: Callable[[commands.Context, Manager], Awaitable[dict[str, ...]]],
     ctx: commands.Context,
 ) -> None:
-    start = time.time()
 
     response = await function(ctx, manager)
 
@@ -114,10 +130,6 @@ async def _handle_command(
     if "file" in response:
         response["file"] = f"{response['file'][:15]}..."
 
-    elapsed = time.time() - start
-    logger.debug(
-        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{response} | {elapsed}s"
-    )
 
 
 @bot.command(help="Checks bot listens and responds.")
