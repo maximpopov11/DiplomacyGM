@@ -212,9 +212,14 @@ async def botsay(ctx: commands.Context, _: Manager) -> None:
                                     message="No Message Given",
                                     embed_colour=ERROR_COLOUR)
         return
-    await ctx.message.add_reaction("👍")
+
+    message = await send_message_and_file(channel=channel, message=content)
     log_command(logger, ctx, f"Sent Message into #{channel.name}")
-    await send_message_and_file(channel=ctx.channel, title=content)
+    await send_message_and_file(channel=ctx.channel,
+                                title=f"Sent Message",
+                                message=message.jump_url,
+                                )
+
 
 @perms.admin("send a GM announcement")
 async def announce(ctx: commands.Context, manager: Manager) -> None:

@@ -7,7 +7,7 @@ import time
 import zipfile
 import discord
 from typing import List, Tuple
-from discord import Embed, Colour, Guild
+from discord import Embed, Colour, Guild, Message
 from discord.abc import GuildChannel
 from discord.ext import commands
 from discord.ext.commands import Context
@@ -211,7 +211,7 @@ async def send_message_and_file(
         fields: List[Tuple[str, str]] = None,
         convert_svg: bool = False,
         **_
-) -> None:
+) -> Message:
     if not embed_colour:
         embed_colour = "#fc71c4"
     if convert_svg and file and file_name:
@@ -332,7 +332,7 @@ async def send_message_and_file(
 
     embeds[-1].timestamp = time
 
-    await channel.send(embeds=embeds, file=discord_file)
+    return await channel.send(embeds=embeds, file=discord_file)
 
 
 def get_orders(board: Board, player_restriction: Player | None, ctx: Context, fields: bool = False) -> str | List[Tuple[str, str]]:
