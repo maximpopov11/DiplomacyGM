@@ -53,7 +53,13 @@ discord_embed_description_limit = 4096
 discord_embed_total_limit = 6000
 
 def is_admin(author: commands.Context.author) -> bool:
-    return author.name in ["eebopmasch", "icecream_guy", "_bumble", "thisisflare", "eelisha"]
+    return author.id in [
+        1217203346511761428,    # eebop
+        332252245259190274,     # Icecream Guy
+        169995316680982528,     # Bumble
+        450636420558618625,     # Flare
+        490633966974533640,     # Elle
+    ]
 
 
 def is_gm(author: commands.Context.author) -> bool:
