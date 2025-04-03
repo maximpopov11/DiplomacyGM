@@ -205,7 +205,7 @@ async def send_message_and_file(
 
     if fields:
         for field in fields:
-            if len(embeds[-1].fields) == 25:
+            if len(embeds[-1].fields) == 25 or sum(map(len, embeds)) + len(field) > discord_embed_total_limit:
                 await channel.send(embeds=embeds)
                 embeds = [Embed(
                     title=title,
