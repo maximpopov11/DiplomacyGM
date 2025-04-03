@@ -167,7 +167,8 @@ class Mapper:
         for i, player in enumerate(self.board.get_players_by_score()):
             for power_element in all_power_banners_element:
                 # match the correct svg element based on the color of the rectangle
-                if get_element_color(power_element[0]) == player.color:
+                if get_element_color(power_element[0]) == player.default_color:
+                    self.color_element(power_element[0], player.render_color)
                     power_element.set("transform", self.scoreboard_power_locations[i])
                     power_element[5][0].text = str(len(player.centers))
                     break
@@ -512,7 +513,7 @@ class Mapper:
             visited_provinces.add(province.name)
             color = self.board.data["svg config"]["neutral"]
             if province.owner:
-                color = province.owner.color
+                color = province.owner.render_color
             self.color_element(province_element, color)
 
         # Try to combine this with the code above? A lot of repeated stuff here
@@ -525,7 +526,7 @@ class Mapper:
 
             color = self.board.data["svg config"]["neutral"]
             if province.owner:
-                color = province.owner.color
+                color = province.owner.render_color
             self.color_element(island_ring, color, key="stroke")
 
         for province in self.board.provinces:
@@ -550,11 +551,11 @@ class Mapper:
                 continue
 
             if province.core:
-                core_color = province.core.color
+                core_color = province.core.render_color
             else:
                 core_color = "#ffffff"
             if province.half_core:
-                half_color = province.half_core.color
+                half_color = province.half_core.render_color
             else:
                 half_color = core_color
             # color = "#ffffff"
@@ -608,7 +609,7 @@ class Mapper:
         unit_element = self._get_element_for_unit_type(unit.unit_type)
 
         for path in unit_element.getchildren():
-            self.color_element(path, unit.player.color)
+            self.color_element(path, unit.player.render_color)
 
         current_coords = get_unit_coordinates(unit_element)
         current_coords = get_transform(unit_element).transform(current_coords)
