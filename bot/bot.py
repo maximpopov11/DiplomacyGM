@@ -122,13 +122,8 @@ async def _handle_command(
 
     response = await function(ctx, manager)
 
-    if "channel" not in response:
-        response["channel"] = ctx.channel
-
-    await send_message_and_file(**response)
-
-    if "file" in response:
-        response["file"] = f"{response['file'][:15]}..."
+    if response:
+        raise Exception("function returned something yikes")
 
 
 
