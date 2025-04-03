@@ -203,12 +203,18 @@ async def remove_order(ctx: commands.Context) -> None:
 @bot.command(
     brief="Outputs your current submitted orders.",
     description="Outputs your current submitted orders. "
-    "In the future we will support outputting a sample moves map of your orders.",
+    "Use .view_map to view a sample moves map of your orders.",
     aliases=["v", "view", "vieworders", "view-orders"],
 )
 async def view_orders(ctx: commands.Context) -> None:
     await _handle_command(command.view_orders, ctx)
 
+@bot.command(
+    brief="Sends order all orders ",
+    description="For GM: Sends orders from previous phase to #orders-log",
+)
+async def publish_orders(ctx: commands.Context) -> None:
+    await _handle_command(command.publish_orders, ctx)
 
 @bot.command(
     brief="Outputs the current map with submitted orders.",

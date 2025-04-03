@@ -16,7 +16,8 @@ from bot.config import is_bumble, temporary_bumbles, ERROR_COLOUR
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
 from bot.utils import (convert_svg_and_send_file, get_filtered_orders, get_orders,
-                       get_player_by_channel, get_player_by_channel, is_admin, send_message_and_file)
+                       get_orders_log, get_player_by_channel, is_admin, send_message_and_file,
+                       get_role_by_player)
 from diplomacy.adjudicator.utils import svg_to_png
 from diplomacy.persistence import phase
 from diplomacy.persistence.db.database import get_connection
@@ -250,12 +251,34 @@ async def remove_order(player: Player | None, ctx: commands.Context, manager: Ma
 @perms.player("view orders")
 async def view_orders(player: Player | None, ctx: commands.Context, manager: Manager) -> dict[str, ...]:
     try:
-        order_text = get_orders(manager.get_board(ctx.guild.id), player, ctx)
+        board = manager.get_board(ctx.guild.id)
+        order_text = get_orders(board, player, ctx)
     except RuntimeError as err:
         logger.error(f"View_orders text failed in game with id: {ctx.guild.id}", exc_info=err)
         return {"message": "view_orders text failed", "embed_colour": ERROR_COLOUR}
-    return {"message": order_text }
+    return {"title": f"{board.phase.name} {str(1642 + board.year)}", "message": order_text }
 
+@perms.gm("publish orders")
+async def publish_orders(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
+    board = manager.get_previous_board(ctx.guild.id)
+    if not board:
+        return {"message": "Failed to get previous phase", "embed_colour": ERROR_COLOUR}
+
+    try:
+        order_text = get_orders(board, None, ctx, fields=True)
+    except RuntimeError as err:
+        logger.error(f"View_orders text failed in game with id: {ctx.guild.id}", exc_info=err)
+        return {"message": "view_orders text failed", "embed_colour": ERROR_COLOUR}
+
+    orders_log = get_orders_log(ctx.guild)
+    if not orders_log:
+        return {"message": "Could not find orders log channel", "embed_colour": ERROR_COLOUR}
+    await send_message_and_file(
+        channel=orders_log,
+        title=f"{board.phase.name} {str(1642 + board.year)}",
+        fields=order_text,
+    )
+    return {"title": f"Sent Orders to {orders_log.mention}"}
 
 @perms.player("view map")
 async def view_map(player: Player | None, ctx: commands.Context, manager: Manager) -> dict[str, ...]:
@@ -271,6 +294,7 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
         logger.error(f"View_orders map failed in game with id: {ctx.guild.id}", exc_info=err)
         return {"message": "View_orders map failed" , "embed_colour": ERROR_COLOUR}
     return {
+        "title": board.phase.name + " " + str(1642 + board.year),
         "message": "Map created successfully",
         "file": file,
         "file_name": file_name,
@@ -283,6 +307,8 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
     board = manager.get_board(ctx.guild.id)
 
     return_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() != "true"
+    # await send_message_and_file(channel=ctx.channel, **await view_map(ctx, manager))
+    # await send_message_and_file(channel=ctx.channel, **await view_orders(ctx, manager))
     if board.fow:
         await publish_moves(ctx, manager)
         await send_order_logs(ctx, manager)
@@ -298,7 +324,8 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
         file, file_name = manager.draw_fow_current_map(ctx.guild.id, None)
 
     return {
-        "message": "Adjudication completed successfully",
+        "title": board.phase.name + " " + str(1642 + board.year),
+        "message": "Adjudication has completed successfully",
         "file": file,
         "file_name": file_name,
         "svg_to_png": return_svg,
@@ -334,8 +361,16 @@ async def get_scoreboard(ctx: commands.Context, manager: Manager) -> dict[str, .
 
     response = ""
     for player in board.get_players_by_score():
-        response += f"\n__{player.name}__: {len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
-    return {"message": response }
+
+        if (player_role := get_role_by_player(player, ctx.guild.roles)) is not None:
+            player_name = player_role.mention
+        else:
+            player_name = player.name
+
+        response += (f"\n**{player_name}**: "
+                     f"{len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}"
+                     f"{len(player.centers) - len(player.units)})")
+    return {"title": f"{board.phase.name}" + " " + f"{str(1642 + board.year)}", "message": response }
 
 
 @perms.gm("edit")

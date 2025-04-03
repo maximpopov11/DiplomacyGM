@@ -4,7 +4,9 @@ import io
 import os
 import zipfile
 import discord
+from typing import List, Tuple
 from discord import Embed, Colour, Guild
+from discord.abc import GuildChannel
 from discord.ext import commands
 from discord.ext.commands import Context
 
@@ -89,6 +91,15 @@ def get_player_by_name(name: str, manager: Manager, server_id: int) -> Player | 
             return player
     return None
 
+def get_orders_log(guild: Guild) -> GuildChannel | None:
+    for channel in guild.channels:
+        # FIXME move "orders" and "gm channels" to bot.config
+        if (channel.name.lower() == "orders-log"
+                and channel.category is not None
+                and channel.category.name.lower() == "gm channels"
+        ):
+            return channel
+    return None
 
 def is_player_channel(player_role: str, channel: commands.Context.channel) -> bool:
     player_channel = player_role.lower() + config.player_channel_suffix
@@ -142,6 +153,7 @@ async def send_message_and_file(
         file_name: str = None,
         file_in_embed: bool = True,
         time: datetime.datetime = None,
+        fields: List[Tuple[str, str]] = None,
         **_
 ):
     if messages:
@@ -189,6 +201,19 @@ async def send_message_and_file(
             title=title,
             colour=Colour.from_str(embed_colour)
         )]
+        title = ""
+
+    if fields:
+        for field in fields:
+            if len(embeds[-1].fields) == 25:
+                await channel.send(embeds=embeds)
+                embeds = [Embed(
+                    title=title,
+                    colour=Colour.from_str(embed_colour)
+                )]
+                title = ""
+            embeds[-1].add_field(name=field[0], value=field[1], inline=True)
+
 
     discord_file = None
     if file is not None and len(file) > discord_file_limit:
@@ -223,9 +248,12 @@ async def send_message_and_file(
     await channel.send(embeds=embeds, file=discord_file)
 
 
-def get_orders(board: Board, player_restriction: Player | None, ctx: Context) -> str:
+def get_orders(board: Board, player_restriction: Player | None, ctx: Context, fields: bool = False) -> str | List[Tuple[str, str]]:
+    if fields:
+        response = []
+    else:
+        response = ""
     if phase.is_builds(board.phase):
-        response = "Received orders:"
         for player in sorted(board.players, key=lambda sort_player: sort_player.name):
             if not player_restriction or player == player_restriction:
 
@@ -234,9 +262,15 @@ def get_orders(board: Board, player_restriction: Player | None, ctx: Context) ->
                 else:
                     player_name = player.name
 
-                response += f"\n**{player_name}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
+                title = f"**{player_name}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
+                body = ""
                 for unit in player.build_orders:
-                    response += f"\n{unit}"
+                    body += f"\n{unit}"
+
+                if fields:
+                    response.append(("", f"{title}{body}"))
+                else:
+                    response += f"\n{title}{body}"
         return response
     else:
 
@@ -244,8 +278,6 @@ def get_orders(board: Board, player_restriction: Player | None, ctx: Context) ->
             players = board.players
         else:
             players = {player_restriction}
-
-        response = ""
 
         for player in sorted(players, key=lambda p: p.name):
             if phase.is_retreats(board.phase):
@@ -261,15 +293,21 @@ def get_orders(board: Board, player_restriction: Player | None, ctx: Context) ->
             else:
                 player_name = player.name
 
-            response += f"**{player_name}** ({len(ordered)}/{len(moving_units)})\n"
+            title = f"**{player_name}** ({len(ordered)}/{len(moving_units)})"
+            body = ""
             if missing:
-                response += f"__Missing Orders:__\n"
+                body += f"__Missing Orders:__\n"
                 for unit in sorted(missing, key=lambda _unit: _unit.province.name):
-                    response += f"{unit}\n"
+                    body += f"{unit}\n"
             if ordered:
-                response += f"__Submitted Orders:__\n"
+                body += f"__Submitted Orders:__\n"
                 for unit in sorted(ordered, key=lambda _unit: _unit.province.name):
-                    response += f"{unit} {unit.order}\n"
+                    body += f"{unit} {unit.order}\n"
+
+            if fields:
+                response.append(("", f"{title}\n{body}"))
+            else:
+                response += f"{title}\n{body}"
 
         return response
 
