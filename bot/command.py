@@ -6,7 +6,7 @@ from random import randrange
 from typing import Callable
 
 from black.trans import defaultdict
-from discord import Role, HTTPException, NotFound
+from discord import Role, HTTPException, NotFound, TextChannel
 from discord import PermissionOverwrite
 from discord.ext import commands
 
@@ -223,44 +223,61 @@ async def botsay(ctx: commands.Context, _: Manager) -> None:
 
 @perms.admin("send a GM announcement")
 async def announce(ctx: commands.Context, manager: Manager) -> None:
-    guilds = {ctx.bot.get_guild(server_id) for server_id in manager.list_servers()}
+    guilds_with_games = {ctx.bot.get_guild(server_id).id for server_id in manager.list_servers()}
     content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
-    message = "Annoucement sent to:"
-    for server in guilds:
+    message = ""
+    for server in ctx.bot.guilds:
         if server is None:
             continue
         admin_chat_channel = next(channel for channel in server.channels if is_gm_channel(channel))
         if admin_chat_channel is None:
-            continue
+            message += f"\n- ~~{server.name}~~ Couldn't find admin channel"
+
         message += f"\n- {server.name}"
+        if server.id in guilds_with_games:
+            board = manager.get_board(server.id)
+            message += f" - {board.phase.name} {1642 + board.year}"
+        else:
+            message += f" - no active game"
+
         await admin_chat_channel.send(f"__Announcement__\n{ctx.message.author.display_name} says:\n{content}")
-    log_command(logger, ctx, f"Sent Announcement into {len(guilds)} servers")
-    await send_message_and_file(channel=ctx.channel, title=message)
+    log_command(logger, ctx, f"Sent Announcement into {len(ctx.bot.guilds)} servers")
+    await send_message_and_file(channel=ctx.channel, title=f"Annoucement sent to {len(ctx.bot.guilds)} servers:",message=message)
 
 @perms.admin("list servers")
 async def servers(ctx: commands.Context, manager: Manager) -> None:
-    guilds = {ctx.bot.get_guild(server_id) for server_id in manager.list_servers()}
+    guilds_with_games = {ctx.bot.get_guild(server_id).id for server_id in manager.list_servers()}
     message = ""
-    for server in guilds:
+    for server in ctx.bot.guilds:
         if server is None:
             continue
-        admin_chat_channel = next(channel for channel in server.channels if is_gm_channel(channel))
-        if admin_chat_channel is None:
-            continue
+
         channels = server.channels
-        if len(channels) == 0:
+        for channel in channels:
+            if isinstance(channel, TextChannel):
+                break
+        else:
             message += f"\n- {server.name} - Could not find a channel for invite"
             continue
+
+        if server.id in guilds_with_games:
+            board = manager.get_board(server.id)
+            board_state = f" - {board.phase.name} {1642 + board.year}"
+        else:
+            board_state = f" - no active game"
+
         try:
-            invite = await channels[0].create_invite(max_age=300)
+            invite = await channel.create_invite(max_age=300)
         except (HTTPException, NotFound):
             message += f"\n- {server.name} - Could not create invite"
-            continue
+        else:
+            message += f"\n- [{server.name}](<{invite.url}>)"
 
-        message += f"\n- [{server.name}](<{invite.url}>)"
-    log_command(logger, ctx, f"Sent Announcement into {len(guilds)} servers")
+        message += board_state
+
+    log_command(logger, ctx, f"Sent Announcement into {len(ctx.bot.guilds)} servers")
     await send_message_and_file(channel=ctx.channel,
-                                title=f"{len(guilds)} Servers",
+                                title=f"{len(ctx.bot.guilds)} Servers",
                                 message=message)
 
 @perms.player("order")
