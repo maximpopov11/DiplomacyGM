@@ -380,7 +380,7 @@ async def info(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
     return {"message": ("Year: " + str(1642 + board.year) + "\n"
                "Phase: " + str(board.phase) + "\n"
                "Orders are: " + ("Open" if board.orders_enabled else "Locked") + "\n"
-               "Fog of War: " + str(board.fow))
+               "Game Type: " + str(board.datafile))
             }
 
 
@@ -505,7 +505,8 @@ async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_ca
             continue
 
         message = f"Here is the {name} for {board.year + 1642} {board.phase.name}"
-        tasks.append(map_publish_task(lambda: map_caller(manager, guild_id, player), channel, message))
+        # capture local of player
+        tasks.append(map_publish_task(lambda player=player: map_caller(manager, guild_id, player), channel, message))
 
     await asyncio.gather(*tasks)
 
