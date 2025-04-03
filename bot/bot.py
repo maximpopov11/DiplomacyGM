@@ -156,6 +156,11 @@ async def botsay(ctx: commands.Context) -> None:
 async def announce(ctx: commands.Context) -> None:
     await command.announce(ctx, manager)
 
+@bot.command(hidden=True)
+async def servers(ctx: commands.Context) -> None:
+    await command.servers(ctx, manager)
+
+
 
 @bot.command(
     brief="Submits orders; there must be one and only one order per line.",
