@@ -23,8 +23,6 @@ _make_units_claim_provinces_str = "make units claim provinces"
 def parse_edit_state(message: str, board: Board) -> dict[str, ...]:
     invalid: list[tuple[str, Exception]] = []
     commands = str.splitlines(message)
-    if commands[0].strip() == ".edit":
-        commands = commands[1:]
     for command in commands:
         try:
             _parse_command(command, board)
@@ -46,8 +44,6 @@ def parse_edit_state(message: str, board: Board) -> dict[str, ...]:
 def _parse_command(command: str, board: Board) -> None:
     command = command.lower()
     keywords: list[str] = get_keywords(command)
-    if keywords[0].strip() == ".edit":
-        keywords = keywords[1:]
     command_type = keywords[0]
     keywords = keywords[1:]
 
