@@ -2,9 +2,10 @@ import asyncio
 from subprocess import PIPE
 import os
 
-svg_export_limit = asyncio.Semaphore(int(os.getenv("simultaneous_svg_exports_limit")))
+external_task_limit = asyncio.Semaphore(int(os.getenv("simultaneous_svg_exports_limit")))
+
 async def svg_to_png(svg: bytes, file_name: str):
-    async with svg_export_limit:
+    async with external_task_limit:
         # https://gitlab.com/inkscape/inkscape/-/issues/4716
         os_env = os.environ.copy()
         os_env["SELF_CALL"] = "xxx"
@@ -21,9 +22,16 @@ async def svg_to_png(svg: bytes, file_name: str):
             data = data[data.find(png_start):]
 
             if data[:8] != png_start:
-                print(data)
-                print(error)
                 raise RuntimeError("Something went wrong with making the png.")
 
         base = os.path.splitext(file_name)[0]
         return bytes(data), base + ".png"
+
+
+async def png_to_jpg(png: bytes, file_name: str) -> (bytes, str):
+    async with external_task_limit:
+        p = await asyncio.create_subprocess_shell("magick png:- jpg:-", stdout=PIPE,
+                                                  stdin=PIPE, stderr=PIPE)
+        data, error = await p.communicate(input=png)
+        base = os.path.splitext(file_name)[0]
+        return bytes(data), base + ".jpg"

@@ -14,12 +14,14 @@ from discord.ext.commands import Context
 
 from bot import config
 
-from diplomacy.adjudicator.utils import svg_to_png
+from diplomacy.adjudicator.utils import svg_to_png, png_to_jpg
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType
+from logging import getLogger
+logger = getLogger(__name__)
 
 whitespace_dict = {
     "_",
@@ -145,8 +147,29 @@ def get_unit_type(command: str) -> UnitType | None:
     return None
 
 def log_command(
-        logger: logging.Logger,
+        remote_logger: logging.Logger,
         ctx: discord.ext.commands.Context,
+        message: str,
+        *,
+        level=logging.INFO
+) -> None:
+    # FIXME Should probably delete this function and use a logging formatter instead
+    _log_command(
+        remote_logger,
+        ctx.message.content,
+        ctx.guild.name,
+        ctx.channel.name,
+        ctx.author.name,
+        message,
+        level=level
+    )
+
+def _log_command(
+        remote_logger: logging.Logger,
+        invoke_message: str,
+        guild: str,
+        channel: str,
+        invoker: str,
         message: str,
         *,
         level=logging.INFO
@@ -159,17 +182,17 @@ def log_command(
         command_len_limit = 40
 
     # this might be too expensive?
-    command = ctx.message.content[:command_len_limit].encode('unicode_escape').decode('utf-8')
-    if len(ctx.message.content) > 40:
-        command.append("...")
+    command = invoke_message[:command_len_limit].encode('unicode_escape').decode('utf-8')
+    if len(invoke_message) > 40:
+        command += "..."
 
     # temporary handling for bad error messages should be removed when we are nolonger passing
     # messages intended for Discord to this function. FIXME
     message = message.encode('unicode_escape').decode('utf-8')
 
-    logger.log(
+    remote_logger.log(
         level,
-        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - "
+        f"[{guild}][#{channel}]({invoker}) - "
         f"'{command}' -> "
         f"{message}"
     )
@@ -191,8 +214,7 @@ async def send_message_and_file(
 ) -> None:
     if not embed_colour:
         embed_colour = "#fc71c4"
-
-    if convert_svg:
+    if convert_svg and file and file_name:
         file, file_name = await svg_to_png(file, file_name)
 
 
@@ -256,24 +278,47 @@ async def send_message_and_file(
 
 
     discord_file = None
-    if file is not None and len(file) > discord_file_limit:
-        # zip compression without using files (disk is slow)
+    if file is not None:
+        if file_name[-4:].lower() == ".png" and len(file) > discord_file_limit:
+            _log_command(
+                logger,
+                "?",
+                channel.guild.name,
+                channel.name,
+                "?",
+                f"png is too big ({len(file)}); converting to jpg"
+            )
+            file, file_name = await png_to_jpg(file, file_name)
+            if len(file) > discord_file_limit:
+                _log_command(
+                    logger,
+                    "?",
+                    channel.guild.name,
+                    channel.name,
+                    "?",
+                    f"jpg is too big ({len(file)})"
+                )
+                if is_gm_channel(channel):
+                    message = "Try `.vm true` to get an svg"
+                else:
+                    message = "Please contact your GM"
+                await send_message_and_file(
+                    channel=channel,
+                    title="File too larger",
+                    message=message
+                )
+                file = None
+                file_name = None
+                discord_file = None
 
-        # We create a virtual file, write to it, and then restart it
-        # for some reason zipfile doesn't support this natively
-        with io.BytesIO() as vfile:
-            zip_file = zipfile.ZipFile(vfile, mode="x", compression=zipfile.ZIP_DEFLATED, compresslevel=9)
-            zip_file.writestr(f"{file_name}", file, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
-            zip_file.close()
-            vfile.seek(0)
-            discord_file = discord.File(fp=vfile, filename=f"{file_name}.zip")
-    elif file is not None:
+    if file is not None:
         with io.BytesIO(file) as vfile:
-            discord_file = discord.File(fp=vfile, filename=f"{file_name}")
-            if file_in_embed or (file_in_embed is None and any(map(lambda x: file_name.lower().endswith(x), (
-                            ".png", ".jpg", ".jpeg"#, ".gif", ".gifv", ".webm", ".mp4", "wav", ".mp3", ".ogg"
-            )))):
-                embeds[-1].set_image(url=f"attachment://{discord_file.filename.replace(' ', '_')}")
+            discord_file = discord.File(fp=vfile, filename=file_name)
+
+        if file_in_embed or (file_in_embed is None and any(map(lambda x: file_name.lower().endswith(x), (
+                        ".png", ".jpg", ".jpeg"#, ".gif", ".gifv", ".webm", ".mp4", "wav", ".mp3", ".ogg"
+        )))):
+            embeds[-1].set_image(url=f"attachment://{discord_file.filename.replace(' ', '_')}")
 
 
     embeds[-1].set_footer(
