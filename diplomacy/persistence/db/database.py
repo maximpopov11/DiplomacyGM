@@ -423,6 +423,7 @@ class _DatabaseConnection:
         cursor.execute("DELETE FROM units WHERE board_id=?", (board.board_id,))
         cursor.execute("DELETE FROM builds WHERE board_id=?", (board.board_id,))
         cursor.execute("DELETE FROM retreat_options WHERE board_id=?", (board.board_id,))
+        cursor.execute("DELETE FROM players WHERE board_id=?", (board.board_id,))
         cursor.close()
         self._connection.commit()
 
