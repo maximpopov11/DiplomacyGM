@@ -223,7 +223,6 @@ async def botsay(ctx: commands.Context, _: Manager) -> None:
 
 @perms.admin("send a GM announcement")
 async def announce(ctx: commands.Context, manager: Manager) -> None:
-    await ctx.message.add_reaction("👍")
     guilds = {ctx.bot.get_guild(server_id) for server_id in manager.list_servers()}
     content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
     message = "Annoucement sent to:"
