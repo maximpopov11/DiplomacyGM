@@ -7,7 +7,7 @@ import random
 from dotenv.main import load_dotenv
 
 from bot.config import ERROR_COLOUR
-from bot.utils import convert_svg_and_send_file, send_message_and_file
+from bot.utils import send_message_and_file
 load_dotenv()
 
 import discord
@@ -111,17 +111,7 @@ async def _handle_command(
     if "channel" not in response:
         response["channel"] = ctx.channel
 
-    if "svg_to_png" not in response:
-        response["svg_to_png"] = False
-
-    # don't embed non svgs
-    if not response["svg_to_png"]:
-        response["file_in_embed"] = False
-
-    if response["svg_to_png"]:
-        await convert_svg_and_send_file(response)
-    else:
-        await send_message_and_file(**response)
+    await send_message_and_file(**response)
 
     if "file" in response:
         response["file"] = f"{response['file'][:15]}..."

@@ -151,11 +151,17 @@ async def send_message_and_file(
         embed_colour: str = "#fc71c4",
         file: str = None,
         file_name: str = None,
-        file_in_embed: bool = True,
+        file_in_embed: bool = None,
         time: datetime.datetime = None,
         fields: List[Tuple[str, str]] = None,
+        convert_svg: bool = False,
         **_
 ):
+
+    if convert_svg:
+        file, file_name = await svg_to_png(file, file_name)
+
+
     if messages:
         embeds = [Embed(
                 title=title,
@@ -230,7 +236,9 @@ async def send_message_and_file(
     elif file is not None:
         with io.BytesIO(file) as vfile:
             discord_file = discord.File(fp=vfile, filename=f"{file_name}")
-            if file_in_embed:
+            if file_in_embed or (file_in_embed is None and any(map(lambda x: file_name.lower().endswith(x), (
+                            ".png", ".jpg", ".jpeg"#, ".gif", ".gifv", ".webm", ".mp4", "wav", ".mp3", ".ogg"
+            )))):
                 embeds[-1].set_image(url=f"attachment://{discord_file.filename.replace(' ', '_')}")
 
 
@@ -350,10 +358,3 @@ def get_filtered_orders(board: Board, player_restriction: Player) -> str:
                         response += f"{unit} {unit.order}\n"
 
         return response
-    
-svg_export_limit = asyncio.Semaphore(int(os.getenv("simultaneous_svg_exports_limit")))
-
-async def convert_svg_and_send_file(response: dict[str, ...]):
-    async with svg_export_limit:
-        response["file"], response["file_name"] = await svg_to_png(response["file"], response["file_name"])
-        await send_message_and_file(**response)

@@ -15,7 +15,7 @@ import bot.perms as perms
 from bot.config import is_bumble, temporary_bumbles, ERROR_COLOUR
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
-from bot.utils import (convert_svg_and_send_file, get_filtered_orders, get_orders,
+from bot.utils import (get_filtered_orders, get_orders,
                        get_orders_log, get_player_by_channel, is_admin, send_message_and_file,
                        get_role_by_player)
 from diplomacy.adjudicator.utils import svg_to_png
@@ -282,7 +282,7 @@ async def publish_orders(ctx: commands.Context, manager: Manager) -> dict[str, .
 
 @perms.player("view map")
 async def view_map(player: Player | None, ctx: commands.Context, manager: Manager) -> dict[str, ...]:
-    return_svg = player or ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() != "true"
+    return_svg = not player and ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() != "true"
     board = manager.get_board(ctx.guild.id)
 
     try:
@@ -298,7 +298,7 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
         "message": "Map created successfully",
         "file": file,
         "file_name": file_name,
-        "svg_to_png": return_svg,
+        "convert_svg": return_svg,
         "file_in_embed": False,
     }
 
@@ -328,7 +328,7 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
         "message": "Adjudication has completed successfully",
         "file": file,
         "file_name": file_name,
-        "svg_to_png": return_svg,
+        "convert_svg": return_svg,
         "file_in_embed": False,
     }
 
@@ -546,7 +546,7 @@ async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_ca
 
     await asyncio.gather(*tasks)
 
-# save at least one svg slot for others
+# if possible save one svg slot for others
 fow_export_limit = asyncio.Semaphore(max(int(os.getenv("simultaneous_svg_exports_limit")) - 1, 1))
 
 async def map_publish_task(map_maker, channel, message):

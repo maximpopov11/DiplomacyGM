@@ -139,7 +139,7 @@ class Manager:
 
         message = f"Rolled back to {old_board.get_phase_and_year_string()}"
         file, file_name = mapper.draw_current_map()
-        return {"message": message, "file": file, "file_name": file_name, "svg_to_png": False}
+        return {"message": message, "file": file, "file_name": file_name}
 
     def get_previous_board(self, server_id: int) -> Board | None:
         board = self._boards[server_id]
@@ -164,4 +164,4 @@ class Manager:
 
         message = f"Reloaded board for phase {loaded_board.get_phase_and_year_string()}"
         file, file_name = mapper.draw_current_map()
-        return {"message": message, "file": file, "file_name": file_name, "svg_to_png": False}
+        return {"message": message, "file": file, "file_name": file_name}

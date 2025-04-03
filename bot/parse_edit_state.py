@@ -38,7 +38,7 @@ def parse_edit_state(message: str, board: Board) -> dict[str, ...]:
 
     file, file_name = Mapper(board).draw_current_map()
 
-    return {"message": response, "file": file, "file_name": file_name, "svg_to_png": False}
+    return {"message": response, "file": file, "file_name": file_name}
 
 
 def _parse_command(command: str, board: Board) -> None:
