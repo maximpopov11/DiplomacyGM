@@ -2,8 +2,6 @@ import logging
 import os
 import re
 import datetime
-import time
-from typing import Callable, Awaitable
 import random
 from dotenv.main import load_dotenv
 
@@ -115,58 +113,46 @@ async def on_command_error(ctx, error):
             raise error
 
 
-async def _handle_command(
-    function: Callable[[commands.Context, Manager], Awaitable[dict[str, ...]]],
-    ctx: commands.Context,
-) -> None:
-
-    response = await function(ctx, manager)
-
-    if response:
-        raise Exception("function returned something yikes")
-
-
-
 @bot.command(help="Checks bot listens and responds.")
 async def ping(ctx: commands.Context) -> None:
-    await _handle_command(command.ping, ctx)
+    await command.ping(ctx, manager)
 
 
 # @bot.command(hidden=True)
 async def bumble(ctx: commands.Context) -> None:
-    await _handle_command(command.bumble, ctx)
+    await command.bumble(ctx, manager)
 
 
 # @bot.command(hidden=True)
 async def fish(ctx: commands.Context) -> None:
     await ctx.message.add_reaction("🐟")
-    await _handle_command(command.fish, ctx)
+    await command.fish(ctx, manager)
 
 
 # @bot.command(hidden=True)
 async def phish(ctx: commands.Context) -> None:
     await ctx.message.add_reaction("🐟")
-    await _handle_command(command.phish, ctx)
+    await command.phish(ctx, manager)
 
 
 # @bot.command(hidden=True)
 async def cheat(ctx: commands.Context) -> None:
-    await _handle_command(command.cheat, ctx)
+    await command.cheat(ctx, manager)
 
 
 # @bot.command(hidden=True)
 async def advice(ctx: commands.Context) -> None:
-    await _handle_command(command.advice, ctx)
+    await command.advice(ctx, manager)
 
 
 @bot.command(hidden=True)
 async def botsay(ctx: commands.Context) -> None:
-    await _handle_command(command.botsay, ctx)
+    await command.botsay(ctx, manager)
 
 
 @bot.command(hidden=True)
 async def announce(ctx: commands.Context) -> None:
-    await _handle_command(command.announce, ctx)
+    await command.announce(ctx, manager)
 
 
 @bot.command(
@@ -182,7 +168,7 @@ async def announce(ctx: commands.Context) -> None:
 
 )
 async def order(ctx: commands.Context) -> None:
-    await _handle_command(command.order, ctx)
+    await command.order(ctx, manager)
 
 
 @bot.command(
@@ -192,7 +178,7 @@ async def order(ctx: commands.Context) -> None:
     aliases=["remove", "rm", "removeorders"]
 )
 async def remove_order(ctx: commands.Context) -> None:
-    await _handle_command(command.remove_order, ctx)
+    await command.remove_order(ctx, manager)
 
 
 @bot.command(
@@ -202,14 +188,14 @@ async def remove_order(ctx: commands.Context) -> None:
     aliases=["v", "view", "vieworders", "view-orders"],
 )
 async def view_orders(ctx: commands.Context) -> None:
-    await _handle_command(command.view_orders, ctx)
+    await command.view_orders(ctx, manager)
 
 @bot.command(
     brief="Sends order all orders ",
     description="For GM: Sends orders from previous phase to #orders-log",
 )
 async def publish_orders(ctx: commands.Context) -> None:
-    await _handle_command(command.publish_orders, ctx)
+    await command.publish_orders(ctx, manager)
 
 @bot.command(
     brief="Outputs the current map with submitted orders.",
@@ -221,7 +207,7 @@ async def publish_orders(ctx: commands.Context) -> None:
     aliases=["viewmap", "vm"],
 )
 async def view_map(ctx: commands.Context) -> None:
-    await _handle_command(command.view_map, ctx)
+    await command.view_map(ctx, manager)
 
 
 @bot.command(brief="Adjudicates the game and outputs the moves and results maps.",
@@ -231,22 +217,22 @@ async def view_map(ctx: commands.Context) -> None:
     """
 )
 async def adjudicate(ctx: commands.Context) -> None:
-    await _handle_command(command.adjudicate, ctx)
+    await command.adjudicate(ctx, manager)
 
 
 @bot.command(brief="Rolls back to the previous game state.")
 async def rollback(ctx: commands.Context) -> None:
-    await _handle_command(command.rollback, ctx)
+    await command.rollback(ctx, manager)
 
 
 @bot.command(brief="Reloads the current board with what is in the DB")
 async def reload(ctx: commands.Context) -> None:
-    await _handle_command(command.reload, ctx)
+    await command.reload(ctx, manager)
 
 
 @bot.command(brief="Outputs the scoreboard.", description="Outputs the scoreboard.")
 async def scoreboard(ctx: commands.Context) -> None:
-    await _handle_command(command.get_scoreboard, ctx)
+    await command.get_scoreboard(ctx, manager)
 
 
 @bot.command(
@@ -268,12 +254,12 @@ async def scoreboard(ctx: commands.Context) -> None:
     * make_units_claim_provinces {True|(False) - whether or not to claim SCs}""",
 )
 async def edit(ctx: commands.Context) -> None:
-    await _handle_command(command.edit, ctx)
+    await command.edit(ctx, manager)
 
 
 @bot.command(brief="Clears all players orders.")
 async def remove_all(ctx: commands.Context) -> None:
-    await _handle_command(command.remove_all, ctx)
+    await command.remove_all(ctx, manager)
 
 
 @bot.command(
@@ -283,7 +269,7 @@ async def remove_all(ctx: commands.Context) -> None:
     aliases=["lock"]
 )
 async def lock_orders(ctx: commands.Context) -> None:
-    await _handle_command(command.disable_orders, ctx)
+    await command.disable_orders(ctx, manager)
 
 
 @bot.command(
@@ -291,7 +277,7 @@ async def lock_orders(ctx: commands.Context) -> None:
     aliases=["unlock"]
 )
 async def unlock_orders(ctx: commands.Context) -> None:
-    await _handle_command(command.enable_orders, ctx)
+    await command.enable_orders(ctx, manager)
 
 
 @bot.command(
@@ -299,7 +285,7 @@ async def unlock_orders(ctx: commands.Context) -> None:
     aliases=["i"]
 )
 async def info(ctx: commands.Context) -> None:
-    await _handle_command(command.info, ctx)
+    await command.info(ctx, manager)
 
 
 @bot.command(
@@ -307,16 +293,16 @@ async def info(ctx: commands.Context) -> None:
     aliases=["province"],
 )
 async def province_info(ctx: commands.Context) -> None:
-    await _handle_command(command.province_info, ctx)
+    await command.province_info(ctx, manager)
 
 @bot.command(brief="outputs the provinces you can see")
 async def visible_info(ctx: commands.Context) -> None:
-    await _handle_command(command.visible_provinces, ctx)
+    await command.visible_provinces(ctx, manager)
 
 
 @bot.command(brief="outputs all provinces per owner")
 async def all_province_data(ctx: commands.Context) -> None:
-    await _handle_command(command.all_province_data, ctx)
+    await command.all_province_data(ctx, manager)
 
 
 @bot.command(
@@ -324,7 +310,7 @@ async def all_province_data(ctx: commands.Context) -> None:
     description="Create a game of Imp Dip and output the map. (there are no other variant options at this time)",
 )
 async def create_game(ctx: commands.Context) -> None:
-    await _handle_command(command.create_game, ctx)
+    await command.create_game(ctx, manager)
 
 
 @bot.command(
@@ -333,7 +319,7 @@ async def create_game(ctx: commands.Context) -> None:
     * .archive [link to any channel in category]""",
 )
 async def archive(ctx: commands.Context) -> None:
-    await _handle_command(command.archive, ctx)
+    await command.archive(ctx, manager)
 
 @bot.command(
     brief="pings players who don't have the expected number of orders.",
@@ -344,11 +330,11 @@ async def archive(ctx: commands.Context) -> None:
     * .ping_players <timestamp>
     """)
 async def ping_players(ctx: commands.Context) -> None:
-    await _handle_command(command.ping_players, ctx)
+    await command.ping_players(ctx, manager)
 
 @bot.command(brief="permanently deletes a game, cannot be undone")
 async def delete_game(ctx: commands.Context) -> None:
-    await _handle_command(command.delete_game, ctx)
+    await command.delete_game(ctx, manager)
 
 
 def run():

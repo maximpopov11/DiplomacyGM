@@ -198,12 +198,20 @@ async def advice(ctx: commands.Context, _: Manager) -> None:
 async def botsay(ctx: commands.Context, _: Manager) -> None:
     # noinspection PyTypeChecker
     if len(ctx.message.channel_mentions) == 0:
-        await send_message_and_file(channel=ctx.channel, message="No Channel Given")
+        await send_message_and_file(channel=ctx.channel,
+                                    title="Error",
+                                    message="No Channel Given",
+                                    embed_colour=ERROR_COLOUR)
+        return
     channel = ctx.message.channel_mentions[0]
     content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
     content = content.replace(channel.mention, "").strip()
     if len(content) == 0:
-        await send_message_and_file(channel=ctx.channel, message="No Message Given")
+        await send_message_and_file(channel=ctx.channel,
+                                    title="Error",
+                                    message="No Message Given",
+                                    embed_colour=ERROR_COLOUR)
+        return
     await ctx.message.add_reaction("👍")
     log_command(logger, ctx, f"Sent Message into #{channel.name}")
     await send_message_and_file(channel=ctx.channel, title=content)
@@ -255,6 +263,7 @@ async def remove_order(player: Player | None, ctx: commands.Context, manager: Ma
                                     title="Orders locked!",
                                     message="If you think this is an error, contact a GM.",
                                     embed_colour=ERROR_COLOUR)
+        return
 
     content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
 
@@ -273,11 +282,11 @@ async def view_orders(player: Player | None, ctx: commands.Context, manager: Man
         await send_message_and_file(channel=ctx.channel,
                                     title="Unknown Error: Please contact you're local bot dev",
                                     embed_colour=ERROR_COLOUR)
-    else:
-        log_command(logger, ctx, message=f"Success - generated orders for {board.phase.name} {str(1642 + board.year)}")
-        await send_message_and_file(channel=ctx.channel,
-                                    title=f"{board.phase.name} {str(1642 + board.year)}",
-                                    message=order_text)
+        return
+    log_command(logger, ctx, message=f"Success - generated orders for {board.phase.name} {str(1642 + board.year)}")
+    await send_message_and_file(channel=ctx.channel,
+                                title=f"{board.phase.name} {str(1642 + board.year)}",
+                                message=order_text)
 
 @perms.gm("publish orders")
 async def publish_orders(ctx: commands.Context, manager: Manager) -> None:
@@ -286,6 +295,7 @@ async def publish_orders(ctx: commands.Context, manager: Manager) -> None:
         await send_message_and_file(channel=ctx.channel,
                                     title="Failed to get previous phase",
                                     embed_colour=ERROR_COLOUR)
+        return
 
     try:
         order_text = get_orders(board, None, ctx, fields=True)
@@ -294,22 +304,23 @@ async def publish_orders(ctx: commands.Context, manager: Manager) -> None:
         await send_message_and_file(channel=ctx.channel,
                                     title="Unknown Error: Please contact you're local bot dev",
                                     embed_colour=ERROR_COLOUR)
+        return
+    orders_log_channel = get_orders_log(ctx.guild)
+    if not orders_log_channel:
+        log_command(logger, ctx, message=f"Could not find orders log channel", level=logging.WARN)
+        await send_message_and_file(channel=ctx.channel,
+                                    title="Could not find orders log channel",
+                                    embed_colour=ERROR_COLOUR)
+        return
     else:
-        orders_log_channel = get_orders_log(ctx.guild)
-        if not orders_log_channel:
-            log_command(logger, ctx, message=f"Could not find orders log channel", level=logging.WARN)
-            await send_message_and_file(channel=ctx.channel,
-                                        title="Could not find orders log channel",
-                                        embed_colour=ERROR_COLOUR)
-        else:
-            await send_message_and_file(
-                channel=orders_log_channel,
-                title=f"{board.phase.name} {str(1642 + board.year)}",
-                fields=order_text,
-            )
-            log_command(logger, ctx, message=f"Successfully published orders")
-            await send_message_and_file(channel=ctx.channel,
-                                        title=f"Sent Orders to {orders_log_channel.mention}")
+        await send_message_and_file(
+            channel=orders_log_channel,
+            title=f"{board.phase.name} {str(1642 + board.year)}",
+            fields=order_text,
+        )
+        log_command(logger, ctx, message=f"Successfully published orders")
+        await send_message_and_file(channel=ctx.channel,
+                                    title=f"Sent Orders to {orders_log_channel.mention}")
 
 @perms.player("view map")
 async def view_map(player: Player | None, ctx: commands.Context, manager: Manager) -> None:
@@ -326,14 +337,14 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
         await send_message_and_file(channel=ctx.channel,
                                     title="Unknown Error: Please contact you're local bot dev",
                                     embed_colour=ERROR_COLOUR)
-    else:
-        log_command(logger, ctx, message=f"Generated map for {board.phase.name} {str(1642 + board.year)}")
-        await send_message_and_file(channel=ctx.channel,
-                                    title=f"{board.phase.name} {str(1642 + board.year)}",
-                                    file=file,
-                                    file_name=file_name,
-                                    convert_svg=return_svg,
-                                    file_in_embed=False)
+        return
+    log_command(logger, ctx, message=f"Generated map for {board.phase.name} {str(1642 + board.year)}")
+    await send_message_and_file(channel=ctx.channel,
+                                title=f"{board.phase.name} {str(1642 + board.year)}",
+                                file=file,
+                                file_name=file_name,
+                                convert_svg=return_svg,
+                                file_in_embed=False)
 
 @perms.gm("adjudicate")
 async def adjudicate(ctx: commands.Context, manager: Manager) -> None:
@@ -471,15 +482,15 @@ async def info(ctx: commands.Context, manager: Manager) -> None:
         log_command(logger, ctx, message="No game this this server.")
         await send_message_and_file(channel=ctx.channel,
                                     title="There is no game this this server.")
-    else:
-        log_command(logger, ctx, message=f"Displayed info - {str(1642 + board.year)}|"
-                                         f"{str(board.phase)}|{str(board.datafile)}|"
-                                         f"{'Open' if board.orders_enabled else 'Locked'}" )
-        await send_message_and_file(channel=ctx.channel,
-                                    message=(f"Year: {str(1642 + board.year)}\n"
-                                           f"Phase: {str(board.phase)}\n"
-                                           f"Orders are: {'Open' if board.orders_enabled else 'Locked'}\n"
-                                           f"Game Type: {str(board.datafile)}"))
+        return
+    log_command(logger, ctx, message=f"Displayed info - {str(1642 + board.year)}|"
+                                     f"{str(board.phase)}|{str(board.datafile)}|"
+                                     f"{'Open' if board.orders_enabled else 'Locked'}" )
+    await send_message_and_file(channel=ctx.channel,
+                                message=(f"Year: {str(1642 + board.year)}\n"
+                                       f"Phase: {str(board.phase)}\n"
+                                       f"Orders are: {'Open' if board.orders_enabled else 'Locked'}\n"
+                                       f"Game Type: {str(board.datafile)}"))
 
 
 async def province_info(ctx: commands.Context, manager: Manager) -> None:
@@ -488,6 +499,7 @@ async def province_info(ctx: commands.Context, manager: Manager) -> None:
     if not board.orders_enabled:
         perms.gm_context_check(ctx, "Orders locked! If you think this is an error, contact a GM.", 
             "You cannot use .province_info in a non-GM channel while orders are locked.")
+        return
  
     province_name = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
     if not province_name:
@@ -495,11 +507,13 @@ async def province_info(ctx: commands.Context, manager: Manager) -> None:
         await send_message_and_file(channel=ctx.channel,
                                     title="No province given",
                                     message="Usage: .province_info <province>")
+        return
     province, coast = board.get_province_and_coast(province_name)
     if province is None:
         log_command(logger, ctx, message=f"Province `{province_name}` not found")
         await send_message_and_file(channel=ctx.channel,
                                     title=f"Could not find province {province_name}")
+        return
 
     # FOW permissions
     if board.fow:
@@ -508,6 +522,7 @@ async def province_info(ctx: commands.Context, manager: Manager) -> None:
             log_command(logger, ctx, message=f"Province `{province_name}` hidden by fow to player")
             await send_message_and_file(channel=ctx.channel,
                                         title=f"Province {province.name} is not visible to you")
+            return
     
     # fmt: off
     if not coast:
@@ -550,11 +565,13 @@ async def visible_provinces(player: Player | None, ctx: commands.Context, manage
         await send_message_and_file(channel=ctx.channel,
                                     message="This command only works for players in fog of war games.",
                                     embed_colour=ERROR_COLOUR)
+        return
 
     visible_provinces = board.get_visible_provinces(player)
     log_command(logger, ctx, message=f"There are {len(visible_provinces)} visible provinces")
     await send_message_and_file(channel=ctx.channel,
                                 message=", ".join([x.name for x in visible_provinces]))
+    return
 
 
 async def all_province_data(ctx: commands.Context, manager: Manager) -> None:
@@ -696,6 +713,7 @@ async def ping_players(ctx: commands.Context, manager: Manager) -> None:
         await send_message_and_file(channel=ctx.channel,
                                     message="No player category found",
                                     embed_colour=ERROR_COLOUR)
+        return
 
     name_to_player: dict[str, Player] = dict()
     player_to_role: dict[Player | None, Role] = dict()
@@ -717,6 +735,7 @@ async def ping_players(ctx: commands.Context, manager: Manager) -> None:
         await send_message_and_file(channel=ctx.channel,
                                     message="No player role found",
                                     embed_colour=ERROR_COLOUR)
+        return
 
     response = None
     pinged_players = 0
@@ -729,7 +748,7 @@ async def ping_players(ctx: commands.Context, manager: Manager) -> None:
 
         role = player_to_role.get(player)
         if not role:
-            logger.warning(f"Missing player role for player {player.name} in guild {guild_id}")
+            log_command(f"Missing player role for player {player.name} in guild {guild_id}", level=logging.WARN)
             continue
 
         # Find users which have a player role to not ping spectators
@@ -810,6 +829,7 @@ async def archive(ctx: commands.Context, _: Manager) -> None:
         await send_message_and_file(channel=ctx.channel,
                                     message="This channel is not part of a category.",
                                     embed_colour=ERROR_COLOUR)
+        return
 
     for category in categories:
         for channel in category.channels:
