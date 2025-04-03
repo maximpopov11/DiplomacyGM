@@ -492,7 +492,14 @@ async def all_province_data(ctx: commands.Context, manager: Manager) -> dict[str
 
     message = ""
     for owner, provinces in province_by_owner.items():
-        message += f"{owner}: "
+        if owner is None:
+            player_name = "None"
+        elif (player_role := get_role_by_player(owner, ctx.guild.roles)) is not None:
+            player_name = player_role.mention
+        else:
+            player_name = owner
+
+        message += f"{player_name}: "
         for province in provinces:
             message += f"{province}, "
         message += "\n\n"
