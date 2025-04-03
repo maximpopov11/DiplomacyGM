@@ -110,7 +110,7 @@ class _DatabaseConnection:
                 logger.warning(f"Couldn't find player {player.name} in DB")
                 continue
             color = player_info_by_name[player.name]
-            player.color = color
+            player.render_color = color
             player.units = set()
             player.centers = set()
             # TODO - player build orders
@@ -235,12 +235,12 @@ class _DatabaseConnection:
         # TODO: Check if board already exists
         cursor = self._connection.cursor()
         cursor.execute(
-            "INSERT INTO boards (board_id, phase, data_file, fish) VALUES (?, ?, ?, ?);",
+            "INSERT INTO boards (board_id, phase, data_file, fish) VALUES (?, ?, ?, ?)",
             (board_id, board.get_phase_and_year_string(), board.datafile, board.fish),
         )
         cursor.executemany(
-            "INSERT INTO players (board_id, player_name, color) VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
-            [(board_id, player.name, player.color) for player in board.players],
+            "INSERT INTO players (board_id, player_name, color) VALUES (?, ?, ?)",
+            [(board_id, player.name, player.render_color) for player in board.players],
         )
 
         # cache = []
@@ -423,6 +423,7 @@ class _DatabaseConnection:
         cursor.execute("DELETE FROM units WHERE board_id=?", (board.board_id,))
         cursor.execute("DELETE FROM builds WHERE board_id=?", (board.board_id,))
         cursor.execute("DELETE FROM retreat_options WHERE board_id=?", (board.board_id,))
+        cursor.execute("DELETE FROM players WHERE board_id=?", (board.board_id,))
         cursor.close()
         self._connection.commit()
 

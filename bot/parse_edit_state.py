@@ -1,3 +1,4 @@
+import string
 from bot.utils import get_unit_type, get_keywords
 from diplomacy.adjudicator.mapper import Mapper
 from diplomacy.persistence import phase
@@ -9,6 +10,7 @@ _set_phase_str = "set phase"
 _set_core_str = "set core"
 _set_half_core_str = "set half core"
 _set_province_owner_str = "set province owner"
+_set_player_color_str = "set player color"
 _create_unit_str = "create unit"
 _create_dislodged_unit_str = "create dislodged unit"
 _delete_unit_str = "delete unit"
@@ -57,6 +59,8 @@ def _parse_command(command: str, board: Board) -> None:
         _set_province_half_core(keywords, board)
     elif command_type == _set_province_owner_str:
         _set_province_owner(keywords, board)
+    elif command_type == _set_player_color_str:
+        _set_player_color(keywords, board)
     elif command_type == _create_unit_str:
         _create_unit(keywords, board)
     elif command_type == _create_dislodged_unit_str:
@@ -112,6 +116,19 @@ def _set_province_half_core(keywords: list[str], board: Board) -> None:
     get_connection().execute_arbitrary_sql(
         "UPDATE provinces SET half_core=? WHERE board_id=? and phase=? and province_name=?",
         (player.name if player is not None else None, board.board_id, board.get_phase_and_year_string(), province.name),
+    )
+
+
+def _set_player_color(keywords: list[str], board: Board) -> None:
+    player = board.get_player(keywords[0])
+    color = keywords[1].lower()
+    if not len(color) == 6 or not all(c in string.hexdigits for c in color):
+        raise ValueError(f"Unknown hexadecimal color: {color}")
+
+    player.render_color = color
+    get_connection().execute_arbitrary_sql(
+        "UPDATE players SET color=? WHERE board_id=? and player_name=?",
+        (color, board.board_id, player.name),
     )
 
 

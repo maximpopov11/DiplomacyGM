@@ -264,6 +264,7 @@ async def scoreboard(ctx: commands.Context) -> None:
     * set_core <province_name> <player_name>
     * set_half_core <province_name> <player_name>
     * set_province_owner <province_name> <player_name>
+    * set_player_color <player_name> <hex_code>
     * create_unit {A, F} <player_name> <province_name>
     * create_dislodged_unit {A, F} <player_name> <province_name> <retreat_option1> <retreat_option2>...
     * delete_unit <province_name>
