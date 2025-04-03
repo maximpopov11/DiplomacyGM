@@ -239,8 +239,10 @@ class _DatabaseConnection:
             (board_id, board.get_phase_and_year_string(), board.datafile, board.fish),
         )
         cursor.executemany(
-            "INSERT INTO players (board_id, player_name, color) VALUES (?, ?, ?)",
-            [(board_id, player.name, player.render_color) for player in board.players],
+            "INSERT INTO players (board_id, player_name, color) VALUES (?, ?, ?) "
+            "ON CONFLICT DO "
+            "UPDATE SET color = ?",
+            [(board_id, player.name, player.render_color, player.render_color) for player in board.players],
         )
 
         # cache = []

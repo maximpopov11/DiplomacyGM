@@ -375,7 +375,8 @@ async def get_scoreboard(ctx: commands.Context, manager: Manager) -> dict[str, .
 
 @perms.gm("edit")
 async def edit(ctx: commands.Context, manager: Manager) -> dict[str, ...]:
-    return parse_edit_state(ctx.message.content, manager.get_board(ctx.guild.id))
+    commands = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
+    return parse_edit_state(commands, manager.get_board(ctx.guild.id))
 
 
 @perms.gm("create a game")
