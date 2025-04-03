@@ -265,7 +265,7 @@ async def publish_orders(ctx: commands.Context, manager: Manager) -> dict[str, .
         return {"message": "Failed to get previous phase", "embed_colour": ERROR_COLOUR}
 
     try:
-        order_text = get_orders(board, None, ctx)
+        order_text = get_orders(board, None, ctx, fields=True)
     except RuntimeError as err:
         logger.error(f"View_orders text failed in game with id: {ctx.guild.id}", exc_info=err)
         return {"message": "view_orders text failed", "embed_colour": ERROR_COLOUR}
@@ -276,7 +276,7 @@ async def publish_orders(ctx: commands.Context, manager: Manager) -> dict[str, .
     await send_message_and_file(
         channel=orders_log,
         title=f"{board.phase.name} {str(1642 + board.year)}",
-        message=order_text
+        fields=order_text,
     )
     return {"title": f"Sent Orders to {orders_log.mention}"}
 
