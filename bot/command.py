@@ -311,7 +311,6 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
     log_command(logger, ctx, message=f"Generated map for {board.phase.name} {str(1642 + board.year)}")
     return {
         "title": f"{board.phase.name} {str(1642 + board.year)}",
-        "message": "Map created successfully",
         "file": file,
         "file_name": file_name,
         "convert_svg": return_svg,
