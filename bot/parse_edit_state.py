@@ -1,6 +1,6 @@
 import string
 
-from bot.config import ERROR_COLOUR
+from bot.config import ERROR_COLOUR, PARTIAL_ERROR_COLOUR
 from bot.utils import get_unit_type, get_keywords
 from diplomacy.adjudicator.mapper import Mapper
 from diplomacy.persistence import phase
@@ -36,13 +36,20 @@ def parse_edit_state(message: str, board: Board) -> dict[str, ...]:
         response_title = "Error"
         response_body = "The following commands were invalid:"
         for command in invalid:
-            response_body += f"\n{command[0]} with error: {command[1]}"
-        embed_colour = ERROR_COLOUR
+            response_body += f"\n`{command[0]}` with error: {command[1]}"
+
+        if len(invalid) == len(commands):
+            embed_colour = ERROR_COLOUR
+        else:
+            embed_colour = PARTIAL_ERROR_COLOUR
     else:
         response_title = "Commands validated successfully. Results map updated."
         response_body = ""
 
-    file, file_name = Mapper(board).draw_current_map()
+    if len(invalid) < len(commands):
+        file, file_name = Mapper(board).draw_current_map()
+    else:
+        file, file_name = None, None
 
     return {
         "title": response_title,
