@@ -43,6 +43,8 @@ class Board:
         # FIXME: This should not be raising exceptions many places already assume it returns None on failure.
         # TODO: (BETA) we build this everywhere, let's just have one live on the Board on init
         # we ignore capitalization because this is primarily used for user input
+        # People input apostrophes that don't match what the province names are
+        name = re.sub(r"[‘’`´′‛]", "'", name)
         name = name.lower()
         name_to_province: dict[str, Province] = {}
         name_to_coast: dict[str, Coast] = {}
@@ -103,6 +105,8 @@ class Board:
         return matches
 
     def get_location(self, name: str) -> Location:
+        # People input apostrophes that don't match what the province names are
+        name = re.sub(r"[‘’`´′‛]", "'", name)
         province, coast = self.get_province_and_coast(name)
 
         if coast:
