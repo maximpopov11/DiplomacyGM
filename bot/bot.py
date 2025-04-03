@@ -63,7 +63,8 @@ async def on_ready():
 @bot.before_invoke
 async def before_any_command(ctx):
     logger.debug(f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}'")
-
+    # People input apostrophes that don't match what the province names are, we can catch all of that here
+    ctx.message.content = re.sub(r"[‘’`´′‛]", "'", ctx.message.content)
     # mark the message as seen
     await ctx.message.add_reaction("👍")
 
@@ -102,9 +103,6 @@ async def _handle_command(
     ctx: commands.Context,
 ) -> None:
     start = time.time()
-
-    # People input apostrophes that don't match what the province names are, we can catch all of that here
-    ctx.message.content = re.sub(r"[‘’`´′‛]", "'", ctx.message.content)
 
     response = await function(ctx, manager)
 
