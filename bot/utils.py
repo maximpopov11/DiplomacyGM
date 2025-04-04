@@ -218,51 +218,58 @@ async def send_message_and_file(
         convert_svg: bool = False,
         **_
 ) -> Message:
+
     if not embed_colour:
         embed_colour = "#fc71c4"
+
     if convert_svg and file and file_name:
         file, file_name = await svg_to_png(file, file_name)
 
+    if fields:
+        for i, field in enumerate(fields):
+            if len(field[0]) > 256 or len(field[1]) > 1024:
+                title, body = fields.pop(i)
+                if not message:
+                    message = ""
+                message += (f"\n" 
+                            f"### {title}\n" if title.strip() else f"{title}\n" 
+                            f"{body}")
 
+    if message and messages:
+        messages = [message] + messages
+    elif message:
+        messages = [message]
+
+    embeds = []
     if messages:
-        embeds = [Embed(
-                title=title,
-                description=message,
-                colour=Colour.from_str(embed_colour),
-            ) for message in messages[:-1]]
-        # ensure only first embed has title
-        if len(messages) >= 2:
-            title = None
-        message = messages[-1]
-    else:
-        embeds = []
-    if message:
-        while 0 < len(message):
-            cutoff = discord_embed_description_limit
-            # Try to find an even line break to split the long messages on
-            if len(message) > discord_embed_description_limit:
-                cutoff = message.rfind("\n", 0, discord_embed_description_limit)
-                # otherwise split at limit
-                if cutoff == -1:
-                    cutoff = message.rfind(" ", 0, discord_embed_description_limit)
+        while messages:
+            message = messages.pop()
+            while message:
+                cutoff = discord_embed_description_limit
+                # Try to find an even line break to split the long messages on
+                if len(message) > discord_embed_description_limit:
+                    cutoff = message.rfind("\n", 0, discord_embed_description_limit)
+                    # otherwise split at limit
                     if cutoff == -1:
-                        cutoff = discord_embed_description_limit
-            embed = Embed(
-                title=title,
-                description=message[:cutoff],
-                colour=Colour.from_str(embed_colour),
-            )
-            # ensure only first embed has title
-            title = None
+                        cutoff = message.rfind(" ", 0, discord_embed_description_limit)
+                        if cutoff == -1:
+                            cutoff = discord_embed_description_limit
+                embed = Embed(
+                    title=title,
+                    description=message[:cutoff],
+                    colour=Colour.from_str(embed_colour),
+                )
+                # ensure only first embed has title
+                title = None
 
-            # check that embed totals arent over the total message embed character limit.
-            if sum(map(len, embeds)) + len(embed) > discord_embed_total_limit:
-                await channel.send(embeds=embeds)
-                embeds = []
+                # check that embed totals aren't over the total message embed character limit.
+                if sum(map(len, embeds)) + len(embed) > discord_embed_total_limit or len(embeds) == 10:
+                    await channel.send(embeds=embeds)
+                    embeds = []
 
-            embeds.append(embed)
+                embeds.append(embed)
 
-            message = message[cutoff:].strip()
+                message = message[cutoff:].strip()
 
     if not embeds:
         embeds = [Embed(
@@ -273,13 +280,16 @@ async def send_message_and_file(
 
     if fields:
         for field in fields:
-            if len(embeds[-1].fields) == 25 or sum(map(len, embeds)) + len(field) > discord_embed_total_limit:
+            if (len(embeds[-1].fields) == 25
+                    or sum(map(len, embeds)) + sum(map(len, field)) > discord_embed_total_limit
+                    or len(embeds) == 10):
                 await channel.send(embeds=embeds)
                 embeds = [Embed(
                     title=title,
                     colour=Colour.from_str(embed_colour)
                 )]
                 title = ""
+
             embeds[-1].add_field(name=field[0], value=field[1], inline=True)
 
 
@@ -361,7 +371,7 @@ def get_orders(board: Board, player_restriction: Player | None, ctx: Context, fi
                     body += f"\n{unit}"
 
                 if fields:
-                    response.append(("", f"{title}{body}"))
+                    response.append((f"", f"{title}{body}"))
                 else:
                     response += f"\n{title}{body}"
         return response
@@ -398,7 +408,7 @@ def get_orders(board: Board, player_restriction: Player | None, ctx: Context, fi
                     body += f"{unit} {unit.order}\n"
 
             if fields:
-                response.append(("", f"{title}\n{body}"))
+                response.append((f"", f"{title}\n{body}"))
             else:
                 response += f"{title}\n{body}"
 
