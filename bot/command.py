@@ -250,9 +250,13 @@ async def announce(ctx: commands.Context, manager: Manager) -> None:
                     break
             else:
                 server_roles.append(role_name)
-        await admin_chat_channel.send(f"__Announcement__\n{ctx.message.author.display_name} says:\n{content.format(*server_roles)}")
+
+        await admin_chat_channel.send(("||" + "{}" * len(server_roles) + "||").format(*server_roles))
+        await send_message_and_file(channel=admin_chat_channel,
+                                    title="Admin Announcement",
+                                    message=content.format(*server_roles))
     log_command(logger, ctx, f"Sent Announcement into {len(ctx.bot.guilds)} servers")
-    await send_message_and_file(channel=ctx.channel, title=f"Annoucement sent to {len(ctx.bot.guilds)} servers:",message=message)
+    await send_message_and_file(channel=ctx.channel, title=f"Announcement sent to {len(ctx.bot.guilds)} servers:",message=message)
 
 @perms.admin("list servers")
 async def servers(ctx: commands.Context, manager: Manager) -> None:
