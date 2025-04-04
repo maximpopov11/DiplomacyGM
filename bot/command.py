@@ -224,7 +224,9 @@ async def botsay(ctx: commands.Context, _: Manager) -> None:
 @perms.admin("send a GM announcement")
 async def announce(ctx: commands.Context, manager: Manager) -> None:
     guilds_with_games = {ctx.bot.get_guild(server_id).id for server_id in manager.list_servers()}
-    content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
+    content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+    content = re.sub(r'<@&[0-9]{16,20}>', r'{}', content)
+    roles = list(map(lambda role: role.name,ctx.message.role_mentions))
     message = ""
     for server in ctx.bot.guilds:
         if server is None:
@@ -240,7 +242,15 @@ async def announce(ctx: commands.Context, manager: Manager) -> None:
         else:
             message += f" - no active game"
 
-        await admin_chat_channel.send(f"__Announcement__\n{ctx.message.author.display_name} says:\n{content}")
+        server_roles = []
+        for role_name in roles:
+            for role in server.roles:
+                if role.name == role_name:
+                    server_roles.append(role.mention)
+                    break
+            else:
+                server_roles.append(role_name)
+        await admin_chat_channel.send(f"__Announcement__\n{ctx.message.author.display_name} says:\n{content.format(*server_roles)}")
     log_command(logger, ctx, f"Sent Announcement into {len(ctx.bot.guilds)} servers")
     await send_message_and_file(channel=ctx.channel, title=f"Annoucement sent to {len(ctx.bot.guilds)} servers:",message=message)
 
