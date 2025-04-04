@@ -298,7 +298,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
 
 def parse_remove_order(message: str, player_restriction: Player | None, board: Board) -> dict[str, ...]:
     invalid: list[tuple[str, Exception]] = []
-    commands = str.splitlines(message)
+    commands = message.splitlines()
     updated_units: set[Unit] = set()
     provinces_with_removed_builds: set[str] = set()
     for command in commands:
@@ -338,16 +338,14 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
 
 def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> Unit | str:
     command = command.lower().strip()
-    keywords: list[str] = get_keywords(command)
-    location = keywords[0]
-    province, coast = board.get_province_and_coast(location)
+    province, coast = board.get_province_and_coast(command)
 
     if phase.is_builds(board.phase):
         # remove build order
         player = province.owner
         if player_restriction is not None and player != player_restriction:
             raise PermissionError(
-                f"{player_restriction.name} does not control the unit in {location} which belongs to {player.name}"
+                f"{player_restriction.name} does not control the unit in {command} which belongs to {player.name}"
             )
 
         remove_player_order_for_location(board, player, province)
