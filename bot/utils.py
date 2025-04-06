@@ -213,7 +213,8 @@ async def send_message_and_file(
         file: str = None,
         file_name: str = None,
         file_in_embed: bool = None,
-        time: datetime.datetime = None,
+        footer_content: str = None,
+        footer_datetime: datetime.datetime = None,
         fields: List[Tuple[str, str]] = None,
         convert_svg: bool = False,
         **_
@@ -336,17 +337,14 @@ async def send_message_and_file(
         )))):
             embeds[-1].set_image(url=f"attachment://{discord_file.filename.replace(' ', '_')}")
 
+    if footer_datetime or footer_content:
+        embeds[-1].set_footer(
+            text=footer_content,
+            icon_url="https://cdn.discordapp.com/icons/1201167737163104376/f78e67edebfdefad8f3ee057ad658acd.webp"
+                     "?size=96&quality=lossless"
+        )
 
-    embeds[-1].set_footer(
-        text="DiploGM",
-        icon_url="https://cdn.discordapp.com/icons/1201167737163104376/f78e67edebfdefad8f3ee057ad658acd.webp"
-                 "?size=96&quality=lossless"
-    )
-
-    if time is None:
-        datetime.datetime.now()
-
-    embeds[-1].timestamp = time
+        embeds[-1].timestamp = footer_datetime
 
     return await channel.send(embeds=embeds, file=discord_file)
 
