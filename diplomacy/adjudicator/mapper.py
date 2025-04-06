@@ -806,6 +806,10 @@ class Mapper:
         return crossed_pos[short_ind].tolist()
 
     def loc_to_point(self, loc: Location, current: tuple[float, float], use_retreats=False):
+        # If we're moving to somewhere that's inhabitted, draw to the proper coast
+        if isinstance(loc, Province) and loc.get_unit() and loc.get_unit().coast:
+            loc = loc.get_unit().coast
+
         if not use_retreats:
             return self.get_closest_loc(loc.all_locs, current)
         else:
@@ -818,7 +822,6 @@ class Mapper:
         Pull coordinate toward anchor by a small margin to give unit view breathing room. The pull will be limited to be
         no more than the given percent of the distance because otherwise small province size areas are hard to see.
         """
-
         if pull is None:
             pull = 1.5 * self.board.data["svg config"]["unit_radius"]
 
