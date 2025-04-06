@@ -386,7 +386,7 @@ async def publish_orders(ctx: commands.Context, manager: Manager) -> None:
 
 @perms.player("view map")
 async def view_map(player: Player | None, ctx: commands.Context, manager: Manager) -> None:
-    return_svg = not player and ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() != "true"
+    return_svg = not player and ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() not in ("true", "t", "svg", "s")
     board = manager.get_board(ctx.guild.id)
 
     try:
