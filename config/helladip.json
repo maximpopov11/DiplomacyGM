@@ -34,7 +34,9 @@
         "unit_radius": 18,
         "order_stroke_width": 4,
         "neutral": "e1d49d",
-        "neutral_sc": "ffffff"
+        "neutral_sc": "ffffff",
+        "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
+
     },
     "overrides": {
         "provinces": {
