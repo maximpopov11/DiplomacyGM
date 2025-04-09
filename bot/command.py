@@ -342,7 +342,7 @@ async def view_orders(player: Player | None, ctx: commands.Context, manager: Man
     except RuntimeError as err:
         log_command(logger, ctx, message=f"Failed for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
-                                    title="Unknown Error: Please contact you're local bot dev",
+                                    title="Unknown Error: Please contact your local bot dev",
                                     embed_colour=ERROR_COLOUR)
         return
     log_command(logger, ctx, message=f"Success - generated orders for {board.phase.name} {str(1642 + board.year)}")
@@ -364,7 +364,7 @@ async def publish_orders(ctx: commands.Context, manager: Manager) -> None:
     except RuntimeError as err:
         log_command(logger, ctx, message=f"Failed for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
-                                    title="Unknown Error: Please contact you're local bot dev",
+                                    title="Unknown Error: Please contact your local bot dev",
                                     embed_colour=ERROR_COLOUR)
         return
     orders_log_channel = get_orders_log(ctx.guild)
@@ -397,7 +397,7 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
     except Exception as err:
         log_command(logger, ctx, message=f"Failed to generate map for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
-                                    title="Unknown Error: Please contact you're local bot dev",
+                                    title="Unknown Error: Please contact your local bot dev",
                                     embed_colour=ERROR_COLOUR)
         return
     log_command(logger, ctx, message=f"Generated map for {board.phase.name} {str(1642 + board.year)}")
@@ -421,7 +421,7 @@ async def view_current(player: Player | None, ctx: commands.Context, manager: Ma
     except Exception as err:
         log_command(logger, ctx, message=f"Failed to generate map for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
-                                    title="Unknown Error: Please contact you're local bot dev",
+                                    title="Unknown Error: Please contact your local bot dev",
                                     embed_colour=ERROR_COLOUR)
         return
     log_command(logger, ctx, message=f"Generated map for {board.phase.name} {str(1642 + board.year)}")
