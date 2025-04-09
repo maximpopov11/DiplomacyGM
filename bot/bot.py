@@ -198,11 +198,29 @@ async def view_orders(ctx: commands.Context) -> None:
     await command.view_orders(ctx, manager)
 
 @bot.command(
-    brief="Sends order all orders ",
+    brief="Sends all previous orders",
     description="For GM: Sends orders from previous phase to #orders-log",
 )
 async def publish_orders(ctx: commands.Context) -> None:
     await command.publish_orders(ctx, manager)
+
+@bot.command(
+    brief="Sends fog of war maps",
+    description="""
+    * publish_fow_moves {Country|(None) - whether or not to send for a specific country}
+    """,)
+async def publish_fow_moves(ctx: commands.Context) -> None:
+    await command.publish_fow_moves(ctx, manager)
+
+@bot.command(
+    brief="Sends fog of war orders",
+    description="""
+    * publish_fow_orders {Country|(None) - whether or not to send for a specific country}
+    """,
+)
+async def publish_fow_orders(ctx: commands.Context) -> None:
+    await command.publish_fow_order_logs(ctx, manager)
+
 
 @bot.command(
     brief="Outputs the current map with submitted orders.",
@@ -215,6 +233,16 @@ async def publish_orders(ctx: commands.Context) -> None:
 )
 async def view_map(ctx: commands.Context) -> None:
     await command.view_map(ctx, manager)
+
+@bot.command(
+    brief="Outputs the current map without any orders.",
+    description="""
+    * view_current {True|(False) - whether or not to display as an .svg}
+    """,
+    aliases=["viewcurrent", "vc"],
+)
+async def view_current(ctx: commands.Context) -> None:
+    await command.view_current(ctx, manager)
 
 
 @bot.command(brief="Adjudicates the game and outputs the moves and results maps.",

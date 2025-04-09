@@ -304,6 +304,7 @@ async def order(player: Player | None, ctx: commands.Context, manager: Manager) 
                                     title="Orders locked!",
                                     message="If you think this is an error, contact a GM.",
                                     embed_colour=ERROR_COLOUR)
+        return
 
     message = parse_order(ctx.message.content, player, board)
     if "title" in message:
@@ -386,9 +387,17 @@ async def publish_orders(ctx: commands.Context, manager: Manager) -> None:
 
 @perms.player("view map")
 async def view_map(player: Player | None, ctx: commands.Context, manager: Manager) -> None:
-    return_svg = not player and ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() not in ("true", "t", "svg", "s")
+    convert_svg = player or ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() not in ("true", "t", "svg", "s")
     board = manager.get_board(ctx.guild.id)
 
+    if player and not board.orders_enabled:
+        log_command(logger, ctx, f"Orders locked - not processing")
+        await send_message_and_file(channel=ctx.channel,
+                                    title="Orders locked!",
+                                    message="If you think this is an error, contact a GM.",
+                                    embed_colour=ERROR_COLOUR)
+        return
+    
     try:
         if not board.fow:
             file, file_name = manager.draw_moves_map(ctx.guild.id, player)
@@ -400,12 +409,33 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
                                     title="Unknown Error: Please contact you're local bot dev",
                                     embed_colour=ERROR_COLOUR)
         return
-    log_command(logger, ctx, message=f"Generated map for {board.phase.name} {str(1642 + board.year)}")
+    log_command(logger, ctx, message=f"Generated moves map for {board.phase.name} {str(1642 + board.year)}")
     await send_message_and_file(channel=ctx.channel,
                                 title=f"{board.phase.name} {str(1642 + board.year)}",
                                 file=file,
                                 file_name=file_name,
-                                convert_svg=return_svg,
+                                convert_svg=convert_svg,
+                                file_in_embed=False)
+
+@perms.gm("view current")
+async def view_current(ctx: commands.Context, manager: Manager) -> None:
+    convert_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() not in ("true", "t", "svg", "s")
+    board = manager.get_board(ctx.guild.id)
+
+    try:
+        file, file_name = manager.draw_current_map(ctx.guild.id)
+    except Exception as err:
+        log_command(logger, ctx, message=f"Failed to generate map for an unknown reason", level=logging.ERROR)
+        await send_message_and_file(channel=ctx.channel,
+                                    title="Unknown Error: Please contact you're local bot dev",
+                                    embed_colour=ERROR_COLOUR)
+        return
+    log_command(logger, ctx, message=f"Generated current map for {board.phase.name} {str(1642 + board.year)}")
+    await send_message_and_file(channel=ctx.channel,
+                                title=f"{board.phase.name} {str(1642 + board.year)}",
+                                file=file,
+                                file_name=file_name,
+                                convert_svg=convert_svg,
                                 file_in_embed=False)
 
 @perms.gm("adjudicate")
@@ -415,19 +445,9 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> None:
     return_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() != "true"
     # await send_message_and_file(channel=ctx.channel, **await view_map(ctx, manager))
     # await send_message_and_file(channel=ctx.channel, **await view_orders(ctx, manager))
-    if board.fow:
-        await publish_moves(ctx, manager)
-        await send_order_logs(ctx, manager)
     manager.adjudicate(ctx.guild.id)
 
-    if board.fow:
-        # await publish_current(ctx, manager)
-        pass
-
-    if not board.fow:
-        file, file_name = manager.draw_current_map(ctx.guild.id)
-    else:
-        file, file_name = manager.draw_fow_current_map(ctx.guild.id, None)
+    file, file_name = manager.draw_current_map(ctx.guild.id)
 
     log_command(logger, ctx, message=f"Adjudication Sucessful for {board.phase.name} {str(1642 + board.year)}")
     await send_message_and_file(channel=ctx.channel,
@@ -639,6 +659,9 @@ async def visible_provinces(player: Player | None, ctx: commands.Context, manage
 async def all_province_data(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
 
+    if not board.orders_enabled:
+        perms.gm_perms_check(ctx, "call .all_province_data while orders are locked")
+    
     province_by_owner = defaultdict(list)
     for province in board.provinces:
         owner = province.owner
@@ -669,20 +692,27 @@ async def all_province_data(ctx: commands.Context, manager: Manager) -> None:
 from bot.utils import is_gm_channel
 
 # for fog of war
-async def publish_current(ctx: commands.Context, manager: Manager):
+async def publish_fow_current(ctx: commands.Context, manager: Manager):
     await publish_map(ctx, manager, "starting map", lambda m, s, p: m.draw_fow_current_map(s,p))
 
-async def publish_moves(ctx: commands.Context, manager: Manager,):
-    await publish_map(ctx, manager, "moves map", lambda m, s, p: m.draw_fow_moves_map(s,p))
+@perms.gm("publish fow moves")
+async def publish_fow_moves(ctx: commands.Context, manager: Manager,):
+    board = manager.get_board(ctx.guild.id)
 
+    if not board.fow:
+        raise ValueError("This is not a fog of war game")
 
-async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_caller: Callable[[Manager, int, Player], tuple[str, str]]):
+    filter_player = board.get_player(ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip())
+
+    await publish_map(ctx, manager, "moves map", lambda m, s, p: m.draw_fow_moves_map(s,p), filter_player)
+
+# FIXME add a decorator / helper method for iterating over all player order channels
+async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_caller: Callable[[Manager, int, Player], tuple[str, str]], filter_player=None):
     player_category = None
 
     guild = ctx.guild
     guild_id = guild.id
     board = manager.get_board(guild_id)
-
 
     for category in guild.categories:
         if config.is_player_category(category.name):
@@ -702,12 +732,12 @@ async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_ca
     for channel in player_category.channels:
         player = get_player_by_channel(channel, manager, guild.id)
 
-        if not player:
+        if not player or (filter_player and player != filter_player):
             continue
 
         message = f"Here is the {name} for {board.year + 1642} {board.phase.name}"
         # capture local of player
-        tasks.append(map_publish_task(lambda: map_caller(manager, guild_id, player), channel, message))
+        tasks.append(map_publish_task(lambda player=player: map_caller(manager, guild_id, player), channel, message))
 
     await asyncio.gather(*tasks)
 
@@ -720,12 +750,18 @@ async def map_publish_task(map_maker, channel, message):
         file, file_name = await svg_to_png(file, file_name)
         await send_message_and_file(channel=channel, message=message, file=file, file_name=file_name, file_in_embed=False)
 
-async def send_order_logs(ctx: commands.Context, manager: Manager):
+@perms.gm("send fow order logs")
+async def publish_fow_order_logs(ctx: commands.Context, manager: Manager):
     player_category = None
 
     guild = ctx.guild
     guild_id = guild.id
     board = manager.get_board(guild_id)
+
+    if not board.fow:
+        raise ValueError("This is not a fog of war game")
+
+    filter_player = board.get_player(ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip())
 
     for category in guild.categories:
         if config.is_player_category(category.name):
@@ -742,7 +778,7 @@ async def send_order_logs(ctx: commands.Context, manager: Manager):
     for channel in player_category.channels:
         player = get_player_by_channel(channel, manager, guild.id)
 
-        if not player:
+        if not player or (filter_player and player != filter_player):
             continue
         
         message = get_filtered_orders(board, player)

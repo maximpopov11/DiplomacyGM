@@ -293,7 +293,6 @@ async def send_message_and_file(
 
             embeds[-1].add_field(name=field[0], value=field[1], inline=True)
 
-
     discord_file = None
     if file is not None:
         if file_name[-4:].lower() == ".png" and len(file) > discord_file_limit:
