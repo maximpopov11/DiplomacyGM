@@ -33,7 +33,7 @@ from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import ProvinceType, Province, Coast, Location
 from diplomacy.persistence.unit import Unit, UnitType
 
-from diplomacy.map_parser.vector.transform import get_transform, MatrixTransform, Translation
+from diplomacy.map_parser.vector.transform import TransGL3
 
 # OUTPUTLAYER = "layer16"
 # UNITLAYER = "layer17"
@@ -660,7 +660,7 @@ class Mapper:
             self.color_element(path, unit.player.render_color)
 
         current_coords = get_unit_coordinates(unit_element)
-        current_coords = get_transform(unit_element).transform(current_coords)
+        current_coords = TransGL3(unit_element).transform(current_coords)
 
         if unit == unit.province.dislodged_unit:
             coord_list = unit.location().all_rets
@@ -672,15 +672,7 @@ class Mapper:
             dx = desired_coords[0] - current_coords[0]
             dy = desired_coords[1] - current_coords[1]
 
-            trans = get_transform(elem)
-            if isinstance(trans, MatrixTransform):
-                trans.x_c += dx
-                trans.y_c += dy
-            elif isinstance(trans, Translation):
-                trans.x_c += dx
-                trans.y_c += dy
-            else:
-                trans = Translation(None, (dx, dy))
+            trans = TransGL3(elem) * TransGL3().init(x_c=dx, y_c=dy)
 
             elem.set("transform", str(trans))
 
