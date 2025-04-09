@@ -86,7 +86,6 @@ class Mapper:
 
     def clean_layers(self, svg: ElementTree):
         for element_name in self.board.data["svg config"]["delete_layer"]:
-            print(element_name)
             get_svg_element(svg, self.board.data["svg config"][element_name]).clear()
 
     def draw_moves_map(self, current_phase: phase.Phase, player_restriction: Player | None) -> tuple[str, str]:
@@ -576,7 +575,7 @@ class Mapper:
             visited_provinces.add(province.name)
 
         for province in self.board.provinces:
-            if province.name in visited_provinces and (not self.board.fow or province.type == ProvinceType.SEA):
+            if province.name in visited_provinces or (not self.board.fow and province.type == ProvinceType.SEA):
                 continue
             print(f"Warning: Province {province.name} was not recolored by mapper!")
 

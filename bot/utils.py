@@ -295,12 +295,7 @@ async def send_message_and_file(
 
     discord_file = None
     if file is not None:
-        print(len(file))
-        print(discord_file_limit)
-        print(len(file) - discord_file_limit)
-        print(file_name)
         if file_name[-4:].lower() == ".png" and len(file) > discord_file_limit:
-            print("e")
             _log_command(
                 logger,
                 "?",
