@@ -56,7 +56,7 @@ class Manager:
         logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
         return svg, file_name
 
-    def adjudicate(self, server_id: int) -> tuple[str, str]:
+    def adjudicate(self, server_id: int) -> None:
         start = time.time()
 
         # mapper = Mapper(self._boards[server_id])
@@ -70,14 +70,56 @@ class Manager:
         logger.info("Adjudicator ran successfully")
         self._boards[server_id] = new_board
         self._database.save_board(server_id, new_board)
-        mapper = Mapper(new_board)
-        svg, file_name = mapper.draw_current_map()
 
         elapsed = time.time() - start
         logger.info(f"manager.adjudicate.{server_id}.{elapsed}s")
+
+    def draw_fow_current_map(self, server_id: int, player_restriction: Player | None) -> tuple[str, str]:
+        start = time.time()
+
+        svg, file_name = Mapper(self._boards[server_id], player_restriction).draw_current_map()
+
+        elapsed = time.time() - start
+        logger.info(f"manager.draw_fow_current_map.{server_id}.{elapsed}s")
         return svg, file_name
 
-    def rollback(self, server_id: int) -> dict[str]:
+    def draw_current_map(self, server_id: int) -> tuple[str, str]:
+        start = time.time()
+
+        svg, file_name = Mapper(self._boards[server_id]).draw_current_map()
+
+        elapsed = time.time() - start
+        logger.info(f"manager.draw_current_map.{server_id}.{elapsed}s")
+        return svg, file_name
+
+    def draw_fow_players_moves_map(self, server_id: int, player_restriction: Player | None) -> tuple[str, str]:
+        start = time.time()
+
+        if player_restriction:
+            svg, file_name = Mapper(self._boards[server_id], player_restriction).draw_moves_map(
+                self._boards[server_id].phase, player_restriction
+            )
+        else:
+            svg, file_name = Mapper(self._boards[server_id], None).draw_moves_map(
+                self._boards[server_id].phase, None
+            )
+
+        elapsed = time.time() - start
+        logger.info(f"manager.draw_fow_players_moves_map.{server_id}.{elapsed}s")
+        return svg, file_name
+
+    def draw_fow_moves_map(self, server_id: int, player_restriction: Player | None) -> tuple[str, str]:
+        start = time.time()
+
+        svg, file_name = Mapper(self._boards[server_id], player_restriction).draw_moves_map(
+            self._boards[server_id].phase, None
+        )
+
+        elapsed = time.time() - start
+        logger.info(f"manager.draw_fow_moves_map.{server_id}.{elapsed}s")
+        return svg, file_name
+
+    def rollback(self, server_id: int) -> dict[str, ...]:
         logger.info(f"Rolling back in server {server_id}")
         board = self._boards[server_id]
         # TODO: what happens if we're on the first phase?
@@ -98,7 +140,17 @@ class Manager:
         file, file_name = mapper.draw_current_map()
         return {"message": message, "file": file, "file_name": file_name}
 
-    def reload(self, server_id: int) -> dict[str]:
+    def get_previous_board(self, server_id: int) -> Board | None:
+        board = self._boards[server_id]
+        # TODO: what happens if we're on the first phase?
+        last_phase = board.phase.previous
+        last_phase_year = board.year
+        if board.phase.name == "Spring Moves":
+            last_phase_year -= 1
+        old_board = self._database.get_board(board.board_id, last_phase, last_phase_year, board.fish, board.datafile)
+        return old_board
+
+    def reload(self, server_id: int) -> dict[str, ...]:
         logger.info(f"Reloading server {server_id}")
         board = self._boards[server_id]
 

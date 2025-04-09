@@ -1,5 +1,5 @@
 {
-    "name": "Imp Dip",
+    "name": "Imperial Diplomacy B1.2",
     "file": "assets/impdip.1.2.svg",
     "svg config": {
         "land_layer": "layer6",
@@ -38,7 +38,8 @@
         "neutral": "c6b7ab",
         "neutral_sc": "ffffff",
         "loc_x_offset": 7.7655,
-        "loc_y_offset": 7.033
+        "loc_y_offset": 7.033,
+        "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
     },
     "overrides": {
         "high provinces": {
@@ -60,7 +61,7 @@
             "SPO": {
                 "num": 3,
                 "type": "SEA",
-                "adjacencies": ["NPO1", "NPO2", "NPO3", "NPO4", "NPO5", "SAO1", "SAO2", "SAO3", "SAO4", "SAO5", "Solomon Islands", "Coral Sea", "Wurruk", "Antarctic Basin", "Aotearoa", "Bahia Grande", "Mar de Hoces", "Chiloe", "Roggeveen Basin", "Peru Basin"]
+                "adjacencies": ["NPO1", "NPO2", "NPO3", "NPO4", "NPO5", "SAO1", "SAO2", "SAO3", "SAO4", "SAO5", "Solomon Islands", "Coral Sea", "Wurruk", "Antarctic Basin", "Aotearoa", "Bahia Grande", "Mar de Hoces", "Chiloe", "Roggeveen Basin", "Peru Basin", "Kawesqar"]
             },
             "INO": {
                 "num": 5,

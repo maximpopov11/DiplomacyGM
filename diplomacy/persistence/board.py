@@ -3,7 +3,7 @@ import logging
 
 from diplomacy.persistence.phase import Phase
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.province import Province, Coast, Location
+from diplomacy.persistence.province import Province, Coast, Location, get_adjacent_provinces
 from diplomacy.persistence.unit import Unit, UnitType
 
 logger = logging.getLogger(__name__)
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class Board:
     def __init__(
-        self, players: set[Player], provinces: set[Province], units: set[Unit], phase: Phase, data, datafile: str
+        self, players: set[Player], provinces: set[Province], units: set[Unit], phase: Phase, data, datafile: str, fow: bool
     ):
         self.players: set[Player] = players
         self.provinces: set[Province] = provinces
@@ -23,66 +23,88 @@ class Board:
         self.orders_enabled: bool = True
         self.data = data
         self.datafile = datafile
+        self.fow = fow
 
-    # TODO: we could have this as a dict ready on the variant
+        # store as lower case for user input purposes
+        self.name_to_player: dict[str, Player] = {player.name.lower(): player for player in self.players}
+        self.name_to_province: dict[str, Province] = {}
+        self.name_to_coast: dict[str, Coast] = {}
+        for location in self.provinces:
+            self.name_to_province[location.name.lower()] = location
+            for coast in location.coasts:
+                self.name_to_coast[coast.name.lower()] = coast
+
     def get_player(self, name: str) -> Player:
-        # we ignore capitalization because this is primarily used for user input
-        return next((player for player in self.players if player.name.lower() == name.lower()), None)
+        return self.name_to_player.get(name.lower())
 
+    # TODO: break ties in a fixed manner
     def get_players_by_score(self) -> list[Player]:
         return sorted(self.players, key=lambda sort_player: sort_player.score(), reverse=True)
 
-    # TODO: we could have this as a dict ready on the variant
+    # TODO: this can be made faster if necessary
     def get_province(self, name: str) -> Province:
-        # we ignore capitalization because this is primarily used for user input
-        return next((province for province in self.provinces if province.name.lower() == name.lower()), None)
+        province, _ = self.get_province_and_coast(name)
+        return province
 
     def get_province_and_coast(self, name: str) -> tuple[Province, Coast | None]:
+        # FIXME: This should not be raising exceptions many places already assume it returns None on failure.
         # TODO: (BETA) we build this everywhere, let's just have one live on the Board on init
         # we ignore capitalization because this is primarily used for user input
+        # People input apostrophes that don't match what the province names are
+        name = re.sub(r"[‘’`´′‛]", "'", name)
         name = name.lower()
-        name_to_province: dict[str, Province] = {}
-        name_to_coast: dict[str, Coast] = {}
-        for province in self.provinces:
-            name_to_province[province.name.lower()] = province
-            for coast in province.coasts:
-                name_to_coast[coast.name.lower()] = coast
-
-        coast = name_to_coast.get(name)
+        coast = self.name_to_coast.get(name)
         if coast:
             return coast.province, coast
-        elif name in name_to_province:
-            return name_to_province[name], None
-        else:
-            return None, None
+        elif name in self.name_to_province:
+            return self.name_to_province[name], None
 
-    def get_possible_provinces(self, name: str) -> list[str]:
-        # pattern = r"\b{}.*".format(name.strip().replace(" ", r".*\b"))
+        # failed to match, try to get possible locations
+        potential_locations = self.get_possible_locations(name)
+        if len(potential_locations) > 5:
+            raise Exception(f"The location {name} is ambiguous. Please type out the full name.")
+        elif len(potential_locations) > 1:
+            raise Exception(
+                f'The location {name} is ambiguous. Possible matches: {", ".join([loc.name for loc in potential_locations])}.'
+            )
+        elif len(potential_locations) == 0:
+            raise Exception(f"The location {name} does not match any known provinces.")
+        else:
+            location = potential_locations[0]
+            if isinstance(location, Coast):
+                return location.province, location
+            elif isinstance(location, Province):
+                return location, None
+            else:
+                raise Exception(f"Unknown issue occurred when attempting to find the location {name}.")
+
+    def get_visible_provinces(self, player: Player) -> set[Province]:
+        visible: set[Province] = set()
+        for unit in player.units:
+            visible.update(get_adjacent_provinces(unit.location()))
+            visible.add(unit.province)
+
+        for province in player.centers:
+            if province.core == player:
+                visible.update(province.adjacent)
+            visible.add(province)
+
+        return visible
+
+    def get_possible_locations(self, name: str) -> list[Province]:
         pattern = r"^{}.*$".format(re.escape(name.strip()).replace("\\ ", r"\S*\s*"))
-        print(pattern)
         matches = []
         for province in self.provinces:
             if re.search(pattern, province.name.lower()):
-                matches.append(province.name)
+                matches.append(province)
             else:
-                matches += [coast.name for coast in province.coasts if re.search(pattern, coast.name.lower())]
+                matches += [coast for coast in province.coasts if re.search(pattern, coast.name.lower())]
         return matches
 
     def get_location(self, name: str) -> Location:
+        # People input apostrophes that don't match what the province names are
+        name = re.sub(r"[‘’`´′‛]", "'", name)
         province, coast = self.get_province_and_coast(name)
-        if not province:
-            potential_provinces = self.get_possible_provinces(name)
-            if len(potential_provinces) > 5:
-                raise Exception(f"The province {name} is ambiguous. Please type out the full name.")
-            elif len(potential_provinces) > 1:
-                raise Exception(
-                    f'The province {name} is ambiguous. Possible matches: {", ".join(potential_provinces)}.'
-                )
-            elif len(potential_provinces) == 0:
-                raise Exception(f"The province {name} does not match any known provinces.")
-            else:
-                full_name = potential_provinces[0]
-                province, coast = self.get_province_and_coast(full_name)
 
         if coast:
             return coast

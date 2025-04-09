@@ -1,24 +1,28 @@
 WS: /[ \t]+/
 
-order: move_order
-    | hold_order
-    | support_order
-    | convoy_order
-    | core_order
+order: (move_order
+      | hold_order
+      | support_order
+      | convoy_order
+      | core_order) WS
+   
+retreat: (retreat_order
+        | disband_order) WS
 
-retreat: retreat_order
-       | disband_order
-
-build: build_unit
-     | disband_unit
+build: (build_unit
+      | disband_unit) WS
 
 move_order: unit WS MOVE WS province
 
 hold_order: unit WS HOLD
 
-support_order: unit WS ((SUPPORT WS (move_order | hold_order)) | ((SUPPORT_HOLD | SUPPORT) WS unit))
+l_move_order: l_unit WS MOVE WS province
 
-convoy_order: unit WS CONVOY WS move_order
+l_hold_order: l_unit WS HOLD
+
+support_order: unit WS ((SUPPORT WS (l_move_order | l_hold_order)) | ((SUPPORT_HOLD | SUPPORT) WS l_unit))
+
+convoy_order: unit WS CONVOY WS l_move_order
 
 core_order: unit WS CORE
 
@@ -83,10 +87,12 @@ BUILD.2 : "b"
 
 unit : (DESCRIPTOR)? province
 
+l_unit : (DESCRIPTOR)? province
+
 retreat_unit : (DESCRIPTOR)? province
 
 DESCRIPTOR.2 : /a|army|cannon|f|fleet|boat|ship/i WS
 
 province : PROVINCE (WS PROVINCE) ~ 0..3
 
-PROVINCE : /(?![fFaA]\s)[a-zA-Z0-9\._'-]+/
+PROVINCE : /(?![fFaA]\s)[a-zA-Z0-9\._'-]+(?=\s)/

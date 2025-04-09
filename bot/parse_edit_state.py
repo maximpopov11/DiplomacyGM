@@ -1,3 +1,6 @@
+import string
+
+from bot.config import ERROR_COLOUR, PARTIAL_ERROR_COLOUR
 from bot.utils import get_unit_type, get_keywords
 from diplomacy.adjudicator.mapper import Mapper
 from diplomacy.persistence import phase
@@ -9,6 +12,7 @@ _set_phase_str = "set phase"
 _set_core_str = "set core"
 _set_half_core_str = "set half core"
 _set_province_owner_str = "set province owner"
+_set_player_color_str = "set player color"
 _create_unit_str = "create unit"
 _create_dislodged_unit_str = "create dislodged unit"
 _delete_unit_str = "delete unit"
@@ -18,34 +22,47 @@ _dislodge_unit_str = "dislodge unit"
 _make_units_claim_provinces_str = "make units claim provinces"
 
 
-def parse_edit_state(message: str, board: Board) -> dict[str]:
+def parse_edit_state(message: str, board: Board) -> dict[str, ...]:
     invalid: list[tuple[str, Exception]] = []
     commands = str.splitlines(message)
-    if commands[0].strip() == ".edit":
-        commands = commands[1:]
     for command in commands:
         try:
             _parse_command(command, board)
         except Exception as error:
             invalid.append((command, error))
 
+    embed_colour = None
     if invalid:
-        response = "The following commands were invalid:"
+        response_title = "Error"
+        response_body = "The following commands were invalid:"
         for command in invalid:
-            response += f"\n{command[0]} with error: {command[1]}"
+            response_body += f"\n`{command[0]}` with error: {command[1]}"
+
+        if len(invalid) == len(commands):
+            embed_colour = ERROR_COLOUR
+        else:
+            embed_colour = PARTIAL_ERROR_COLOUR
     else:
-        response = "Commands validated successfully. Results map updated."
+        response_title = "Commands validated successfully. Results map updated."
+        response_body = ""
 
-    file, file_name = Mapper(board).draw_current_map()
+    if len(invalid) < len(commands):
+        file, file_name = Mapper(board).draw_current_map()
+    else:
+        file, file_name = None, None
 
-    return {"message": response, "file": file, "file_name": file_name}
+    return {
+        "title": response_title,
+        "message": response_body,
+        "file": file,
+        "file_name": file_name,
+        "embed_colour": embed_colour
+    }
 
 
 def _parse_command(command: str, board: Board) -> None:
     command = command.lower()
     keywords: list[str] = get_keywords(command)
-    if keywords[0].strip() == ".edit":
-        keywords = keywords[1:]
     command_type = keywords[0]
     keywords = keywords[1:]
 
@@ -57,6 +74,8 @@ def _parse_command(command: str, board: Board) -> None:
         _set_province_half_core(keywords, board)
     elif command_type == _set_province_owner_str:
         _set_province_owner(keywords, board)
+    elif command_type == _set_player_color_str:
+        _set_player_color(keywords, board)
     elif command_type == _create_unit_str:
         _create_unit(keywords, board)
     elif command_type == _create_dislodged_unit_str:
@@ -112,6 +131,19 @@ def _set_province_half_core(keywords: list[str], board: Board) -> None:
     get_connection().execute_arbitrary_sql(
         "UPDATE provinces SET half_core=? WHERE board_id=? and phase=? and province_name=?",
         (player.name if player is not None else None, board.board_id, board.get_phase_and_year_string(), province.name),
+    )
+
+
+def _set_player_color(keywords: list[str], board: Board) -> None:
+    player = board.get_player(keywords[0])
+    color = keywords[1].lower()
+    if not len(color) == 6 or not all(c in string.hexdigits for c in color):
+        raise ValueError(f"Unknown hexadecimal color: {color}")
+
+    player.render_color = color
+    get_connection().execute_arbitrary_sql(
+        "UPDATE players SET color=? WHERE board_id=? and player_name=?",
+        (color, board.board_id, player.name),
     )
 
 

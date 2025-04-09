@@ -58,6 +58,8 @@ class Parser:
         self.phantom_primary_fleets_layer: Element = get_svg_element(svg_root, self.layers["fleet"])
         self.phantom_retreat_fleets_layer: Element = get_svg_element(svg_root, self.layers["retreat_fleet"])
 
+        self.fow = self.layers.get("fow", False)
+
         self.color_to_player: dict[str, Player | None] = {}
         self.name_to_province: dict[str, Province] = {}
 
@@ -123,7 +125,7 @@ class Parser:
                     coast.retreat_unit_coordinate = (0, 0)
 
 
-        return Board(players, provinces, units, phase.initial(), self.data, self.datafile)
+        return Board(players, provinces, units, phase.initial(), self.data, self.datafile, self.fow)
 
     def read_map(self) -> tuple[set[Province], set[tuple[str, str]]]:
         if self.cache_provinces is None:
@@ -369,9 +371,10 @@ class Parser:
 
             # TODO: (BETA): we cheat assume core = owner if exists because capital center symbols work different
             core = province.owner
-            # if not core:
-            #     core_data = center_data.findall(".//svg:circle", namespaces=NAMESPACE)[1]
-            #     core = get_player(core_data, self.color_to_player)
+            if not core:
+                core_data = center_data.findall(".//svg:circle", namespaces=NAMESPACE)
+                if len(core_data) >= 2:
+                    core = get_player(core_data[1], self.color_to_player)
             province.core = core
 
     # Sets province supply center values

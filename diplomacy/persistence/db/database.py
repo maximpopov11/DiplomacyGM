@@ -110,7 +110,7 @@ class _DatabaseConnection:
                 logger.warning(f"Couldn't find player {player.name} in DB")
                 continue
             color = player_info_by_name[player.name]
-            player.color = color
+            player.render_color = color
             player.units = set()
             player.centers = set()
             # TODO - player build orders
@@ -210,18 +210,16 @@ class _DatabaseConnection:
                     destination_province, destination_coast = board.get_province_and_coast(order_destination)
                     if destination_coast is not None:
                         destination_province = destination_coast
-                source_unit = None
                 if order_source is not None:
                     source_province, source_coast = board.get_province_and_coast(order_source)
                     if source_coast is not None:
                         source_province = source_coast
-                    source_unit = source_province.unit
                 if order_class in [Hold, Core, RetreatDisband]:
                     order = order_class()
                 elif order_class in [Move, ConvoyMove, RetreatMove]:
                     order = order_class(destination=destination_province)
                 elif order_class in [Support, ConvoyTransport]:
-                    order = order_class(destination=destination_province, source=source_unit)
+                    order = order_class(destination=destination_province, source=source_province)
                 else:
                     raise ValueError(f"Could not parse {order_class}")
 
@@ -237,12 +235,14 @@ class _DatabaseConnection:
         # TODO: Check if board already exists
         cursor = self._connection.cursor()
         cursor.execute(
-            "INSERT INTO boards (board_id, phase, data_file, fish) VALUES (?, ?, ?, ?);",
+            "INSERT INTO boards (board_id, phase, data_file, fish) VALUES (?, ?, ?, ?)",
             (board_id, board.get_phase_and_year_string(), board.datafile, board.fish),
         )
         cursor.executemany(
-            "INSERT INTO players (board_id, player_name, color) VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
-            [(board_id, player.name, player.color) for player in board.players],
+            "INSERT INTO players (board_id, player_name, color) VALUES (?, ?, ?) "
+            "ON CONFLICT DO "
+            "UPDATE SET color = ?",
+            [(board_id, player.name, player.render_color, player.render_color) for player in board.players],
         )
 
         # cache = []
@@ -338,7 +338,7 @@ class _DatabaseConnection:
                     unit.order.__class__.__name__ if unit.order is not None else None,
                     getattr(getattr(unit.order, "destination", None), "name", None) if unit.order is not None else None,
                     (
-                        getattr(getattr(getattr(unit.order, "source", None), "province", None), "name", None)
+                        getattr(getattr(unit.order, "source", None), "name", None)
                         if unit.order is not None
                         else None
                     ),
@@ -425,6 +425,7 @@ class _DatabaseConnection:
         cursor.execute("DELETE FROM units WHERE board_id=?", (board.board_id,))
         cursor.execute("DELETE FROM builds WHERE board_id=?", (board.board_id,))
         cursor.execute("DELETE FROM retreat_options WHERE board_id=?", (board.board_id,))
+        cursor.execute("DELETE FROM players WHERE board_id=?", (board.board_id,))
         cursor.close()
         self._connection.commit()
 

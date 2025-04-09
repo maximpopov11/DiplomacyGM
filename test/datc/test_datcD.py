@@ -84,8 +84,8 @@ class TestDATC_D(unittest.TestCase):
         b = BoardBuilder()
         a_berlin = b.army(b.berlin, b.germany)
         f_kiel = b.fleet(b.kiel_c, b.germany)
-        a_berlin.order = Support(f_kiel, b.kiel_c)
-        f_kiel.order = Support(a_berlin, b.berlin)
+        a_berlin.order = Support(b.kiel_c, b.kiel_c)
+        f_kiel.order = Support(b.berlin, b.berlin)
         a_prussia = b.move(b.russia, UnitType.ARMY, b.prussia, b.berlin)
         f_baltic_sea = b.supportMove(b.russia, UnitType.FLEET, b.baltic_sea, a_prussia, b.berlin)
 
@@ -107,8 +107,8 @@ class TestDATC_D(unittest.TestCase):
         a_munich = b.move(b.germany, UnitType.ARMY, b.munich, b.silesia)
         a_berlin = b.supportMove(b.germany, UnitType.ARMY, b.berlin, a_munich, b.silesia)
         f_kiel = b.supportHold(b.germany, UnitType.FLEET, b.kiel_c, a_berlin)
-        a_berlin.order = Support(f_kiel, b.kiel_c)
-        f_kiel.order = Support(a_berlin, b.berlin)
+        a_berlin.order = Support(b.kiel_c, b.kiel_c)
+        f_kiel.order = Support(b.berlin, b.berlin)
         a_prussia = b.move(b.russia, UnitType.ARMY, b.prussia, b.berlin)
         f_baltic_sea = b.supportMove(b.russia, UnitType.FLEET, b.baltic_sea, a_prussia, b.berlin)
 

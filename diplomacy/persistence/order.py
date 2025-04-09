@@ -26,9 +26,9 @@ class UnitOrder(Order):
 class ComplexOrder(UnitOrder):
     """Complex orders are orders that operate on other orders (supports and convoys)."""
 
-    def __init__(self, source: Unit):
+    def __init__(self, source: Location):
         super().__init__()
-        self.source: Unit = source
+        self.source: Location = source
 
 
 class Hold(UnitOrder):
@@ -65,16 +65,16 @@ class ConvoyMove(UnitOrder):
 
 
 class ConvoyTransport(ComplexOrder):
-    def __init__(self, source: Unit, destination: Location):
+    def __init__(self, source: Location, destination: Location):
         super().__init__(source)
         self.destination: Location = destination
 
     def __str__(self):
-        return f"Convoys {self.source.province} - {self.destination}"
+        return f"Convoys {self.source} - {self.destination}"
 
 
 class Support(ComplexOrder):
-    def __init__(self, source: Unit, destination: Location):
+    def __init__(self, source: Location, destination: Location):
         super().__init__(source)
         self.destination: Location = destination
 
@@ -85,9 +85,9 @@ class Support(ComplexOrder):
         if isinstance(self.destination, Coast):
             destination_province = self.destination.province
 
-        if self.source.province != destination_province:
+        if self.source != destination_province:
             suffix = f"- {self.destination}"
-        return f"Supports {self.source.province} {suffix}"
+        return f"Supports {self.source} {suffix}"
 
 
 class RetreatMove(UnitOrder):

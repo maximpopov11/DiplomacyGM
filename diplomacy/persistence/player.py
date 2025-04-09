@@ -20,7 +20,9 @@ class Player:
         units: set[unit.Unit],
     ):
         self.name: str = name
-        self.color: str = color
+        self.default_color: str = color
+        # color used for rendering vs internal default color
+        self.render_color = color
 
         # victory supply center count (we assume VSCC scoring)
         self.vscc: int = vscc

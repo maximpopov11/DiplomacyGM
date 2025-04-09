@@ -40,12 +40,12 @@ from diplomacy.map_parser.vector.transform import TransGL3
 
 
 class Mapper:
-    def __init__(self, board: Board):
-        register_namespace("", "http://www.w3.org/2000/svg")
-        register_namespace("inkscape", "http://www.inkscape.org/namespaces/inkscape")
-        register_namespace("sodipodi", "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd")
-        register_namespace("xlink", "http://www.w3.org/1999/xlink")
-
+    def __init__(self, board: Board, restriction: Player | None = None):
+        register_namespace('', "http://www.w3.org/2000/svg")
+        register_namespace('inkscape', "http://www.inkscape.org/namespaces/inkscape")
+        register_namespace('sodipodi', "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd")
+        register_namespace('xlink', "http://www.w3.org/1999/xlink")
+        
         self.board: Board = board
         self.board_svg: ElementTree = etree.parse(self.board.data["file"])
         self.player_restriction: Player | None = None
@@ -62,36 +62,45 @@ class Mapper:
                 self.board_svg, self.board.data["svg config"][element_name]
             )
 
+        self.restriction = restriction
+        if restriction != None:
+            self.adjacent_provinces: set[Province] = self.board.get_visible_provinces(restriction)
+        else:
+            self.adjacent_provinces: set[Province] = self.board.provinces
+
         # TODO: Switch to passing the SVG directly, as that's simpiler (self.svg = draw_units(svg)?)
         self._draw_units()
         self._color_provinces()
         self._color_centers()
         self.draw_side_panel(self.board_svg)
         
-        for element_name in ["retreat_army", "retreat_fleet"]:
-            get_svg_element(self.board_svg, self.board.data["svg config"][element_name]).clear()
-
         self._moves_svg = copy.deepcopy(self.board_svg)
         self.cached_elements["unit_output_moves"] = get_svg_element(
             self._moves_svg, self.board.data["svg config"]["unit_output"]
         )
 
         self.state_svg = copy.deepcopy(self.board_svg)
-        for element_name in ["army", "fleet"]:
-            get_svg_element(self.state_svg, self.board.data["svg config"][element_name]).clear()
+        self.clean_layers(self.state_svg)
 
         self.highlight_retreating_units(self.state_svg)
+
+    def clean_layers(self, svg: ElementTree):
+        for element_name in self.board.data["svg config"]["delete_layer"]:
+            get_svg_element(svg, self.board.data["svg config"][element_name]).clear()
 
     def draw_moves_map(self, current_phase: phase.Phase, player_restriction: Player | None) -> tuple[str, str]:
         logger.info("mapper.draw_moves_map")
 
         self._reset_moves_map()
         self.player_restriction = player_restriction
-
+        
         t = self._moves_svg.getroot()
         arrow_layer = get_svg_element(t, self.board.data["svg config"]["arrow_output"])
         if not phase.is_builds(current_phase):
             for unit in self.board.units:
+                if unit.province not in self.adjacent_provinces:
+                    continue
+
                 if player_restriction and unit.player != player_restriction:
                     continue
                 if phase.is_retreats(current_phase) and unit.province.dislodged_unit != unit:
@@ -132,12 +141,12 @@ class Mapper:
                 players = {player_restriction}
             for player in players:
                 for build_order in player.build_orders:
-                    self._draw_player_order(player, build_order)
+                    if build_order.location.as_province() in self.adjacent_provinces:
+                        self._draw_player_order(player, build_order)
 
         self.draw_side_panel(self._moves_svg)
-        
-        for element_name in ["army", "fleet"]:
-            get_svg_element(self._moves_svg, self.board.data["svg config"][element_name]).clear()
+
+        self.clean_layers(self._moves_svg)
 
         svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_moves_map.svg"
         return elementToString(self._moves_svg.getroot(), encoding="utf-8"), svg_file_name
@@ -167,9 +176,13 @@ class Mapper:
         for i, player in enumerate(self.board.get_players_by_score()):
             for power_element in all_power_banners_element:
                 # match the correct svg element based on the color of the rectangle
-                if get_element_color(power_element[0]) == player.color:
+                if get_element_color(power_element[0]) == player.default_color:
+                    self.color_element(power_element[0], player.render_color)
                     power_element.set("transform", self.scoreboard_power_locations[i])
-                    power_element[5][0].text = str(len(player.centers))
+                    if player == self.restriction or self.restriction == None:
+                        power_element[5][0].text = str(len(player.centers))
+                    else:
+                        power_element[5][0].text = "???"
                     break
 
     def _draw_side_panel_date(self, svg: ElementTree) -> None:
@@ -276,6 +289,9 @@ class Mapper:
         options = []
         new_checked = already_checked + (current,)
         for possibility in current.adjacent:
+            if possibility not in self.adjacent_provinces:
+                continue
+
             if possibility == destination:
                 return [
                     (
@@ -289,7 +305,7 @@ class Mapper:
                 and (self.player_restriction is None or possibility.unit.player == self.player_restriction)
                 and possibility.unit.unit_type == UnitType.FLEET
                 and isinstance(possibility.unit.order, ConvoyTransport)
-                and possibility.unit.order.source.province is source
+                and possibility.unit.order.source.as_province() is source
                 and possibility.unit.order.destination is destination
             ):
                 options += self._path_helper(source, destination, possibility, new_checked)
@@ -308,7 +324,6 @@ class Mapper:
             },
         )
         return order_path
-
     def _get_all_paths(self, unit: Unit) -> list[tuple[Province]]:
         paths = self._path_helper(unit.province, unit.order.destination, unit.province)
         if paths == []:
@@ -371,13 +386,13 @@ class Mapper:
         order: Support = unit.order
         x1 = coordinate[0]
         y1 = coordinate[1]
-        v2 = self.loc_to_point(order.source.location(), coordinate)
+        v2 = self.loc_to_point(order.source, coordinate)
         x2, y2 = v2
         v3 = self.loc_to_point(order.destination, v2)
         x3, y3 = v3
         marker_start = ""
         if order.destination.get_unit():
-            if order.source.location() == order.destination:
+            if order.source == order.destination:
                 (x3, y3) = self.pull_coordinate((x1, y1), (x3, y3), self.board.data["svg config"]["unit_radius"])
             else:
                 (x3, y3) = self.pull_coordinate((x2, y2), (x3, y3))
@@ -389,8 +404,8 @@ class Mapper:
 
             if (
                 isinstance(order.destination.get_unit().order, Support)
-                and destorder.source.location() == destorder.destination == unit.location()
-                and order.source.location() == order.destination
+                and destorder.source == destorder.destination == unit.location()
+                and order.source == order.destination
             ):
                 # This check is so we only do it once, so it doesn't overlay
                 # it doesn't matter which one is the origin & which is the dest
@@ -414,7 +429,7 @@ class Mapper:
                 "stroke-width": self.board.data["svg config"]["order_stroke_width"],
                 "stroke-linecap": "round",
                 "marker-start": marker_start,
-                "marker-end": f"url(#{'ball' if order.source.location() == order.destination else 'arrow'})",
+                "marker-end": f"url(#{'ball' if order.source == order.destination else 'arrow'})",
             },
         )
         return drawn_order
@@ -499,6 +514,8 @@ class Mapper:
         province_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["land_layer"])
         island_fill_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["island_fill_layer"])
         island_ring_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["island_ring_layer"])
+        sea_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["sea_borders"])
+        island_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["island_borders"])
 
         visited_provinces: set[str] = set()
 
@@ -511,9 +528,34 @@ class Mapper:
 
             visited_provinces.add(province.name)
             color = self.board.data["svg config"]["neutral"]
-            if province.owner:
-                color = province.owner.color
+            if province not in self.adjacent_provinces:
+                color = self.board.data["svg config"]["unknown"]
+            elif province.owner:
+                color = province.owner.render_color
             self.color_element(province_element, color)
+
+        if self.board.fow:
+            for province_element in sea_layer:
+                try:
+                    province = self._get_province_from_element_by_label(province_element)
+                except ValueError as ex:
+                    print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
+                    continue
+
+                if province in self.adjacent_provinces:
+                    sea_layer.remove(province_element)
+
+                visited_provinces.add(province.name)
+
+            for province_element in island_layer:
+                try:
+                    province = self._get_province_from_element_by_label(province_element)
+                except ValueError as ex:
+                    print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
+                    continue
+
+                if province in self.adjacent_provinces:
+                    island_layer.remove(province_element)
 
         # Try to combine this with the code above? A lot of repeated stuff here
         for island_ring in island_ring_layer:
@@ -524,14 +566,16 @@ class Mapper:
                 continue
 
             color = self.board.data["svg config"]["neutral"]
-            if province.owner:
-                color = province.owner.color
+            if province not in self.adjacent_provinces:
+                color = self.board.data["svg config"]["unknown"]
+            elif province.owner:
+                color = province.owner.render_color
             self.color_element(island_ring, color, key="stroke")
 
+            visited_provinces.add(province.name)
+
         for province in self.board.provinces:
-            if province.type == ProvinceType.SEA:
-                continue
-            if province.name in visited_provinces:
+            if province.name in visited_provinces or (not self.board.fow and province.type == ProvinceType.SEA):
                 continue
             print(f"Warning: Province {province.name} was not recolored by mapper!")
 
@@ -549,14 +593,18 @@ class Mapper:
                 print(f"Province {province.name} says it has no supply center, but it does", file=sys.stderr)
                 continue
 
-            if province.core:
-                core_color = province.core.color
-            else:
-                core_color = "#ffffff"
-            if province.half_core:
-                half_color = province.half_core.color
-            else:
+            if province not in self.adjacent_provinces:
+                core_color = self.board.data["svg config"]["unknown"]
                 half_color = core_color
+            else:
+                if province.core:
+                    core_color = province.core.render_color
+                else:
+                    core_color = "#ffffff"
+                if province.half_core:
+                    half_color = province.half_core.render_color
+                else:
+                    half_color = core_color
             # color = "#ffffff"
             # if province.core:
             #     color = province.core.color
@@ -602,13 +650,14 @@ class Mapper:
 
     def _draw_units(self) -> None:
         for unit in self.board.units:
-            self._draw_unit(unit)
+            if unit.province in self.adjacent_provinces:
+                self._draw_unit(unit)
 
     def _draw_unit(self, unit: Unit, use_moves_svg=False):
         unit_element = self._get_element_for_unit_type(unit.unit_type)
 
         for path in unit_element.getchildren():
-            self.color_element(path, unit.player.color)
+            self.color_element(path, unit.player.render_color)
 
         current_coords = get_unit_coordinates(unit_element)
         current_coords = TransGL3(unit_element).transform(current_coords)
@@ -635,7 +684,7 @@ class Mapper:
 
     def highlight_retreating_units(self, svg):
         for unit in self.board.units:
-            if unit == unit.province.dislodged_unit:
+            if unit == unit.province.dislodged_unit and unit.province in self.adjacent_provinces:
                 self._draw_retreat_options(unit, svg)
 
     def _get_element_for_unit_type(self, unit_type) -> Element:
@@ -797,6 +846,10 @@ class Mapper:
         return crossed_pos[short_ind].tolist()
 
     def loc_to_point(self, loc: Location, current: tuple[float, float], use_retreats=False):
+        # If we're moving to somewhere that's inhabitted, draw to the proper coast
+        if isinstance(loc, Province) and loc.get_unit() and loc.get_unit().coast:
+            loc = loc.get_unit().coast
+
         if not use_retreats:
             return self.get_closest_loc(loc.all_locs, current)
         else:
@@ -809,7 +862,6 @@ class Mapper:
         Pull coordinate toward anchor by a small margin to give unit view breathing room. The pull will be limited to be
         no more than the given percent of the distance because otherwise small province size areas are hard to see.
         """
-
         if pull is None:
             pull = 1.5 * self.board.data["svg config"]["unit_radius"]
 

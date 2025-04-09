@@ -1,17 +1,15 @@
 import logging
 import os
 import re
-import time
-from typing import Callable
-import inspect
-import zipfile
-import io
+import datetime
 import random
 from dotenv.main import load_dotenv
+
+from bot.config import ERROR_COLOUR
+from bot.utils import send_message_and_file
 load_dotenv()
 
 import discord
-from discord import HTTPException
 from discord.ext import commands
 
 from bot import command
@@ -20,10 +18,8 @@ from diplomacy.persistence.manager import Manager
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-bot = commands.Bot(command_prefix=".", intents=intents)
+bot = commands.Bot(command_prefix=os.getenv("command_prefix", default="."), intents=intents)
 logger = logging.getLogger(__name__)
-discord_message_limit = 2000
-discord_file_limit = 10 * (2**20)
 impdip_server = 1201167737163104376
 bot_status_channel = 1284336328657600572
 
@@ -58,7 +54,7 @@ async def on_ready():
             print(f"Channel with ID {bot_status_channel} not found.")
     else:
         print(f"Guild with ID {impdip_server} not found.")
-    
+
     # Set bot's presence (optional)
     await bot.change_presence(activity=discord.Game(name="Impdip 🔪"))
 
@@ -66,16 +62,27 @@ async def on_ready():
 async def before_any_command(ctx):
     logger.debug(f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}'")
 
+    # People input apostrophes that don't match what the province names are, we can catch all of that here
+    # ctx.message.content = re.sub(r"[‘’`´′‛]", "'", ctx.message.content)
+
     # mark the message as seen
     await ctx.message.add_reaction("👍")
 
 
 @bot.after_invoke
-async def after_any_command(ctx):
-    logger.debug(
-        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - complete"
+async def after_any_command(ctx: discord.ext.commands.Context):
+    time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
+
+    if time_spent.total_seconds() < 10:
+        level = logging.DEBUG
+    else:
+        level = logging.WARN
+
+    logger.log(
+        level,
+        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
+        f"complete in {time_spent}s"
     )
-    pass
 
 
 @bot.event
@@ -84,94 +91,60 @@ async def on_command_error(ctx, error):
         # we shouldn't do anything if the user says something like "..."
         pass
     else:
-        logger.error(
-            f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}': {repr(error)}",
-            exc_info=error,
-        )
-
-        # mark the message as failed
-        await ctx.message.add_reaction("❌")
-        await ctx.message.remove_reaction("👍", bot.user)
-
-        await ctx.send(error)
+        time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
 
 
-async def _handle_command(
-    function: Callable[[commands.Context, Manager], tuple[str, str | None]],
-    ctx: commands.Context,
-) -> None:
-    start = time.time()
+        try:
+            # mark the message as failed
+            await ctx.message.add_reaction("❌")
+            await ctx.message.remove_reaction("👍", bot.user)
+        except Exception:
+            # if reactions fail continue handling error
+            pass
 
-    # People input apostrophes that don't match what the province names are, we can catch all of that here
-    ctx.message.content = re.sub(r"[‘’`´′‛]", "'", ctx.message.content)
+        if type(error.original) == PermissionError:
 
-    response = await function(ctx, manager)
-
-    if type(response) is dict:
-        message, file, file_name = response["message"], response["file"], response["file_name"]
-    else:
-        message, file = response, None
-
-    while discord_message_limit < len(message):
-        # Try to find an even line break to split the message on
-        cutoff = message.rfind("\n", 0, discord_message_limit)
-        if cutoff == -1:
-            cutoff = discord_message_limit
-        await ctx.channel.send(message[:cutoff].strip())
-        message = message[cutoff:].strip()
-    if file is not None and len(file) > discord_file_limit:
-        # zip compression without using files (disk is slow)
-
-        # We create a virtual file, write to it, and then restart it
-        # for some reason zipfile doesn't support this natively
-        with io.BytesIO() as vfile:
-            zip_file = zipfile.ZipFile(vfile, mode="x", compression=zipfile.ZIP_DEFLATED, compresslevel=9)
-            zip_file.writestr(f"{file_name}", file, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
-            zip_file.close()
-            vfile.seek(0)
-            await ctx.channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}.zip"))
-    elif file is not None:
-        with io.BytesIO(file) as vfile:
-            await ctx.channel.send(message, file=discord.File(fp=vfile, filename=f"{file_name}"))
-    else:
-        await ctx.channel.send(message)
-
-    elapsed = time.time() - start
-    logger.debug(
-        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' -> \n{message} | {elapsed}s"
-    )
+            await send_message_and_file(channel=ctx.channel, message=str(error.original), embed_colour=ERROR_COLOUR)
+        else:
+            logger.log(
+                logging.ERROR,
+                f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
+                f"errored in {time_spent}s"
+            )
+            await send_message_and_file(channel=ctx.channel, message=str(error), embed_colour=ERROR_COLOUR)
+            raise error
 
 
 @bot.command(help="Checks bot listens and responds.")
 async def ping(ctx: commands.Context) -> None:
-    await _handle_command(command.ping, ctx)
+    await command.ping(ctx, manager)
 
 
 # @bot.command(hidden=True)
 async def bumble(ctx: commands.Context) -> None:
-    await _handle_command(command.bumble, ctx)
+    await command.bumble(ctx, manager)
 
 
 # @bot.command(hidden=True)
 async def fish(ctx: commands.Context) -> None:
     await ctx.message.add_reaction("🐟")
-    await _handle_command(command.fish, ctx)
+    await command.fish(ctx, manager)
 
 
 # @bot.command(hidden=True)
 async def phish(ctx: commands.Context) -> None:
     await ctx.message.add_reaction("🐟")
-    await _handle_command(command.phish, ctx)
+    await command.phish(ctx, manager)
 
 
 # @bot.command(hidden=True)
 async def cheat(ctx: commands.Context) -> None:
-    await _handle_command(command.cheat, ctx)
+    await command.cheat(ctx, manager)
 
 
 # @bot.command(hidden=True)
 async def advice(ctx: commands.Context) -> None:
-    await _handle_command(command.advice, ctx)
+    await command.advice(ctx, manager)
 
 
 @bot.command(hidden=True)
@@ -181,7 +154,12 @@ async def botsay(ctx: commands.Context) -> None:
 
 @bot.command(hidden=True)
 async def announce(ctx: commands.Context) -> None:
-    await command.announce(ctx, {bot.get_guild(server_id) for server_id in manager.list_servers()})
+    await command.announce(ctx, manager)
+
+@bot.command(hidden=True)
+async def servers(ctx: commands.Context) -> None:
+    await command.servers(ctx, manager)
+
 
 
 @bot.command(
@@ -193,27 +171,55 @@ async def announce(ctx: commands.Context) -> None:
     If anything in the command errors, we recommend resubmitting the whole order message.
     *During Build phases only*, you have to specify multi-word provinces with underscores; e.g. Somali Basin would be Somali_Basin (we use a different parser during build phases)
     If you would like to use something that is not currently supported please inform your GM and we can add it.""",
+    aliases=["o", "orders"],
+
 )
 async def order(ctx: commands.Context) -> None:
-    await _handle_command(command.order, ctx)
+    await command.order(ctx, manager)
 
 
 @bot.command(
     brief="Removes orders for given units.",
     description="Removes orders for given units (required for removing builds/disbands). "
     "There must be one and only one order per line.",
+    aliases=["remove", "rm", "removeorders"]
 )
 async def remove_order(ctx: commands.Context) -> None:
-    await _handle_command(command.remove_order, ctx)
+    await command.remove_order(ctx, manager)
 
 
 @bot.command(
     brief="Outputs your current submitted orders.",
-    description="Outputs your current submitted orders.",
-    aliases=["view", "vieworders"],
+    description="Outputs your current submitted orders. "
+    "Use .view_map to view a sample moves map of your orders.",
+    aliases=["v", "view", "vieworders", "view-orders"],
 )
 async def view_orders(ctx: commands.Context) -> None:
-    await _handle_command(command.view_orders, ctx)
+    await command.view_orders(ctx, manager)
+
+@bot.command(
+    brief="Sends all previous orders",
+    description="For GM: Sends orders from previous phase to #orders-log",
+)
+async def publish_orders(ctx: commands.Context) -> None:
+    await command.publish_orders(ctx, manager)
+
+@bot.command(
+    brief="Sends fog of war maps",
+    description="""
+    * publish_fow_moves {Country|(None) - whether or not to send for a specific country}
+    """,)
+async def publish_fow_moves(ctx: commands.Context) -> None:
+    await command.publish_fow_moves(ctx, manager)
+
+@bot.command(
+    brief="Sends fog of war orders",
+    description="""
+    * publish_fow_orders {Country|(None) - whether or not to send for a specific country}
+    """,
+)
+async def publish_fow_orders(ctx: commands.Context) -> None:
+    await command.publish_fow_order_logs(ctx, manager)
 
 
 @bot.command(
@@ -226,7 +232,17 @@ async def view_orders(ctx: commands.Context) -> None:
     aliases=["viewmap", "vm"],
 )
 async def view_map(ctx: commands.Context) -> None:
-    await _handle_command(command.view_map, ctx)
+    await command.view_map(ctx, manager)
+
+@bot.command(
+    brief="Outputs the current map without any orders.",
+    description="""
+    * view_current {True|(False) - whether or not to display as an .svg}
+    """,
+    aliases=["viewcurrent", "vc"],
+)
+async def view_current(ctx: commands.Context) -> None:
+    await command.view_current(ctx, manager)
 
 
 @bot.command(brief="Adjudicates the game and outputs the moves and results maps.",
@@ -236,22 +252,22 @@ async def view_map(ctx: commands.Context) -> None:
     """
 )
 async def adjudicate(ctx: commands.Context) -> None:
-    await _handle_command(command.adjudicate, ctx)
+    await command.adjudicate(ctx, manager)
 
 
 @bot.command(brief="Rolls back to the previous game state.")
 async def rollback(ctx: commands.Context) -> None:
-    await _handle_command(command.rollback, ctx)
+    await command.rollback(ctx, manager)
 
 
 @bot.command(brief="Reloads the current board with what is in the DB")
 async def reload(ctx: commands.Context) -> None:
-    await _handle_command(command.reload, ctx)
+    await command.reload(ctx, manager)
 
 
 @bot.command(brief="Outputs the scoreboard.", description="Outputs the scoreboard.")
 async def scoreboard(ctx: commands.Context) -> None:
-    await _handle_command(command.get_scoreboard, ctx)
+    await command.get_scoreboard(ctx, manager)
 
 
 @bot.command(
@@ -264,6 +280,7 @@ async def scoreboard(ctx: commands.Context) -> None:
     * set_core <province_name> <player_name>
     * set_half_core <province_name> <player_name>
     * set_province_owner <province_name> <player_name>
+    * set_player_color <player_name> <hex_code>
     * create_unit {A, F} <player_name> <province_name>
     * create_dislodged_unit {A, F} <player_name> <province_name> <retreat_option1> <retreat_option2>...
     * delete_unit <province_name>
@@ -272,41 +289,55 @@ async def scoreboard(ctx: commands.Context) -> None:
     * make_units_claim_provinces {True|(False) - whether or not to claim SCs}""",
 )
 async def edit(ctx: commands.Context) -> None:
-    await _handle_command(command.edit, ctx)
+    await command.edit(ctx, manager)
 
 
 @bot.command(brief="Clears all players orders.")
 async def remove_all(ctx: commands.Context) -> None:
-    await _handle_command(command.remove_all, ctx)
+    await command.remove_all(ctx, manager)
 
 
 @bot.command(
     brief="disables orders until .unlock_orders is run.",
     description="""disables orders until .enable_orders is run.
              Note: Currently does not persist after the bot is restarted""",
+    aliases=["lock"]
 )
 async def lock_orders(ctx: commands.Context) -> None:
-    await _handle_command(command.disable_orders, ctx)
+    await command.disable_orders(ctx, manager)
 
 
-@bot.command(brief="re-enables orders")
+@bot.command(
+    brief="re-enables orders",
+    aliases=["unlock"]
+)
 async def unlock_orders(ctx: commands.Context) -> None:
-    await _handle_command(command.enable_orders, ctx)
+    await command.enable_orders(ctx, manager)
 
 
-@bot.command(brief="outputs information about the current game")
+@bot.command(
+    brief="outputs information about the current game",
+    aliases=["i"]
+)
 async def info(ctx: commands.Context) -> None:
-    await _handle_command(command.info, ctx)
+    await command.info(ctx, manager)
 
 
-@bot.command(brief="outputs information about a specific province")
+@bot.command(
+    brief="outputs information about a specific province",
+    aliases=["province"],
+)
 async def province_info(ctx: commands.Context) -> None:
-    await _handle_command(command.province_info, ctx)
+    await command.province_info(ctx, manager)
+
+@bot.command(brief="outputs the provinces you can see")
+async def visible_info(ctx: commands.Context) -> None:
+    await command.visible_provinces(ctx, manager)
 
 
 @bot.command(brief="outputs all provinces per owner")
 async def all_province_data(ctx: commands.Context) -> None:
-    await _handle_command(command.all_province_data, ctx)
+    await command.all_province_data(ctx, manager)
 
 
 @bot.command(
@@ -314,7 +345,7 @@ async def all_province_data(ctx: commands.Context) -> None:
     description="Create a game of Imp Dip and output the map. (there are no other variant options at this time)",
 )
 async def create_game(ctx: commands.Context) -> None:
-    await _handle_command(command.create_game, ctx)
+    await command.create_game(ctx, manager)
 
 
 @bot.command(
@@ -323,7 +354,7 @@ async def create_game(ctx: commands.Context) -> None:
     * .archive [link to any channel in category]""",
 )
 async def archive(ctx: commands.Context) -> None:
-    await _handle_command(command.archive, ctx)
+    await command.archive(ctx, manager)
 
 @bot.command(
     brief="pings players who don't have the expected number of orders.",
@@ -334,11 +365,11 @@ async def archive(ctx: commands.Context) -> None:
     * .ping_players <timestamp>
     """)
 async def ping_players(ctx: commands.Context) -> None:
-    await _handle_command(command.ping_players, ctx)
+    await command.ping_players(ctx, manager)
 
 @bot.command(brief="permanently deletes a game, cannot be undone")
 async def delete_game(ctx: commands.Context) -> None:
-    await _handle_command(command.delete_game, ctx)
+    await command.delete_game(ctx, manager)
 
 
 def run():
