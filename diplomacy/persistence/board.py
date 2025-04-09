@@ -47,6 +47,11 @@ class Board:
         return province
 
     def get_province_and_coast(self, name: str) -> tuple[Province, Coast | None]:
+        # FIXME: This should not be raising exceptions many places already assume it returns None on failure.
+        # TODO: (BETA) we build this everywhere, let's just have one live on the Board on init
+        # we ignore capitalization because this is primarily used for user input
+        # People input apostrophes that don't match what the province names are
+        name = re.sub(r"[‘’`´′‛]", "'", name)
         name = name.lower()
         coast = self.name_to_coast.get(name)
         if coast:
@@ -97,6 +102,8 @@ class Board:
         return matches
 
     def get_location(self, name: str) -> Location:
+        # People input apostrophes that don't match what the province names are
+        name = re.sub(r"[‘’`´′‛]", "'", name)
         province, coast = self.get_province_and_coast(name)
 
         if coast:

@@ -48,8 +48,6 @@ def gm_perms_check(ctx, description):
 def admin_perms_check(ctx, description):
     if not is_admin(ctx.message.author):
         raise PermissionError(f"You cannot {description} as you are not an admin")
-    if not is_gm_channel(ctx.channel):
-        raise PermissionError(f"You cannot {description} in a non-GM channel.")
 
 def gm(description: str = "run this command"):
     def gm_check(

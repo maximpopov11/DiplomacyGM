@@ -1,23 +1,27 @@
 import datetime
 import asyncio
 import io
+import logging
 import os
+import time
 import zipfile
 import discord
 from typing import List, Tuple
-from discord import Embed, Colour, Guild
+from discord import Embed, Colour, Guild, Message
 from discord.abc import GuildChannel
 from discord.ext import commands
 from discord.ext.commands import Context
 
 from bot import config
 
-from diplomacy.adjudicator.utils import svg_to_png
+from diplomacy.adjudicator.utils import svg_to_png, png_to_jpg
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType
+from logging import getLogger
+logger = getLogger(__name__)
 
 whitespace_dict = {
     "_",
@@ -49,7 +53,13 @@ discord_embed_description_limit = 4096
 discord_embed_total_limit = 6000
 
 def is_admin(author: commands.Context.author) -> bool:
-    return author.name in ["eebopmasch", "icecream_guy", "_bumble", "thisisflare", "eelisha"]
+    return author.id in [
+        1217203346511761428,    # eebop
+        332252245259190274,     # Icecream Guy
+        169995316680982528,     # Bumble
+        450636420558618625,     # Flare
+        490633966974533640,     # Elle
+    ]
 
 
 def is_gm(author: commands.Context.author) -> bool:
@@ -142,59 +152,125 @@ def get_unit_type(command: str) -> UnitType | None:
         return UnitType.FLEET
     return None
 
+def log_command(
+        remote_logger: logging.Logger,
+        ctx: discord.ext.commands.Context,
+        message: str,
+        *,
+        level=logging.INFO
+) -> None:
+    # FIXME Should probably delete this function and use a logging formatter instead
+    _log_command(
+        remote_logger,
+        ctx.message.content,
+        ctx.guild.name,
+        ctx.channel.name,
+        ctx.author.name,
+        message,
+        level=level
+    )
+
+def _log_command(
+        remote_logger: logging.Logger,
+        invoke_message: str,
+        guild: str,
+        channel: str,
+        invoker: str,
+        message: str,
+        *,
+        level=logging.INFO
+) -> None:
+    # FIXME Should probably delete this function and use a logging formatter instead
+
+    if level <= logging.DEBUG:
+        command_len_limit = -1
+    else:
+        command_len_limit = 40
+
+    # this might be too expensive?
+    command = invoke_message[:command_len_limit].encode('unicode_escape').decode('utf-8')
+    if len(invoke_message) > 40:
+        command += "..."
+
+    # temporary handling for bad error messages should be removed when we are nolonger passing
+    # messages intended for Discord to this function. FIXME
+    message = message.encode('unicode_escape').decode('utf-8')
+
+    remote_logger.log(
+        level,
+        f"[{guild}][#{channel}]({invoker}) - "
+        f"'{command}' -> "
+        f"{message}"
+    )
+
 async def send_message_and_file(
         *,
         channel: commands.Context.channel,
         title: str = None,
         message: str = None,
         messages: [str] = None,
-        embed_colour: str = "#fc71c4",
+        embed_colour: str = None,
         file: str = None,
         file_name: str = None,
-        file_in_embed: bool = True,
-        time: datetime.datetime = None,
+        file_in_embed: bool = None,
+        footer_content: str = None,
+        footer_datetime: datetime.datetime = None,
         fields: List[Tuple[str, str]] = None,
+        convert_svg: bool = False,
         **_
-):
+) -> Message:
+
+    if not embed_colour:
+        embed_colour = "#fc71c4"
+
+    if convert_svg and file and file_name:
+        file, file_name = await svg_to_png(file, file_name)
+
+    if fields:
+        for i, field in enumerate(fields):
+            if len(field[0]) > 256 or len(field[1]) > 1024:
+                title, body = fields.pop(i)
+                if not message:
+                    message = ""
+                message += (f"\n" 
+                            f"### {title}\n" if title.strip() else f"{title}\n" 
+                            f"{body}")
+
+    if message and messages:
+        messages = [message] + messages
+    elif message:
+        messages = [message]
+
+    embeds = []
     if messages:
-        embeds = [Embed(
-                title=title,
-                description=message,
-                colour=Colour.from_str(embed_colour),
-            ) for message in messages[:-1]]
-        # ensure only first embed has title
-        if len(messages) >= 2:
-            title = None
-        message = messages[-1]
-    else:
-        embeds = []
-    if message:
-        while 0 < len(message):
-            cutoff = discord_embed_description_limit
-            # Try to find an even line break to split the long messages on
-            if len(message) > discord_embed_description_limit:
-                cutoff = message.rfind("\n", 0, discord_embed_description_limit)
-                # otherwise split at limit
-                if cutoff == -1:
-                    cutoff = message.rfind(" ", 0, discord_embed_description_limit)
+        while messages:
+            message = messages.pop()
+            while message:
+                cutoff = discord_embed_description_limit
+                # Try to find an even line break to split the long messages on
+                if len(message) > discord_embed_description_limit:
+                    cutoff = message.rfind("\n", 0, discord_embed_description_limit)
+                    # otherwise split at limit
                     if cutoff == -1:
-                        cutoff = discord_embed_description_limit
-            embed = Embed(
-                title=title,
-                description=message[:cutoff],
-                colour=Colour.from_str(embed_colour),
-            )
-            # ensure only first embed has title
-            title = None
+                        cutoff = message.rfind(" ", 0, discord_embed_description_limit)
+                        if cutoff == -1:
+                            cutoff = discord_embed_description_limit
+                embed = Embed(
+                    title=title,
+                    description=message[:cutoff],
+                    colour=Colour.from_str(embed_colour),
+                )
+                # ensure only first embed has title
+                title = None
 
-            # check that embed totals arent over the total message embed character limit.
-            if sum(map(len, embeds)) + len(embed) > discord_embed_total_limit:
-                await channel.send(embeds=embeds)
-                embeds = []
+                # check that embed totals aren't over the total message embed character limit.
+                if sum(map(len, embeds)) + len(embed) > discord_embed_total_limit or len(embeds) == 10:
+                    await channel.send(embeds=embeds)
+                    embeds = []
 
-            embeds.append(embed)
+                embeds.append(embed)
 
-            message = message[cutoff:].strip()
+                message = message[cutoff:].strip()
 
     if not embeds:
         embeds = [Embed(
@@ -205,47 +281,72 @@ async def send_message_and_file(
 
     if fields:
         for field in fields:
-            if len(embeds[-1].fields) == 25 or sum(map(len, embeds)) + len(field) > discord_embed_total_limit:
+            if (len(embeds[-1].fields) == 25
+                    or sum(map(len, embeds)) + sum(map(len, field)) > discord_embed_total_limit
+                    or len(embeds) == 10):
                 await channel.send(embeds=embeds)
                 embeds = [Embed(
                     title=title,
                     colour=Colour.from_str(embed_colour)
                 )]
                 title = ""
+
             embeds[-1].add_field(name=field[0], value=field[1], inline=True)
 
 
     discord_file = None
-    if file is not None and len(file) > discord_file_limit:
-        # zip compression without using files (disk is slow)
+    if file is not None:
+        if file_name[-4:].lower() == ".png" and len(file) > discord_file_limit:
+            _log_command(
+                logger,
+                "?",
+                channel.guild.name,
+                channel.name,
+                "?",
+                f"png is too big ({len(file)}); converting to jpg"
+            )
+            file, file_name = await png_to_jpg(file, file_name)
+            if len(file) > discord_file_limit:
+                _log_command(
+                    logger,
+                    "?",
+                    channel.guild.name,
+                    channel.name,
+                    "?",
+                    f"jpg is too big ({len(file)})"
+                )
+                if is_gm_channel(channel):
+                    message = "Try `.vm true` to get an svg"
+                else:
+                    message = "Please contact your GM"
+                await send_message_and_file(
+                    channel=channel,
+                    title="File too larger",
+                    message=message
+                )
+                file = None
+                file_name = None
+                discord_file = None
 
-        # We create a virtual file, write to it, and then restart it
-        # for some reason zipfile doesn't support this natively
-        with io.BytesIO() as vfile:
-            zip_file = zipfile.ZipFile(vfile, mode="x", compression=zipfile.ZIP_DEFLATED, compresslevel=9)
-            zip_file.writestr(f"{file_name}", file, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
-            zip_file.close()
-            vfile.seek(0)
-            discord_file = discord.File(fp=vfile, filename=f"{file_name}.zip")
-    elif file is not None:
+    if file is not None:
         with io.BytesIO(file) as vfile:
-            discord_file = discord.File(fp=vfile, filename=f"{file_name}")
-            if file_in_embed:
-                embeds[-1].set_image(url=f"attachment://{discord_file.filename.replace(' ', '_')}")
+            discord_file = discord.File(fp=vfile, filename=file_name)
 
+        if file_in_embed or (file_in_embed is None and any(map(lambda x: file_name.lower().endswith(x), (
+                        ".png", ".jpg", ".jpeg"#, ".gif", ".gifv", ".webm", ".mp4", "wav", ".mp3", ".ogg"
+        )))):
+            embeds[-1].set_image(url=f"attachment://{discord_file.filename.replace(' ', '_')}")
 
-    embeds[-1].set_footer(
-        text="DiploGM",
-        icon_url="https://cdn.discordapp.com/icons/1201167737163104376/f78e67edebfdefad8f3ee057ad658acd.webp"
-                 "?size=96&quality=lossless"
-    )
+    if footer_datetime or footer_content:
+        embeds[-1].set_footer(
+            text=footer_content,
+            icon_url="https://cdn.discordapp.com/icons/1201167737163104376/f78e67edebfdefad8f3ee057ad658acd.webp"
+                     "?size=96&quality=lossless"
+        )
 
-    if time is None:
-        datetime.datetime.now()
+        embeds[-1].timestamp = footer_datetime
 
-    embeds[-1].timestamp = time
-
-    await channel.send(embeds=embeds, file=discord_file)
+    return await channel.send(embeds=embeds, file=discord_file)
 
 
 def get_orders(board: Board, player_restriction: Player | None, ctx: Context, fields: bool = False) -> str | List[Tuple[str, str]]:
@@ -268,7 +369,7 @@ def get_orders(board: Board, player_restriction: Player | None, ctx: Context, fi
                     body += f"\n{unit}"
 
                 if fields:
-                    response.append(("", f"{title}{body}"))
+                    response.append((f"", f"{title}{body}"))
                 else:
                     response += f"\n{title}{body}"
         return response
@@ -305,7 +406,7 @@ def get_orders(board: Board, player_restriction: Player | None, ctx: Context, fi
                     body += f"{unit} {unit.order}\n"
 
             if fields:
-                response.append(("", f"{title}\n{body}"))
+                response.append((f"", f"{title}\n{body}"))
             else:
                 response += f"{title}\n{body}"
 
@@ -350,10 +451,3 @@ def get_filtered_orders(board: Board, player_restriction: Player) -> str:
                         response += f"{unit} {unit.order}\n"
 
         return response
-    
-svg_export_limit = asyncio.Semaphore(int(os.getenv("simultaneous_svg_exports_limit")))
-
-async def convert_svg_and_send_file(response: dict[str, ...]):
-    async with svg_export_limit:
-        response["file"], response["file_name"] = await svg_to_png(response["file"], response["file_name"])
-        await send_message_and_file(**response)

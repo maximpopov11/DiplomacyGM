@@ -259,24 +259,6 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
     for line in orderoutput:
         paginator.add_line(line)
 
-    match board.phase.name:
-        case "Spring Moves":
-            date = datetime.date(1642 + board.year, 3, 21)
-        case "Spring Retreats":
-            date = datetime.date(1642 + board.year, 6, 7)
-
-        case "Fall Moves":
-            date = datetime.date(1642 + board.year, 9, 22)
-
-        case "Fall Retreats":
-            date = datetime.date(1642 + board.year, 12, 7)
-        case "Winter Builds":
-            date = datetime.date(1642 + board.year, 12, 22)
-        case _:
-            date = datetime.date(1642 + board.year, 1, 1)
-
-    time = datetime.datetime.combine(date, datetime.datetime.now().time())
-
     output = paginator.pages
     if errors:
         output[-1] += "\n" + "\n".join(errors)
@@ -287,18 +269,16 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
         return {
             "messages": output,
             "embed_colour": embed_colour,
-            "time": time,
         }
     else:
         return {
                 "title": "**Orders validated successfully.**",
                 "messages": output,
-                "time": time,
         }
 
 def parse_remove_order(message: str, player_restriction: Player | None, board: Board) -> dict[str, ...]:
     invalid: list[tuple[str, Exception]] = []
-    commands = str.splitlines(message)
+    commands = message.splitlines()
     updated_units: set[Unit] = set()
     provinces_with_removed_builds: set[str] = set()
     for command in commands:
@@ -338,16 +318,14 @@ def parse_remove_order(message: str, player_restriction: Player | None, board: B
 
 def _parse_remove_order(command: str, player_restriction: Player, board: Board) -> Unit | str:
     command = command.lower().strip()
-    keywords: list[str] = get_keywords(command)
-    location = keywords[0]
-    province, coast = board.get_province_and_coast(location)
+    province, coast = board.get_province_and_coast(command)
 
     if phase.is_builds(board.phase):
         # remove build order
         player = province.owner
         if player_restriction is not None and player != player_restriction:
             raise PermissionError(
-                f"{player_restriction.name} does not control the unit in {location} which belongs to {player.name}"
+                f"{player_restriction.name} does not control the unit in {command} which belongs to {player.name}"
             )
 
         remove_player_order_for_location(board, player, province)
