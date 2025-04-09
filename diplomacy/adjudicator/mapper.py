@@ -625,8 +625,6 @@ class Mapper:
                     "{http://www.inkscape.org/namespaces/inkscape}label"
                 ] in ["Halfcore Marker", "Core Marker"]:
                     # Handling capitals is easy bc it's all marked
-                    # TODO: Maybe make it split vertically?
-                    # that might be hard to do
                     if elem.attrib["{http://www.inkscape.org/namespaces/inkscape}label"] == "Halfcore Marker":
                         self.color_element(elem, half_color)
                     elif elem.attrib["{http://www.inkscape.org/namespaces/inkscape}label"] == "Core Marker":
@@ -786,15 +784,14 @@ class Mapper:
         ball_marker.append(ball_def)
         defs.append(ball_marker)
 
-        data = self.board.data["players"].copy()
-        data["None"] = {"color": "ffffff"}
-        for mapping in itertools.product(data, data):
+        players = self.board.players.union({Player("None", "ffffff", None, None, None, None)})
+        for mapping in itertools.product(players, players):
             gradient_def: Element = self.create_element("linearGradient", {"id": f"{mapping[0]}_{mapping[1]}"})
             first: Element = self.create_element(
-                "stop", {"offset": "50%", "stop-color": f"#{data[mapping[0]]['color']}"}
+                "stop", {"offset": "50%", "stop-color": f"#{mapping[0].render_color}"}
             )
             second: Element = self.create_element(
-                "stop", {"offset": "50%", "stop-color": f"#{data[mapping[1]]['color']}"}
+                "stop", {"offset": "50%", "stop-color": f"#{mapping[1].render_color}"}
             )
             gradient_def.append(first)
             gradient_def.append(second)
