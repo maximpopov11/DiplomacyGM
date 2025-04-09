@@ -535,29 +535,28 @@ class Mapper:
                 color = province.owner.render_color
             self.color_element(province_element, color)
 
-        for province_element in sea_layer:
-            try:
-                province = self._get_province_from_element_by_label(province_element)
-            except ValueError as ex:
-                print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
-                continue
+        if self.board.fow:
+            for province_element in sea_layer:
+                try:
+                    province = self._get_province_from_element_by_label(province_element)
+                except ValueError as ex:
+                    print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
+                    continue
 
-            if province in self.adjacent_provinces:
-                sea_layer.remove(province_element)
+                if province in self.adjacent_provinces:
+                    sea_layer.remove(province_element)
 
-            visited_provinces.add(province.name)
+                visited_provinces.add(province.name)
 
-        for province_element in island_layer:
-            try:
-                province = self._get_province_from_element_by_label(province_element)
-            except ValueError as ex:
-                print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
-                continue
+            for province_element in island_layer:
+                try:
+                    province = self._get_province_from_element_by_label(province_element)
+                except ValueError as ex:
+                    print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
+                    continue
 
-            if province in self.adjacent_provinces:
-                island_layer.remove(province_element)
-
-            visited_provinces.add(province.name)
+                if province in self.adjacent_provinces:
+                    island_layer.remove(province_element)
 
         # Try to combine this with the code above? A lot of repeated stuff here
         for island_ring in island_ring_layer:
@@ -574,8 +573,10 @@ class Mapper:
                 color = province.owner.render_color
             self.color_element(island_ring, color, key="stroke")
 
+            visited_provinces.add(province.name)
+
         for province in self.board.provinces:
-            if province.name in visited_provinces:
+            if province.name in visited_provinces and (not self.board.fow or province.type == ProvinceType.SEA):
                 continue
             print(f"Warning: Province {province.name} was not recolored by mapper!")
 
