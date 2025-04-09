@@ -304,6 +304,7 @@ async def order(player: Player | None, ctx: commands.Context, manager: Manager) 
                                     title="Orders locked!",
                                     message="If you think this is an error, contact a GM.",
                                     embed_colour=ERROR_COLOUR)
+        return
 
     message = parse_order(ctx.message.content, player, board)
     if "title" in message:
@@ -342,7 +343,7 @@ async def view_orders(player: Player | None, ctx: commands.Context, manager: Man
     except RuntimeError as err:
         log_command(logger, ctx, message=f"Failed for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
-                                    title="Unknown Error: Please contact your local bot dev",
+                                    title="Unknown Error: Please contact you're local bot dev",
                                     embed_colour=ERROR_COLOUR)
         return
     log_command(logger, ctx, message=f"Success - generated orders for {board.phase.name} {str(1642 + board.year)}")
@@ -364,7 +365,7 @@ async def publish_orders(ctx: commands.Context, manager: Manager) -> None:
     except RuntimeError as err:
         log_command(logger, ctx, message=f"Failed for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
-                                    title="Unknown Error: Please contact your local bot dev",
+                                    title="Unknown Error: Please contact you're local bot dev",
                                     embed_colour=ERROR_COLOUR)
         return
     orders_log_channel = get_orders_log(ctx.guild)
@@ -389,6 +390,14 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
     convert_svg = player or ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() not in ("true", "t", "svg", "s")
     board = manager.get_board(ctx.guild.id)
 
+    if player and not board.orders_enabled:
+        log_command(logger, ctx, f"Orders locked - not processing")
+        await send_message_and_file(channel=ctx.channel,
+                                    title="Orders locked!",
+                                    message="If you think this is an error, contact a GM.",
+                                    embed_colour=ERROR_COLOUR)
+        return
+    
     try:
         if not board.fow:
             file, file_name = manager.draw_moves_map(ctx.guild.id, player)
@@ -397,7 +406,7 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
     except Exception as err:
         log_command(logger, ctx, message=f"Failed to generate map for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
-                                    title="Unknown Error: Please contact your local bot dev",
+                                    title="Unknown Error: Please contact you're local bot dev",
                                     embed_colour=ERROR_COLOUR)
         return
     log_command(logger, ctx, message=f"Generated map for {board.phase.name} {str(1642 + board.year)}")
@@ -421,7 +430,7 @@ async def view_current(player: Player | None, ctx: commands.Context, manager: Ma
     except Exception as err:
         log_command(logger, ctx, message=f"Failed to generate map for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
-                                    title="Unknown Error: Please contact your local bot dev",
+                                    title="Unknown Error: Please contact you're local bot dev",
                                     embed_colour=ERROR_COLOUR)
         return
     log_command(logger, ctx, message=f"Generated map for {board.phase.name} {str(1642 + board.year)}")
@@ -660,6 +669,9 @@ async def visible_provinces(player: Player | None, ctx: commands.Context, manage
 async def all_province_data(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
 
+    if not board.orders_enabled:
+        perms.gm_perms_check(ctx, "call .all_province_data while orders are locked")
+    
     province_by_owner = defaultdict(list)
     for province in board.provinces:
         owner = province.owner
