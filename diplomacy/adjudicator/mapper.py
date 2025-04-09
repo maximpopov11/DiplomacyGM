@@ -74,19 +74,20 @@ class Mapper:
         self._color_centers()
         self.draw_side_panel(self.board_svg)
         
-        for element_name in ["retreat_army", "retreat_fleet"]:
-            get_svg_element(self.board_svg, self.board.data["svg config"][element_name]).clear()
-
         self._moves_svg = copy.deepcopy(self.board_svg)
         self.cached_elements["unit_output_moves"] = get_svg_element(
             self._moves_svg, self.board.data["svg config"]["unit_output"]
         )
 
         self.state_svg = copy.deepcopy(self.board_svg)
-        for element_name in ["army", "fleet"]:
-            get_svg_element(self.state_svg, self.board.data["svg config"][element_name]).clear()
+        self.clean_layers(self.state_svg)
 
         self.highlight_retreating_units(self.state_svg)
+
+    def clean_layers(self, svg: ElementTree):
+        for element_name in self.board.data["svg config"]["delete_layer"]:
+            print(element_name)
+            get_svg_element(svg, self.board.data["svg config"][element_name]).clear()
 
     def draw_moves_map(self, current_phase: phase.Phase, player_restriction: Player | None) -> tuple[str, str]:
         logger.info("mapper.draw_moves_map")
@@ -145,7 +146,9 @@ class Mapper:
                         self._draw_player_order(player, build_order)
 
         self.draw_side_panel(self._moves_svg)
-        
+
+        self.clean_layers(self._moves_svg)
+
         svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_moves_map.svg"
         return elementToString(self._moves_svg.getroot(), encoding="utf-8"), svg_file_name
 

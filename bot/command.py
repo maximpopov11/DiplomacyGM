@@ -386,7 +386,7 @@ async def publish_orders(ctx: commands.Context, manager: Manager) -> None:
 
 @perms.player("view map")
 async def view_map(player: Player | None, ctx: commands.Context, manager: Manager) -> None:
-    return_svg = not player and ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() not in ("true", "t", "svg", "s")
+    convert_svg = player or ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() not in ("true", "t", "svg", "s")
     board = manager.get_board(ctx.guild.id)
 
     try:
@@ -405,7 +405,31 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
                                 title=f"{board.phase.name} {str(1642 + board.year)}",
                                 file=file,
                                 file_name=file_name,
-                                convert_svg=return_svg,
+                                convert_svg=convert_svg,
+                                file_in_embed=False)
+
+@perms.gm("view current")
+async def view_current(player: Player | None, ctx: commands.Context, manager: Manager) -> None:
+    convert_svg = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower() not in ("true", "t", "svg", "s")
+    board = manager.get_board(ctx.guild.id)
+
+    try:
+        if not board.fow:
+            file, file_name = manager.draw_moves_map(ctx.guild.id, player)
+        else:
+            file, file_name = manager.draw_fow_players_moves_map(ctx.guild.id, player)
+    except Exception as err:
+        log_command(logger, ctx, message=f"Failed to generate map for an unknown reason", level=logging.ERROR)
+        await send_message_and_file(channel=ctx.channel,
+                                    title="Unknown Error: Please contact you're local bot dev",
+                                    embed_colour=ERROR_COLOUR)
+        return
+    log_command(logger, ctx, message=f"Generated map for {board.phase.name} {str(1642 + board.year)}")
+    await send_message_and_file(channel=ctx.channel,
+                                title=f"{board.phase.name} {str(1642 + board.year)}",
+                                file=file,
+                                file_name=file_name,
+                                convert_svg=convert_svg,
                                 file_in_embed=False)
 
 @perms.gm("adjudicate")
@@ -424,10 +448,7 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> None:
         # await publish_current(ctx, manager)
         pass
 
-    if not board.fow:
-        file, file_name = manager.draw_current_map(ctx.guild.id)
-    else:
-        file, file_name = manager.draw_fow_current_map(ctx.guild.id, None)
+    file, file_name = manager.draw_current_map(ctx.guild.id)
 
     log_command(logger, ctx, message=f"Adjudication Sucessful for {board.phase.name} {str(1642 + board.year)}")
     await send_message_and_file(channel=ctx.channel,
