@@ -58,7 +58,7 @@ class TransGL3:
     # (t1 * t2).transform(p) == t1.transform(t2.transform(p))
     def __mul__(self, other):
         out = TransGL3()
-        out.matrix = other.matrix @ self.matrix
+        out.matrix = self.matrix @ other.matrix
         return out
 
     def __str__(self):
