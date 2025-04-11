@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 
 from shapely import Polygon, MultiPolygon
 
+from diplomacy.persistence.db.database import logger
+
 if TYPE_CHECKING:
     from diplomacy.persistence import player
     from diplomacy.persistence import unit
@@ -142,7 +144,6 @@ class Province(Location):
             name = f"{self.name} coast"
             self.coasts.add(Coast(name, None, None, coast_set, self))
 
-
 class Coast(Location):
     def __init__(
         self,
@@ -167,6 +168,62 @@ class Coast(Location):
     
     def as_province(self) -> Province:
         return self.province
+
+    @staticmethod
+    def detect_costal_connection(c1: Coast, c2: Coast):
+        # multiple possible tripoints could happen if there was a scenario
+        # where two canals were blocked from connecting on one side by a land province but not the other
+        # or by multiple rainbow-shaped seas
+        possible_tripoints = c1.adjacent_seas & c2.adjacent_seas
+        for possible_tripoint in possible_tripoints:
+            # the algorithm is as follows
+            # connect all adjacent to the three provinces as possible
+            # if they all connect, they form a ring around forcing connection
+            # if not, they must form rings inside and outside, meaning there is no connection
+            
+            # initialise the process queue and the connection sets
+            procqueue: list[Province] = []
+            connected_sets: set[frozenset[Province]] = {}
+
+            for adjacent_discovery in (c1.province.adjacent, c2.province.adjacent, possible_tripoint.adjacent):
+                for adjacent in adjacent_discovery:
+                    if not adjacent in procqueue:
+                        procqueue.append(adjacent)
+                    connected_sets.append(frozenset({adjacent}))
+            
+            def find_set_with_element(element):
+                for subgraph in connected_sets:
+                    if element in subgraph:
+                        return True
+                raise Exception("Error in costal_connection algorithm")
+
+            # we will retain the invariant that no two elements of connected_sets contain the same element
+            for to_process in procqueue:
+                for neighbor in to_process.adjacent:
+                    # going further into or out of rings won't help us
+                    if neighbor not in procqueue:
+                        break
+                    
+                    # Now that we have found two connected subgraphs,
+                    # we remove them and merge them
+                    this = find_set_with_element(to_process)
+                    other = find_set_with_element(neighbor)
+                    connected_sets = connected_sets - {this, other}
+                    connected_sets = connected_sets | {this | other}
+            
+            # If there is 1, that means there was 1 ring (yes)
+            # 2, there was two (no)
+            # Else, something has gone wrong
+            l = len(connected_sets)
+            if l == 1:
+                return True
+            elif l != 2:
+                logger.error(f"WARNING: len(connected_sets) should've been 1 or 2, but got {l}. "
+                            f"hint: between coasts {c1} and {c2}, when looking at mutual sea {possible_tripoint}")
+        
+        # no connection worked
+        return False
+
 
     def get_adjacent_coasts(self) -> set[Coast]:
         # TODO: (BETA) this will generate false positives (e.g. mini province keeping 2 big province coasts apart)
