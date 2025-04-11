@@ -7,7 +7,16 @@ from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
 
 def get_player_by_context(ctx: commands.Context, manager: Manager, description: str):
-    player = get_player_by_role(ctx.message.author, manager, ctx.guild.id)
+    #FIXME cleaner way of doing this
+    board = manager.get_board(ctx.guild.id)
+    # return if in order channel
+    if board.fow:
+        player = get_player_by_channel(ctx.channel, manager, ctx.guild.id)
+        if player:
+            return player
+    else:
+        player = get_player_by_role(ctx.message.author, manager, ctx.guild.id)
+    
     if player:
         if not is_player_channel(player.name, ctx.channel):
             raise PermissionError(f"You cannot {description} as a player outside of your orders channel.")
