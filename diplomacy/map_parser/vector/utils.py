@@ -2,7 +2,7 @@ import numpy as np
 
 from xml.etree.ElementTree import Element, ElementTree
 
-from diplomacy.map_parser.vector.transform import Transform, EmptyTransform, get_transform
+from diplomacy.map_parser.vector.transform import TransGL3
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType
 import logging
@@ -38,7 +38,7 @@ def get_unit_coordinates(
         # take the center of the bounding box
         for path in unit_data.findall("{http://www.w3.org/2000/svg}path"):
             pathstr = path.get("d")
-            coordinates = parse_path(pathstr, EmptyTransform(None), get_transform(path))
+            coordinates = parse_path(pathstr, TransGL3(path))
             coordinates = np.array(sum(coordinates, start = []))
             minp = np.min(coordinates, axis=0)
             maxp = np.max(coordinates, axis=0)
@@ -47,7 +47,7 @@ def get_unit_coordinates(
     else:
         x = float(x)
         y = float(y)
-        return get_transform(path).transform((x, y))
+        return TransGL3(path).transform((x, y))
 
 
 def move_coordinate(
@@ -86,7 +86,7 @@ def _parse_path_command(
     else:
         raise RuntimeError(f"Unknown SVG path command: {command}")
 
-def parse_path(path_string: str, layer_translation: Transform, this_translation: Transform):
+def parse_path(path_string: str, translation: TransGL3):
     province_coordinates = [[]]
     command = None
     expected_arguments = 0
@@ -106,7 +106,7 @@ def parse_path(path_string: str, layer_translation: Transform, this_translation:
             if command.lower() == "z":
                 if start == None:
                     raise Exception("Invalid geometry: got 'z' on first element in a subgeometry")
-                province_coordinates[-1].append(layer_translation.transform(this_translation.transform(start)))
+                province_coordinates[-1].append(translation.transform(start))
                 start = None
                 current_index += 1
                 if current_index < len(path):
@@ -147,6 +147,6 @@ def parse_path(path_string: str, layer_translation: Transform, this_translation:
         if start == None:
             start = coordinate
 
-        province_coordinates[-1].append(layer_translation.transform(this_translation.transform(coordinate)))
+        province_coordinates[-1].append(translation.transform(coordinate))
         current_index += expected_arguments
     return province_coordinates

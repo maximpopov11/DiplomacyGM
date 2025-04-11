@@ -2,7 +2,10 @@ import asyncio
 from subprocess import PIPE
 import os
 
-external_task_limit = asyncio.Semaphore(int(os.getenv("simultaneous_svg_exports_limit")))
+limit = os.getenv("simultaneous_svg_exports_limit")
+if limit == None:
+    limit = 4
+external_task_limit = asyncio.Semaphore(int(limit))
 
 async def svg_to_png(svg: bytes, file_name: str):
     async with external_task_limit:

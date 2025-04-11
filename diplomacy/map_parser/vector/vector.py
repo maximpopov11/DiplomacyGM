@@ -11,7 +11,7 @@ import shapely
 from lxml import etree
 from shapely.geometry import Point
 
-from diplomacy.map_parser.vector.transform import get_transform
+from diplomacy.map_parser.vector.transform import TransGL3
 from diplomacy.map_parser.vector.utils import get_player, get_unit_coordinates, get_svg_element, parse_path
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
@@ -299,10 +299,9 @@ class Parser:
             path_string = province_data.get("d")
             if not path_string:
                 raise RuntimeError("Province path data not found")
-            layer_translation = get_transform(provinces_layer)
-            this_translation = get_transform(province_data)
+            translation = TransGL3(provinces_layer) * TransGL3(province_data)
 
-            province_coordinates = parse_path(path_string, layer_translation, this_translation)
+            province_coordinates = parse_path(path_string, translation)
 
             if len(province_coordinates) <= 1:
                 poly = shapely.Polygon(province_coordinates[0])
@@ -387,7 +386,7 @@ class Parser:
                 return None, None
             circle = circles[0]
             base_coordinates = float(circle.get("cx")), float(circle.get("cy"))
-            trans = get_transform(supply_center_data)
+            trans = TransGL3(supply_center_data)
             return trans.transform(base_coordinates)
 
         def set_province_supply_center(province: Province, _: Element) -> None:
@@ -434,7 +433,7 @@ class Parser:
             base_coordinates = tuple(
                 map(float, unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0].get("d").split()[1].split(","))
             )
-            trans = get_transform(unit_data)
+            trans = TransGL3(unit_data)
             return trans.transform(base_coordinates)
 
         initialize_province_resident_data(provinces, self.units_layer, get_coordinates, self._set_province_unit)
@@ -445,9 +444,9 @@ class Parser:
             (self.phantom_retreat_armies_layer, "retreat_unit_coordinate"),
         ]
         for layer, province_key in army_layer_to_key:
-            layer_translation = get_transform(layer)
+            layer_translation = TransGL3(layer)
             for unit_data in layer.getchildren():
-                unit_translation = get_transform(unit_data)
+                unit_translation = TransGL3(unit_data)
                 province = self._get_province(unit_data)
                 coordinate = get_unit_coordinates(unit_data)
                 setattr(province, province_key, layer_translation.transform(unit_translation.transform(coordinate)))
@@ -458,9 +457,9 @@ class Parser:
         ]
         for layer, province_key in fleet_layer_to_key:
 
-            layer_translation = get_transform(layer)
+            layer_translation = TransGL3(layer)
             for unit_data in layer.getchildren():
-                unit_translation = get_transform(unit_data)
+                unit_translation = TransGL3(unit_data)
                 # This could either be a sea province or a land coast
                 province_name = self._get_province_name(unit_data)
                 # this is me writing bad code to get this out faster, will fix later when we clean up this file
