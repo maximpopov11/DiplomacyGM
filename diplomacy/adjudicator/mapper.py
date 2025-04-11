@@ -173,7 +173,13 @@ class Mapper:
         5-7: SC counts in that same order
         """
         all_power_banners_element = get_svg_element(svg.getroot(), self.board.data["svg config"]["power_banners"])
-        for i, player in enumerate(self.board.get_players_by_score()):
+        if self.board.fow and self.restriction != None:
+            # don't get info
+            players = sorted(self.board.players, key=lambda sort_player: sort_player.name)
+        else:
+            players = self.board.get_players_by_score()
+
+        for i, player in enumerate(players):
             for power_element in all_power_banners_element:
                 # match the correct svg element based on the color of the rectangle
                 if get_element_color(power_element[0]) == player.default_color:
