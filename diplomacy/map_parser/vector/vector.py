@@ -586,8 +586,8 @@ def initialize_province_resident_data(
                 resident_data_callback(province, resident_data)
                 remove.add(resident_data)
 
-        if not found:
-            print("Not found!")
+        # if not found:
+        #     print("Not found!")
 
         for resident_data in remove:
             resident_dataset.remove(resident_data)
