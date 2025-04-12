@@ -3,10 +3,11 @@ from __future__ import annotations
 from abc import abstractmethod
 from enum import Enum
 from typing import TYPE_CHECKING
+import logging
 
 from shapely import Polygon, MultiPolygon
 
-from diplomacy.persistence.db.database import logger
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from diplomacy.persistence import player
@@ -44,6 +45,9 @@ class Location:
 
     def __str__(self):
         return self.name
+    
+    def __repr__(self):
+        return f"Location {self.name}"
 
 
 class ProvinceType(Enum):
@@ -82,6 +86,9 @@ class Province(Location):
 
     def __str__(self):
         return self.name
+
+    def __repr__(self):
+        return f"Province {self.name}"
 
     def get_owner(self) -> player.Player | None:
         return self.owner
@@ -160,6 +167,9 @@ class Coast(Location):
     def __str__(self):
         return self.name
 
+    def __repr__(self):
+        return f"Coast {self.name}"
+
     def get_owner(self) -> player.Player | None:
         return self.province.get_owner()
 
@@ -183,38 +193,45 @@ class Coast(Location):
             
             # initialise the process queue and the connection sets
             procqueue: list[Province] = []
-            connected_sets: set[frozenset[Province]] = {}
+            connected_sets: set[frozenset[Province]] = set()
 
             for adjacent_discovery in (c1.province.adjacent, c2.province.adjacent, possible_tripoint.adjacent):
                 for adjacent in adjacent_discovery:
-                    if not adjacent in procqueue:
+                    if (adjacent not in procqueue) and (adjacent not in (c1.province, c2.province, possible_tripoint)):
                         procqueue.append(adjacent)
-                    connected_sets.append(frozenset({adjacent}))
+                        connected_sets.add(frozenset({adjacent}))
             
             def find_set_with_element(element):
                 for subgraph in connected_sets:
                     if element in subgraph:
-                        return True
+                        return subgraph
                 raise Exception("Error in costal_connection algorithm")
+
+            # if c1.name == "Nanjing coast" and c2.name == "Peking coast":
+            #     print(c1.name, c2.name, l)
+            #     print("HERE")
+            #     import pdb
+            #     pdb.set_trace()
 
             # we will retain the invariant that no two elements of connected_sets contain the same element
             for to_process in procqueue:
                 for neighbor in to_process.adjacent:
                     # going further into or out of rings won't help us
                     if neighbor not in procqueue:
-                        break
+                        continue
                     
                     # Now that we have found two connected subgraphs,
                     # we remove them and merge them
                     this = find_set_with_element(to_process)
                     other = find_set_with_element(neighbor)
                     connected_sets = connected_sets - {this, other}
-                    connected_sets = connected_sets | {this | other}
-            
+                    connected_sets.add(this | other)
+
+            l = len(connected_sets)
+
             # If there is 1, that means there was 1 ring (yes)
             # 2, there was two (no)
             # Else, something has gone wrong
-            l = len(connected_sets)
             if l == 1:
                 return True
             elif l != 2:
@@ -230,12 +247,14 @@ class Coast(Location):
         adjacent_coasts: set[Coast] = set()
         if self.province.type == ProvinceType.ISLAND:
             for province2 in self.province.adjacent:
-                adjacent_coasts.update(province2.coasts)
+                for coast in province2.coasts:
+                    if self.province in coast.adjacent_seas:
+                        adjacent_coasts.add(coast)
             return adjacent_coasts
       
         for province2 in self.province.adjacent:
             for coast2 in province2.coasts:
-                if self.adjacent_seas & coast2.adjacent_seas:
+                if Coast.detect_costal_connection(self, coast2):
                     adjacent_coasts.add(coast2)
         return adjacent_coasts
 
