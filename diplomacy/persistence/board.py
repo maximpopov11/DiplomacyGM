@@ -3,7 +3,7 @@ import logging
 
 from diplomacy.persistence.phase import Phase
 from diplomacy.persistence.player import Player
-from diplomacy.persistence.province import Province, Coast, Location, get_adjacent_provinces
+from diplomacy.persistence.province import Province, ProvinceType, Coast, Location, get_adjacent_provinces
 from diplomacy.persistence.unit import Unit, UnitType
 
 logger = logging.getLogger(__name__)
@@ -80,8 +80,16 @@ class Board:
 
     def get_visible_provinces(self, player: Player) -> set[Province]:
         visible: set[Province] = set()
+        for province in self.provinces:
+            for unit in player.units:
+                if unit.unit_type == UnitType.ARMY:
+                    if province in get_adjacent_provinces(unit.province) and province.type != ProvinceType.SEA:
+                        visible.add(province)
+                if unit.unit_type == UnitType.FLEET:
+                    if province in get_adjacent_provinces(unit.coast):
+                        visible.add(province)
+
         for unit in player.units:
-            visible.update(get_adjacent_provinces(unit.location()))
             visible.add(unit.province)
 
         for province in player.centers:
