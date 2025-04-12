@@ -7,10 +7,12 @@ order: (move_order
       | core_order) WS
    
 retreat: (retreat_order
-        | disband_order) WS
+        | disband_order
+		| non_retreat_order) WS
 
 build: (build_unit
-      | disband_unit) WS
+      | disband_unit
+	  | non_build_order) WS
 
 move_order: unit WS MOVE WS province
 
@@ -30,9 +32,13 @@ retreat_order: retreat_unit WS RETREAT WS province
 
 disband_order: ( retreat_unit WS DISBAND ) | ( DISBAND WS retreat_unit )
 
+non_retreat_order: (support_order | convoy_order | core_order | build_unit)
+
 disband_unit: ( unit WS DISBAND ) | ( DISBAND WS unit )
 
 build_unit: ( BUILD WS DESCRIPTOR province ) | ( BUILD WS province DESCRIPTOR )
+
+non_build_order: (move_order | hold_order | support_order | convoy_order | core_order)
 
 SUPPORT_HOLD.3 : /(support|supports|s)[ \-_]?(hold|holds|h|stand|stands)/i
 
