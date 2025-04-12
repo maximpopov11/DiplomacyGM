@@ -207,12 +207,6 @@ class Coast(Location):
                         return subgraph
                 raise Exception("Error in costal_connection algorithm")
 
-            # if c1.name == "Nanjing coast" and c2.name == "Peking coast":
-            #     print(c1.name, c2.name, l)
-            #     print("HERE")
-            #     import pdb
-            #     pdb.set_trace()
-
             # we will retain the invariant that no two elements of connected_sets contain the same element
             for to_process in procqueue:
                 for neighbor in to_process.adjacent:
