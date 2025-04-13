@@ -86,7 +86,7 @@ class Board:
                     if province in get_adjacent_provinces(unit.province) and province.type != ProvinceType.SEA:
                         visible.add(province)
                 if unit.unit_type == UnitType.FLEET:
-                    if province in get_adjacent_provinces(unit.coast):
+                    if (unit.coast and province in get_adjacent_provinces(unit.coast)) or province in get_adjacent_provinces(unit.province):
                         visible.add(province)
 
         for unit in player.units:
