@@ -917,7 +917,7 @@ async def ping_players(ctx: commands.Context, manager: Manager) -> None:
 
     log_command(logger, ctx, message=f"Pinged {pinged_players} players")
     await send_message_and_file(channel=ctx.channel,
-                                title="Pinged {pinged_players} players")
+                                title=f"Pinged {pinged_players} players")
 
 async def archive(ctx: commands.Context, _: Manager) -> None:
     perms.gm_perms_check(ctx, "archive")
