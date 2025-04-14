@@ -80,6 +80,8 @@ async def fish(ctx: commands.Context, manager: Manager) -> None:
     fish_num = random.randrange(0, 20)
 
     # overfishing model
+    # https://www.maths.gla.ac.uk/~nah/2J/ch1.pdf
+    # figure 1.9
     growth_rate = 0.001
     carrying_capacity = 1000
     args = (growth_rate, carrying_capacity)
