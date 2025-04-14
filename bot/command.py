@@ -147,7 +147,10 @@ async def global_leaderboard(ctx: commands.Context, manager: Manager) -> None:
                            key=lambda board: board[1].fish,
                            reverse=True)
     raw_boards = tuple(map(lambda b: b[1], sorted_boards))
-    this_board = manager.get_board(ctx.guild.id)
+    try:
+        this_board = manager.get_board(ctx.guild.id)
+    except:
+        this_board = None
     sorted_boards = sorted_boards[:9]
     text = ""
     if this_board is not None:
@@ -155,12 +158,15 @@ async def global_leaderboard(ctx: commands.Context, manager: Manager) -> None:
     else:
         index = "NaN"
 
+    max_fishes = len(str(sorted_boards[0].fish))
+
     for i, board in enumerate(sorted_boards):
         bold = "**" if this_board == board[1] else ""
-        if ctx.bot.get_guild(board[0]):
-            text += f"\\#{i + 1 : >{len(index)}} | {bold}{ctx.bot.get_guild(board[0]).name}{bold}\n"
+        guild = ctx.bot.get_guild(board[0])
+        if guild:
+            text += f"\\#{i + 1 : >{len(index)}} | {guild.fish : <{max_fishes}} | {bold}{guild.name}{bold}\n"
     if this_board is not None and this_board not in raw_boards[:9]:
-        text += f"\n\\#{index} | {ctx.guild.name}"
+        text += f"\n\\#{index} | {this_board.fish : <{max_fishes}} | {ctx.guild.name}"
     
     await send_message_and_file(channel=ctx.channel,
                                 title="Global Fishing Leaderboard",
