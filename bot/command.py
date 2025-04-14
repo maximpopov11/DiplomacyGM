@@ -164,7 +164,7 @@ async def global_leaderboard(ctx: commands.Context, manager: Manager) -> None:
         bold = "**" if this_board == board[1] else ""
         guild = ctx.bot.get_guild(board[0])
         if guild:
-            text += f"\\#{i + 1 : >{len(index)}} | {guild.fish : <{max_fishes}} | {bold}{guild.name}{bold}\n"
+            text += f"\\#{i + 1 : >{len(index)}} | {board[1].fish : <{max_fishes}} | {bold}{guild.name}{bold}\n"
     if this_board is not None and this_board not in raw_boards[:9]:
         text += f"\n\\#{index} | {this_board.fish : <{max_fishes}} | {ctx.guild.name}"
     
