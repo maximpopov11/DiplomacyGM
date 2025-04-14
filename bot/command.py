@@ -162,7 +162,9 @@ async def global_leaderboard(ctx: commands.Context, manager: Manager) -> None:
     if this_board is not None and this_board not in raw_boards[:9]:
         text += f"\n#{index} | {ctx.guild.name}"
     
-    await send_message_and_file(channel=ctx.channel, title=text)
+    await send_message_and_file(channel=ctx.channel
+                                title="Global Fishing Leaderboard",
+                                message=text)
 
 async def phish(ctx: commands.Context, _: Manager) -> None:
     message = "No! Phishing is bad!"
