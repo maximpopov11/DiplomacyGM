@@ -2,8 +2,10 @@ import asyncio
 import logging
 import os
 import random
+import time
 from random import randrange
 from typing import Callable
+from scipy.integrate import odeint
 
 from black.trans import defaultdict
 from discord import Role, HTTPException, NotFound, TextChannel
@@ -17,7 +19,7 @@ from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
 from bot.utils import (get_filtered_orders, get_orders,
                        get_orders_log, get_player_by_channel, send_message_and_file,
-                       get_role_by_player, log_command)
+                       get_role_by_player, log_command, fish_pop_model)
 from diplomacy.adjudicator.utils import svg_to_png
 from diplomacy.persistence import phase
 from diplomacy.persistence.db.database import get_connection
@@ -77,6 +79,23 @@ async def fish(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
     fish_num = random.randrange(0, 20)
 
+    # overfishing model
+    growth_rate = 0.001
+    carrying_capacity = 1000
+    args = (growth_rate, carrying_capacity)
+
+    time_now = time.time()
+    delta_t = time_now - board.fish_pop["time"]
+    
+
+    board.fish_pop["time"] = time_now
+    board.fish_pop["fish_pop"] = odeint(fish_pop_model, board.fish_pop["fish_pop"], [0, delta_t], args=args)[1]
+
+    if board.fish_pop["fish_pop"] <= 200:
+        fish_num += 5
+    if board.fish_pop["fish_pop"] <= 50:
+        fish_num += 20
+
     debumblify = False
     if is_bumble(ctx.author.name) and random.randrange(0, 10) == 0:
         # Bumbles are good fishers
@@ -104,16 +123,18 @@ async def fish(ctx: commands.Context, manager: Manager) -> None:
             ":hippopotamus:",
         ]
         board.fish += 10
+        board.fish_pop["fish_pop"] -= 10
         fish_message = f"**Caught a rare fish!** {random.choice(rare_fish_options)}"
     elif fish_num < 16:
         fish_num = (fish_num + 1) // 2
         board.fish += fish_num
+        board.fish_pop["fish_pop"] -= fish_num
         fish_emoji_options = [":fish:", ":tropical_fish:", ":blowfish:", ":jellyfish:", ":shrimp:"]
         fish_weights = [8, 4, 2, 1, 2]
         fish_message = f"Caught {fish_num} fish! " + " ".join(
             random.choices(fish_emoji_options, weights=fish_weights, k=fish_num)
         )
-    else:
+    elif fish_num < 21:
         fish_num = (21 - fish_num) // 2
 
         if is_bumble(ctx.author.name):
@@ -127,8 +148,11 @@ async def fish(ctx: commands.Context, manager: Manager) -> None:
                 fish_num *= randrange(3, 10)
 
         board.fish -= fish_num
+        board.fish_pop["fish_pop"] += fish_num
         fish_kind = "captured" if board.fish >= 0 else "future"
         fish_message = f"Accidentally let {fish_num} {fish_kind} fish sneak away :("
+    else:
+        fish_message = f"You find nothing but barren water and overfished seas, maybe let the population recover?"
     fish_message += f"\nIn total, {board.fish} fish have been caught!"
     if random.randrange(0, 5) == 0:
         get_connection().execute_arbitrary_sql(

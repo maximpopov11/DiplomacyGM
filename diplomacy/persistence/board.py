@@ -1,5 +1,6 @@
 import re
 import logging
+import time
 
 from diplomacy.persistence.phase import Phase
 from diplomacy.persistence.player import Player
@@ -20,6 +21,10 @@ class Board:
         self.year = 0
         self.board_id = 0
         self.fish = 0
+        self.fish_pop = {
+            "fish_pop": float(700),
+            "time": time.time()
+        }
         self.orders_enabled: bool = True
         self.data = data
         self.datafile = datafile
