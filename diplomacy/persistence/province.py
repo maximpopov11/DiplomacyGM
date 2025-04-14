@@ -206,7 +206,7 @@ class Coast(Location):
             for adjacent in c1.province.adjacent | c1.province.impassible_adjacent | \
                             c2.province.adjacent | c2.province.impassible_adjacent | \
                             possible_tripoint.adjacent | possible_tripoint.impassible_adjacent:
-                if (adjacent not in procqueue) and (adjacent not in (c1.province, c2.province, possible_tripoint)):
+                if adjacent not in (c1.province, c2.province, possible_tripoint):
                     procqueue.append(adjacent)
                     connected_sets.add(frozenset({adjacent}))
             
@@ -238,9 +238,10 @@ class Coast(Location):
             if l == 1:
                 return True
             elif l != 2:
-                logger.error(f"WARNING: len(connected_sets) should've been 1 or 2, but got {l}. "
-                            f"hint: between coasts {c1} and {c2}, when looking at mutual sea {possible_tripoint}")
-        
+                logger.error(f"WARNING: len(connected_sets) should've been 1 or 2, but got {l}.\n"
+                            f"hint: between coasts {c1} and {c2}, when looking at mutual sea {possible_tripoint}\n"
+                            f"Final state: {connected_sets}")
+
         # no connection worked
         return False
 

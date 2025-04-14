@@ -247,7 +247,7 @@ class Parser:
             province1 = self.name_to_province[name1]
             province2 = self.name_to_province[name2]
             province1.set_adjacent(province2)
-            province1.set_adjacent(province2)
+            province2.set_adjacent(province1)
 
         provinces = self.json_cheats(provinces)
 
@@ -294,7 +294,7 @@ class Parser:
         sea_provinces = self._create_provinces_type(self.sea_layer, ProvinceType.SEA)
         # detect impassible to allow for better understanding
         # of coastlines
-        # they don't go in province.adjacent
+        # they don't go in board.provinces
         impassible_provinces = set()
         if self.impassibles_layer is not None:
             impassible_provinces = self._create_provinces_type(self.impassibles_layer, ProvinceType.IMPASSIBLE)
@@ -332,7 +332,7 @@ class Parser:
             province_coordinates = shapely.MultiPolygon()
 
             name = None
-            if self.layers["province_labels"] and province_type != ProvinceType.IMPASSIBLE:
+            if self.layers["province_labels"]:
                 name = self._get_province_name(province_data)
 
             province = Province(
