@@ -158,7 +158,7 @@ async def global_leaderboard(ctx: commands.Context, manager: Manager) -> None:
     else:
         index = "NaN"
 
-    max_fishes = len(str(sorted_boards[0].fish))
+    max_fishes = len(str(sorted_boards[0][1].fish))
 
     for i, board in enumerate(sorted_boards):
         bold = "**" if this_board == board[1] else ""
