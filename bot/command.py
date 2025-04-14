@@ -921,8 +921,7 @@ async def ping_players(ctx: commands.Context, manager: Manager) -> None:
 
 async def archive(ctx: commands.Context, _: Manager) -> None:
     perms.gm_perms_check(ctx, "archive")
-
-    categories = [channel.category for channel in ctx.message.channel_mentions()]
+    categories = [channel.category for channel in ctx.message.channel_mentions]
     if not categories:
         await send_message_and_file(channel=ctx.channel,
                                     message="This channel is not part of a category.",
