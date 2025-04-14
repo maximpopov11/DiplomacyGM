@@ -54,6 +54,7 @@ class ProvinceType(Enum):
     LAND = 1
     ISLAND = 2
     SEA = 3
+    IMPASSIBLE = 4
 
 
 class Province(Location):
@@ -76,6 +77,7 @@ class Province(Location):
         self.type: ProvinceType = province_type
         self.has_supply_center: bool = has_supply_center
         self.adjacent: set[Province] = adjacent
+        self.impassible_adjacent: set[Province] = set()
         self.coasts: set[Coast] = coasts
         self.corer: player.Player | None = None
         self.core: player.Player | None = core
@@ -103,6 +105,12 @@ class Province(Location):
         if len(self.coasts) != 1:
             raise RuntimeError(f"Cannot get coast of a province with num coasts {len(self.coasts)} != 1")
         return next(coast for coast in self.coasts)
+
+    def set_adjacent(self, other: Province):
+        if other.type == ProvinceType.IMPASSIBLE:
+            self.impassible_adjacent.add(other)
+        else:
+            self.adjacent.add(other)
 
     def set_coasts(self):
         """This should only be called once all province adjacencies have been set."""
@@ -195,11 +203,12 @@ class Coast(Location):
             procqueue: list[Province] = []
             connected_sets: set[frozenset[Province]] = set()
 
-            for adjacent_discovery in (c1.province.adjacent, c2.province.adjacent, possible_tripoint.adjacent):
-                for adjacent in adjacent_discovery:
-                    if (adjacent not in procqueue) and (adjacent not in (c1.province, c2.province, possible_tripoint)):
-                        procqueue.append(adjacent)
-                        connected_sets.add(frozenset({adjacent}))
+            for adjacent in c1.province.adjacent | c1.province.impassible_adjacent | \
+                            c2.province.adjacent | c2.province.impassible_adjacent | \
+                            possible_tripoint.adjacent | possible_tripoint.impassible_adjacent:
+                if (adjacent not in procqueue) and (adjacent not in (c1.province, c2.province, possible_tripoint)):
+                    procqueue.append(adjacent)
+                    connected_sets.add(frozenset({adjacent}))
             
             def find_set_with_element(element):
                 for subgraph in connected_sets:

@@ -14,6 +14,7 @@
         "starting_units": "layer10",
         "unit_output": "layer16",
         "arrow_output": "layer17",
+        "impassibles_layer": "layer19",
 
         "army": "g652",
         "retreat_army": "g2176",

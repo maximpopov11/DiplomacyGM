@@ -53,6 +53,10 @@ class Parser:
             self.units_layer = None
         self.power_banner_layer: Element = get_svg_element(svg_root, self.layers["power_banners"])
 
+        self.impassibles_layer: Element | None = None
+        if "impassibles_layer" in self.layers:
+            self.impassibles_layer = get_svg_element(svg_root, self.layers["impassibles_layer"])
+
         self.phantom_primary_armies_layer: Element = get_svg_element(svg_root, self.layers["army"])
         self.phantom_retreat_armies_layer: Element = get_svg_element(svg_root, self.layers["retreat_army"])
         self.phantom_primary_fleets_layer: Element = get_svg_element(svg_root, self.layers["fleet"])
@@ -242,8 +246,8 @@ class Parser:
         for name1, name2 in adjacencies:
             province1 = self.name_to_province[name1]
             province2 = self.name_to_province[name2]
-            province1.adjacent.add(province2)
-            province2.adjacent.add(province1)
+            province1.set_adjacent(province2)
+            province1.set_adjacent(province2)
 
         provinces = self.json_cheats(provinces)
 
@@ -251,11 +255,14 @@ class Parser:
         for province in provinces:
             province.set_coasts()
 
+        # impassible provinces aren't in the list; they're "ghost" and only show up
+        # when explicitly asked for in costal topology algorithms
+        provinces = [p for p in provinces if not p.type == ProvinceType.IMPASSIBLE]
+
         self._initialize_province_owners(self.land_layer)
         self._initialize_province_owners(self.island_fill_layer)
 
         # set supply centers
-        # if self.data["svg config"]["coring"]:
         if self.layers["center_labels"]:
             self._initialize_supply_centers_assisted()
         else:
@@ -285,7 +292,13 @@ class Parser:
         land_provinces = self._create_provinces_type(self.land_layer, ProvinceType.LAND)
         island_provinces = self._create_provinces_type(self.island_layer, ProvinceType.ISLAND)
         sea_provinces = self._create_provinces_type(self.sea_layer, ProvinceType.SEA)
-        return land_provinces.union(island_provinces).union(sea_provinces)
+        # detect impassible to allow for better understanding
+        # of coastlines
+        # they don't go in province.adjacent
+        impassible_provinces = set()
+        if self.impassibles_layer is not None:
+            impassible_provinces = self._create_provinces_type(self.impassibles_layer, ProvinceType.IMPASSIBLE)
+        return land_provinces | island_provinces | sea_provinces | impassible_provinces
 
     # TODO: (BETA) can a library do all of this for us? more safety from needing to support wild SVG legal syntax
     def _create_provinces_type(
@@ -319,7 +332,7 @@ class Parser:
             province_coordinates = shapely.MultiPolygon()
 
             name = None
-            if self.layers["province_labels"]:
+            if self.layers["province_labels"] and province_type != ProvinceType.IMPASSIBLE:
                 name = self._get_province_name(province_data)
 
             province = Province(
@@ -515,24 +528,17 @@ class Parser:
         try:
             f = open(f"config/{self.datafile}_adjacencies.txt", "r")
         except FileNotFoundError:
-            with open(f"config/{self.datafile}_adjacencies.txt", "w") as f:
-                # Combinations so that we only have (A, B) and not (B, A) or (A, A)
-                for province1, province2 in itertools.combinations(provinces, 2):
-                    if shapely.distance(province1.geometry, province2.geometry) < self.layers["border_margin_hint"]:
-                        adjacencies.add((province1.name, province2.name))
-                        f.write(f"{province1.name},{province2.name}\n")
+            f = open(f"config/{self.datafile}_adjacencies.txt", "w")
+            # Combinations so that we only have (A, B) and not (B, A) or (A, A)
+            for province1, province2 in itertools.combinations(provinces, 2):
+                if shapely.distance(province1.geometry, province2.geometry) < self.layers["border_margin_hint"]:
+                    adjacencies.add((province1.name, province2.name))
+                    f.write(f"{province1.name},{province2.name}\n")
         else:
             for line in f:
                 adjacencies.add(tuple(line[:-1].split(',')))
-        # import matplotlib.pyplot as plt
-        # for p in provinces:
-        #     if isinstance(p.geometry, shapely.Polygon):
-        #         plt.plot(*p.geometry.exterior.xy)
-        #     else:
-        #         for geo in p.geometry.geoms:
-        #             plt.plot(*geo.exterior.xy)
-        # plt.gca().invert_yaxis()
-        # plt.show()
+        finally:
+            f.close()
         return adjacencies
 
     def _get_unit_type(self, unit_data: Element) -> UnitType:

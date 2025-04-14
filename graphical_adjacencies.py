@@ -1,3 +1,4 @@
+#%
 import os
 import re
 
@@ -23,10 +24,12 @@ game_type = "impdipfow.json"
 
 manager.create_game(0, game_type)
 
-#%
 board = manager.get_board(0)
 board.fow = False
 mapper = Mapper(board)
+
+#%
+
 
 parser = get_parser(game_type)
 
