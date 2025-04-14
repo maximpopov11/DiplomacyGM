@@ -120,29 +120,29 @@ async def ping(ctx: commands.Context) -> None:
     await command.ping(ctx, manager)
 
 
-# @bot.command(hidden=True)
+@bot.command(hidden=True)
 async def bumble(ctx: commands.Context) -> None:
     await command.bumble(ctx, manager)
 
 
-# @bot.command(hidden=True)
+@bot.command(hidden=True)
 async def fish(ctx: commands.Context) -> None:
     await ctx.message.add_reaction("🐟")
     await command.fish(ctx, manager)
 
 
-# @bot.command(hidden=True)
+@bot.command(hidden=True)
 async def phish(ctx: commands.Context) -> None:
     await ctx.message.add_reaction("🐟")
     await command.phish(ctx, manager)
 
 
-# @bot.command(hidden=True)
+@bot.command(hidden=True)
 async def cheat(ctx: commands.Context) -> None:
     await command.cheat(ctx, manager)
 
 
-# @bot.command(hidden=True)
+@bot.command(hidden=True)
 async def advice(ctx: commands.Context) -> None:
     await command.advice(ctx, manager)
 
