@@ -142,6 +142,25 @@ async def fish(ctx: commands.Context, manager: Manager) -> None:
 
     await send_message_and_file(channel=ctx.channel, title=fish_message)
 
+async def global_leaderboard(ctx: commands.Context, manager: Manager) -> None:
+    sorted_boards = sorted(manager._boards.items(),
+                           key=lambda board: board[1].fish,
+                           reverse=True)
+    raw_boards = tuple(map(lambda b: b[1], sorted_boards))
+    this_board = manager.get_board(ctx.guild.id)
+    sorted_boards = sorted_boards[:9]
+    text = ""
+    
+    index = str(raw_boards.index(this_board) + 1)
+
+    for i, board in enumerate(sorted_boards):
+        bold = "**" if this_board == board[1] else ""
+        if ctx.bot.get_guild(board[0]):
+            text += f"#{i + 1 : >{len(index)}} | {bold}{ctx.bot.get_guild(board[0]).name}{bold}\n"
+    if this_board not in raw_boards[:9]:
+        text += f"\n#{index} | {ctx.guild.name}"
+    
+    await send_message_and_file(channel=ctx.channel, title=text)
 
 async def phish(ctx: commands.Context, _: Manager) -> None:
     message = "No! Phishing is bad!"
@@ -343,7 +362,7 @@ async def view_orders(player: Player | None, ctx: commands.Context, manager: Man
     except RuntimeError as err:
         log_command(logger, ctx, message=f"Failed for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
-                                    title="Unknown Error: Please contact you're local bot dev",
+                                    title="Unknown Error: Please contact your local bot dev",
                                     embed_colour=ERROR_COLOUR)
         return
     log_command(logger, ctx, message=f"Success - generated orders for {board.phase.name} {str(1642 + board.year)}")
@@ -365,7 +384,7 @@ async def publish_orders(ctx: commands.Context, manager: Manager) -> None:
     except RuntimeError as err:
         log_command(logger, ctx, message=f"Failed for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
-                                    title="Unknown Error: Please contact you're local bot dev",
+                                    title="Unknown Error: Please contact your local bot dev",
                                     embed_colour=ERROR_COLOUR)
         return
     orders_log_channel = get_orders_log(ctx.guild)
@@ -406,7 +425,7 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
     except Exception as err:
         log_command(logger, ctx, message=f"Failed to generate map for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
-                                    title="Unknown Error: Please contact you're local bot dev",
+                                    title="Unknown Error: Please contact your local bot dev",
                                     embed_colour=ERROR_COLOUR)
         return
     log_command(logger, ctx, message=f"Generated moves map for {board.phase.name} {str(1642 + board.year)}")
@@ -427,7 +446,7 @@ async def view_current(ctx: commands.Context, manager: Manager) -> None:
     except Exception as err:
         log_command(logger, ctx, message=f"Failed to generate map for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
-                                    title="Unknown Error: Please contact you're local bot dev",
+                                    title="Unknown Error: Please contact your local bot dev",
                                     embed_colour=ERROR_COLOUR)
         return
     log_command(logger, ctx, message=f"Generated current map for {board.phase.name} {str(1642 + board.year)}")

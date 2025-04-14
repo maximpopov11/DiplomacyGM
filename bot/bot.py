@@ -160,7 +160,11 @@ async def announce(ctx: commands.Context) -> None:
 async def servers(ctx: commands.Context) -> None:
     await command.servers(ctx, manager)
 
-
+@bot.command(
+        brief="Shows global fish leaderboard"
+)
+async def global_leaderboard(ctx: commands.Context) -> None:
+    await command.global_leaderboard(ctx, manager)
 
 @bot.command(
     brief="Submits orders; there must be one and only one order per line.",
