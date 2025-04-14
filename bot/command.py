@@ -150,14 +150,16 @@ async def global_leaderboard(ctx: commands.Context, manager: Manager) -> None:
     this_board = manager.get_board(ctx.guild.id)
     sorted_boards = sorted_boards[:9]
     text = ""
-    
-    index = str(raw_boards.index(this_board) + 1)
+    if this_board is not None:
+        index = str(raw_boards.index(this_board) + 1)
+    else:
+        index = "NaN"
 
     for i, board in enumerate(sorted_boards):
         bold = "**" if this_board == board[1] else ""
         if ctx.bot.get_guild(board[0]):
             text += f"#{i + 1 : >{len(index)}} | {bold}{ctx.bot.get_guild(board[0]).name}{bold}\n"
-    if this_board not in raw_boards[:9]:
+    if this_board is not None and this_board not in raw_boards[:9]:
         text += f"\n#{index} | {ctx.guild.name}"
     
     await send_message_and_file(channel=ctx.channel, title=text)
