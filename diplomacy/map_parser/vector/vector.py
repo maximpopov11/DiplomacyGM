@@ -4,15 +4,13 @@ import json
 import logging
 import time
 import numpy as np
-from typing import Callable
 from xml.etree.ElementTree import Element
 
 import shapely
 from lxml import etree
-from shapely.geometry import Point
 
 from diplomacy.map_parser.vector.transform import TransGL3
-from diplomacy.map_parser.vector.utils import get_player, get_unit_coordinates, get_svg_element, parse_path
+from diplomacy.map_parser.vector.utils import get_player, get_unit_coordinates, get_svg_element, parse_path, initialize_province_resident_data
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.player import Player
@@ -563,42 +561,6 @@ class Parser:
         else:
             return UnitType.ARMY
             raise RuntimeError(f"Unit has {num_sides} sides which does not match any unit definition.")
-
-
-# Initializes relevant province data
-# resident_dataset: SVG element whose children each live in some province
-# get_coordinates: functions to get x and y child data coordinates in SVG
-# function: method in Province that, given the province and a child element corresponding to that province, initializes
-# that data in the Province
-def initialize_province_resident_data(
-    provinces: set[Province],
-    resident_dataset: list[Element],
-    get_coordinates: Callable[[Element], tuple[float, float]],
-    resident_data_callback: Callable[[Province, Element], None],
-) -> None:
-    resident_dataset = set(resident_dataset)
-    for province in provinces:
-        remove = set()
-
-        found = False
-        for resident_data in resident_dataset:
-            x, y = get_coordinates(resident_data)
-
-            if not x or not y:
-                remove.add(resident_data)
-                continue
-
-            point = Point((x, y))
-            if province.geometry.contains(point):
-                found = True
-                resident_data_callback(province, resident_data)
-                remove.add(resident_data)
-
-        # if not found:
-        #     print("Not found!")
-
-        for resident_data in remove:
-            resident_dataset.remove(resident_data)
 
 
 parsers = {}

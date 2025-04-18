@@ -12,7 +12,7 @@ import math
 # from diplomacy.adjudicator import utils
 # from diplomacy.map_parser.vector import config_svg as svgcfg
 
-from diplomacy.map_parser.vector.utils import get_element_color, get_svg_element, get_unit_coordinates
+from diplomacy.map_parser.vector.utils import get_element_color, get_svg_element, get_unit_coordinates, initialize_province_resident_data
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import logger
@@ -175,8 +175,24 @@ class Mapper:
                 self.color_element(element, replacements[color][dark_mode])
             else:
                 self.color_element(element, "ffffff")
-        sea_titles = get_svg_element(self.board_svg, self.board.data["svg config"]["sea_titles"])
-        self.color_element(sea_titles, "FFFFFF")
+
+        # Difficult to detect correctly using either geometry or province names
+        # Marking manually would work, but for all svgs is time consuming. TODO
+
+        # get_svg_element(self.board_svg, self.board.data["svg config"]["starting_units"])
+        # province_names = get_svg_element(self.board_svg, self.board.data["svg config"]["province_names"]).getchildren()
+        # for text_box in province_names:
+        #     try:
+        #         text = text_box[0].text.lower()
+        #     except:
+        #         continue
+        #     text = re.sub("[\\s\n]+", " ", text )
+        #     if text in self.board.name_to_province:
+        #         p = self.board.name_to_province[text]
+        #         if p.type == ProvinceType.ISLAND or p.type == ProvinceType.SEA:
+        #             self.color_element(text_box, "ffffff")
+        #     else:
+        #         print(text)
 
     def draw_current_map(self) -> tuple[str, str]:
         logger.info("mapper.draw_current_map")

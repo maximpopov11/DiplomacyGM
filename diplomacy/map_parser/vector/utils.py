@@ -7,6 +7,10 @@ from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType
 import logging
 
+from shapely.geometry import Point
+from typing import Callable
+from diplomacy.persistence.province import Province
+
 logger = logging.getLogger(__name__)
 
 def get_svg_element(svg_root: ElementTree, element_id: str) -> Element:
@@ -153,3 +157,38 @@ def parse_path(path_string: str, translation: TransGL3):
         province_coordinates[-1].append(translation.transform(coordinate))
         current_index += expected_arguments
     return province_coordinates
+
+# Initializes relevant province data
+# resident_dataset: SVG element whose children each live in some province
+# get_coordinates: functions to get x and y child data coordinates in SVG
+# function: method in Province that, given the province and a child element corresponding to that province, initializes
+# that data in the Province
+def initialize_province_resident_data(
+    provinces: set[Province],
+    resident_dataset: list[Element],
+    get_coordinates: Callable[[Element], tuple[float, float]],
+    resident_data_callback: Callable[[Province, Element], None],
+) -> None:
+    resident_dataset = set(resident_dataset)
+    for province in provinces:
+        remove = set()
+
+        found = False
+        for resident_data in resident_dataset:
+            x, y = get_coordinates(resident_data)
+
+            if not x or not y:
+                remove.add(resident_data)
+                continue
+
+            point = Point((x, y))
+            if province.geometry.contains(point):
+                found = True
+                resident_data_callback(province, resident_data)
+                remove.add(resident_data)
+
+        # if not found:
+        #     print("Not found!")
+
+        for resident_data in remove:
+            resident_dataset.remove(resident_data)

@@ -370,6 +370,7 @@ async def view_orders(player: Player | None, ctx: commands.Context, manager: Man
         board = manager.get_board(ctx.guild.id)
         order_text = get_orders(board, player, ctx)
     except RuntimeError as err:
+        logger.error(err, exc_info=True)
         log_command(logger, ctx, message=f"Failed for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
                                     title="Unknown Error: Please contact your local bot dev",
@@ -392,6 +393,7 @@ async def publish_orders(ctx: commands.Context, manager: Manager) -> None:
     try:
         order_text = get_orders(board, None, ctx, fields=True)
     except RuntimeError as err:
+        logger.error(err, exc_info=True)
         log_command(logger, ctx, message=f"Failed for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
                                     title="Unknown Error: Please contact your local bot dev",
@@ -435,6 +437,7 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
         else:
             file, file_name = manager.draw_fow_players_moves_map(ctx.guild.id, player)
     except Exception as err:
+        logger.error(err, exc_info=True)
         log_command(logger, ctx, message=f"Failed to generate map for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
                                     title="Unknown Error: Please contact your local bot dev",
