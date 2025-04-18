@@ -81,6 +81,8 @@ class Parser:
             iscc = data["iscc"]
             player = Player(name, color, vscc, iscc, set(), set())
             players.add(player)
+            if isinstance(color, dict):
+                color = color["standard"]
             self.color_to_player[color] = player
 
         self.color_to_player[self.data["svg config"]["neutral"]] = None

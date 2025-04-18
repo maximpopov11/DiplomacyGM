@@ -45,10 +45,10 @@ class Manager:
         self._database.total_delete(self._boards[server_id])
         del self._boards[server_id]
 
-    def draw_moves_map(self, server_id: int, player_restriction: Player | None) -> tuple[str, str]:
+    def draw_moves_map(self, server_id: int, player_restriction: Player | None, dark_mode: bool = False) -> tuple[str, str]:
         start = time.time()
 
-        svg, file_name = Mapper(self._boards[server_id]).draw_moves_map(
+        svg, file_name = Mapper(self._boards[server_id], dark_mode = dark_mode).draw_moves_map(
             self._boards[server_id].phase, player_restriction
         )
 
@@ -83,10 +83,10 @@ class Manager:
         logger.info(f"manager.draw_fow_current_map.{server_id}.{elapsed}s")
         return svg, file_name
 
-    def draw_current_map(self, server_id: int) -> tuple[str, str]:
+    def draw_current_map(self, server_id: int, dark_mode: bool = False) -> tuple[str, str]:
         start = time.time()
 
-        svg, file_name = Mapper(self._boards[server_id]).draw_current_map()
+        svg, file_name = Mapper(self._boards[server_id], dark_mode = dark_mode).draw_current_map()
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_current_map.{server_id}.{elapsed}s")

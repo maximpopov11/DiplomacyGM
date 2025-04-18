@@ -14,6 +14,9 @@
         "starting_units": "layer10",
         "unit_output": "layer16",
         "arrow_output": "layer17",
+        "sea_titles": "layer18",
+		"other_fills": "layer14",
+		"background": "g407997",
 
         "army": "g652",
         "retreat_army": "g2176",
@@ -28,7 +31,13 @@
         "province_labels": true,
         "center_labels": true,
 
-        "unowned_color": "c6b7ab",
+		"color replacements": {
+			"c6b7ab": {"dark": "B7AB80"},
+			"b2bdd1": {"dark": "325B68"},
+			"b99a82": {"dark": "8a836b"},
+			"333333": {"dark": "0A3542"},
+			"d4dae1": {"dark": "396B70"}
+		},
 
         "border_margin_hint": 1,
 
@@ -217,47 +226,47 @@
     },
     "players": {
         "Abyssinia": {
-            "color": "a88080",
+            "color": {"standard": "a88080", "dark": "9D6767"},
             "vscc": 32,
             "iscc": 4
         },
         "Ajuuraan": {
-            "color": "587ba7",
+            "color": {"standard": "587ba7", "dark": "4A688D"},
             "vscc": 32,
             "iscc": 4
         },
         "Athapasca": {
-            "color": "e95a94",
+            "color": {"standard": "e95a94", "dark": "BB4C79"},
             "vscc": 32,
             "iscc": 4
         },
         "Austria": {
-            "color": "a17555",
+            "color": {"standard": "a17555", "dark": "82644D"},
             "vscc": 32,
             "iscc": 4
         },
         "Aymara": {
-            "color": "9a2f56",
+            "color": {"standard": "9a2f56", "dark": "AD295D"},
             "vscc": 32,
             "iscc": 4
         },
         "Ayutthaya": {
-            "color": "9d84ae",
+            "color": {"standard": "9d84ae", "dark": "B875CE"},
             "vscc": 32,
             "iscc": 4
         },
         "England": {
-            "color": "f94455",
+            "color": {"standard": "f94455", "dark": "E33544"},
             "vscc": 56,
             "iscc": 14
         },
         "France": {
-            "color": "66a2e3",
+            "color": {"standard": "66a2e3", "dark": "24A57B"},
             "vscc": 56,
             "iscc": 14
         },
         "Inuit": {
-            "color": "afc5d8",
+            "color": {"standard": "afc5d8", "dark": "95ADC2"},
             "vscc": 42,
             "iscc": 7
         },
@@ -267,47 +276,47 @@
             "iscc": 4
         },
         "Kongo": {
-            "color": "924cb3",
+            "color": {"standard": "924cb3", "dark": "944FA5"},
             "vscc": 32,
             "iscc": 4
         },
         "Mapuche": {
-            "color": "81889d",
+            "color": {"standard": "81889d", "dark": "696E7F"},
             "vscc": 32,
             "iscc": 4
         },
         "Ming": {
-            "color": "cadd7e",
+            "color": {"standard": "cadd7e", "dark": "B8DC5C"},
             "vscc": 36,
             "iscc": 5
         },
         "Mughal": {
-            "color": "ab9f26",
+            "color": {"standard": "ab9f26", "dark": "999941"},
             "vscc": 36,
             "iscc": 5
         },
         "Netherlands": {
-            "color": "fc9c23",
+            "color": {"standard": "fc9c23", "dark": "DB7745"},
             "vscc": 56,
             "iscc": 14
         },
         "Ottoman": {
-            "color": "a03838",
+            "color": {"standard": "a03838", "dark": "AB2136"},
             "vscc": 48,
             "iscc": 10
         },
         "Poland-Lithuania": {
-            "color": "e390b3",
+            "color": {"standard": "e390b3", "dark": "E57BA8"},
             "vscc": 42,
             "iscc": 7
         },
         "Portugal": {
-            "color": "3c9553",
+            "color": {"standard": "3c9553", "dark": "23763F"},
             "vscc": 64,
             "iscc": 16
         },
         "Qing": {
-            "color": "f36678",
+            "color": {"standard": "f36678", "dark": "E04A5D"},
             "vscc": 32,
             "iscc": 4
         },
@@ -317,27 +326,27 @@
             "iscc": 8
         },
         "Safavid": {
-            "color": "5a887f",
+            "color": {"standard": "5a887f", "dark": "407167"},
             "vscc": 36,
             "iscc": 5
         },
         "Spain": {
-            "color": "f0ce48",
+            "color": {"standard": "f0ce48", "dark": "DBB045"},
             "vscc": 64,
             "iscc": 16
         },
         "Sweden": {
-            "color": "4e51ba",
+            "color": {"standard": "4e51ba", "dark": "534884"},
             "vscc": 32,
             "iscc": 4
         },
         "Tokugawa": {
-            "color": "7cdbc3",
+            "color": {"standard": "7cdbc3", "dark": "4AB79B"},
             "vscc": 32,
             "iscc": 4
         },
         "Ute-Shoshone": {
-            "color": "ca7a59",
+            "color": {"standard": "ca7a59", "dark": "B87052"},
             "vscc": 36,
             "iscc": 5
         }

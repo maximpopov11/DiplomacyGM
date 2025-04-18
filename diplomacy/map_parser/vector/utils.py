@@ -16,7 +16,10 @@ def get_svg_element(svg_root: ElementTree, element_id: str) -> Element:
         logger.error(f"{element_id} isn't contained in svg_root")
 
 def get_element_color(element: Element) -> str:
-    style = element.get("style").split(";")
+    style_string = element.get("style")
+    if style_string is None:
+        return None
+    style = style_string.split(";")
     for value in style:
         prefix = "fill:#"
         if value.startswith(prefix):

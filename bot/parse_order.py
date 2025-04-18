@@ -113,6 +113,8 @@ class TreeToOrder(Transformer):
         build_order[1].build_orders.add(build_order[2])
         return build_order[0]
 
+    def non_build_order(self, s):
+        raise Exception("This type of order cannot be issued during build phases")
 
     # format for all of these is (unit, order)
     def l_hold_order(self, s):
@@ -157,6 +159,9 @@ class TreeToOrder(Transformer):
     def disband_order(self, s):
         return s[0], order.RetreatDisband()
 
+    def non_retreat_order(self, s):
+        raise Exception("This type of order cannot be issued during retreat phases")
+        
     def order(self, order):
         command = order[0]
         unit, order = command

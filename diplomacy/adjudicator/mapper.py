@@ -40,7 +40,7 @@ from diplomacy.map_parser.vector.transform import TransGL3
 
 
 class Mapper:
-    def __init__(self, board: Board, restriction: Player | None = None):
+    def __init__(self, board: Board, restriction: Player | None = None, dark_mode: bool = False):
         register_namespace('', "http://www.w3.org/2000/svg")
         register_namespace('inkscape', "http://www.inkscape.org/namespaces/inkscape")
         register_namespace('sodipodi', "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd")
@@ -49,7 +49,11 @@ class Mapper:
         self.board: Board = board
         self.board_svg: ElementTree = etree.parse(self.board.data["file"])
         self.player_restriction: Player | None = None
+        self.load_colors(dark_mode)
         self._initialize_scoreboard_locations()
+        
+        if dark_mode:
+            self.replace_colors("dark")
 
         self.add_arrow_definition_to_svg(self.board_svg)
 
@@ -151,6 +155,29 @@ class Mapper:
         svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_moves_map.svg"
         return elementToString(self._moves_svg.getroot(), encoding="utf-8"), svg_file_name
 
+    def load_colors(self, dark_mode: bool = False) -> None:
+        self.player_colors = {}
+        for player in self.board.players:
+            if dark_mode:
+                color_data = player.default_color
+                color = color_data["dark"] if isinstance(color_data, dict) else color_data
+            else:
+                color = player.render_color
+            self.player_colors[player.name] = color
+
+    def replace_colors(self, dark_mode: str) -> None:
+        other_fills = get_svg_element(self.board_svg, self.board.data["svg config"]["other_fills"])
+        background = get_svg_element(self.board_svg, self.board.data["svg config"]["background"])
+        replacements = self.board.data["svg config"]["color replacements"]
+        for element in itertools.chain(other_fills, background):
+            color = get_element_color(element)
+            if color in replacements:
+                self.color_element(element, replacements[color][dark_mode])
+            else:
+                self.color_element(element, "ffffff")
+        sea_titles = get_svg_element(self.board_svg, self.board.data["svg config"]["sea_titles"])
+        self.color_element(sea_titles, "FFFFFF")
+
     def draw_current_map(self) -> tuple[str, str]:
         logger.info("mapper.draw_current_map")
         svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_map.svg"
@@ -183,7 +210,7 @@ class Mapper:
             for power_element in all_power_banners_element:
                 # match the correct svg element based on the color of the rectangle
                 if get_element_color(power_element[0]) == player.default_color:
-                    self.color_element(power_element[0], player.render_color)
+                    self.color_element(power_element[0], self.player_colors[player.name])
                     power_element.set("transform", self.scoreboard_power_locations[i])
                     if player == self.restriction or self.restriction == None:
                         power_element[5][0].text = str(len(player.centers))
@@ -537,7 +564,8 @@ class Mapper:
             if province not in self.adjacent_provinces:
                 color = self.board.data["svg config"]["unknown"]
             elif province.owner:
-                color = province.owner.render_color
+                color = self.player_colors[province.owner.name]
+
             self.color_element(province_element, color)
 
         if self.board.fow:
@@ -575,7 +603,7 @@ class Mapper:
             if province not in self.adjacent_provinces:
                 color = self.board.data["svg config"]["unknown"]
             elif province.owner:
-                color = province.owner.render_color
+                color = self.player_colors[province.owner.name]
             self.color_element(island_ring, color, key="stroke")
 
             visited_provinces.add(province.name)
@@ -604,11 +632,11 @@ class Mapper:
                 half_color = core_color
             else:
                 if province.core:
-                    core_color = province.core.render_color
+                    core_color = self.player_colors[province.core.name]
                 else:
                     core_color = "#ffffff"
                 if province.half_core:
-                    half_color = province.half_core.render_color
+                    half_color = self.player_colors[province.half_core.name]
                 else:
                     half_color = core_color
             # color = "#ffffff"
@@ -661,7 +689,7 @@ class Mapper:
         unit_element = self._get_element_for_unit_type(unit.unit_type)
 
         for path in unit_element.getchildren():
-            self.color_element(path, unit.player.render_color)
+            self.color_element(path, self.player_colors[unit.player.name])
 
         current_coords = get_unit_coordinates(unit_element)
         current_coords = TransGL3(unit_element).transform(current_coords)

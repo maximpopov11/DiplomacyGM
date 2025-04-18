@@ -348,6 +348,7 @@ async def send_message_and_file(
     return await channel.send(embeds=embeds, file=discord_file)
 
 
+
 def get_orders(board: Board, player_restriction: Player | None, ctx: Context, fields: bool = False) -> str | List[Tuple[str, str]]:
     if fields:
         response = []
