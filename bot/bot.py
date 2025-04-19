@@ -363,15 +363,16 @@ async def archive(ctx: commands.Context) -> None:
 
 @bot.command(
     brief="blitz",
+    description="Creates all possible channels between two players for blitz in available comms channels."
 )
 async def blitz(ctx: commands.Context) -> None:
     await command.blitz(ctx, manager)
 
-@bot.command(
-    brief="wipe",
-)
-async def wipe(ctx: commands.Context) -> None:
-    await command.wipe(ctx, manager)
+# @bot.command(
+#     brief="wipe",
+# )
+# async def wipe(ctx: commands.Context) -> None:
+#     await command.wipe(ctx, manager)
 
 @bot.command(
     brief="pings players who don't have the expected number of orders.",
