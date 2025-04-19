@@ -223,6 +223,24 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
                 logger.info(e)
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: Please fix this order and try again")
+        # if there were no parse errors, enforce net‑build == supply_center_diff
+        if not errors and player_restriction is not None:
+            from diplomacy.persistence.order import Build, Disband
+            expected = len(player_restriction.centers) - len(player_restriction.units)
+            builds = sum(1 for o in player_restriction.build_orders
+                         if isinstance(o, Build))
+            disbands = sum(1 for o in player_restriction.build_orders
+                           if isinstance(o, Disband))
+            net = builds - disbands
+            if net != expected:
+                return {
+                    "message": (
+                        f"You must submit exactly {expected} builds−disbands (net). "
+                        f"You have {builds} builds and {disbands} disbands (net {net})."
+                    ),
+                    "embed_colour": ERROR_COLOUR
+                }
+        # finally, persist only if validation passed (or if there were parse errors)
         database = get_connection()
         database.save_build_orders_for_players(board, player_restriction)
     elif phase.is_moves(board.phase) or phase.is_retreats(board.phase):
