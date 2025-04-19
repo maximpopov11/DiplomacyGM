@@ -89,6 +89,12 @@
             "Nunavut": {
                 "adjacencies": ["Iqaluit"]
             },
+            "Yokuts": {
+                "adjacencies": ["Washo"]
+            },
+            "Nunavut": {
+                "adjacencies": ["Iqaluit"]
+            },
             "Edinburgh": {
                 "remove_adjacencies": ["Greenland Sea"]
             },
