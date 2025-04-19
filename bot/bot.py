@@ -360,6 +360,19 @@ async def create_game(ctx: commands.Context) -> None:
 async def archive(ctx: commands.Context) -> None:
     await command.archive(ctx, manager)
 
+
+@bot.command(
+    brief="blitz",
+)
+async def blitz(ctx: commands.Context) -> None:
+    await command.blitz(ctx, manager)
+
+@bot.command(
+    brief="wipe",
+)
+async def wipe(ctx: commands.Context) -> None:
+    await command.wipe(ctx, manager)
+
 @bot.command(
     brief="pings players who don't have the expected number of orders.",
     description="""Pings all players in their orders channl that satisfy the following constraints:

@@ -6,7 +6,7 @@ from random import randrange
 from typing import Callable
 
 from black.trans import defaultdict
-from discord import Role, HTTPException, NotFound, TextChannel
+from discord import CategoryChannel, Role, HTTPException, NotFound, TextChannel
 from discord import PermissionOverwrite
 from discord.ext import commands
 
@@ -981,3 +981,93 @@ async def archive(ctx: commands.Context, _: Manager) -> None:
     log_command(logger, ctx, message=f"Archived {len(categories)} Channels")
     await send_message_and_file(channel=ctx.channel,
                                 message=message)
+
+async def blitz(ctx: commands.Context, manager: Manager) -> None:
+    perms.gm_perms_check(ctx, "blitz")
+    board = manager.get_board(ctx.guild.id)
+    cs = []
+    pla = sorted(board.players, key=lambda p: p.name)
+    for p1 in pla:
+        for p2 in pla:
+            if p1.name < p2.name:
+                c = f"{p1.name}-{p2.name}"
+                cs.append((c, p1, p2))
+
+    cos: list[CategoryChannel] = []
+
+    guild = ctx.guild
+
+    for category in guild.categories:
+        if category.name.lower().startswith("comms"):
+            cos.append(category)
+
+    available = 0
+    for cat in cos:
+        available += (50 - len(cat.channels))
+
+    # if available < len(cs):
+    #     await send_message_and_file(channel=ctx.channel, message="Not enough available comms")
+    #     return
+    
+    name_to_player: dict[str, Player] = dict()
+    player_to_role: dict[Player | None, Role] = dict()
+    for player in board.players:
+        name_to_player[player.name.lower()] = player
+
+    spectator_role = None
+
+    for role in guild.roles:
+        if role.name.lower() == "spectator":
+            spectator_role = role
+
+        player = name_to_player.get(role.name.lower())
+        if player:
+            player_to_role[player] = role
+
+    if spectator_role == None:
+        await send_message_and_file(channel=ctx.channel, message=f"Missing spectator role")
+        return
+
+    for player in board.players:
+        if not player_to_role.get(player):
+            await send_message_and_file(channel=ctx.channel, message=f"Missing player role for {player.name}")
+            return
+        
+    current_cat = cos.pop(0)
+    available = 50 - len(current_cat.channels)
+    while len(cs) > 0:
+        while available == 0:
+            current_cat = cos.pop(0)
+            available = 50 - len(current_cat.channels)
+
+        assert available > 0
+
+        name, p1, p2 = cs.pop(0)
+
+        overwrites = {
+            guild.default_role: PermissionOverwrite(view_channel=False),
+            spectator_role: PermissionOverwrite(view_channel=True),
+            player_to_role[p1]: PermissionOverwrite(view_channel=True),
+            player_to_role[p2]: PermissionOverwrite(view_channel=True)
+        }
+
+        await current_cat.create_text_channel(name, overwrites=overwrites)
+
+        available -= 1
+
+async def wipe(ctx: commands.Context, manager: Manager) -> None:
+    perms.gm_perms_check(ctx, "wipe")
+    board = manager.get_board(ctx.guild.id)
+    cs = []
+    pla = sorted(board.players, key=lambda p: p.name)
+    for p1 in pla:
+        for p2 in pla:
+            if p1.name < p2.name:
+                c = f"{p1.name}-{p2.name}"
+                cs.append(c.lower())
+
+    guild = ctx.guild
+
+    for channel in guild.channels:
+        if channel.name in cs:
+            await channel.delete()
