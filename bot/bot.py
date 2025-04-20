@@ -231,7 +231,7 @@ async def publish_fow_orders(ctx: commands.Context) -> None:
     description="""
     For GMs, all submitted orders are displayed. For a player, only their own orders are displayed.
     GMs may append true as an argument to this to instead get the svg.
-    * viwe_map {arguments}
+    * view_map {arguments}
     Arguments: 
     * pass true|t|svg|s to return an svg
     * pass dark for dark mode if present
