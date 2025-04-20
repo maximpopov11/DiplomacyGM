@@ -241,7 +241,10 @@ async def view_map(ctx: commands.Context) -> None:
 @bot.command(
     brief="Outputs the current map without any orders.",
     description="""
-    * view_current {True|(False) - whether or not to display as an .svg}
+    * view_current {arguments}
+    Arguments: 
+    * pass true|t|svg|s to return an svg
+    * pass dark for dark mode if present
     """,
     aliases=["viewcurrent", "vc"],
 )
