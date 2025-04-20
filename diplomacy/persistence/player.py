@@ -20,11 +20,15 @@ class Player:
         units: set[unit.Unit],
     ):
         self.name: str = name
-        self.default_color: str = color
+        self.color_dict: dict | None = None
         # color used for rendering vs internal default color
         if isinstance(color, dict):
+            self.color_dict = color
+            self.default_color = color["standard"]
             self.render_color = color["standard"]
         else:
+            self.color_dict = None
+            self.default_color = color
             self.render_color = color
 
         # victory supply center count (we assume VSCC scoring)

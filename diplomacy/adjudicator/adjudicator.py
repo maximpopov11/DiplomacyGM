@@ -96,6 +96,14 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
 
         order.source = source_unit.location()
 
+        # Quick FOW fix for supports
+        if source_unit.unit_type == UnitType.FLEET and isinstance(order.destination, Province):
+            if len(order.destination.coasts) == 1:
+                order.destination = order.destination.coast()
+        if source_unit.unit_type == UnitType.ARMY and isinstance(order.destination, Coast):
+                order.destination = order.destination.province
+
+
     unit = location.as_province().unit
     if unit is None:
         return False, f"There is no unit in {location.name}"

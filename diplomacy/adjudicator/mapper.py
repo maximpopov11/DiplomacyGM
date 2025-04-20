@@ -52,6 +52,7 @@ class Mapper:
         self.load_colors(dark_mode)
         self._initialize_scoreboard_locations()
         
+        # dark mode
         if dark_mode:
             self.replace_colors("dark")
 
@@ -158,9 +159,8 @@ class Mapper:
     def load_colors(self, dark_mode: bool = False) -> None:
         self.player_colors = {}
         for player in self.board.players:
-            if dark_mode:
-                color_data = player.default_color
-                color = color_data["dark"] if isinstance(color_data, dict) else color_data
+            if dark_mode and player.color_dict:
+                color = player.color_dict["dark"]
             else:
                 color = player.render_color
             self.player_colors[player.name] = color
