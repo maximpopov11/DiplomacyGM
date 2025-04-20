@@ -231,7 +231,10 @@ async def publish_fow_orders(ctx: commands.Context) -> None:
     description="""
     For GMs, all submitted orders are displayed. For a player, only their own orders are displayed.
     GMs may append true as an argument to this to instead get the svg.
-    * view_map {True|(False) - whether or not to display as an .svg}
+    * viwe_map {arguments}
+    Arguments: 
+    * pass true|t|svg|s to return an svg
+    * pass dark for dark mode if present
     """,
     aliases=["viewmap", "vm"],
 )
@@ -255,7 +258,10 @@ async def view_current(ctx: commands.Context) -> None:
 @bot.command(brief="Adjudicates the game and outputs the moves and results maps.",
     description="""
     GMs may append true as an argument to this command to instead get the base svg file.
-    * adjudicate {True|(False) - whether or not to display as an .svg}
+    * adjudicate {arguments}
+    Arguments: 
+    * pass true|t|svg|s to return an svg
+    * pass dark for dark mode if present
     """
 )
 async def adjudicate(ctx: commands.Context) -> None:

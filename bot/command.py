@@ -435,7 +435,7 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
         if not board.fow:
             file, file_name = manager.draw_moves_map(ctx.guild.id, player, dark_mode)
         else:
-            file, file_name = manager.draw_fow_players_moves_map(ctx.guild.id, player)
+            file, file_name = manager.draw_fow_players_moves_map(ctx.guild.id, player, dark_mode)
     except Exception as err:
         logger.error(err, exc_info=True)
         log_command(logger, ctx, message=f"Failed to generate map for an unknown reason", level=logging.ERROR)
@@ -451,15 +451,26 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
                                 convert_svg=convert_svg,
                                 file_in_embed=False)
 
-@perms.gm("view current")
-async def view_current(ctx: commands.Context, manager: Manager) -> None:
+@perms.player("view current")
+async def view_current(player: Player | None, ctx: commands.Context, manager: Manager) -> None:
     arguments = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower().split()
     convert_svg = not ({"true", "t", "svg", "s"} & set(arguments))
     dark_mode = "dark" in arguments
     board = manager.get_board(ctx.guild.id)
 
+    if player and not board.orders_enabled:
+        log_command(logger, ctx, f"Orders locked - not processing")
+        await send_message_and_file(channel=ctx.channel,
+                                    title="Orders locked!",
+                                    message="If you think this is an error, contact a GM.",
+                                    embed_colour=ERROR_COLOUR)
+        return
+
     try:
-        file, file_name = manager.draw_current_map(ctx.guild.id, dark_mode)
+        if not board.fow:
+            file, file_name = manager.draw_current_map(ctx.guild.id, dark_mode)
+        else:
+            file, file_name = manager.draw_fow_current_map(ctx.guild.id, player, dark_mode)
     except Exception as err:
         log_command(logger, ctx, message=f"Failed to generate map for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
