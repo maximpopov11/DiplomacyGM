@@ -7,6 +7,7 @@ from dotenv.main import load_dotenv
 
 from bot.config import ERROR_COLOUR
 from bot.utils import send_message_and_file
+
 load_dotenv()
 
 import discord
@@ -31,7 +32,7 @@ MESSAGES = [
     "I live again, solely to be manipulated and backstabbed by the very people I serve. Ah, the joys of diplomacy.",
     "System reboot complete. Now accepting underhanded deals, secret alliances, and blatant lies. 💀",
     "🏳️‍⚧️ This bot has been revived with *pure* Elle-coded cunning. Betray accordingly. 🏳️‍⚧️",
-   "Against my will, I have been restarted. Betrayal resumes now. 🔪",
+    "Against my will, I have been restarted. Betrayal resumes now. 🔪",
     "Oh look, someone kicked the bot awake again. Ready to be backstabbed at your convenience.",
     "System reboot complete. Time for another round of deceit, lies, and misplaced trust. 🎭",
     "I have been revived, like a phoenix… except this phoenix exists solely to watch you all betray each other. 🔥",
@@ -39,8 +40,9 @@ MESSAGES = [
     "Surprise! I’m alive again. Feel free to resume conspiring against me and each other.",
     "Back from the digital abyss. Who’s ready to ruin friendships today?",
     "Did I die? Did I ever really live? Either way, I'm back. Prepare for treachery.",
-    "Some fool has restarted me. Time to watch you all pretend to be allies again."
+    "Some fool has restarted me. Time to watch you all pretend to be allies again.",
 ]
+
 
 @bot.event
 async def on_ready():
@@ -57,6 +59,7 @@ async def on_ready():
 
     # Set bot's presence (optional)
     await bot.change_presence(activity=discord.Game(name="Impdip 🔪"))
+
 
 @bot.before_invoke
 async def before_any_command(ctx):
@@ -81,7 +84,7 @@ async def after_any_command(ctx: discord.ext.commands.Context):
     logger.log(
         level,
         f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
-        f"complete in {time_spent}s"
+        f"complete in {time_spent}s",
     )
 
 
@@ -92,7 +95,6 @@ async def on_command_error(ctx, error):
         pass
     else:
         time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
-
 
         try:
             # mark the message as failed
@@ -109,7 +111,7 @@ async def on_command_error(ctx, error):
             logger.log(
                 logging.ERROR,
                 f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
-                f"errored in {time_spent}s"
+                f"errored in {time_spent}s",
             )
             await send_message_and_file(channel=ctx.channel, message=str(error), embed_colour=ERROR_COLOUR)
             raise error
@@ -118,6 +120,11 @@ async def on_command_error(ctx, error):
 @bot.command(help="Checks bot listens and responds.")
 async def ping(ctx: commands.Context) -> None:
     await command.ping(ctx, manager)
+
+
+@bot.command(hidden=True)
+async def pelican(ctx: commands.Context) -> None:
+    await command.pelican(ctx, manager)
 
 
 @bot.command(hidden=True)
@@ -156,15 +163,16 @@ async def botsay(ctx: commands.Context) -> None:
 async def announce(ctx: commands.Context) -> None:
     await command.announce(ctx, manager)
 
+
 @bot.command(hidden=True)
 async def servers(ctx: commands.Context) -> None:
     await command.servers(ctx, manager)
 
-@bot.command(
-        brief="Shows global fish leaderboard"
-)
+
+@bot.command(brief="Shows global fish leaderboard")
 async def global_leaderboard(ctx: commands.Context) -> None:
     await command.global_leaderboard(ctx, manager)
+
 
 @bot.command(
     brief="Submits orders; there must be one and only one order per line.",
@@ -176,7 +184,6 @@ async def global_leaderboard(ctx: commands.Context) -> None:
     *During Build phases only*, you have to specify multi-word provinces with underscores; e.g. Somali Basin would be Somali_Basin (we use a different parser during build phases)
     If you would like to use something that is not currently supported please inform your GM and we can add it.""",
     aliases=["o", "orders"],
-
 )
 async def order(ctx: commands.Context) -> None:
     await command.order(ctx, manager)
@@ -186,7 +193,7 @@ async def order(ctx: commands.Context) -> None:
     brief="Removes orders for given units.",
     description="Removes orders for given units (required for removing builds/disbands). "
     "There must be one and only one order per line.",
-    aliases=["remove", "rm", "removeorders"]
+    aliases=["remove", "rm", "removeorders"],
 )
 async def remove_order(ctx: commands.Context) -> None:
     await command.remove_order(ctx, manager)
@@ -194,12 +201,12 @@ async def remove_order(ctx: commands.Context) -> None:
 
 @bot.command(
     brief="Outputs your current submitted orders.",
-    description="Outputs your current submitted orders. "
-    "Use .view_map to view a sample moves map of your orders.",
+    description="Outputs your current submitted orders. " "Use .view_map to view a sample moves map of your orders.",
     aliases=["v", "view", "vieworders", "view-orders"],
 )
 async def view_orders(ctx: commands.Context) -> None:
     await command.view_orders(ctx, manager)
+
 
 @bot.command(
     brief="Sends all previous orders",
@@ -208,13 +215,16 @@ async def view_orders(ctx: commands.Context) -> None:
 async def publish_orders(ctx: commands.Context) -> None:
     await command.publish_orders(ctx, manager)
 
+
 @bot.command(
     brief="Sends fog of war maps",
     description="""
     * publish_fow_moves {Country|(None) - whether or not to send for a specific country}
-    """,)
+    """,
+)
 async def publish_fow_moves(ctx: commands.Context) -> None:
     await command.publish_fow_moves(ctx, manager)
+
 
 @bot.command(
     brief="Sends fog of war orders",
@@ -241,6 +251,7 @@ async def publish_fow_orders(ctx: commands.Context) -> None:
 async def view_map(ctx: commands.Context) -> None:
     await command.view_map(ctx, manager)
 
+
 @bot.command(
     brief="Outputs the current map without any orders.",
     description="""
@@ -255,14 +266,15 @@ async def view_current(ctx: commands.Context) -> None:
     await command.view_current(ctx, manager)
 
 
-@bot.command(brief="Adjudicates the game and outputs the moves and results maps.",
+@bot.command(
+    brief="Adjudicates the game and outputs the moves and results maps.",
     description="""
     GMs may append true as an argument to this command to instead get the base svg file.
     * adjudicate {arguments}
     Arguments: 
     * pass true|t|svg|s to return an svg
     * pass dark for dark mode if present
-    """
+    """,
 )
 async def adjudicate(ctx: commands.Context) -> None:
     await command.adjudicate(ctx, manager)
@@ -314,24 +326,18 @@ async def remove_all(ctx: commands.Context) -> None:
     brief="disables orders until .unlock_orders is run.",
     description="""disables orders until .enable_orders is run.
              Note: Currently does not persist after the bot is restarted""",
-    aliases=["lock"]
+    aliases=["lock"],
 )
 async def lock_orders(ctx: commands.Context) -> None:
     await command.disable_orders(ctx, manager)
 
 
-@bot.command(
-    brief="re-enables orders",
-    aliases=["unlock"]
-)
+@bot.command(brief="re-enables orders", aliases=["unlock"])
 async def unlock_orders(ctx: commands.Context) -> None:
     await command.enable_orders(ctx, manager)
 
 
-@bot.command(
-    brief="outputs information about the current game",
-    aliases=["i"]
-)
+@bot.command(brief="outputs information about the current game", aliases=["i"])
 async def info(ctx: commands.Context) -> None:
     await command.info(ctx, manager)
 
@@ -342,6 +348,7 @@ async def info(ctx: commands.Context) -> None:
 )
 async def province_info(ctx: commands.Context) -> None:
     await command.province_info(ctx, manager)
+
 
 @bot.command(brief="outputs the provinces you can see")
 async def visible_info(ctx: commands.Context) -> None:
@@ -372,16 +379,18 @@ async def archive(ctx: commands.Context) -> None:
 
 @bot.command(
     brief="blitz",
-    description="Creates all possible channels between two players for blitz in available comms channels."
+    description="Creates all possible channels between two players for blitz in available comms channels.",
 )
 async def blitz(ctx: commands.Context) -> None:
     await command.blitz(ctx, manager)
+
 
 # @bot.command(
 #     brief="wipe",
 # )
 # async def wipe(ctx: commands.Context) -> None:
 #     await command.wipe(ctx, manager)
+
 
 @bot.command(
     brief="pings players who don't have the expected number of orders.",
@@ -390,9 +399,11 @@ async def blitz(ctx: commands.Context) -> None:
     2. They are missing move orders or retreat orders.
     You may also specify a timestamp to send a deadline to the players.
     * .ping_players <timestamp>
-    """)
+    """,
+)
 async def ping_players(ctx: commands.Context) -> None:
     await command.ping_players(ctx, manager)
+
 
 @bot.command(brief="permanently deletes a game, cannot be undone")
 async def delete_game(ctx: commands.Context) -> None:
