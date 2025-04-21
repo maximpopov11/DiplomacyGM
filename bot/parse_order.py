@@ -96,6 +96,13 @@ class TreeToOrder(Transformer):
 
         location = normalize_location(unit_type, location)
 
+        province = location.as_province()
+        if not province.has_supply_center:
+                raise ValueError(f"{location} does not have a supply center.")  
+        elif self.player_restriction:
+            if province.core != self.player_restriction or province.owner != self.player_restriction:
+                raise ValueError(f"You do not own or haven't cored {location}.")
+
         return location, province.owner, order.Build(location, unit_type)
     
     def disband_unit(self, s):
