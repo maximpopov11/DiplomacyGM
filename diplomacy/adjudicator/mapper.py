@@ -164,6 +164,12 @@ class Mapper:
             else:
                 color = player.render_color
             self.player_colors[player.name] = color
+            
+        neutral_colors = self.board.data["svg config"]["neutral"]
+        if isinstance(neutral_colors, str):
+            self.neutral_color = neutral_colors
+        else:
+            self.neutral_color = neutral_colors[color_mode] if color_mode in neutral_colors else neutral_colors["standard"]
 
     def replace_colors(self, color_mode: str) -> None:
         other_fills = get_svg_element(self.board_svg, self.board.data["svg config"]["other_fills"])
@@ -581,7 +587,7 @@ class Mapper:
                 continue
 
             visited_provinces.add(province.name)
-            color = self.board.data["svg config"]["neutral"]
+            color = self.neutral_color
             if province not in self.adjacent_provinces:
                 color = self.board.data["svg config"]["unknown"]
             elif province.owner:
@@ -620,7 +626,7 @@ class Mapper:
                 print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
                 continue
 
-            color = self.board.data["svg config"]["neutral"]
+            color = self.neutral_color
             if province not in self.adjacent_provinces:
                 color = self.board.data["svg config"]["unknown"]
             elif province.owner:

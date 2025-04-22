@@ -83,7 +83,11 @@ class Parser:
                 color = color["standard"]
             self.color_to_player[color] = player
 
-        self.color_to_player[self.data["svg config"]["neutral"]] = None
+        neutral_colors = self.data["svg config"]["neutral"]
+        if isinstance(neutral_colors, dict):
+            self.color_to_player[neutral_colors["standard"]] = None
+        else:
+            self.color_to_player[neutral_colors] = None
         self.color_to_player[self.data["svg config"]["neutral_sc"]] = None
 
         provinces = self._get_provinces()

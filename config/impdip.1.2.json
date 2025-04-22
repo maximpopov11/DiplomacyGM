@@ -43,7 +43,7 @@
         "map_width": 4375,
         "unit_radius": 10,
         "order_stroke_width": 2,
-        "neutral": "c6b7ab",
+        "neutral": {"standard": "c6b7ab", "dark": "B7AB80", "pink": "c6b7ab", "blue": "c6b7ab"},
         "neutral_sc": "ffffff",
         "loc_x_offset": 7.7655,
         "loc_y_offset": 7.033,
