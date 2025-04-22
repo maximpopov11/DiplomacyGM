@@ -550,7 +550,7 @@ async def get_scoreboard(ctx: commands.Context, manager: Manager) -> None:
 
         response += (f"\n**{player_name}**: "
                      f"{len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}"
-                     f"{len(player.centers) - len(player.units)}) [{round(player.score()*100)}%]")
+                     f"{len(player.centers) - len(player.units)}) [{round(player.score()*100, 1)}%]")
     log_command(logger, ctx, message="Generated scoreboard")
     await send_message_and_file(channel=ctx.channel,
                                 title=f"{board.phase.name}" + " " + f"{str(1642 + board.year)}",
