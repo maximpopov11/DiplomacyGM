@@ -231,127 +231,127 @@
     },
     "players": {
         "Abyssinia": {
-            "color": {"standard": "a88080", "dark": "9D6767"},
+            "color": {"standard": "a88080", "dark": "9D6767", "pink": "FFC0CB", "blue": "2DCBEE"},
             "vscc": 32,
             "iscc": 4
         },
         "Ajuuraan": {
-            "color": {"standard": "587ba7", "dark": "4A688D"},
+            "color": {"standard": "587ba7", "dark": "4A688D", "pink": "FF6AB9", "blue": "98B7DF"},
             "vscc": 32,
             "iscc": 4
         },
         "Athapasca": {
-            "color": {"standard": "e95a94", "dark": "BB4C79"},
+            "color": {"standard": "e95a94", "dark": "BB4C79", "pink": "FF69B4", "blue": "79B2FA"},
             "vscc": 32,
             "iscc": 4
         },
         "Austria": {
-            "color": {"standard": "a17555", "dark": "82644D"},
+            "color": {"standard": "a17555", "dark": "82644D", "pink": "FF1493", "blue": "A78EF6"},
             "vscc": 32,
             "iscc": 4
         },
         "Aymara": {
-            "color": {"standard": "9a2f56", "dark": "AD295D"},
+            "color": {"standard": "9a2f56", "dark": "AD295D", "pink": "DB7093", "blue": "00A8F3"},
             "vscc": 32,
             "iscc": 4
         },
         "Ayutthaya": {
-            "color": {"standard": "9d84ae", "dark": "B875CE"},
+            "color": {"standard": "9d84ae", "dark": "B875CE", "pink": "FF007F", "blue": "599487"},
             "vscc": 32,
             "iscc": 4
         },
         "England": {
-            "color": {"standard": "f94455", "dark": "E33544"},
+            "color": {"standard": "f94455", "dark": "E33544", "pink": "E75480", "blue": "B88FE4"},
             "vscc": 56,
             "iscc": 14
         },
         "France": {
-            "color": {"standard": "66a2e3", "dark": "24A57B"},
+            "color": {"standard": "66a2e3", "dark": "24A57B", "pink": "FF6FFF", "blue": "219597"},
             "vscc": 56,
             "iscc": 14
         },
         "Inuit": {
-            "color": {"standard": "afc5d8", "dark": "95ADC2"},
+            "color": {"standard": "afc5d8", "dark": "95ADC2", "pink": "F22952", "blue": "75C8AF"},
             "vscc": 42,
             "iscc": 7
         },
         "Guarani": {
-            "color": "078690",
+            "color": {"standard": "078690", "dark": "078690", "pink": "FFB3C6", "blue": "078690"},
             "vscc": 32,
             "iscc": 4
         },
         "Kongo": {
-            "color": {"standard": "924cb3", "dark": "944FA5"},
+            "color": {"standard": "924cb3", "dark": "944FA5", "pink": "FF91A4", "blue": "6EB8D1"},
             "vscc": 32,
             "iscc": 4
         },
         "Mapuche": {
-            "color": {"standard": "81889d", "dark": "696E7F"},
+            "color": {"standard": "81889d", "dark": "696E7F", "pink": "FF85A1", "blue": "A3CFD8"},
             "vscc": 32,
             "iscc": 4
         },
         "Ming": {
-            "color": {"standard": "cadd7e", "dark": "B8DC5C"},
+            "color": {"standard": "cadd7e", "dark": "B8DC5C", "pink": "D98A96", "blue": "AD98BF"},
             "vscc": 36,
             "iscc": 5
         },
         "Mughal": {
-            "color": {"standard": "ab9f26", "dark": "999941"},
+            "color": {"standard": "ab9f26", "dark": "999941", "pink": "FDD7E4", "blue": "8CFFFB"},
             "vscc": 36,
             "iscc": 5
         },
         "Netherlands": {
-            "color": {"standard": "fc9c23", "dark": "DB7745"},
+            "color": {"standard": "fc9c23", "dark": "DB7745", "pink": "C44263", "blue": "5FC0D5"},
             "vscc": 56,
             "iscc": 14
         },
         "Ottoman": {
-            "color": {"standard": "a03838", "dark": "AB2136"},
+            "color": {"standard": "a03838", "dark": "AB2136", "pink": "F4A7B9", "blue": "6AA3D9"},
             "vscc": 48,
             "iscc": 10
         },
         "Poland-Lithuania": {
-            "color": {"standard": "e390b3", "dark": "E57BA8"},
+            "color": {"standard": "e390b3", "dark": "E57BA8", "pink": "F9A7B0", "blue": "406A9F"},
             "vscc": 42,
             "iscc": 7
         },
         "Portugal": {
-            "color": {"standard": "3c9553", "dark": "23763F"},
+            "color": {"standard": "3c9553", "dark": "23763F", "pink": "F5B7C6", "blue": "5A8CCA"},
             "vscc": 64,
             "iscc": 16
         },
         "Qing": {
-            "color": {"standard": "f36678", "dark": "E04A5D"},
+            "color": {"standard": "f36678", "dark": "E04A5D", "pink": "F5A9BC", "blue": "9F7FE9"},
             "vscc": 32,
             "iscc": 4
         },
         "Russia": {
-            "color": "547352",
+            "color": {"standard": "547352", "dark": "547352", "pink": "E672A3", "blue": "7C82B7"},
             "vscc": 44,
             "iscc": 8
         },
         "Safavid": {
-            "color": {"standard": "5a887f", "dark": "407167"},
+            "color": {"standard": "5a887f", "dark": "407167", "pink": "FFAEB9", "blue": "5055BB"},
             "vscc": 36,
             "iscc": 5
         },
         "Spain": {
-            "color": {"standard": "f0ce48", "dark": "DBB045"},
+            "color": {"standard": "f0ce48", "dark": "DBB045", "pink": "65000B", "blue": "5FC0D5"},
             "vscc": 64,
             "iscc": 16
         },
         "Sweden": {
-            "color": {"standard": "4e51ba", "dark": "534884"},
+            "color": {"standard": "4e51ba", "dark": "534884", "pink": "F497BF", "blue": "BEADE3"},
             "vscc": 32,
             "iscc": 4
         },
         "Tokugawa": {
-            "color": {"standard": "7cdbc3", "dark": "4AB79B"},
+            "color": {"standard": "7cdbc3", "dark": "4AB79B", "pink": "FFAACC", "blue": "647AFB"},
             "vscc": 32,
             "iscc": 4
         },
         "Ute-Shoshone": {
-            "color": {"standard": "ca7a59", "dark": "B87052"},
+            "color": {"standard": "ca7a59", "dark": "B87052", "pink": "EDBFC3", "blue": "217B97"},
             "vscc": 36,
             "iscc": 5
         }

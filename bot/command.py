@@ -34,7 +34,7 @@ ping_text_choices = [
     "fervently believes in the power of",
     "is being mind controlled by",
 ]
-
+color_options = {"standard", "dark", "pink", "blue"}
 
 async def ping(ctx: commands.Context, _: Manager) -> None:
     response = "Beep Boop"
@@ -420,7 +420,8 @@ async def publish_orders(ctx: commands.Context, manager: Manager) -> None:
 async def view_map(player: Player | None, ctx: commands.Context, manager: Manager) -> dict[str, ...]:
     arguments = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower().split()
     convert_svg = player or not ({"true", "t", "svg", "s"} & set(arguments))
-    dark_mode = "dark" in arguments
+    color_arguments = list(color_options & set(arguments))
+    color_mode = color_arguments[0] if color_arguments else None
     board = manager.get_board(ctx.guild.id)
 
     if player and not board.orders_enabled:
@@ -433,9 +434,9 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
     
     try:
         if not board.fow:
-            file, file_name = manager.draw_moves_map(ctx.guild.id, player, dark_mode)
+            file, file_name = manager.draw_moves_map(ctx.guild.id, player, color_mode)
         else:
-            file, file_name = manager.draw_fow_players_moves_map(ctx.guild.id, player, dark_mode)
+            file, file_name = manager.draw_fow_players_moves_map(ctx.guild.id, player, color_mode)
     except Exception as err:
         logger.error(err, exc_info=True)
         log_command(logger, ctx, message=f"Failed to generate map for an unknown reason", level=logging.ERROR)
@@ -455,7 +456,8 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
 async def view_current(player: Player | None, ctx: commands.Context, manager: Manager) -> None:
     arguments = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower().split()
     convert_svg = not ({"true", "t", "svg", "s"} & set(arguments))
-    dark_mode = "dark" in arguments
+    color_arguments = list(color_options & set(arguments))
+    color_mode = color_arguments[0] if color_arguments else None
     board = manager.get_board(ctx.guild.id)
 
     if player and not board.orders_enabled:
@@ -468,9 +470,9 @@ async def view_current(player: Player | None, ctx: commands.Context, manager: Ma
 
     try:
         if not board.fow:
-            file, file_name = manager.draw_current_map(ctx.guild.id, dark_mode)
+            file, file_name = manager.draw_current_map(ctx.guild.id, color_mode)
         else:
-            file, file_name = manager.draw_fow_current_map(ctx.guild.id, player, dark_mode)
+            file, file_name = manager.draw_fow_current_map(ctx.guild.id, player, color_mode)
     except Exception as err:
         log_command(logger, ctx, message=f"Failed to generate map for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
@@ -491,12 +493,13 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> None:
 
     arguments = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower().split()
     return_svg = not ({"true", "t", "svg", "s"} & set(arguments))
-    dark_mode = "dark" in arguments
+    color_arguments = list(color_options & set(arguments))
+    color_mode = color_arguments[0] if color_arguments else None
     # await send_message_and_file(channel=ctx.channel, **await view_map(ctx, manager))
     # await send_message_and_file(channel=ctx.channel, **await view_orders(ctx, manager))
     manager.adjudicate(ctx.guild.id)
 
-    file, file_name = manager.draw_current_map(ctx.guild.id, dark_mode)
+    file, file_name = manager.draw_current_map(ctx.guild.id, color_mode)
 
     log_command(logger, ctx, message=f"Adjudication Sucessful for {board.phase.name} {str(1642 + board.year)}")
     await send_message_and_file(channel=ctx.channel,

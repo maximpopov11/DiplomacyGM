@@ -40,7 +40,7 @@ from diplomacy.map_parser.vector.transform import TransGL3
 
 
 class Mapper:
-    def __init__(self, board: Board, restriction: Player | None = None, dark_mode: bool = False):
+    def __init__(self, board: Board, restriction: Player | None = None, color_mode: str | None = None):
         register_namespace('', "http://www.w3.org/2000/svg")
         register_namespace('inkscape', "http://www.inkscape.org/namespaces/inkscape")
         register_namespace('sodipodi', "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd")
@@ -49,12 +49,12 @@ class Mapper:
         self.board: Board = board
         self.board_svg: ElementTree = etree.parse(self.board.data["file"])
         self.player_restriction: Player | None = None
-        self.load_colors(dark_mode)
+        self.load_colors(color_mode)
         self._initialize_scoreboard_locations()
         
-        # dark mode
-        if dark_mode:
-            self.replace_colors("dark")
+        # different colors
+        if color_mode is not None:
+            self.replace_colors(color_mode)
 
         self.add_arrow_definition_to_svg(self.board_svg)
 
@@ -156,24 +156,25 @@ class Mapper:
         svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_moves_map.svg"
         return elementToString(self._moves_svg.getroot(), encoding="utf-8"), svg_file_name
 
-    def load_colors(self, dark_mode: bool = False) -> None:
+    def load_colors(self, color_mode: str | None = None) -> None:
         self.player_colors = {}
         for player in self.board.players:
-            if dark_mode and player.color_dict:
-                color = player.color_dict["dark"]
+            if color_mode is not None and player.color_dict and color_mode in player.color_dict:
+                color = player.color_dict[color_mode]
             else:
                 color = player.render_color
             self.player_colors[player.name] = color
 
-    def replace_colors(self, dark_mode: str) -> None:
+    def replace_colors(self, color_mode: str) -> None:
         other_fills = get_svg_element(self.board_svg, self.board.data["svg config"]["other_fills"])
         background = get_svg_element(self.board_svg, self.board.data["svg config"]["background"])
         replacements = self.board.data["svg config"]["color replacements"]
         for element in itertools.chain(other_fills, background):
             color = get_element_color(element)
             if color in replacements:
-                self.color_element(element, replacements[color][dark_mode])
-            else:
+                if color_mode in replacements[color]:
+                    self.color_element(element, replacements[color][color_mode])
+            elif color_mode == "dark":
                 self.color_element(element, "ffffff")
 
         # Difficult to detect correctly using either geometry or province names
