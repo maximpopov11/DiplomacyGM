@@ -234,7 +234,7 @@ async def publish_fow_orders(ctx: commands.Context) -> None:
     * view_map {arguments}
     Arguments: 
     * pass true|t|svg|s to return an svg
-    * pass dark for dark mode if present
+    * pass standard, dark, blue, or pink for different color modes if present
     """,
     aliases=["viewmap", "vm"],
 )
@@ -247,7 +247,7 @@ async def view_map(ctx: commands.Context) -> None:
     * view_current {arguments}
     Arguments: 
     * pass true|t|svg|s to return an svg
-    * pass dark for dark mode if present
+    * pass standard, dark, blue, or pink for different color modes if present
     """,
     aliases=["viewcurrent", "vc"],
 )
@@ -261,7 +261,7 @@ async def view_current(ctx: commands.Context) -> None:
     * adjudicate {arguments}
     Arguments: 
     * pass true|t|svg|s to return an svg
-    * pass dark for dark mode if present
+    * pass standard, dark, blue, or pink for different color modes if present
     """
 )
 async def adjudicate(ctx: commands.Context) -> None:
