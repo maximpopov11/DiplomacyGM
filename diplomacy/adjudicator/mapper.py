@@ -229,16 +229,12 @@ class Mapper:
         else:
             players = self.board.get_players_by_score()
 
-        has_colored = []
-        for i, player in enumerate(players):
-            for power_element in all_power_banners_element:
-                if power_element in has_colored:
-                    continue
+        for power_element in all_power_banners_element:
+            for i, player in enumerate(players):
                 # match the correct svg element based on the color of the rectangle
                 if get_element_color(power_element[0]) == player.default_color:
                     self.color_element(power_element[0], self.player_colors[player.name])
                     power_element.set("transform", self.scoreboard_power_locations[i])
-                    has_colored.append(power_element)
                     if player == self.restriction or self.restriction == None:
                         power_element[5][0].text = str(len(player.centers))
                     else:
