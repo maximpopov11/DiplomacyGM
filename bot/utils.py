@@ -451,3 +451,8 @@ def get_filtered_orders(board: Board, player_restriction: Player) -> str:
                         response += f"{unit} {unit.order}\n"
 
         return response
+
+
+def fish_pop_model(Fish, t, growth_rate, carrying_capacity):
+    dFishdt = growth_rate * Fish * (1 - Fish/carrying_capacity)
+    return dFishdt
