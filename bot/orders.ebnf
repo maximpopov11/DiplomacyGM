@@ -101,4 +101,4 @@ DESCRIPTOR.2 : /a|army|cannon|f|fleet|boat|ship/i WS
 
 province : PROVINCE (WS PROVINCE) ~ 0..3
 
-PROVINCE : /(?![fFaA]\s)[a-zA-Z0-9\._'-]+(?=\s)/
+PROVINCE : /(?![fFaA]\s)[a-zA-Z0-9\._‘’`´′‛'-]+(?=\s)/
