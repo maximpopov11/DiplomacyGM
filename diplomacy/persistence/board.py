@@ -26,7 +26,7 @@ class Board:
             "time": time.time()
         }
         self.orders_enabled: bool = True
-        self.data = data
+        self.data: dict = data
         self.datafile = datafile
         self.fow = fow
 

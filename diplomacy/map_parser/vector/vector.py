@@ -10,7 +10,7 @@ import shapely
 from lxml import etree
 
 from diplomacy.map_parser.vector.transform import TransGL3
-from diplomacy.map_parser.vector.utils import get_player, get_unit_coordinates, get_svg_element, parse_path, initialize_province_resident_data
+from diplomacy.map_parser.vector.utils import get_element_color, get_unit_coordinates, get_svg_element, parse_path, initialize_province_resident_data
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.player import Player
@@ -73,22 +73,23 @@ class Parser:
         start = time.time()
 
         players = set()
-        for name, data in self.data["players"].items():
-            color = data["color"]
-            vscc = data["vscc"]
-            iscc = data["iscc"]
-            player = Player(name, color, vscc, iscc, set(), set())
-            players.add(player)
-            if isinstance(color, dict):
-                color = color["standard"]
-            self.color_to_player[color] = player
+        if self.data["players"] != "chaos":
+            for name, data in self.data["players"].items():
+                color = data["color"]
+                vscc = data["vscc"]
+                iscc = data["iscc"]
+                player = Player(name, color, vscc, iscc, set(), set())
+                players.add(player)
+                if isinstance(color, dict):
+                    color = color["standard"]
+                self.color_to_player[color] = player
 
-        neutral_colors = self.data["svg config"]["neutral"]
-        if isinstance(neutral_colors, dict):
-            self.color_to_player[neutral_colors["standard"]] = None
-        else:
-            self.color_to_player[neutral_colors] = None
-        self.color_to_player[self.data["svg config"]["neutral_sc"]] = None
+            neutral_colors = self.data["svg config"]["neutral"]
+            if isinstance(neutral_colors, dict):
+                self.color_to_player[neutral_colors["standard"]] = None
+            else:
+                self.color_to_player[neutral_colors] = None
+            self.color_to_player[self.data["svg config"]["neutral_sc"]] = None
 
         provinces = self._get_provinces()
 
@@ -359,7 +360,7 @@ class Parser:
     def _initialize_province_owners(self, provinces_layer: Element) -> None:
         for province_data in provinces_layer.getchildren():
             name = self._get_province_name(province_data)
-            self.name_to_province[name].owner = get_player(province_data, self.color_to_player)
+            self.name_to_province[name].owner = self.get_element_player(province_data)
 
     # Sets province names given the names layer
     def _initialize_province_names(self, provinces: set[Province]) -> None:
@@ -391,7 +392,7 @@ class Parser:
             if not core:
                 core_data = center_data.findall(".//svg:circle", namespaces=NAMESPACE)
                 if len(core_data) >= 2:
-                    core = get_player(core_data[1], self.color_to_player)
+                    core = self.get_element_player(core_data[1])
             province.core = core
 
     # Sets province supply center values
@@ -426,7 +427,7 @@ class Parser:
             raise Exception(f"{province.name} has a unit, but isn't owned by any country")
 
         # color_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
-        # player = get_player(color_data, self.color_to_player)
+        # player = self.get_element_player(color_data)
         # TODO: (BETA) tech debt: let's pass the coast in instead of only passing in coast when province has multiple
         if not coast and unit_type == UnitType.FLEET:
             coast = next((coast for coast in province.coasts), None)
@@ -544,6 +545,9 @@ class Parser:
         finally:
             f.close()
         return adjacencies
+
+    def get_element_player(self, element: Element) -> Player:
+        return self.color_to_player[get_element_color(element)]
 
     def _get_unit_type(self, unit_data: Element) -> UnitType:
         if self.data["svg config"]["unit_type_labeled"]:
