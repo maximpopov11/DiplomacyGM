@@ -1,6 +1,6 @@
 {
-    "name": "Imperial Diplomacy B1.2",
-    "file": "assets/impdip.1.2.svg",
+    "name": "Imperial Diplomacy: World Chaos",
+    "file": "assets/worldchaos.svg",
     "svg config": {
         "land_layer": "layer6",
         "island_ring_layer": "layer9",
@@ -39,6 +39,8 @@
 		},
 
         "border_margin_hint": 1,
+
+        "scoreboard": false,
 
         "map_width": 4375,
         "unit_radius": 10,

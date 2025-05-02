@@ -222,6 +222,8 @@ class Mapper:
         2-4: "current", "victory", "start" text labels in that order
         5-7: SC counts in that same order
         """
+        if not self.board.data["svg config"].get("scoreboard", True):
+            return
         all_power_banners_element = get_svg_element(svg.getroot(), self.board.data["svg config"]["power_banners"])
         if self.board.fow and self.restriction != None:
             # don't get info

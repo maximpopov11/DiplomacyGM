@@ -72,14 +72,17 @@ class Parser:
         logger.debug("map_parser.vector.parse.start")
         start = time.time()
 
-        players = set()
-        if self.data["players"] != "chaos":
+        self.players = set()
+
+        self.autodetect_players = self.data["players"] == "chaos"
+
+        if not self.autodetect_players:
             for name, data in self.data["players"].items():
                 color = data["color"]
                 vscc = data["vscc"]
                 iscc = data["iscc"]
                 player = Player(name, color, vscc, iscc, set(), set())
-                players.add(player)
+                self.players.add(player)
                 if isinstance(color, dict):
                     color = color["standard"]
                 self.color_to_player[color] = player
@@ -134,7 +137,7 @@ class Parser:
                     coast.retreat_unit_coordinate = (0, 0)
 
 
-        return Board(players, provinces, units, phase.initial(), self.data, self.datafile, self.fow)
+        return Board(self.players, provinces, units, phase.initial(), self.data, self.datafile, self.fow)
 
     def read_map(self) -> tuple[set[Province], set[tuple[str, str]]]:
         if self.cache_provinces is None:
@@ -360,7 +363,7 @@ class Parser:
     def _initialize_province_owners(self, provinces_layer: Element) -> None:
         for province_data in provinces_layer.getchildren():
             name = self._get_province_name(province_data)
-            self.name_to_province[name].owner = self.get_element_player(province_data)
+            self.name_to_province[name].owner = self.get_element_player(province_data, province_name=name)
 
     # Sets province names given the names layer
     def _initialize_province_names(self, provinces: set[Province]) -> None:
@@ -392,7 +395,7 @@ class Parser:
             if not core:
                 core_data = center_data.findall(".//svg:circle", namespaces=NAMESPACE)
                 if len(core_data) >= 2:
-                    core = self.get_element_player(core_data[1])
+                    core = self.get_element_player(core_data[1], province_name=province.name)
             province.core = core
 
     # Sets province supply center values
@@ -546,8 +549,17 @@ class Parser:
             f.close()
         return adjacencies
 
-    def get_element_player(self, element: Element) -> Player:
-        return self.color_to_player[get_element_color(element)]
+    def get_element_player(self, element: Element, province_name: str="") -> Player:
+        color = get_element_color(element)
+        if color in self.color_to_player:
+           return self.color_to_player[color]
+        elif self.autodetect_players:
+            player = Player(province_name, color, 101, 1, set(), set())
+            self.players.add(player)
+            self.color_to_player[color] = player
+            return player
+        else:
+            raise Exception(f"Unknown player color: {color}")
 
     def _get_unit_type(self, unit_data: Element) -> UnitType:
         if self.data["svg config"]["unit_type_labeled"]:
