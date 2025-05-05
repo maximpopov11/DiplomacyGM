@@ -526,7 +526,6 @@ class MovesAdjudicator(Adjudicator):
         to_visit.append(order.source_province)
         while 0 < len(to_visit):
             current = to_visit.popleft()
-
             # Have to pass through at least one convoying fleet
             if current != order.source_province and order.destination_province in current.adjacent:
                 return Resolution.SUCCEEDS
