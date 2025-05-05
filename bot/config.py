@@ -1,3 +1,5 @@
+from diplomacy.persistence.board import Board
+
 ERROR_COLOUR = "#FF0000"
 PARTIAL_ERROR_COLOUR = "#FF7700"
 
@@ -55,7 +57,8 @@ _player_categories: set[str] = {
 }
 
 
-def is_player_category(category: str) -> bool:
+def is_player_category(category: str, board: Board) -> bool:
+    catgories = board.data["game config"]
     return _is_member(category, _player_categories)
 
 

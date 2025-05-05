@@ -92,25 +92,29 @@ class Mapper:
     def clean_layers(self, svg: ElementTree):
         for element_name in self.board.data["svg config"]["delete_layer"]:
             get_svg_element(svg, self.board.data["svg config"][element_name]).clear()
+    
+    def is_moveable(self, unit: Unit):
+        if unit.province not in self.adjacent_provinces:
+            return False
+        if self.player_restriction and unit.player != self.player_restriction:
+            return False
+        if phase.is_retreats(self.current_phase) and unit.province.dislodged_unit != unit:
+            return False
+        return True
 
     def draw_moves_map(self, current_phase: phase.Phase, player_restriction: Player | None) -> tuple[str, str]:
         logger.info("mapper.draw_moves_map")
 
         self._reset_moves_map()
         self.player_restriction = player_restriction
-        
+        self.current_phase = current_phase
+
         t = self._moves_svg.getroot()
         arrow_layer = get_svg_element(t, self.board.data["svg config"]["arrow_output"])
         if not phase.is_builds(current_phase):
             for unit in self.board.units:
-                if unit.province not in self.adjacent_provinces:
+                if not self.is_moveable(unit):
                     continue
-
-                if player_restriction and unit.player != player_restriction:
-                    continue
-                if phase.is_retreats(current_phase) and unit.province.dislodged_unit != unit:
-                    continue
-
                 if phase.is_retreats(current_phase):
                     unit_locs = unit.location().all_rets
                 else:
@@ -452,12 +456,14 @@ class Mapper:
                 (x3, y3) = self.pull_coordinate((x1, y1), (x3, y3), self.board.data["svg config"]["unit_radius"])
             else:
                 (x3, y3) = self.pull_coordinate((x2, y2), (x3, y3))
-#            if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)):
-#                destloc = order.destination
-#                if destloc.get_unit() and destloc.get_unit().coast:
-#                    destloc = destloc.get_unit().coast
-#                for coord in order.destination.all_locs:
-#                    self._draw_hold(coord)
+            # Draw hold around unit that can be support-held
+            if order.source == order.destination:
+                if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)) and self.is_moveable(order.destination.get_unit()):
+                    destloc = order.destination
+                    if destloc.get_unit() and destloc.get_unit().coast:
+                        destloc = destloc.get_unit().coast
+                    for coord in order.destination.all_locs:
+                        self._draw_hold(coord)
 
             # if two units are support-holding each other
             destorder = order.destination.get_unit().order
