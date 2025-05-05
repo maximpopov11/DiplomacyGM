@@ -125,13 +125,11 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
                 return False, "Armies cannot move to sea provinces"
         elif unit.unit_type == UnitType.FLEET:
             check = order.destination.as_province() in get_adjacent_provinces(location)
-            print(f"Checking {order.destination.as_province()} is in {location}'s: {get_adjacent_provinces(location)}")
 
             # FIXME currently adjacencies for coasts don't work properly, and allow for supporting from different coasts when necessary
             # when this is fixed, please uncomment out tests test_6_b_3_variant, test_6_d_29, test_6_d_30 as they fail currently
 
             if not check:
-                print("Failed")
                 return False, f"{location.name} does not border {order.destination.name}"
         else:
             raise ValueError("Unknown type of unit. Something has broken in the bot. Please report this")
@@ -403,7 +401,6 @@ class MovesAdjudicator(Adjudicator):
 
     def _find_convoy_kidnappings(self):
         for order in self.orders:
-            print(f"check kid {order}")
             if order.type != OrderType.MOVE:
                 continue
 
@@ -417,11 +414,8 @@ class MovesAdjudicator(Adjudicator):
             if order.destination_province.name in self.orders_by_province:
                 attacked_order = self.orders_by_province[order.destination_province.name]
                 if attacked_order.destination_province == order.source_province:
-                    print("meow")
                     if self._adjudicate_convoys_for_order(order) == Resolution.SUCCEEDS:
-                        print("mooo")
                         order.is_convoy = True
-                        print(f"WE KIDNAPPING {order}")
 
     def run(self) -> Board:
         for order in self.orders:
@@ -532,12 +526,9 @@ class MovesAdjudicator(Adjudicator):
         to_visit.append(order.source_province)
         while 0 < len(to_visit):
             current = to_visit.popleft()
-            print(current)
 
             # Have to pass through at least one convoying fleet
-            print(current.adjacent)
             if current != order.source_province and order.destination_province in current.adjacent:
-                print("we win")
                 return Resolution.SUCCEEDS
 
             visited.add(current.name)
@@ -545,12 +536,10 @@ class MovesAdjudicator(Adjudicator):
             adjacent_convoys = {
                 convoy_order for convoy_order in order.convoys if convoy_order.current_province in current.adjacent
             }
-            print([convoy.current_province for convoy in adjacent_convoys])
             for convoy in adjacent_convoys:
                 if convoy.current_province.name in visited:
                     continue
                 if self._resolve_order(convoy) == Resolution.SUCCEEDS:
-                    print(f"adding {convoy.current_province}")
                     to_visit.append(convoy.current_province)
         return Resolution.FAILS
 
