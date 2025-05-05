@@ -392,9 +392,11 @@ async def remove_order(player: Player | None, ctx: commands.Context, manager: Ma
 
 @perms.player("view orders")
 async def view_orders(player: Player | None, ctx: commands.Context, manager: Manager) -> None:
+    arguments = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower().split()
+    missing_only = {"missing", "miss", "m"} & set(arguments)
     try:
         board = manager.get_board(ctx.guild.id)
-        order_text = get_orders(board, player, ctx)
+        order_text = get_orders(board, player, ctx, missing_only=missing_only)
     except RuntimeError as err:
         logger.error(err, exc_info=True)
         log_command(logger, ctx, message=f"Failed for an unknown reason", level=logging.ERROR)
