@@ -44,7 +44,6 @@ class TestCore(unittest.TestCase):
 
         b.assertSuccess(a_holland)
         b.moves_adjudicate(self)
-        print(b.holland.half_core)
         self.assertTrue(b.holland.half_core == b.germany, "Holland should be half-cored")
 
     def test_core_4(self):
@@ -61,7 +60,6 @@ class TestCore(unittest.TestCase):
 
         b.assertSuccess(a_holland)
         b.moves_adjudicate(self)
-        print(b.holland.half_core)
         self.assertTrue(b.holland.core == b.germany, "Holland should be cored")
 
     def test_core_5(self):

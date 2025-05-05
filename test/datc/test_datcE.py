@@ -235,8 +235,8 @@ class TestDATC_E(unittest.TestCase):
         f_yorkshire = b.supportMove(b.england, UnitType.FLEET, b.yorkshire_c, f_norway, b.north_sea)
         f_skagerrak = b.supportMove(b.russia, UnitType.FLEET, b.skagerrak, f_norway, b.north_sea)
 
-        b.assertSuccess(f_holland, f_yorkshire, f_skagerrak, f_north_sea)
-        b.assertFail(f_helgoland_bight, f_norway)
+        b.assertSuccess(f_holland, f_yorkshire, f_skagerrak, f_north_sea, f_norway)
+        b.assertFail(f_helgoland_bight)
         b.assertNotDislodge(f_north_sea)
         b.moves_adjudicate(self)
 
