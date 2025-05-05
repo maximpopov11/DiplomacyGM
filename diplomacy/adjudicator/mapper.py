@@ -452,12 +452,12 @@ class Mapper:
                 (x3, y3) = self.pull_coordinate((x1, y1), (x3, y3), self.board.data["svg config"]["unit_radius"])
             else:
                 (x3, y3) = self.pull_coordinate((x2, y2), (x3, y3))
-            if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)):
-                destloc = order.destination
-                if destloc.get_unit() and destloc.get_unit().coast:
-                    destloc = destloc.get_unit().coast
-                for coord in order.destination.all_locs:
-                    self._draw_hold(coord)
+#            if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)):
+#                destloc = order.destination
+#                if destloc.get_unit() and destloc.get_unit().coast:
+#                    destloc = destloc.get_unit().coast
+#                for coord in order.destination.all_locs:
+#                    self._draw_hold(coord)
 
             # if two units are support-holding each other
             destorder = order.destination.get_unit().order
