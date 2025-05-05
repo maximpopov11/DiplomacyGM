@@ -238,6 +238,7 @@ class Coast(Location):
             l = 0
 
             # find connected sets which are adjacent to tripoint and two provinces (so portugal is eliminated from contention if MAO, Gascony, and Spain nc are the locations being tested)
+            # FIXME: this leads to false positives
             for candidate in connected_sets:
                 needed_neighbors = set([c1.province, c2.province, possible_tripoint])
 
@@ -246,8 +247,6 @@ class Coast(Location):
 
                 if len(needed_neighbors) == 0:
                     l += 1
-
-
 
             # If there is 1, that means there was 1 ring (yes)
             # 2, there was two (no)

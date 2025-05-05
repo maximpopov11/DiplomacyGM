@@ -12,6 +12,8 @@ class TestDATC_B(unittest.TestCase):
 
     # NOT APPLICABLE 6_b_2; TEST CASE, MOVING WITH UNSPECIFIED COAST WHEN COAST IS NOT NECESSARY
 
+    # TODO fix when overrides are added
+
     def test_6_b_3_fail(self):
         """ 6.B.3. TEST CASE, MOVING WITH WRONG COAST WHEN COAST IS NOT NECESSARY
             If only one coast is possible, but the wrong coast can be specified.
@@ -25,19 +27,6 @@ class TestDATC_B(unittest.TestCase):
 
         b.assertSuccess(f_gascony) # this should really be a fail but the current code doesn't check this properly
         b.moves_adjudicate(self)
-
-    # this test is written to work with the current `get_adjacent_coasts` which has 
-    # false positives
-    # def test_6_b_3_variant(self):
-    #     """ Variant of 6.B.3 which works correctly under current get_adjacent_coasts,
-    #     Russia: F Gulf of Bothnia - St Petersburg(nc)
-    #     should fail
-    #     """
-    #     b = BoardBuilder()
-    #     f_gulf_of_bothnia = b.move(b.russia, UnitType.FLEET, b.gulf_of_bothnia, b.st_petersburg_nc)
-
-    #     b.assertIllegal(f_gulf_of_bothnia)
-    #     b.moves_adjudicate(self)
 
     def test_6_b_4(self):
         """ 6.B.4. TEST CASE, SUPPORT TO UNREACHABLE COAST ALLOWED

@@ -71,7 +71,7 @@ def convoy_is_possible(start: Province, end: Province, check_fleet_orders=False)
     return False
 
 
-def order_is_valid(location: Location, order: Order, strict_convoys_supports=False) -> tuple[bool, str | None]:
+def order_is_valid(location: Location, order: Order, strict_convoys_supports=False, strict_coast_movement=True) -> tuple[bool, str | None]:
     """
     Checks if order from given location is valid for configured board
 
@@ -79,7 +79,8 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
     :param order: Order to check
     :param strict_convoys_supports: Defaults False. Validates only if supported order was also ordered,
                                     or convoyed unit was convoyed correctly
-
+    :param strict_coast_movement: Defaults True. Checks movement regarding coasts, should be false when checking 
+                                    for support holds.
     :return: tuple(result, reason)
         - bool result is True if the order is valid, False otherwise
         - str reason is arbitrary if the order is valid, provides reasoning if invalid
@@ -128,6 +129,26 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
 
             # FIXME currently adjacencies for coasts don't work properly, and allow for supporting from different coasts when necessary
             # when this is fixed, please uncomment out tests test_6_b_3_variant, test_6_d_29, test_6_d_30 as they fail currently
+            source = location
+            destination = order.destination
+            # supports don't need to be strict
+            if strict_coast_movement:
+                if isinstance(source, Coast) and isinstance(destination, Coast):
+                    # coast to coast
+                    check = destination in source.get_adjacent_coasts()
+                elif isinstance(source, Coast) and isinstance(destination, Province):
+                    # coast to sea / island
+                    if destination.type == ProvinceType.LAND:
+                        return False, f"Fleet destination should be a coast"
+                    check = destination in source.adjacent_seas
+                elif isinstance(source, Province) and isinstance(destination, Coast):
+                    # sea / island to coast
+                    if source.type == ProvinceType.LAND:
+                        return False, f"Fleet source {source} should be a coast"
+                    check = source in destination.adjacent_seas
+                elif isinstance(source, Province) and isinstance(destination, Province):
+                    # sea / island to sea / island
+                    check = source in destination.adjacent
 
             if not check:
                 return False, f"{location.name} does not border {order.destination.name}"
@@ -178,7 +199,7 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
         if isinstance(order.source.get_unit().order, Core) and order_is_valid(order.source.as_province(), Core):
             return False, f"Cannot support a unit that is coring"
 
-        move_valid, _ = order_is_valid(location, Move(order.destination), strict_convoys_supports)
+        move_valid, _ = order_is_valid(location, Move(order.destination), strict_convoys_supports, False)
         if not move_valid:
             return False, f"Cannot support somewhere you can't move to"
 
@@ -338,7 +359,9 @@ class MovesAdjudicator(Adjudicator):
  
         self.orders: set[AdjudicableOrder] = set()
 
-        for unit in board.units:
+        # run supports after everything else since illegal cores / moves should be treated as holds
+        units = sorted(board.units, key=lambda unit: isinstance(unit.order, Support))
+        for unit in units:
             # Replace invalid orders with holds
             # Importantly, this includes supports for which the corresponding unit didn't make the same move
             # Same for convoys
@@ -380,6 +403,7 @@ class MovesAdjudicator(Adjudicator):
                 order.failed_convoy = True
 
             self.orders.add(order)
+
 
         self.orders_by_province = {order.current_province.name: order for order in self.orders}
         self.moves_by_destination: dict[str, set[AdjudicableOrder]] = dict()
