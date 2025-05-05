@@ -193,7 +193,13 @@ class Coast(Location):
         # where two canals were blocked from connecting on one side by a land province but not the other
         # or by multiple rainbow-shaped seas
         possible_tripoints = c1.adjacent_seas & c2.adjacent_seas
+        print(f"POSS: {possible_tripoints}")
         for possible_tripoint in possible_tripoints:
+            # check for situations where one of the provinces is situated in the other two
+
+            if len(possible_tripoint.adjacent) == 2 or len(c1.province.adjacent) == 2 or len(c2.province.adjacent) == 2:
+                return True
+
             # the algorithm is as follows
             # connect all adjacent to the three provinces as possible
             # if they all connect, they form a ring around forcing connection
@@ -228,9 +234,25 @@ class Coast(Location):
                     this = find_set_with_element(to_process)
                     other = find_set_with_element(neighbor)
                     connected_sets = connected_sets - {this, other}
-                    connected_sets.add(this | other)
+                    connected_sets.add(this | other)            
 
-            l = len(connected_sets)
+            print(connected_sets)
+            print(set([c1.province, c2.province, possible_tripoint]))
+
+            l = 0
+            # find connected sets which are adjacent to tripoint and two provinces
+
+            
+            for candidate in connected_sets:
+                needed_neighbors = set([c1.province, c2.province, possible_tripoint])
+
+                for province in candidate:
+                    needed_neighbors.difference_update(province.adjacent)
+
+                if len(needed_neighbors) == 0:
+                    l += 1
+
+
 
             # If there is 1, that means there was 1 ring (yes)
             # 2, there was two (no)
@@ -247,6 +269,7 @@ class Coast(Location):
 
 
     def get_adjacent_coasts(self) -> set[Coast]:
+        print(f"FINDING ADJACENT COASTS FOR {self}")
         # TODO: (BETA) this will generate false positives (e.g. mini province keeping 2 big province coasts apart)
         adjacent_coasts: set[Coast] = set()
         if self.province.type == ProvinceType.ISLAND:
@@ -258,8 +281,11 @@ class Coast(Location):
       
         for province2 in self.province.adjacent:
             for coast2 in province2.coasts:
+                print(f"COAST2: {coast2}")
                 if Coast.detect_costal_connection(self, coast2):
                     adjacent_coasts.add(coast2)
+                else:
+                    print("FAILED")
         return adjacent_coasts
 
     def get_adjacent_locations(self) -> set[Location]:

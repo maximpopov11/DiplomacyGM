@@ -691,7 +691,8 @@ class TestDATC_D(unittest.TestCase):
         a_rumania = b.move(b.austria, UnitType.ARMY, b.rumania, b.armenia)
         f_black_sea = b.supportMove(b.turkey, UnitType.FLEET, b.black_sea, a_rumania, b.armenia)
 
-        b.assertIllegal(a_rumania, f_black_sea)
+        b.assertNotIllegal(a_rumania)
+        b.assertIllegal(f_black_sea)
         b.moves_adjudicate(self)
 
     def test_6_d_32(self):
