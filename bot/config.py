@@ -57,8 +57,7 @@ _player_categories: set[str] = {
 }
 
 
-def is_player_category(category: str, board: Board) -> bool:
-    catgories = board.data["game config"]
+def is_player_category(category: str) -> bool:
     return _is_member(category, _player_categories)
 
 
