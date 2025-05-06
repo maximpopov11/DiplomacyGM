@@ -367,9 +367,10 @@ class MovesAdjudicator(Adjudicator):
             # Same for convoys
 
             failed: bool = False
-            # indicates a convoy move that failed, so it can't be support held
-            failed_convoy: bool = False
+            # indicates that an illegal move / core can't be support held
+            not_supportable: bool = False
 
+            # TODO clean up mapper info
             valid, reason = order_is_valid(unit.location(), unit.order, strict_convoys_supports=True)
             if not valid:
                 logger.debug(f"Order for {unit} is invalid because {reason}")
@@ -381,6 +382,7 @@ class MovesAdjudicator(Adjudicator):
                     )
                     if not valid:  # move is invalid in the first place, becomes hold
                         unit.order = Hold()
+                        not_supportable = True
                         failed = True
                     else:
                         strict_valid, reason = order_is_valid(
@@ -389,9 +391,13 @@ class MovesAdjudicator(Adjudicator):
 
                         if not strict_valid:  # move is valid but no convoy, so it is a failed move
                             unit.order = Hold()
-                            failed_convoy = True
+                            not_supportable = True
                         else:
                             unit.order = ConvoyMove(unit.order.destination)
+                elif isinstance(unit.order, Core):
+                    unit.order = Hold()
+                    not_supportable = True
+                    failed = True
                 else:
                     unit.order = Hold()
                     failed = True
@@ -399,8 +405,8 @@ class MovesAdjudicator(Adjudicator):
             if failed:
                 self.failed_or_invalid_units.add(MapperInformation(unit))
             order = AdjudicableOrder(unit)
-            if failed_convoy:
-                order.failed_convoy = True
+            if not_supportable:
+                order.not_supportable = True
 
             self.orders.add(order)
 
@@ -642,7 +648,7 @@ class MovesAdjudicator(Adjudicator):
 
             opponent_strength = 1
             # count supports if it wasn't a failed move
-            if head_on or (attacked_order.type != OrderType.MOVE and not attacked_order.failed_convoy):
+            if head_on or (attacked_order.type != OrderType.MOVE and not attacked_order.not_supportable):
                 for support in attacked_order.supports:
                     if self._resolve_order(support) == Resolution.SUCCEEDS:
                         opponent_strength += 1
