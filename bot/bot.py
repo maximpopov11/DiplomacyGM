@@ -195,7 +195,8 @@ async def remove_order(ctx: commands.Context) -> None:
 @bot.command(
     brief="Outputs your current submitted orders.",
     description="Outputs your current submitted orders. "
-    "Use .view_map to view a sample moves map of your orders.",
+    "Use .view_map to view a sample moves map of your orders. "
+    "Use the 'missing' or 'submitted' argument to view only units without orders or only submitted orders.",
     aliases=["v", "view", "vieworders", "view-orders"],
 )
 async def view_orders(ctx: commands.Context) -> None:

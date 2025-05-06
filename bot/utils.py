@@ -349,7 +349,7 @@ async def send_message_and_file(
 
 
 
-def get_orders(board: Board, player_restriction: Player | None, ctx: Context, fields: bool = False) -> str | List[Tuple[str, str]]:
+def get_orders(board: Board, player_restriction: Player | None, ctx: Context, fields: bool = False, subset: str | None = None) -> str | List[Tuple[str, str]]:
     if fields:
         response = []
     else:
@@ -362,6 +362,11 @@ def get_orders(board: Board, player_restriction: Player | None, ctx: Context, fi
                     player_name = player_role.mention
                 else:
                     player_name = player.name
+                
+                if subset == "missing" and abs(len(player.centers) - len(player.units)) == len(player.build_orders):
+                    continue
+                if subset == "submitted" and len(player.build_orders) == 0:
+                    continue
 
                 title = f"**{player_name}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
                 body = ""
@@ -388,6 +393,11 @@ def get_orders(board: Board, player_restriction: Player | None, ctx: Context, fi
             moving_units = [unit for unit in player.units if in_moves(unit)]
             ordered = [unit for unit in moving_units if unit.order is not None]
             missing = [unit for unit in moving_units if unit.order is None]
+            
+            if subset == "missing" and not missing:
+                continue
+            if subset == "submitted" and not ordered:
+                continue
 
             if (player_role := get_role_by_player(player, ctx.guild.roles)) is not None:
                 player_name = player_role.mention
@@ -396,11 +406,11 @@ def get_orders(board: Board, player_restriction: Player | None, ctx: Context, fi
 
             title = f"**{player_name}** ({len(ordered)}/{len(moving_units)})"
             body = ""
-            if missing:
+            if missing and subset != "submitted":
                 body += f"__Missing Orders:__\n"
                 for unit in sorted(missing, key=lambda _unit: _unit.province.name):
                     body += f"{unit}\n"
-            if ordered:
+            if ordered and subset != "missing":
                 body += f"__Submitted Orders:__\n"
                 for unit in sorted(ordered, key=lambda _unit: _unit.province.name):
                     body += f"{unit} {unit.order}\n"
