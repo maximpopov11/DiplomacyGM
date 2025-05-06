@@ -64,7 +64,7 @@ class TestCore(unittest.TestCase):
 
     def test_core_5(self):
         """ 
-            Coring should failed when the coring unit is attacked.
+            Coring should fail when the coring unit is attacked.
             Germany owns Holland.
             Germany: A Holland Cores
             France: A Belgium - Holland
@@ -84,7 +84,7 @@ class TestCore(unittest.TestCase):
 
     def test_core_5(self):
         """ 
-            Coring should failed when the attacking unit is of the same nationality.
+            Coring should fail when the attacking unit is of the same nationality.
             Germany owns Holland.
             Germany: A Holland Cores
             Germany: A Belgium - Holland
@@ -126,7 +126,7 @@ class TestCore(unittest.TestCase):
 
     def test_core_7(self):
         """ 
-            Coring should failed when attacked by convoy of the same nationality.
+            Coring should fail when attacked by convoy of the same nationality.
             Germany owns Holland.
             Germany: A Holland Cores
             Germany: A London - Holland
