@@ -157,7 +157,7 @@ class Mapper:
 
         self.clean_layers(self._moves_svg)
 
-        svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_moves_map.svg"
+        svg_file_name = f"{self.board.phase.name}_{self.board.get_year_str().replace(" ", "_")}_moves_map.svg"
         return elementToString(self._moves_svg.getroot(), encoding="utf-8"), svg_file_name
 
     def load_colors(self, color_mode: str | None = None) -> None:
@@ -207,12 +207,12 @@ class Mapper:
 
     def draw_current_map(self) -> tuple[str, str]:
         logger.info("mapper.draw_current_map")
-        svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_map.svg"
+        svg_file_name = f"{self.board.phase.name}_{self.board.get_year_str().replace(" ", "_")}_map.svg"
         return elementToString(self.state_svg.getroot(), encoding="utf-8"), svg_file_name
 
     def get_pretty_date(self) -> str:
         # TODO: Get the start date from somewhere in the board/in a config file
-        return self.board.phase.name + " " + str(self.board.year + 1642)
+        return self.board.phase.name + " " + self.board.get_year_str()
 
     def draw_side_panel(self, svg: ElementTree) -> None:
         self._draw_side_panel_date(svg)

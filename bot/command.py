@@ -293,7 +293,7 @@ async def announce(ctx: commands.Context, manager: Manager) -> None:
         message += f"\n- {server.name}"
         if server.id in guilds_with_games:
             board = manager.get_board(server.id)
-            message += f" - {board.phase.name} {1642 + board.year}"
+            message += f" - {board.phase.name} {board.get_year_str()}"
         else:
             message += f" - no active game"
 
@@ -331,7 +331,7 @@ async def servers(ctx: commands.Context, manager: Manager) -> None:
 
         if server.id in guilds_with_games:
             board = manager.get_board(server.id)
-            board_state = f" - {board.phase.name} {1642 + board.year}"
+            board_state = f" - {board.phase.name} {board.get_year_str()}"
         else:
             board_state = f" - no active game"
 
@@ -406,9 +406,9 @@ async def view_orders(player: Player | None, ctx: commands.Context, manager: Man
                                     title="Unknown Error: Please contact your local bot dev",
                                     embed_colour=ERROR_COLOUR)
         return
-    log_command(logger, ctx, message=f"Success - generated orders for {board.phase.name} {str(1642 + board.year)}")
+    log_command(logger, ctx, message=f"Success - generated orders for {board.phase.name} {board.get_year_str()}")
     await send_message_and_file(channel=ctx.channel,
-                                title=f"{board.phase.name} {str(1642 + board.year)}",
+                                title=f"{board.phase.name} {board.get_year_str()}",
                                 message=order_text)
 
 @perms.gm("publish orders")
@@ -439,7 +439,7 @@ async def publish_orders(ctx: commands.Context, manager: Manager) -> None:
     else:
         await send_message_and_file(
             channel=orders_log_channel,
-            title=f"{board.phase.name} {str(1642 + board.year)}",
+            title=f"{board.phase.name} {board.get_year_str()}",
             fields=order_text,
         )
         log_command(logger, ctx, message=f"Successfully published orders")
@@ -474,9 +474,9 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
                                     title="Unknown Error: Please contact your local bot dev",
                                     embed_colour=ERROR_COLOUR)
         return
-    log_command(logger, ctx, message=f"Generated moves map for {board.phase.name} {str(1642 + board.year)}")
+    log_command(logger, ctx, message=f"Generated moves map for {board.phase.name} {board.get_year_str()}")
     await send_message_and_file(channel=ctx.channel,
-                                title=f"{board.phase.name} {str(1642 + board.year)}",
+                                title=f"{board.phase.name} {board.get_year_str()}",
                                 file=file,
                                 file_name=file_name,
                                 convert_svg=convert_svg,
@@ -509,9 +509,9 @@ async def view_current(player: Player | None, ctx: commands.Context, manager: Ma
                                     title="Unknown Error: Please contact your local bot dev",
                                     embed_colour=ERROR_COLOUR)
         return
-    log_command(logger, ctx, message=f"Generated current map for {board.phase.name} {str(1642 + board.year)}")
+    log_command(logger, ctx, message=f"Generated current map for {board.phase.name} {board.get_year_str()}")
     await send_message_and_file(channel=ctx.channel,
-                                title=f"{board.phase.name} {str(1642 + board.year)}",
+                                title=f"{board.phase.name} {board.get_year_str()}",
                                 file=file,
                                 file_name=file_name,
                                 convert_svg=convert_svg,
@@ -531,9 +531,9 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> None:
 
     file, file_name = manager.draw_current_map(ctx.guild.id, color_mode)
 
-    log_command(logger, ctx, message=f"Adjudication Sucessful for {board.phase.name} {str(1642 + board.year)}")
+    log_command(logger, ctx, message=f"Adjudication Sucessful for {board.phase.name} {board.get_year_str()}")
     await send_message_and_file(channel=ctx.channel,
-                                title=f"{board.phase.name} {str(1642 + board.year)}",
+                                title=f"{board.phase.name} {board.get_year_str()}",
                                 message="Adjudication has completed successfully",
                                 file=file,
                                 file_name=file_name,
@@ -586,7 +586,7 @@ async def get_scoreboard(ctx: commands.Context, manager: Manager) -> None:
                      f"{len(player.centers) - len(player.units)}) [{round(player.score()*100, 1)}%]")
     log_command(logger, ctx, message="Generated scoreboard")
     await send_message_and_file(channel=ctx.channel,
-                                title=f"{board.phase.name}" + " " + f"{str(1642 + board.year)}",
+                                title=f"{board.phase.name}" + " " + f"{board.get_year_str()}",
                                 message=response)
 
 
@@ -619,7 +619,7 @@ async def enable_orders(ctx: commands.Context, manager: Manager) -> None:
     log_command(logger, ctx, message="Unlocked orders")
     await send_message_and_file(channel=ctx.channel,
                                 title="Unlocked orders",
-                                message=f"{board.phase.name} {str(1642 + board.year)}")
+                                message=f"{board.phase.name} {board.get_year_str()}")
 
 
 @perms.gm("lock orders")
@@ -629,7 +629,7 @@ async def disable_orders(ctx: commands.Context, manager: Manager) -> None:
     log_command(logger, ctx, message="Locked orders")
     await send_message_and_file(channel=ctx.channel,
                                 title="Locked orders",
-                                message=f"{board.phase.name} {str(1642 + board.year)}")
+                                message=f"{board.phase.name} {board.get_year_str()}")
 
 
 @perms.gm("delete the game")
@@ -647,11 +647,11 @@ async def info(ctx: commands.Context, manager: Manager) -> None:
         await send_message_and_file(channel=ctx.channel,
                                     title="There is no game this this server.")
         return
-    log_command(logger, ctx, message=f"Displayed info - {str(1642 + board.year)}|"
+    log_command(logger, ctx, message=f"Displayed info - {board.get_year_str()}|"
                                      f"{str(board.phase)}|{str(board.datafile)}|"
                                      f"{'Open' if board.orders_enabled else 'Locked'}" )
     await send_message_and_file(channel=ctx.channel,
-                                message=(f"Year: {str(1642 + board.year)}\n"
+                                message=(f"Year: {board.get_year_str()}\n"
                                        f"Phase: {str(board.phase)}\n"
                                        f"Orders are: {'Open' if board.orders_enabled else 'Locked'}\n"
                                        f"Game Type: {str(board.datafile)}"))
@@ -817,7 +817,7 @@ async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_ca
         if not player or (filter_player and player != filter_player):
             continue
 
-        message = f"Here is the {name} for {board.year + 1642} {board.phase.name}"
+        message = f"Here is the {name} for {board.get_year_str()} {board.phase.name}"
         # capture local of player
         tasks.append(map_publish_task(lambda player=player: map_caller(manager, guild_id, player), channel, message))
 

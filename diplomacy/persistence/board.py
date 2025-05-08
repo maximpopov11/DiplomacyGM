@@ -12,13 +12,14 @@ logger = logging.getLogger(__name__)
 
 class Board:
     def __init__(
-        self, players: set[Player], provinces: set[Province], units: set[Unit], phase: Phase, data, datafile: str, fow: bool
+        self, players: set[Player], provinces: set[Province], units: set[Unit], phase: Phase, data, datafile: str, fow: bool, year_offset: int = 1642
     ):
         self.players: set[Player] = players
         self.provinces: set[Province] = provinces
         self.units: set[Unit] = units
         self.phase: Phase = phase
         self.year = 0
+        self.year_offset = year_offset
         self.board_id = 0
         self.fish = 0
         self.fish_pop = {
@@ -210,3 +211,12 @@ class Board:
             unit.province.dislodged_unit = None
             unit.player.units.remove(unit)
             self.units.remove(unit)
+
+    def get_year_str(self) -> str:
+        # No 0 AD / BC
+        year = self.year_offset + self.year
+
+        if year <= 0:
+            return f"{str(1-year)} BC"
+        else:
+            return str(year)

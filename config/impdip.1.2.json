@@ -25,6 +25,7 @@
         "detect_starting_units": true,
         "unit_type_labeled": false,
 
+        "year": -549,
 
         "unit_labels": true,
         "province_labels": true,
