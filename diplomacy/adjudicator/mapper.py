@@ -216,7 +216,11 @@ class Mapper:
         immediate = []
         for unit in self.board.units:
             if self.is_moveable(unit):
-                immediate.append(unit.location().name)
+                p = unit.location()
+                # p coast is unreachable by clicking
+                if len(unit.province.coasts) == 1:
+                    p = unit.province
+                immediate.append(p.name)
 
         script.text = js % (str(locdict), self.board.data["svg config"], coast_to_province, province_to_unit_type, province_to_province_type, immediate)
         self._moves_svg.getroot().append(script)
