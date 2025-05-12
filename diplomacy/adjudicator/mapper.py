@@ -34,10 +34,14 @@ from diplomacy.persistence.province import ProvinceType, Province, Coast, Locati
 from diplomacy.persistence.unit import Unit, UnitType
 
 from diplomacy.map_parser.vector.transform import TransGL3
+from diplomacy.map_parser.vector.vector import Parser
 
 # OUTPUTLAYER = "layer16"
 # UNITLAYER = "layer17"
 
+
+# if you make any rendering changes,
+# make sure to sync them with mapper.js
 
 class Mapper:
     def __init__(self, board: Board, restriction: Player | None = None, color_mode: str | None = None):
@@ -159,6 +163,85 @@ class Mapper:
 
         svg_file_name = f"{self.board.phase.name}_{self.board.get_year_str().replace(' ', '_')}_moves_map.svg"
         return elementToString(self._moves_svg.getroot(), encoding="utf-8"), svg_file_name
+
+    def draw_gui_map(self, current_phase: phase.Phase, player_restriction: Player | None) -> tuple[str, str]:
+        self.player_restriction = player_restriction
+        self.current_phase = current_phase
+        self._reset_moves_map()
+        self.clean_layers(self._moves_svg)
+        get_svg_element(self._moves_svg.getroot(), self.board.data["svg config"]["sidebar"]).clear()
+        get_svg_element(self._moves_svg.getroot(), self.board.data["svg config"]["power_banners"]).clear()
+        with open("diplomacy/adjudicator/mapper.js", 'r') as f:
+            js = f.read()
+        
+        locdict = {}
+        
+        for province in self.board.provinces:
+            if province.unit:
+                locdict[province.name] = list(province.unit.location().primary_unit_coordinate)
+            else:
+                locdict[province.name] = list(province.primary_unit_coordinate)
+            for coast in province.coasts:
+                locdict[coast.name] = list(coast.primary_unit_coordinate)
+
+        script = etree.Element("script")
+
+        coast_to_province = {}
+        for province in self.board.provinces:
+            for coast in province.coasts:
+                coast_to_province[coast.name] = province.name
+
+        province_to_unit_type = {}
+        for province in self.board.provinces:
+            s = None
+            if province not in self.adjacent_provinces:
+                province.unit.unit_type = '?'
+            elif province.unit:
+                if province.unit.unit_type == UnitType.FLEET:
+                    s = 'f'
+                else:
+                    s = 'a'
+            province_to_unit_type[province.name] = s
+
+        province_to_province_type = {}
+        for province in self.board.provinces:
+            if province.type == ProvinceType.SEA:
+                type = 'sea'
+            if province.type == ProvinceType.ISLAND:
+                type = 'island'
+            if province.type == ProvinceType.LAND:
+                type = 'land'
+            province_to_province_type[province.name] = type
+        
+        immediate = []
+        for unit in self.board.units:
+            if self.is_moveable(unit):
+                immediate.append(unit.location().name)
+
+        script.text = js % (str(locdict), self.board.data["svg config"], coast_to_province, province_to_unit_type, province_to_province_type, immediate)
+        self._moves_svg.getroot().append(script)
+
+        coasts = get_svg_element(self._moves_svg.getroot(), self.board.data["svg config"]["coast_markers"]).getchildren()
+        def get_text_coordinate(e : etree.Element) -> tuple[float, float]:
+            trans = TransGL3(e)
+            return trans.transform([float(e.attrib["x"]), float(e.attrib["y"])] + np.array([3.25, -3.576 / 2]))
+
+        def match(p: Province, e: etree.Element):
+            e.set("onclick", f'obj_clicked(event, "{p} {e[0].text}", false)')
+            e.set("oncontextmenu", f'obj_clicked(event, "{p} {e[0].text}", false)')
+
+
+        initialize_province_resident_data(self.board.provinces, coasts, get_text_coordinate, match)
+
+        for layer in (get_svg_element(self._moves_svg, self.board.data["svg config"]["land_layer"]), get_svg_element(self._moves_svg, self.board.data["svg config"]["island_borders"]), get_svg_element(self._moves_svg, self.board.data["svg config"]["sea_borders"])):
+            for province_data in layer.getchildren():
+                name = Parser._get_province_name(province_data)
+                province_data.set("onclick", f'obj_clicked(event, "{name}", false)')
+                province_data.set("oncontextmenu", f'obj_clicked(event, "{name}", false)')
+
+
+        return elementToString(self._moves_svg.getroot(), encoding="utf-8"), f"{self.board.phase.name}_{self.board.year + 1642}_gui.svg"
+
 
     def load_colors(self, color_mode: str | None = None) -> None:
         self.player_colors = {}
@@ -740,6 +823,8 @@ class Mapper:
             trans = TransGL3(elem) * TransGL3().init(x_c=dx, y_c=dy)
 
             elem.set("transform", str(trans))
+            elem.set("onclick", f'obj_clicked(event, "{unit.location()}", true)')
+            elem.set("oncontextmenu", f'obj_clicked(event, "{unit.location()}", true)')
 
             elem.set("id", unit.province.name)
             elem.set("{http://www.inkscape.org/namespaces/inkscape}label", unit.province.name)
@@ -842,6 +927,8 @@ class Mapper:
                 "markerWidth": "3",
                 "markerHeight": "3",
                 "orient": "auto-start-reverse",
+                "shape-rendering": "geometricPrecision", # Needed bc firefox is wierd
+                "overflow": "visible"
             },
         )
         ball_def: Element = self.create_element(
