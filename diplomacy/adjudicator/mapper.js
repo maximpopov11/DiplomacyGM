@@ -231,6 +231,7 @@ function draw_support(order) {
     let startcoord = location_data[order["origin"]];
     let supportcoord = location_data[order["support"]];
     let endcoord = location_data[order["destination"]];
+    let trueendcoord = endcoord;
     const dasharray_size = 2.5 * svg_config["order_stroke_width"];
     let marker_end = "arrow";
     let marker_start = ""
@@ -263,7 +264,7 @@ function draw_support(order) {
     
     startcoord = pull_coordinate(supportcoord, startcoord, svg_config["unit_radius"]);
 
-    draw_order(order, [make_elem("path",
+    path = [make_elem("path",
         {
             "d": `M ${startcoord[0]},${startcoord[1]} Q ${supportcoord[0]},${supportcoord[1]} ${endcoord[0]},${endcoord[1]}`,
             "fill": "none",
@@ -277,7 +278,23 @@ function draw_support(order) {
             "shape-rendering": "geometricPrecision",
             "overflow": "visible"
         }
-    )])
+    )]
+    if (supportcoord == endcoord) {
+        path.push(make_elem("circle", 
+            {
+                cx: trueendcoord[0],
+                cy: trueendcoord[1],
+                r: svg_config["unit_radius"],
+                fill: "none",
+                stroke: "black",
+                "stroke-linecap": "round",
+                "stroke-width": svg_config["order_stroke_width"],
+                "shape-rendering": "geometricPrecision",
+                "stroke-dasharray": `${dasharray_size * 2 / 3} ${dasharray_size * 2 / 3}`
+            }
+        ))
+    }
+    draw_order(order, path);
 }
 
 function leftclick(porigin) {
