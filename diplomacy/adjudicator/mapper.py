@@ -36,6 +36,14 @@ from diplomacy.persistence.unit import Unit, UnitType
 from diplomacy.map_parser.vector.transform import TransGL3
 from diplomacy.map_parser.vector.vector import Parser
 
+# TODO: Move this (and vector.py's copy to a central file)
+NAMESPACE: dict[str, str] = {
+    "inkscape": "{http://www.inkscape.org/namespaces/inkscape}",
+    "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd",
+    "svg": "http://www.w3.org/2000/svg",
+}
+
+
 # OUTPUTLAYER = "layer16"
 # UNITLAYER = "layer17"
 
@@ -234,10 +242,25 @@ class Mapper:
             e.set("onclick", f'obj_clicked(event, "{p} {e[0].text}", false)')
             e.set("oncontextmenu", f'obj_clicked(event, "{p} {e[0].text}", false)')
 
-
         initialize_province_resident_data(self.board.provinces, coasts, get_text_coordinate, match)
 
-        for layer in (get_svg_element(self._moves_svg, self.board.data["svg config"]["land_layer"]), get_svg_element(self._moves_svg, self.board.data["svg config"]["island_borders"]), get_svg_element(self._moves_svg, self.board.data["svg config"]["sea_borders"])):
+        def get_sc_coordinates(supply_center_data: Element) -> tuple[float | None, float | None]:
+            circles = supply_center_data.findall(".//svg:circle", namespaces=NAMESPACE)
+            if not circles:
+                return None, None
+            circle = circles[0]
+            base_coordinates = float(circle.get("cx")), float(circle.get("cy"))
+            trans = TransGL3(supply_center_data)
+            return trans.transform(base_coordinates)
+
+        def set_province_supply_center(p: Province, e: Element) -> None:
+            e.set("onclick", f'obj_clicked(event, "{p.name}", false)')
+            e.set("oncontextmenu", f'obj_clicked(event, "{p.name}", false)')
+
+        initialize_province_resident_data(self.board.provinces, get_svg_element(self._moves_svg, self.board.data["svg config"]["supply_center_icons"]), get_sc_coordinates, set_province_supply_center)
+
+        for layer_name in ("land_layer", "island_borders", "island_ring_layer", "island_fill_layer", "sea_borders"):
+            layer = get_svg_element(self._moves_svg, self.board.data["svg config"][layer_name])
             for province_data in layer.getchildren():
                 name = Parser._get_province_name(province_data)
                 province_data.set("onclick", f'obj_clicked(event, "{name}", false)')
@@ -827,8 +850,13 @@ class Mapper:
             trans = TransGL3(elem) * TransGL3().init(x_c=dx, y_c=dy)
 
             elem.set("transform", str(trans))
-            elem.set("onclick", f'obj_clicked(event, "{unit.location()}", true)')
-            elem.set("oncontextmenu", f'obj_clicked(event, "{unit.location()}", true)')
+            p = unit.location()
+            # p coast is unreachable by clicking
+            if len(unit.province.coasts) == 1:
+                p = unit.province
+
+            elem.set("onclick", f'obj_clicked(event, "{p.name}", true)')
+            elem.set("oncontextmenu", f'obj_clicked(event, "{p.name}", true)')
 
             elem.set("id", unit.province.name)
             elem.set("{http://www.inkscape.org/namespaces/inkscape}label", unit.province.name)
