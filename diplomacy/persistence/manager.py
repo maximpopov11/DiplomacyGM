@@ -119,10 +119,10 @@ class Manager:
         logger.info(f"manager.draw_fow_moves_map.{server_id}.{elapsed}s")
         return svg, file_name
 
-    def draw_fow_gui_map(self, server_id: int, player_restriction: Player | None) -> tuple[str, str]:
+    def draw_fow_gui_map(self, server_id: int, player_restriction: Player | None, color_mode: str | None = None) -> tuple[str, str]:
         start = time.time()
 
-        svg, file_name = Mapper(self._boards[server_id], player_restriction).draw_gui_map(
+        svg, file_name = Mapper(self._boards[server_id], player_restriction, color_mode=color_mode).draw_gui_map(
             self._boards[server_id].phase, None
         )
 

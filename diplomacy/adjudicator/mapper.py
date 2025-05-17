@@ -203,7 +203,7 @@ class Mapper:
         for province in self.board.provinces:
             s = None
             if province not in self.adjacent_provinces:
-                province.unit.unit_type = '?'
+                s = '?'
             elif province.unit:
                 if province.unit.unit_type == UnitType.FLEET:
                     s = 'f'
@@ -711,28 +711,27 @@ class Mapper:
 
             self.color_element(province_element, color)
 
-        if self.board.fow:
-            for province_element in sea_layer:
-                try:
-                    province = self._get_province_from_element_by_label(province_element)
-                except ValueError as ex:
-                    print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
-                    continue
+        for province_element in sea_layer:
+            try:
+                province = self._get_province_from_element_by_label(province_element)
+            except ValueError as ex:
+                print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
+                continue
 
-                if province in self.adjacent_provinces:
-                    sea_layer.remove(province_element)
+            if province in self.adjacent_provinces:
+                sea_layer.remove(province_element)
 
-                visited_provinces.add(province.name)
+            visited_provinces.add(province.name)
 
-            for province_element in island_layer:
-                try:
-                    province = self._get_province_from_element_by_label(province_element)
-                except ValueError as ex:
-                    print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
-                    continue
+        for province_element in island_layer:
+            try:
+                province = self._get_province_from_element_by_label(province_element)
+            except ValueError as ex:
+                print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
+                continue
 
-                if province in self.adjacent_provinces:
-                    island_layer.remove(province_element)
+            if province in self.adjacent_provinces:
+                island_layer.remove(province_element)
 
         # Try to combine this with the code above? A lot of repeated stuff here
         for island_ring in island_ring_layer:
