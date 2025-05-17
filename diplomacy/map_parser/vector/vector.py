@@ -504,7 +504,8 @@ class Parser:
                 else:
                     setattr(province, province_key, translated_coordinate)
 
-    def _get_province_name(self, province_data: Element) -> str:
+    @staticmethod
+    def _get_province_name(province_data: Element) -> str:
         return province_data.get(f"{NAMESPACE.get('inkscape')}label")
 
     def _get_province(self, province_data: Element) -> Province:

@@ -1,6 +1,6 @@
 {
     "name": "Imperial Diplomacy B1.2",
-    "file": "assets/impdip.1.2.svg",
+    "file": "assets/impdipfow.svg",
     "svg config": {
         "land_layer": "layer6",
         "island_ring_layer": "layer9",
@@ -15,7 +15,9 @@
         "unit_output": "layer16",
         "arrow_output": "layer17",
 		"other_fills": "layer14",
+        "coast_markers": "layer18",
 		"background": "g407997",
+        "sidebar": "layer7",
 
         "army": "g652",
         "retreat_army": "g2176",

@@ -14,7 +14,10 @@
         "starting_units": "layer10",
         "unit_output": "layer16",
         "arrow_output": "layer17",
+        "coast_markers": "layer18",
         "impassibles_layer": "layer19",
+		"background": "g407997",
+        "sidebar": "layer7",
 
         "army": "g652",
         "retreat_army": "g2176",
