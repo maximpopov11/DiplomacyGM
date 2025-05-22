@@ -219,12 +219,9 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
             )
             # if move is invalid then it goes through anyways
             if (
-                is_support_hold
-                and corresponding_order_is_move
-                and order_is_valid(order.source.get_unit().province, order.source.get_unit().order, False)[0]
+                is_support_hold and corresponding_order_is_move
             ) or (
-                not is_support_hold
-                and (not corresponding_order_is_move or order.source.get_unit().order.destination != order.destination)
+                not is_support_hold and (not corresponding_order_is_move or order.source.get_unit().order.destination != order.destination)
             ):
                 return False, f"Supported unit {order.source} did not make corresponding order"
 
