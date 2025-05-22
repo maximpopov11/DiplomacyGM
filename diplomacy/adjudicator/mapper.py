@@ -157,7 +157,7 @@ class Mapper:
 
         self.clean_layers(self._moves_svg)
 
-        svg_file_name = f"{self.board.phase.name}_{self.board.get_year_str().replace(" ", "_")}_moves_map.svg"
+        svg_file_name = f"{self.board.phase.name}_{self.board.get_year_str().replace(' ', '_')}_moves_map.svg"
         return elementToString(self._moves_svg.getroot(), encoding="utf-8"), svg_file_name
 
     def load_colors(self, color_mode: str | None = None) -> None:
@@ -207,7 +207,7 @@ class Mapper:
 
     def draw_current_map(self) -> tuple[str, str]:
         logger.info("mapper.draw_current_map")
-        svg_file_name = f"{self.board.phase.name}_{self.board.get_year_str().replace(" ", "_")}_map.svg"
+        svg_file_name = f"{self.board.phase.name}_{self.board.get_year_str().replace(' ', '_')}_map.svg"
         return elementToString(self.state_svg.getroot(), encoding="utf-8"), svg_file_name
 
     def get_pretty_date(self) -> str:

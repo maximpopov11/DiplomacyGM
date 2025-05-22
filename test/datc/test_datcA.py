@@ -60,8 +60,7 @@ class TestDATC_A(unittest.TestCase):
         b.assertIllegal(f_kiel)
         b.moves_adjudicate(self)
 
-    # DEVIATES
-    def test_6_a_5_fail(self):
+    def test_6_a_5(self):
         """ 6.A.5. TEST CASE, MOVE TO OWN SECTOR WITH CONVOY
             Moving to the same sector is still illegal with convoy (2000 rulebook, page 4,
             "Note: An Army can move across water provinces from one coastal province to another...").
@@ -81,11 +80,7 @@ class TestDATC_A(unittest.TestCase):
         a_wales = b.supportMove(b.germany, UnitType.ARMY, b.wales, f_london, b.yorkshire)
 
         b.assertIllegal(a_yorkshire, f_north_sea)
-        # since the bot considers support holds as support moves in place, the england support move 
-        # really becomes a support hold, so we expected the london move to fail -- contrary to 
-        # what DATC expects; this test expects this to deviate
-        b.assertFail(f_london)
-        b.assertSuccess(a_liverpool)
+        b.assertSuccess(f_london, a_liverpool)
         b.moves_adjudicate(self)
 
     # NOT APPLICABLE 6_a_6; TEST CASE, ORDERING A UNIT OF ANOTHER COUNTRY

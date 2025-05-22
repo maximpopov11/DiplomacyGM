@@ -695,6 +695,7 @@ class TestDATC_D(unittest.TestCase):
         b.assertIllegal(f_black_sea)
         b.moves_adjudicate(self)
 
+    # DEVIATES
     def test_6_d_32(self):
         """ 6.D.32. TEST CASE, A MISSING FLEET
             The previous test cases contained an order that was impossible even when some other pieces on the board
@@ -708,7 +709,7 @@ class TestDATC_D(unittest.TestCase):
             determined whether this is "illegal" (see issue 4.E.1) or not. If it is illegal, then the order should be
             ignored and the support of the French fleet in London succeeds. This means that the army in Yorkshire is
             not dislodged.
-            I prefer that impossible yorkshireorders, even if it is only impossible for the current situation, are "illegal" and
+            I prefer that impossible orders, even if it is only impossible for the current situation, are "illegal" and
             ignored. The army in Yorkshire is not dislodged.
         """
         b = BoardBuilder()
@@ -717,10 +718,11 @@ class TestDATC_D(unittest.TestCase):
         a_yorkshire = b.move(b.germany, UnitType.ARMY, b.yorkshire, b.holland)
         f_london = b.supportHold(b.france, UnitType.FLEET, b.london_c, a_yorkshire)
 
-        b.assertNotDislodge(a_yorkshire)
+        b.assertDislodge(a_yorkshire)
         b.assertIllegal(a_yorkshire)
         b.assertSuccess(f_edinburgh, f_london)
-        b.assertFail(a_liverpool)
+        # deviates since we consider invalid moves as not support holdable
+        b.assertSuccess(a_liverpool)
         b.moves_adjudicate(self)
 
     def test_6_d_33(self):
