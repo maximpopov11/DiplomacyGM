@@ -27,8 +27,8 @@ board = manager.get_board(0)
 board.fow = False
 mapper = Mapper(board)
 
-miwok = board.name_to_province["miwok"].coast()
-import pdb
-pdb.set_trace()
-x = miwok.get_adjacent_coasts()
-print(x)
+# miwok = board.name_to_province["miwok"].coast()
+# import pdb
+# pdb.set_trace()
+# x = miwok.get_adjacent_coasts()
+# print(x)

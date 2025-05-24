@@ -496,7 +496,7 @@ class TestDATC_H(unittest.TestCase):
         f_mid_atlantic_ocean = b.supportMove(b.france, UnitType.FLEET, b.mid_atlantic_ocean, f_spain_sc, b.portugal_c)
 
         b.moves_adjudicate(self)
-        self.assertTrue(len(f_portugal.retreat_options) == 0, "Portugal should have no retreat options")
+        self.assertTrue(not f_portugal.retreat_options or len(f_portugal.retreat_options) == 0, "Portugal should have no retreat options")
 
         b.retreat(f_portugal, b.spain_nc)
         b.assertForcedDisband(f_portugal)

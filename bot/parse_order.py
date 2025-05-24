@@ -164,7 +164,9 @@ class TreeToOrder(Transformer):
             raise ValueError("Unknown type of support. Something has broken in the bot. Please report this")
 
     def retreat_order(self, s):
-        return s[0], order.RetreatMove(s[-1])
+        loc = normalize_location(s[0].unit_type, s[-1])
+
+        return s[0], order.RetreatMove(loc)
 
     def disband_order(self, s):
         return s[0], order.RetreatDisband()

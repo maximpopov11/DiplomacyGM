@@ -45,7 +45,7 @@ class AdjudicableOrder:
         self.source_province: Province = self.current_province
         self.is_convoy: bool = False
         # indicates that a move is also a convoy that failed, so no support holds
-        self.failed_convoy = False
+        self.not_supportable = False
         if isinstance(unit.order, Hold):
             self.type = OrderType.HOLD
         elif isinstance(unit.order, Core):

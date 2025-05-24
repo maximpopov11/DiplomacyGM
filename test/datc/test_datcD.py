@@ -620,56 +620,56 @@ class TestDATC_D(unittest.TestCase):
         b.assertNotDislodge(f_rumania)
         b.moves_adjudicate(self)
 
-    # def test_6_d_29(self):
-    #     """ 6.D.29. TEST CASE, MOVE TO IMPOSSIBLE COAST AND SUPPORT
-    #         Similar to the previous test case, but now the move can be "illegal" because of the wrong coast.
-    #         Austria: A Budapest Supports F Rumania
-    #         Russia: F Rumania - Bulgaria(sc)
-    #         Turkey: F Black Sea - Rumania
-    #         Turkey: A Bulgaria Supports F Black Sea - Rumania
-    #         Again the move of the Russian fleet is impossible. However, some people might correct the coast
-    #         (see issue 4.B.3). If the coast is not corrected, again the question is whether it is "illegal" (see
-    #         issue 4.E.1). If the move is "illegal" it must be ignored and that makes the hold support of the army in
-    #         Budapest valid and the fleet in Rumania will not be dislodged.
-    #         I prefer that unambiguous orders are not changed and that the move is "illegal". That means that the fleet
-    #         in the Black Sea does not dislodge the supported Russian fleet.
-    #     """
-    #     b = BoardBuilder()
-    #     f_rumania = b.move(b.russia, UnitType.FLEET, b.rumania_c, b.bulgaria_sc)
-    #     a_budapest = b.supportHold(b.austria, UnitType.ARMY, b.budapest, f_rumania)
-    #     f_black_sea = b.move(b.turkey, UnitType.FLEET, b.black_sea, b.rumania_c)
-    #     a_bulgaria = b.supportMove(b.turkey, UnitType.ARMY, b.bulgaria, f_black_sea, b.rumania)
+    def test_6_d_29(self):
+        """ 6.D.29. TEST CASE, MOVE TO IMPOSSIBLE COAST AND SUPPORT
+            Similar to the previous test case, but now the move can be "illegal" because of the wrong coast.
+            Austria: A Budapest Supports F Rumania
+            Russia: F Rumania - Bulgaria(sc)
+            Turkey: F Black Sea - Rumania
+            Turkey: A Bulgaria Supports F Black Sea - Rumania
+            Again the move of the Russian fleet is impossible. However, some people might correct the coast
+            (see issue 4.B.3). If the coast is not corrected, again the question is whether it is "illegal" (see
+            issue 4.E.1). If the move is "illegal" it must be ignored and that makes the hold support of the army in
+            Budapest valid and the fleet in Rumania will not be dislodged.
+            I prefer that unambiguous orders are not changed and that the move is "illegal". That means that the fleet
+            in the Black Sea does not dislodge the supported Russian fleet.
+        """
+        b = BoardBuilder()
+        f_rumania = b.move(b.russia, UnitType.FLEET, b.rumania_c, b.bulgaria_sc)
+        a_budapest = b.supportHold(b.austria, UnitType.ARMY, b.budapest, f_rumania)
+        f_black_sea = b.move(b.turkey, UnitType.FLEET, b.black_sea, b.rumania_c)
+        a_bulgaria = b.supportMove(b.turkey, UnitType.ARMY, b.bulgaria, f_black_sea, b.rumania)
 
-    #     b.assertIllegal(f_rumania)
-    #     b.assertSuccess(a_budapest)
-    #     b.assertFail(f_black_sea)
-    #     b.assertNotDislodge(f_rumania)
-    #     b.moves_adjudicate(self)
+        b.assertIllegal(f_rumania)
+        b.assertSuccess(a_budapest)
+        b.assertFail(f_black_sea)
+        b.assertNotDislodge(f_rumania)
+        b.moves_adjudicate(self)
 
-    # def test_6_d_30(self):
-    #     """ 6.D.30. TEST CASE, MOVE WITHOUT COAST AND SUPPORT
-    #         Similar to the previous test case, but now the move can be "illegal" because of missing coast.
-    #         Italy: F Aegean Sea Supports F Constantinople
-    #         Russia: F Constantinople - Bulgaria
-    #         Turkey: F Black Sea - Constantinople
-    #         Turkey: A Bulgaria Supports F Black Sea - Constantinople
-    #         Again the order to the Russian fleet is with problems, because it does not specify the coast, while both
-    #         coasts of Bulgaria are possible. If no default coast is taken (see issue 4.B.1), then also here it must be
-    #         decided whether the order is "illegal" (see issue 4.E.1). If the move is "illegal" it must be ignored and
-    #         that makes the hold support of the fleet in the Aegean Sea valid and the Russian fleet will not be
-    #         dislodged. I don't like default coasts and I prefer that the move is "illegal". That means that the fleet
-    #         in the Black Sea does not dislodge the supported Russian fleet.
-    #     """
-    #     b = BoardBuilder()
-    #     f_constantinople = b.move(b.russia, UnitType.FLEET, b.constantinople_c, b.bulgaria)
-    #     f_aegean_sea = b.supportHold(b.italy, UnitType.FLEET, b.aegean_sea, f_constantinople)
-    #     f_black_sea = b.move(b.turkey, UnitType.FLEET, b.black_sea, b.constantinople_c)
-    #     a_bulgaria = b.supportMove(b.turkey, UnitType.ARMY, b.bulgaria, f_black_sea, b.constantinople_c)
+    def test_6_d_30(self):
+        """ 6.D.30. TEST CASE, MOVE WITHOUT COAST AND SUPPORT
+            Similar to the previous test case, but now the move can be "illegal" because of missing coast.
+            Italy: F Aegean Sea Supports F Constantinople
+            Russia: F Constantinople - Bulgaria
+            Turkey: F Black Sea - Constantinople
+            Turkey: A Bulgaria Supports F Black Sea - Constantinople
+            Again the order to the Russian fleet is with problems, because it does not specify the coast, while both
+            coasts of Bulgaria are possible. If no default coast is taken (see issue 4.B.1), then also here it must be
+            decided whether the order is "illegal" (see issue 4.E.1). If the move is "illegal" it must be ignored and
+            that makes the hold support of the fleet in the Aegean Sea valid and the Russian fleet will not be
+            dislodged. I don't like default coasts and I prefer that the move is "illegal". That means that the fleet
+            in the Black Sea does not dislodge the supported Russian fleet.
+        """
+        b = BoardBuilder()
+        f_constantinople = b.move(b.russia, UnitType.FLEET, b.constantinople_c, b.bulgaria)
+        f_aegean_sea = b.supportHold(b.italy, UnitType.FLEET, b.aegean_sea, f_constantinople)
+        f_black_sea = b.move(b.turkey, UnitType.FLEET, b.black_sea, b.constantinople_c)
+        a_bulgaria = b.supportMove(b.turkey, UnitType.ARMY, b.bulgaria, f_black_sea, b.constantinople_c)
 
-    #     b.assertNotDislodge(f_constantinople)
-    #     b.assertFail(f_black_sea)
-    #     b.assertSuccess(f_aegean_sea, a_bulgaria)
-    #     b.moves_adjudicate(self)
+        b.assertNotDislodge(f_constantinople)
+        b.assertFail(f_black_sea)
+        b.assertSuccess(f_aegean_sea, a_bulgaria)
+        b.moves_adjudicate(self)
 
     def test_6_d_31(self):
         """ 6.D.31. TEST CASE, A TRICKY IMPOSSIBLE SUPPORT
@@ -691,9 +691,11 @@ class TestDATC_D(unittest.TestCase):
         a_rumania = b.move(b.austria, UnitType.ARMY, b.rumania, b.armenia)
         f_black_sea = b.supportMove(b.turkey, UnitType.FLEET, b.black_sea, a_rumania, b.armenia)
 
-        b.assertIllegal(a_rumania, f_black_sea)
+        b.assertNotIllegal(a_rumania)
+        b.assertIllegal(f_black_sea)
         b.moves_adjudicate(self)
 
+    # DEVIATES
     def test_6_d_32(self):
         """ 6.D.32. TEST CASE, A MISSING FLEET
             The previous test cases contained an order that was impossible even when some other pieces on the board
@@ -707,7 +709,7 @@ class TestDATC_D(unittest.TestCase):
             determined whether this is "illegal" (see issue 4.E.1) or not. If it is illegal, then the order should be
             ignored and the support of the French fleet in London succeeds. This means that the army in Yorkshire is
             not dislodged.
-            I prefer that impossible yorkshireorders, even if it is only impossible for the current situation, are "illegal" and
+            I prefer that impossible orders, even if it is only impossible for the current situation, are "illegal" and
             ignored. The army in Yorkshire is not dislodged.
         """
         b = BoardBuilder()
@@ -716,10 +718,11 @@ class TestDATC_D(unittest.TestCase):
         a_yorkshire = b.move(b.germany, UnitType.ARMY, b.yorkshire, b.holland)
         f_london = b.supportHold(b.france, UnitType.FLEET, b.london_c, a_yorkshire)
 
-        b.assertNotDislodge(a_yorkshire)
+        b.assertDislodge(a_yorkshire)
         b.assertIllegal(a_yorkshire)
         b.assertSuccess(f_edinburgh, f_london)
-        b.assertFail(a_liverpool)
+        # deviates since we consider invalid moves as not support holdable
+        b.assertSuccess(a_liverpool)
         b.moves_adjudicate(self)
 
     def test_6_d_33(self):

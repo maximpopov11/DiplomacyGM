@@ -61,6 +61,7 @@ class Parser:
         self.phantom_retreat_fleets_layer: Element = get_svg_element(svg_root, self.layers["retreat_fleet"])
 
         self.fow = self.layers.get("fow", False)
+        self.year_offset = self.layers.get("year", 1642)
 
         self.color_to_player: dict[str, Player | None] = {}
         self.name_to_province: dict[str, Province] = {}
@@ -137,7 +138,7 @@ class Parser:
                     coast.retreat_unit_coordinate = (0, 0)
 
 
-        return Board(self.players, provinces, units, phase.initial(), self.data, self.datafile, self.fow)
+        return Board(self.players, provinces, units, phase.initial(), self.data, self.datafile, self.fow, self.year_offset)
 
     def read_map(self) -> tuple[set[Province], set[tuple[str, str]]]:
         if self.cache_provinces is None:
@@ -507,7 +508,8 @@ class Parser:
                 else:
                     setattr(province, province_key, translated_coordinate)
 
-    def _get_province_name(self, province_data: Element) -> str:
+    @staticmethod
+    def _get_province_name(province_data: Element) -> str:
         return province_data.get(f"{NAMESPACE.get('inkscape')}label")
 
     def _get_province(self, province_data: Element) -> Province:

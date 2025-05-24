@@ -195,7 +195,8 @@ async def remove_order(ctx: commands.Context) -> None:
 @bot.command(
     brief="Outputs your current submitted orders.",
     description="Outputs your current submitted orders. "
-    "Use .view_map to view a sample moves map of your orders.",
+    "Use .view_map to view a sample moves map of your orders. "
+    "Use the 'missing' or 'submitted' argument to view only units without orders or only submitted orders.",
     aliases=["v", "view", "vieworders", "view-orders"],
 )
 async def view_orders(ctx: commands.Context) -> None:
@@ -254,6 +255,12 @@ async def view_map(ctx: commands.Context) -> None:
 async def view_current(ctx: commands.Context) -> None:
     await command.view_current(ctx, manager)
 
+@bot.command(
+    brief="Outputs a interactive svg that you can issue orders in",
+    aliases=["g"],
+)
+async def view_gui(ctx: commands.Context) -> None:
+    await command.view_gui(ctx, manager)
 
 @bot.command(brief="Adjudicates the game and outputs the moves and results maps.",
     description="""

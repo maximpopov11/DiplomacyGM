@@ -1,3 +1,5 @@
+from diplomacy.persistence.board import Board
+
 ERROR_COLOUR = "#FF0000"
 PARTIAL_ERROR_COLOUR = "#FF7700"
 

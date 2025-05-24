@@ -34,10 +34,22 @@ from diplomacy.persistence.province import ProvinceType, Province, Coast, Locati
 from diplomacy.persistence.unit import Unit, UnitType
 
 from diplomacy.map_parser.vector.transform import TransGL3
+from diplomacy.map_parser.vector.vector import Parser
+
+# TODO: Move this (and vector.py's copy to a central file)
+NAMESPACE: dict[str, str] = {
+    "inkscape": "{http://www.inkscape.org/namespaces/inkscape}",
+    "sodipodi": "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd",
+    "svg": "http://www.w3.org/2000/svg",
+}
+
 
 # OUTPUTLAYER = "layer16"
 # UNITLAYER = "layer17"
 
+
+# if you make any rendering changes,
+# make sure to sync them with mapper.js
 
 class Mapper:
     def __init__(self, board: Board, restriction: Player | None = None, color_mode: str | None = None):
@@ -92,25 +104,29 @@ class Mapper:
     def clean_layers(self, svg: ElementTree):
         for element_name in self.board.data["svg config"]["delete_layer"]:
             get_svg_element(svg, self.board.data["svg config"][element_name]).clear()
+    
+    def is_moveable(self, unit: Unit):
+        if unit.province not in self.adjacent_provinces:
+            return False
+        if self.player_restriction and unit.player != self.player_restriction:
+            return False
+        if phase.is_retreats(self.current_phase) and unit.province.dislodged_unit != unit:
+            return False
+        return True
 
     def draw_moves_map(self, current_phase: phase.Phase, player_restriction: Player | None) -> tuple[str, str]:
         logger.info("mapper.draw_moves_map")
 
         self._reset_moves_map()
         self.player_restriction = player_restriction
-        
+        self.current_phase = current_phase
+
         t = self._moves_svg.getroot()
         arrow_layer = get_svg_element(t, self.board.data["svg config"]["arrow_output"])
         if not phase.is_builds(current_phase):
             for unit in self.board.units:
-                if unit.province not in self.adjacent_provinces:
+                if not self.is_moveable(unit):
                     continue
-
-                if player_restriction and unit.player != player_restriction:
-                    continue
-                if phase.is_retreats(current_phase) and unit.province.dislodged_unit != unit:
-                    continue
-
                 if phase.is_retreats(current_phase):
                     unit_locs = unit.location().all_rets
                 else:
@@ -153,8 +169,106 @@ class Mapper:
 
         self.clean_layers(self._moves_svg)
 
-        svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_moves_map.svg"
+        svg_file_name = f"{self.board.phase.name}_{self.board.get_year_str().replace(' ', '_')}_moves_map.svg"
         return elementToString(self._moves_svg.getroot(), encoding="utf-8"), svg_file_name
+
+    def draw_gui_map(self, current_phase: phase.Phase, player_restriction: Player | None) -> tuple[str, str]:
+        self.player_restriction = player_restriction
+        self.current_phase = current_phase
+        self._reset_moves_map()
+        self.clean_layers(self._moves_svg)
+        get_svg_element(self._moves_svg.getroot(), self.board.data["svg config"]["sidebar"]).clear()
+        get_svg_element(self._moves_svg.getroot(), self.board.data["svg config"]["power_banners"]).clear()
+        with open("diplomacy/adjudicator/mapper.js", 'r') as f:
+            js = f.read()
+        
+        locdict = {}
+        
+        for province in self.board.provinces:
+            if province.unit:
+                locdict[province.name] = list(province.unit.location().primary_unit_coordinate)
+            else:
+                locdict[province.name] = list(province.primary_unit_coordinate)
+            for coast in province.coasts:
+                locdict[coast.name] = list(coast.primary_unit_coordinate)
+
+        script = etree.Element("script")
+
+        coast_to_province = {}
+        for province in self.board.provinces:
+            for coast in province.coasts:
+                coast_to_province[coast.name] = province.name
+
+        province_to_unit_type = {}
+        for province in self.board.provinces:
+            s = None
+            if province not in self.adjacent_provinces:
+                s = '?'
+            elif province.unit:
+                if province.unit.unit_type == UnitType.FLEET:
+                    s = 'f'
+                else:
+                    s = 'a'
+            province_to_unit_type[province.name] = s
+
+        province_to_province_type = {}
+        for province in self.board.provinces:
+            if province.type == ProvinceType.SEA:
+                type = 'sea'
+            if province.type == ProvinceType.ISLAND:
+                type = 'island'
+            if province.type == ProvinceType.LAND:
+                type = 'land'
+            province_to_province_type[province.name] = type
+        
+        immediate = []
+        for unit in self.board.units:
+            if self.is_moveable(unit):
+                p = unit.location()
+                # p coast is unreachable by clicking
+                if len(unit.province.coasts) == 1:
+                    p = unit.province
+                immediate.append(p.name)
+
+        script.text = js % (str(locdict), self.board.data["svg config"], coast_to_province, province_to_unit_type, province_to_province_type, immediate)
+        self._moves_svg.getroot().append(script)
+
+        coasts = get_svg_element(self._moves_svg.getroot(), self.board.data["svg config"]["coast_markers"]).getchildren()
+        def get_text_coordinate(e : etree.Element) -> tuple[float, float]:
+            trans = TransGL3(e)
+            return trans.transform([float(e.attrib["x"]), float(e.attrib["y"])] + np.array([3.25, -3.576 / 2]))
+
+        def match(p: Province, e: etree.Element):
+            e.set("onclick", f'obj_clicked(event, "{p} {e[0].text}", false)')
+            e.set("oncontextmenu", f'obj_clicked(event, "{p} {e[0].text}", false)')
+
+        initialize_province_resident_data(self.board.provinces, coasts, get_text_coordinate, match)
+
+        def get_sc_coordinates(supply_center_data: Element) -> tuple[float | None, float | None]:
+            circles = supply_center_data.findall(".//svg:circle", namespaces=NAMESPACE)
+            if not circles:
+                return None, None
+            circle = circles[0]
+            base_coordinates = float(circle.get("cx")), float(circle.get("cy"))
+            trans = TransGL3(supply_center_data)
+            return trans.transform(base_coordinates)
+
+        def set_province_supply_center(p: Province, e: Element) -> None:
+            e.set("onclick", f'obj_clicked(event, "{p.name}", false)')
+            e.set("oncontextmenu", f'obj_clicked(event, "{p.name}", false)')
+
+        initialize_province_resident_data(self.board.provinces, get_svg_element(self._moves_svg, self.board.data["svg config"]["supply_center_icons"]), get_sc_coordinates, set_province_supply_center)
+
+        for layer_name in ("land_layer", "island_borders", "island_ring_layer", "island_fill_layer", "sea_borders"):
+            layer = get_svg_element(self._moves_svg, self.board.data["svg config"][layer_name])
+            for province_data in layer.getchildren():
+                name = Parser._get_province_name(province_data)
+                province_data.set("onclick", f'obj_clicked(event, "{name}", false)')
+                province_data.set("oncontextmenu", f'obj_clicked(event, "{name}", false)')
+
+
+        return elementToString(self._moves_svg.getroot(), encoding="utf-8"), f"{self.board.phase.name}_{self.board.year + 1642}_gui.svg"
+
 
     def load_colors(self, color_mode: str | None = None) -> None:
         self.player_colors = {}
@@ -203,12 +317,12 @@ class Mapper:
 
     def draw_current_map(self) -> tuple[str, str]:
         logger.info("mapper.draw_current_map")
-        svg_file_name = f"{self.board.phase.name}_{self.board.year + 1642}_map.svg"
+        svg_file_name = f"{self.board.phase.name}_{self.board.get_year_str().replace(' ', '_')}_map.svg"
         return elementToString(self.state_svg.getroot(), encoding="utf-8"), svg_file_name
 
     def get_pretty_date(self) -> str:
         # TODO: Get the start date from somewhere in the board/in a config file
-        return self.board.phase.name + " " + str(self.board.year + 1642)
+        return self.board.phase.name + " " + self.board.get_year_str()
 
     def draw_side_panel(self, svg: ElementTree) -> None:
         self._draw_side_panel_date(svg)
@@ -454,12 +568,14 @@ class Mapper:
                 (x3, y3) = self.pull_coordinate((x1, y1), (x3, y3), self.board.data["svg config"]["unit_radius"])
             else:
                 (x3, y3) = self.pull_coordinate((x2, y2), (x3, y3))
-            if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)):
-                destloc = order.destination
-                if destloc.get_unit() and destloc.get_unit().coast:
-                    destloc = destloc.get_unit().coast
-                for coord in order.destination.all_locs:
-                    self._draw_hold(coord)
+            # Draw hold around unit that can be support-held
+            if order.source == order.destination:
+                if isinstance(order.destination.get_unit().order, (ConvoyTransport, Support)) and self.is_moveable(order.destination.get_unit()):
+                    destloc = order.destination
+                    if destloc.get_unit() and destloc.get_unit().coast:
+                        destloc = destloc.get_unit().coast
+                    for coord in order.destination.all_locs:
+                        self._draw_hold(coord)
 
             # if two units are support-holding each other
             destorder = order.destination.get_unit().order
@@ -597,28 +713,27 @@ class Mapper:
 
             self.color_element(province_element, color)
 
-        if self.board.fow:
-            for province_element in sea_layer:
-                try:
-                    province = self._get_province_from_element_by_label(province_element)
-                except ValueError as ex:
-                    print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
-                    continue
+        for province_element in sea_layer:
+            try:
+                province = self._get_province_from_element_by_label(province_element)
+            except ValueError as ex:
+                print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
+                continue
 
-                if province in self.adjacent_provinces:
-                    sea_layer.remove(province_element)
+            if province in self.adjacent_provinces:
+                sea_layer.remove(province_element)
 
-                visited_provinces.add(province.name)
+            visited_provinces.add(province.name)
 
-            for province_element in island_layer:
-                try:
-                    province = self._get_province_from_element_by_label(province_element)
-                except ValueError as ex:
-                    print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
-                    continue
+        for province_element in island_layer:
+            try:
+                province = self._get_province_from_element_by_label(province_element)
+            except ValueError as ex:
+                print(f"Error during recoloring provinces: {ex}", file=sys.stderr)
+                continue
 
-                if province in self.adjacent_provinces:
-                    island_layer.remove(province_element)
+            if province in self.adjacent_provinces:
+                island_layer.remove(province_element)
 
         # Try to combine this with the code above? A lot of repeated stuff here
         for island_ring in island_ring_layer:
@@ -736,6 +851,13 @@ class Mapper:
             trans = TransGL3(elem) * TransGL3().init(x_c=dx, y_c=dy)
 
             elem.set("transform", str(trans))
+            p = unit.location()
+            # p coast is unreachable by clicking
+            if len(unit.province.coasts) == 1:
+                p = unit.province
+
+            elem.set("onclick", f'obj_clicked(event, "{p.name}", true)')
+            elem.set("oncontextmenu", f'obj_clicked(event, "{p.name}", true)')
 
             elem.set("id", unit.province.name)
             elem.set("{http://www.inkscape.org/namespaces/inkscape}label", unit.province.name)
@@ -838,6 +960,8 @@ class Mapper:
                 "markerWidth": "3",
                 "markerHeight": "3",
                 "orient": "auto-start-reverse",
+                "shape-rendering": "geometricPrecision", # Needed bc firefox is wierd
+                "overflow": "visible"
             },
         )
         ball_def: Element = self.create_element(

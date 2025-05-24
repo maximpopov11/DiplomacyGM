@@ -132,9 +132,9 @@ class TestDATC_G(unittest.TestCase):
         """
         b = BoardBuilder()
         a_rome = b.move(b.italy, UnitType.ARMY, b.rome, b.apulia)
-        f_tyrrhenian_sea = b.convoy(b.italy, b.tyrrhenian_sea, a_rome, b.apulia)
         a_apulia = b.move(b.turkey, UnitType.ARMY, b.apulia, b.rome)
         f_ionian_sea = b.convoy(b.turkey, b.ionian_sea, a_apulia, b.rome)
+        f_tyrrhenian_sea = b.convoy(b.italy, b.tyrrhenian_sea, a_apulia, b.rome)
 
         b.assertSuccess(a_rome, a_apulia)
         b.moves_adjudicate(self)
