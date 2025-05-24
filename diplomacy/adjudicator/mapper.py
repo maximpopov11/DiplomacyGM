@@ -87,13 +87,10 @@ class Mapper:
 
         # TODO: Switch to passing the SVG directly, as that's simpiler (self.svg = draw_units(svg)?)
         self._draw_units()
-        self._color_provinces()
+        self._color_provinces(color_mode)
         self._color_centers()
         self.draw_side_panel(self.board_svg)
 
-        # different colors
-        if color_mode is not None:
-            self.replace_colors(color_mode)
 
         self._moves_svg = copy.deepcopy(self.board_svg)
         self.cached_elements["unit_output_moves"] = get_svg_element(
@@ -289,6 +286,11 @@ class Mapper:
             self.neutral_color = neutral_colors
         else:
             self.neutral_color = neutral_colors[color_mode] if color_mode in neutral_colors else neutral_colors["standard"]
+        
+        self.clear_seas_color = self.board.data["svg config"]["default_sea_color"]
+        if self.clear_seas_color in self.board.data["svg config"]["color replacements"]:
+            if color_mode in self.board.data["svg config"]["color replacements"][self.clear_seas_color]:
+                self.clear_seas_color = self.board.data["svg config"]["color replacements"][self.clear_seas_color][color_mode]
 
     def replace_colors(self, color_mode: str) -> None:
         other_fills = get_svg_element(self.board_svg, self.board.data["svg config"]["other_fills"])
@@ -693,7 +695,7 @@ class Mapper:
 
         element.append(drawn_order)
 
-    def _color_provinces(self) -> None:
+    def _color_provinces(self, color_mode: str | None) -> None:
         province_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["land_layer"])
         island_fill_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["island_fill_layer"])
         island_ring_layer = get_svg_element(self.board_svg, self.board.data["svg config"]["island_ring_layer"])
@@ -726,7 +728,7 @@ class Mapper:
                 continue
 
             if province in self.adjacent_provinces:
-                self.color_element(province_element,self.board.data["svg config"]["default_sea_color"])
+                self.color_element(province_element, self.clear_seas_color)
 
 
             visited_provinces.add(province.name)
@@ -739,7 +741,7 @@ class Mapper:
                 continue
 
             if province in self.adjacent_provinces:
-                self.color_element(province_element,self.board.data["svg config"]["default_sea_color"])
+                self.color_element(province_element, self.clear_seas_color)
 
         # Try to combine this with the code above? A lot of repeated stuff here
         for island_ring in island_ring_layer:
