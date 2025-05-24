@@ -31,6 +31,8 @@
         "province_labels": true,
         "center_labels": true,
 
+        "default_sea_color": "d4dae1",
+
 		"color replacements": {
 			"c6b7ab": {"dark": "B7AB80", "blue": "FFF3F3"},
 			"b2bdd1": {"dark": "325B68", "blue": "D2BDAE"},

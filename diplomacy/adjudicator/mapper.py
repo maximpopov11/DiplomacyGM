@@ -63,7 +63,7 @@ class Mapper:
         self.player_restriction: Player | None = None
         self.load_colors(color_mode)
         self._initialize_scoreboard_locations()
-        
+
         # different colors
         if color_mode is not None:
             self.replace_colors(color_mode)
@@ -90,7 +90,11 @@ class Mapper:
         self._color_provinces()
         self._color_centers()
         self.draw_side_panel(self.board_svg)
-        
+
+        # different colors
+        if color_mode is not None:
+            self.replace_colors(color_mode)
+
         self._moves_svg = copy.deepcopy(self.board_svg)
         self.cached_elements["unit_output_moves"] = get_svg_element(
             self._moves_svg, self.board.data["svg config"]["unit_output"]
@@ -722,7 +726,8 @@ class Mapper:
                 continue
 
             if province in self.adjacent_provinces:
-                sea_layer.remove(province_element)
+                self.color_element(province_element,self.board.data["svg config"]["default_sea_color"])
+
 
             visited_provinces.add(province.name)
 
@@ -734,7 +739,7 @@ class Mapper:
                 continue
 
             if province in self.adjacent_provinces:
-                island_layer.remove(province_element)
+                self.color_element(province_element,self.board.data["svg config"]["default_sea_color"])
 
         # Try to combine this with the code above? A lot of repeated stuff here
         for island_ring in island_ring_layer:
