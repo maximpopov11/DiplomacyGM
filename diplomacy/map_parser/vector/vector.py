@@ -136,9 +136,12 @@ class Parser:
                 if coast.retreat_unit_coordinate == None:
                     logger.warning(f"Province {coast.name} has no retreat coord. Setting to 0,0 ...")
                     coast.retreat_unit_coordinate = (0, 0)
+        
+        initial_phase = phase.initial()
+        if "initial builds" in self.data["adju flags"]:
+            initial_phase = phase._winter_builds
 
-
-        return Board(self.players, provinces, units, phase.initial(), self.data, self.datafile, self.fow, self.year_offset)
+        return Board(self.players, provinces, units, initial_phase, self.data, self.datafile, self.fow, self.year_offset)
 
     def read_map(self) -> tuple[set[Province], set[tuple[str, str]]]:
         if self.cache_provinces is None:

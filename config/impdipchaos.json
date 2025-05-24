@@ -10,7 +10,7 @@
         "province_names": "layer1",
         "supply_center_icons": "layer3",
         "season": "layer4",
-        "power_banners": "layer13",
+        "power_banners": null,
         "starting_units": "layer10",
         "unit_output": "layer16",
         "arrow_output": "layer17",
@@ -39,8 +39,7 @@
 		},
 
         "border_margin_hint": 1,
-
-        "scoreboard": false,
+        "year": 1641,
 
         "map_width": 4375,
         "unit_radius": 10,
@@ -53,7 +52,8 @@
     },
     "adju flags": [
         "build anywhere",
-        "no coring"
+        "no coring",
+        "initial builds"
     ],
     "flags": ["weak channel checking"],
 

@@ -178,7 +178,8 @@ class Mapper:
         self._reset_moves_map()
         self.clean_layers(self._moves_svg)
         get_svg_element(self._moves_svg.getroot(), self.board.data["svg config"]["sidebar"]).clear()
-        get_svg_element(self._moves_svg.getroot(), self.board.data["svg config"]["power_banners"]).clear()
+        if self.board.data["svg config"]["power_banners"]:
+            get_svg_element(self._moves_svg.getroot(), self.board.data["svg config"]["power_banners"]).clear()
         with open("diplomacy/adjudicator/mapper.js", 'r') as f:
             js = f.read()
         
@@ -336,7 +337,7 @@ class Mapper:
         2-4: "current", "victory", "start" text labels in that order
         5-7: SC counts in that same order
         """
-        if not self.board.data["svg config"].get("scoreboard", True):
+        if not self.board.data["svg config"]["power_banners"]:
             return
         all_power_banners_element = get_svg_element(svg.getroot(), self.board.data["svg config"]["power_banners"])
         if self.board.fow and self.restriction != None:
@@ -894,6 +895,8 @@ class Mapper:
             )
 
     def _initialize_scoreboard_locations(self) -> None:
+        if not self.board.data["svg config"]["power_banners"]:
+            return
         all_power_banners_element = get_svg_element(
             self.board_svg.getroot(), self.board.data["svg config"]["power_banners"]
         )
