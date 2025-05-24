@@ -10,8 +10,9 @@ def get_player_by_context(ctx: commands.Context, manager: Manager, description: 
     #FIXME cleaner way of doing this
     board = manager.get_board(ctx.guild.id)
     # return if in order channel
-    if board.fow:
-        player = get_player_by_channel(ctx.channel, manager, ctx.guild.id)
+    weak_channel_checking = "weak channel checking" in board.data.get("flags", [])
+    if board.fow or weak_channel_checking:
+        player = get_player_by_channel(ctx.channel, manager, ctx.guild.id, ignore_catagory=weak_channel_checking)
         if player:
             return player
     else:

@@ -1,0 +1,235 @@
+{
+    "name": "Imperial Diplomacy: World Chaos",
+    "file": "assets/worldchaos.svg",
+    "svg config": {
+        "land_layer": "layer6",
+        "island_ring_layer": "layer9",
+        "island_fill_layer": "layer11",
+        "island_borders": "layer5",
+        "sea_borders": "layer2",
+        "province_names": "layer1",
+        "supply_center_icons": "layer3",
+        "season": "layer4",
+        "power_banners": null,
+        "starting_units": "layer10",
+        "unit_output": "layer16",
+        "arrow_output": "layer17",
+		"other_fills": "layer14",
+		"background": "g407997",
+
+        "army": "g652",
+        "retreat_army": "g2176",
+        "fleet": "layer15",
+        "retreat_fleet": "g3300",
+
+        "detect_starting_units": true,
+        "unit_type_labeled": false,
+
+
+        "unit_labels": true,
+        "province_labels": true,
+        "center_labels": true,
+
+		"color replacements": {
+			"c6b7ab": {"dark": "B7AB80"},
+			"b2bdd1": {"dark": "325B68"},
+			"b99a82": {"dark": "8a836b"},
+			"333333": {"dark": "0A3542"},
+			"d4dae1": {"dark": "396B70"}
+		},
+
+        "border_margin_hint": 1,
+        "year": 1641,
+
+        "map_width": 4375,
+        "unit_radius": 10,
+        "order_stroke_width": 2,
+        "neutral": {"standard": "c6b7ab", "dark": "B7AB80", "pink": "c6b7ab", "blue": "c6b7ab"},
+        "neutral_sc": "ffffff",
+        "loc_x_offset": 7.7655,
+        "loc_y_offset": 7.033,
+        "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
+    },
+    "adju flags": [
+        "build anywhere",
+        "no coring",
+        "initial builds"
+    ],
+    "flags": ["weak channel checking"],
+
+    "overrides": {
+        "high provinces": {
+            "NAO": {
+                "num": 5,
+                "type": "SEA",
+                "adjacencies": ["SAO1", "SAO2", "SAO3", "SAO4", "SAO5", "Brattahlid", "Tunumiisut", "Greenland Sea", "Rockall Rise", "Iberian Current", "Azores", "Madeira Plain", "Canary Basin", "Leeward Sea", "Sargasso Sea", "Bermuda", "Massachusetts Bay", "St. Marguerite Baie", "Strait of Belle Isle", "Labrador Sea", "Frederikshaab"]
+            },
+            "SAO": {
+                "num": 5,
+                "type": "SEA",
+                "adjacencies": ["NAO1", "NAO2", "NAO3", "NAO4", "NAO5", "SPO1", "SPO2", "SPO3", "Leeward Sea", "Guiana Current", "St. Marcos Bay", "Mauritsstad", "Todos os Santos Bay", "Guanabara Bay", "Rio Grande Rise", "Argentine Basin", "Bahia Grande", "Southern Sea", "Cape Khoe", "Cape Basin", "St. Helena", "Angola Basin", "Gold Coast", "Manden", "Serra Leoa Rise", "Seewarte Seamounts", "Canary Basin"]
+            },
+            "NPO": {
+                "num": 5,
+                "type": "SEA",
+                "adjacencies": ["SPO1", "SPO2", "SPO3", "Peru Basin", "Galapagos", "Guatemala Basin", "Berlanga Ridge", "Hawai'i", "North Equatorial Current", "Chukchi Sea", "Karaginskiy Gulf", "Koryaks", "Kuril Sea", "Tsugaru Strait", "Edo", "Kuroshio Current", "Philippine Sea", "Halmahera Sea", "Solomon Islands"]
+            },
+            "SPO": {
+                "num": 3,
+                "type": "SEA",
+                "adjacencies": ["NPO1", "NPO2", "NPO3", "NPO4", "NPO5", "SAO1", "SAO2", "SAO3", "SAO4", "SAO5", "Solomon Islands", "Coral Sea", "Wurruk", "Antarctic Basin", "Aotearoa", "Bahia Grande", "Mar de Hoces", "Chiloe", "Roggeveen Basin", "Peru Basin", "Kawesqar"]
+            },
+            "INO": {
+                "num": 5,
+                "type": "SEA",
+                "adjacencies": ["New Holland", "Timor Sea", "Mentawai Strait", "Sumatra", "Cocos Basin", "Gulf of Ceylon", "Ceylon", "Gulf of Mannar", "Maldives", "Laccadive Plateau", "Somali Basin", "Seychelles Sea", "Mascarene Sea", "Reunion", "Crozet Basin", "Antarctic Basin", "Great Australian Bight"]
+            },
+            "SIB": {
+                "num": 3,
+                "type": "LAND",
+                "adjacencies": ["Verkhoturye", "Yamalia", "Taymyr", "Yenisei", "Krasnoyarsk", "Zaisan", "Balkhash", "Turkestan", "Alimuly"]
+            }
+        },
+        "provinces": {
+            "Iqaluit": {
+                "adjacencies": ["Nunavut"]
+            },
+            "Nunavut": {
+                "adjacencies": ["Iqaluit"]
+            },
+            "Edinburgh": {
+                "remove_adjacencies": ["Greenland Sea"]
+            },
+            "Greenland Sea": {
+                "remove_adjacencies": ["Edinburgh"]
+            },
+            "Panama": {
+                "coasts": {
+                   "nc": [
+                        "Bay of Panama"
+                   ],
+                   "sc": [
+                        "Colon Ridge"
+                   ]
+                }
+            },
+            "Honduras": {
+                "coasts": {
+                    "nc": [
+                        "Gulf of Honduras",
+                        "Bay of Panama"
+                    ],
+                    "sc": [
+                        "Guatemala Basin",
+                        "Colon Ridge"
+                    ]
+                }
+            },
+            "Yucatan": {
+                "coasts": {
+                    "nc": [
+                        "Gulf of Mexico",
+                        "Yucatan Channel"
+                    ],
+                    "sc": [
+                        "Guatemala Basin"
+                    ]
+                }
+            },
+            "Mexico City": {
+                "coasts": {
+                    "ec": [
+                        "Gulf of Mexico"
+                    ],
+                    "wc": [
+                        "Guatemala Basin",
+                        "Berlanga Ridge",
+                        "Sea of Cortez"
+                    ]
+                }
+            },
+            "Nakhon Si": {
+                "coasts": {
+                    "ec": [
+                        "Gulf of Siam",
+                        "Natuna Sea"
+                    ],
+                    "wc": [
+                        "Malacca Strait"
+                    ]
+                }
+            },
+            "Pyeongyang": {
+                "coasts": {
+                    "ec": [
+                        "Oriental Sea",
+                        "Tsushima"
+                    ],
+                    "wc": [
+                        "Beizhili Sea",
+                        "Yellow Sea"
+                    ]
+                }
+            },
+            "Kereks": {
+                "coasts": {
+                    "ec": [
+                        "Karaginskiy Gulf"
+                    ],
+                    "wc": [
+                        "Sea of Okhotsk"
+                    ]
+                }
+            },
+            "Rome": {
+                "coasts": {
+                    "ec": [
+                        "Adriatic Sea"
+                    ],
+                    "wc": [
+                        "Ligurian Sea",
+                        "Tyrrhenian Sea"
+                    ]
+                }
+            },
+            "NPO1": {
+                "unit_loc": [[3982.726, 874.217]],
+                "retreat_unit_loc": [[3994.726, 886.217]]
+            },
+            "NPO2": {
+                "unit_loc": [[4059.726, 874.217]],
+                "retreat_unit_loc": [[4071.726, 886.217]]
+            },
+            "NPO3": {
+                "unit_loc": [[4136.726, 874.217]],
+                "retreat_unit_loc": [[4148.726, 886.217]]
+            },
+            "NPO4": {
+                "unit_loc": [[4021.226, 942.459]],
+                "retreat_unit_loc": [[4033.226, 954.459]]
+            },
+            "NPO5": {
+                "unit_loc": [[4098.226, 942.401]],
+                "retreat_unit_loc": [[4110.226, 954.401]]
+            },
+            "SPO1": {
+                "unit_loc": [[4061.260, 1509.495]],
+                "retreat_unit_loc": [[4073.260, 1521.495]]
+            },
+            "SPO2": {
+                "unit_loc": [[4138.259, 1509.495]],
+                "retreat_unit_loc": [[4150.259, 1521.495]]
+            },
+            "SPO3": {
+                "unit_loc": [[4215.260, 1510.000]],
+                "retreat_unit_loc": [[4227.260, 1522.000]]
+            },
+            "Chukchi Sea": {
+                "unit_loc": [[28.000, 241.000]],
+                "retreat_unit_loc": [[72.908, 186.392]]
+            }
+
+        }
+    },
+    "players": "chaos"
+}

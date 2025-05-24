@@ -241,6 +241,7 @@ class Adjudicator:
 
     def __init__(self, board: Board):
         self._board = board
+        self.flags = board.data.get("adju flags", [])
         self.failed_or_invalid_units: set[MapperInformation] = set()
 
     @abc.abstractmethod
@@ -273,8 +274,11 @@ class BuildsAdjudicator(Adjudicator):
                     if province.unit is not None:
                         logger.warning(f"Skipping {order}; there is already a unit there")
                         continue
-                    if not province.has_supply_center or province.core != player or province.owner != player:
-                        logger.warning(f"Skipping {order}; tried to build in non-core, non-sc, non-owned")
+                    if not province.has_supply_center or province.owner != player:
+                        logger.warning(f"Skipping {order}; tried to build in non-sc, non-owned")
+                        continue
+                    if province.core != player and not "build anywhere" in self.flags:
+                        logger.warning(f"Skipping {order}; tried to build in non-core")
                         continue
                     self._board.create_unit(order.unit_type, player, province, coast, None)
                     available_builds -= 1
