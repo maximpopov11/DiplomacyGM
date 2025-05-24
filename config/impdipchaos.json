@@ -55,6 +55,8 @@
         "build anywhere",
         "no coring"
     ],
+    "flags": ["weak channel checking"],
+
     "overrides": {
         "high provinces": {
             "NAO": {
