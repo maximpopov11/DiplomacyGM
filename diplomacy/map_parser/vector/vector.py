@@ -138,7 +138,7 @@ class Parser:
                     coast.retreat_unit_coordinate = (0, 0)
         
         initial_phase = phase.initial()
-        if "initial builds" in self.data["adju flags"]:
+        if "adju flags" in self.data and "initial builds" in self.data["adju flags"]:
             initial_phase = phase._winter_builds
 
         return Board(self.players, provinces, units, initial_phase, self.data, self.datafile, self.fow, self.year_offset)
