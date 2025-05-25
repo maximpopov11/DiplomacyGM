@@ -982,17 +982,18 @@ class Mapper:
         defs.append(ball_marker)
 
         players = self.board.players.union({Player("None", "ffffff", None, None, None, None)})
-        for mapping in itertools.product(players, players):
-            gradient_def: Element = self.create_element("linearGradient", {"id": f"{mapping[0]}_{mapping[1]}"})
-            first: Element = self.create_element(
-                "stop", {"offset": "50%", "stop-color": f"#{mapping[0].render_color}"}
-            )
-            second: Element = self.create_element(
-                "stop", {"offset": "50%", "stop-color": f"#{mapping[1].render_color}"}
-            )
-            gradient_def.append(first)
-            gradient_def.append(second)
-            defs.append(gradient_def)
+        if not "no coring" in self.board.data.get("adju flags", []):
+            for mapping in itertools.product(players, players):
+                gradient_def: Element = self.create_element("linearGradient", {"id": f"{mapping[0]}_{mapping[1]}"})
+                first: Element = self.create_element(
+                    "stop", {"offset": "50%", "stop-color": f"#{mapping[0].render_color}"}
+                )
+                second: Element = self.create_element(
+                    "stop", {"offset": "50%", "stop-color": f"#{mapping[1].render_color}"}
+                )
+                gradient_def.append(first)
+                gradient_def.append(second)
+                defs.append(gradient_def)
 
     def color_element(self, element: Element, color: str, key="fill"):
         if len(color) == 6:  # Potentially buggy hack; just assume everything with length 6 is rgb without #
