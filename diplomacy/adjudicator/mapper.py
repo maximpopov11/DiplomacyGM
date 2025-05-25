@@ -287,7 +287,9 @@ class Mapper:
             else:
                 color = player.render_color
             self.player_colors[player.name] = color
-            
+        
+        print(self.player_colors)
+
         neutral_colors = self.board.data["svg config"]["neutral"]
         if isinstance(neutral_colors, str):
             self.neutral_color = neutral_colors
@@ -359,17 +361,33 @@ class Mapper:
         else:
             players = self.board.get_players_by_score()
 
-        for power_element in all_power_banners_element:
-            for i, player in enumerate(players):
-                # match the correct svg element based on the color of the rectangle
-                if get_element_color(power_element[0]) == player.default_color:
-                    self.color_element(power_element[0], self.player_colors[player.name])
-                    power_element.set("transform", self.scoreboard_power_locations[i])
-                    if player == self.restriction or self.restriction == None:
-                        power_element[5][0].text = str(len(player.centers))
-                    else:
-                        power_element[5][0].text = "???"
+
+        # FIXME don't be hacky
+        if not "no coring" in self.board.data.get("adju flags", []):
+            for power_element in all_power_banners_element:
+                for i, player in enumerate(players):
+                    # match the correct svg element based on the color of the rectangle
+                    if get_element_color(power_element[0]) == player.default_color:
+                        self.color_element(power_element[0], self.player_colors[player.name])
+                        power_element.set("transform", self.scoreboard_power_locations[i])
+                        if player == self.restriction or self.restriction == None:
+                            power_element[5][0].text = str(len(player.centers))
+                        else:
+                            power_element[5][0].text = "???"
+                        break
+        else:
+            for i, player in enumerate(self.board.get_players_by_score()):
+                if i >= len(self.scoreboard_power_locations):
                     break
+                for power_element in all_power_banners_element:
+                    # match the correct svg element based on the color of the rectangle
+                    if power_element.get("transform") == self.scoreboard_power_locations[i]:
+                        self.color_element(power_element[0], player.render_color)
+                        power_element[1][0].text = player.name
+                        power_element.set("transform", self.scoreboard_power_locations[i])
+                        power_element[5][0].text = str(len(player.centers))
+                        power_element[6][0].text = "0"
+                        break       
 
     def _draw_side_panel_date(self, svg: ElementTree) -> None:
         date = get_svg_element(svg.getroot(), self.board.data["svg config"]["season"])
@@ -992,7 +1010,10 @@ class Mapper:
 
             for province in self.board.provinces:
                 if province.has_supply_center and province.half_core != None:
-                    mapping = (province.half_core.name, province.core.name)
+                    if province.core == None:
+                        mapping = (province.half_core.name, "None")
+                    else:
+                        mapping = (province.half_core.name, province.core.name)
                     if mapping in created_defs:
                         continue
 
