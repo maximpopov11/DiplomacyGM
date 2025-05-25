@@ -219,12 +219,9 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
             )
             # if move is invalid then it goes through anyways
             if (
-                is_support_hold
-                and corresponding_order_is_move
-                and order_is_valid(order.source.get_unit().province, order.source.get_unit().order, False)[0]
+                is_support_hold and corresponding_order_is_move
             ) or (
-                not is_support_hold
-                and (not corresponding_order_is_move or order.source.get_unit().order.destination != order.destination)
+                not is_support_hold and (not corresponding_order_is_move or order.source.get_unit().order.destination != order.destination)
             ):
                 return False, f"Supported unit {order.source} did not make corresponding order"
 
@@ -244,6 +241,7 @@ class Adjudicator:
 
     def __init__(self, board: Board):
         self._board = board
+        self.flags = board.data.get("adju flags", [])
         self.failed_or_invalid_units: set[MapperInformation] = set()
 
     @abc.abstractmethod
@@ -276,8 +274,11 @@ class BuildsAdjudicator(Adjudicator):
                     if province.unit is not None:
                         logger.warning(f"Skipping {order}; there is already a unit there")
                         continue
-                    if not province.has_supply_center or province.core != player or province.owner != player:
-                        logger.warning(f"Skipping {order}; tried to build in non-core, non-sc, non-owned")
+                    if not province.has_supply_center or province.owner != player:
+                        logger.warning(f"Skipping {order}; tried to build in non-sc, non-owned")
+                        continue
+                    if province.core != player and not "build anywhere" in self.flags:
+                        logger.warning(f"Skipping {order}; tried to build in non-core")
                         continue
                     self._board.create_unit(order.unit_type, player, province, coast, None)
                     available_builds -= 1

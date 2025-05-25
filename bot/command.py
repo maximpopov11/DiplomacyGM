@@ -517,6 +517,41 @@ async def view_current(player: Player | None, ctx: commands.Context, manager: Ma
                                 convert_svg=convert_svg,
                                 file_in_embed=False)
 
+@perms.player("view gui")
+async def view_gui(player: Player | None, ctx: commands.Context, manager: Manager) -> None:
+    arguments = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower().split()
+    color_arguments = list(color_options & set(arguments))
+    color_mode = color_arguments[0] if color_arguments else None
+    board = manager.get_board(ctx.guild.id)
+
+    if player and not board.orders_enabled:
+        log_command(logger, ctx, f"Orders locked - not processing")
+        await send_message_and_file(channel=ctx.channel,
+                                    title="Orders locked!",
+                                    message="If you think this is an error, contact a GM.",
+                                    embed_colour=ERROR_COLOUR)
+        return
+
+    try:
+        if not board.fow:
+            file, file_name = manager.draw_gui_map(ctx.guild.id, color_mode)
+        else:
+            file, file_name = manager.draw_fow_gui_map(ctx.guild.id, player, color_mode)
+    except Exception as err:
+        log_command(logger, ctx, message=f"Failed to generate map for an unknown reason", level=logging.ERROR)
+        await send_message_and_file(channel=ctx.channel,
+                                    title="Unknown Error: Please contact your local bot dev",
+                                    embed_colour=ERROR_COLOUR)
+        raise err
+        return
+    log_command(logger, ctx, message=f"Generated current map for {board.phase.name} {board.get_year_str()}")
+    await send_message_and_file(channel=ctx.channel,
+                                title=f"{board.phase.name} {board.get_year_str()}",
+                                file=file,
+                                file_name=file_name,
+                                convert_svg=False,
+                                file_in_embed=False)
+
 @perms.gm("adjudicate")
 async def adjudicate(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)

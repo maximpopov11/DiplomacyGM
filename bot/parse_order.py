@@ -33,6 +33,7 @@ def normalize_location(unit_type: UnitType, location: Location):
 class TreeToOrder(Transformer):
     def set_state(self, board: Board, player_restriction: Player | None):
         self.board = board
+        self.flags = board.data.get("adju config", [])
         self.player_restriction = player_restriction
         
     def province(self, s) -> Location:
@@ -77,6 +78,8 @@ class TreeToOrder(Transformer):
         return s[0], order.Hold()
 
     def core_order(self, s):
+        if "no coring" in self.flags:
+            raise Exception("Coring is disabled in this gamemode")
         return s[0], order.Core()
     
     def build_unit(self, s):

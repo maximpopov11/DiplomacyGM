@@ -112,7 +112,6 @@ async def on_command_error(ctx, error):
                 f"errored in {time_spent}s"
             )
             await send_message_and_file(channel=ctx.channel, message=str(error), embed_colour=ERROR_COLOUR)
-            raise error
 
 
 @bot.command(help="Checks bot listens and responds.")
@@ -255,6 +254,12 @@ async def view_map(ctx: commands.Context) -> None:
 async def view_current(ctx: commands.Context) -> None:
     await command.view_current(ctx, manager)
 
+@bot.command(
+    brief="Outputs a interactive svg that you can issue orders in",
+    aliases=["g"],
+)
+async def view_gui(ctx: commands.Context) -> None:
+    await command.view_gui(ctx, manager)
 
 @bot.command(brief="Adjudicates the game and outputs the moves and results maps.",
     description="""

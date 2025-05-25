@@ -14,7 +14,10 @@
         "starting_units": "layer10",
         "unit_output": "layer16",
         "arrow_output": "layer17",
+        "coast_markers": "layer18",
         "impassibles_layer": "layer19",
+		"background": "g407997",
+        "sidebar": "layer7",
 
         "army": "g652",
         "retreat_army": "g2176",
@@ -42,6 +45,8 @@
         "loc_x_offset": 7.7655,
         "loc_y_offset": 7.033,
         "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"],
+
+        "default_sea_color": "d4dae1",
 
         "fow": true
     },

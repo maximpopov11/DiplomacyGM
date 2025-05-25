@@ -29,10 +29,6 @@ def get_element_color(element: Element) -> str:
         if value.startswith(prefix):
             return value[len(prefix) :]
 
-
-def get_player(element: Element, color_to_player: dict[str, Player]) -> Player:
-    return color_to_player[get_element_color(element)]
-
 def get_unit_coordinates(
     unit_data: Element,
 ) -> tuple[float, float]:

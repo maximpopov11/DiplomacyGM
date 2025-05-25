@@ -1,6 +1,6 @@
 {
-    "name": "Imperial Diplomacy B1.2",
-    "file": "assets/impdipfow.svg",
+    "name": "Imperial Diplomacy: World Chaos",
+    "file": "assets/worldchaos.svg",
     "svg config": {
         "land_layer": "layer6",
         "island_ring_layer": "layer9",
@@ -10,14 +10,12 @@
         "province_names": "layer1",
         "supply_center_icons": "layer3",
         "season": "layer4",
-        "power_banners": "layer13",
+        "power_banners": null,
         "starting_units": "layer10",
         "unit_output": "layer16",
         "arrow_output": "layer17",
 		"other_fills": "layer14",
-        "coast_markers": "layer18",
 		"background": "g407997",
-        "sidebar": "layer7",
 
         "army": "g652",
         "retreat_army": "g2176",
@@ -27,6 +25,7 @@
         "detect_starting_units": true,
         "unit_type_labeled": false,
 
+
         "unit_labels": true,
         "province_labels": true,
         "center_labels": true,
@@ -34,24 +33,32 @@
         "default_sea_color": "d4dae1",
 
 		"color replacements": {
-			"c6b7ab": {"dark": "B7AB80", "blue": "FFF3F3"},
-			"b2bdd1": {"dark": "325B68", "blue": "D2BDAE"},
-			"b99a82": {"dark": "8a836b", "blue": "EFDFDF"},
+			"c6b7ab": {"dark": "B7AB80"},
+			"b2bdd1": {"dark": "325B68"},
+			"b99a82": {"dark": "8a836b"},
 			"333333": {"dark": "0A3542"},
-			"d4dae1": {"dark": "396B70", "blue": "E4D1C5"}
+			"d4dae1": {"dark": "396B70"}
 		},
 
         "border_margin_hint": 1,
+        "year": 1641,
 
         "map_width": 4375,
         "unit_radius": 10,
         "order_stroke_width": 2,
-        "neutral": {"standard": "c6b7ab", "dark": "B7AB80", "pink": "c6b7ab", "blue": "FFF3F3"},
+        "neutral": {"standard": "c6b7ab", "dark": "B7AB80", "pink": "c6b7ab", "blue": "c6b7ab"},
         "neutral_sc": "ffffff",
         "loc_x_offset": 7.7655,
         "loc_y_offset": 7.033,
         "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
     },
+    "adju flags": [
+        "build anywhere",
+        "no coring",
+        "initial builds"
+    ],
+    "flags": ["weak channel checking"],
+
     "overrides": {
         "high provinces": {
             "NAO": {
@@ -91,12 +98,6 @@
             },
             "Nunavut": {
                 "adjacencies": ["Iqaluit"]
-            },
-            "Yokuts": {
-                "adjacencies": ["Washo"]
-            },
-            "Washo": {
-                "adjacencies": ["Yokuts"]
             },
             "Edinburgh": {
                 "remove_adjacencies": ["Greenland Sea"]
@@ -232,131 +233,5 @@
 
         }
     },
-    "players": {
-        "Abyssinia": {
-            "color": {"standard": "a88080", "dark": "9D6767", "pink": "FFC0CB", "blue": "4AB5A9"},
-            "vscc": 32,
-            "iscc": 4
-        },
-        "Ajuuraan": {
-            "color": {"standard": "587ba7", "dark": "4A688D", "pink": "FF6AB9", "blue": "924EEF"},
-            "vscc": 32,
-            "iscc": 4
-        },
-        "Athapasca": {
-            "color": {"standard": "e95a94", "dark": "BB4C79", "pink": "FF69B4", "blue": "63E8DD"},
-            "vscc": 32,
-            "iscc": 4
-        },
-        "Austria": {
-            "color": {"standard": "a17555", "dark": "82644D", "pink": "FF1493", "blue": "8768E2"},
-            "vscc": 32,
-            "iscc": 4
-        },
-        "Aymara": {
-            "color": {"standard": "9a2f56", "dark": "AD295D", "pink": "DB7093", "blue": "A0DCD9"},
-            "vscc": 32,
-            "iscc": 4
-        },
-        "Ayutthaya": {
-            "color": {"standard": "9d84ae", "dark": "B875CE", "pink": "FF007F", "blue": "5782EC"},
-            "vscc": 32,
-            "iscc": 4
-        },
-        "England": {
-            "color": {"standard": "f94455", "dark": "E33544", "pink": "E75480", "blue": "467A70"},
-            "vscc": 56,
-            "iscc": 14
-        },
-        "France": {
-            "color": {"standard": "66a2e3", "dark": "24A57B", "pink": "FF6FFF", "blue": "9F79CF"},
-            "vscc": 56,
-            "iscc": 14
-        },
-        "Guarani": {
-            "color": {"standard": "078690", "dark": "078690", "pink": "FFB3C6", "blue": "078690"},
-            "vscc": 32,
-            "iscc": 4
-        },
-        "Inuit": {
-            "color": {"standard": "afc5d8", "dark": "95ADC2", "pink": "F22952", "blue": "2C837F"},
-            "vscc": 42,
-            "iscc": 7
-        },
-        "Kongo": {
-            "color": {"standard": "924cb3", "dark": "944FA5", "pink": "FF91A4", "blue": "C7A9E7"},
-            "vscc": 32,
-            "iscc": 4
-        },
-        "Mapuche": {
-            "color": {"standard": "81889d", "dark": "696E7F", "pink": "FF85A1", "blue": "5A72C2"},
-            "vscc": 32,
-            "iscc": 4
-        },
-        "Ming": {
-            "color": {"standard": "cadd7e", "dark": "B8DC5C", "pink": "D98A96", "blue": "74D2EF"},
-            "vscc": 36,
-            "iscc": 5
-        },
-        "Mughal": {
-            "color": {"standard": "ab9f26", "dark": "999941", "pink": "FDD7E4", "blue": "8779AB"},
-            "vscc": 36,
-            "iscc": 5
-        },
-        "Netherlands": {
-            "color": {"standard": "fc9c23", "dark": "DB7745", "pink": "C44263", "blue": "58AEC4"},
-            "vscc": 56,
-            "iscc": 14
-        },
-        "Ottoman": {
-            "color": {"standard": "a03838", "dark": "AB2136", "pink": "F4A7B9", "blue": "649AE8"},
-            "vscc": 48,
-            "iscc": 10
-        },
-        "Poland-Lithuania": {
-            "color": {"standard": "e390b3", "dark": "E57BA8", "pink": "F9A7B0", "blue": "43859F"},
-            "vscc": 42,
-            "iscc": 7
-        },
-        "Portugal": {
-            "color": {"standard": "3c9553", "dark": "23763F", "pink": "F5B7C6", "blue": "A9B6E3"},
-            "vscc": 64,
-            "iscc": 16
-        },
-        "Qing": {
-            "color": {"standard": "f36678", "dark": "E04A5D", "pink": "F5A9BC", "blue": "15729C"},
-            "vscc": 32,
-            "iscc": 4
-        },
-        "Russia": {
-            "color": {"standard": "547352", "dark": "547352", "pink": "E672A3", "blue": "4BAADB"},
-            "vscc": 44,
-            "iscc": 8
-        },
-        "Safavid": {
-            "color": {"standard": "5a887f", "dark": "407167", "pink": "FFAEB9", "blue": "5E6C9B"},
-            "vscc": 36,
-            "iscc": 5
-        },
-        "Spain": {
-            "color": {"standard": "f0ce48", "dark": "DBB045", "pink": "65000B", "blue": "3585B0"},
-            "vscc": 64,
-            "iscc": 16
-        },
-        "Sweden": {
-            "color": {"standard": "4e51ba", "dark": "534884", "pink": "F497BF", "blue": "367BBB"},
-            "vscc": 32,
-            "iscc": 4
-        },
-        "Tokugawa": {
-            "color": {"standard": "7cdbc3", "dark": "4AB79B", "pink": "FFAACC", "blue": "687F9F"},
-            "vscc": 32,
-            "iscc": 4
-        },
-        "Ute-Shoshone": {
-            "color": {"standard": "ca7a59", "dark": "B87052", "pink": "EDBFC3", "blue": "658DBE"},
-            "vscc": 36,
-            "iscc": 5
-        }
-    }
+    "players": "chaos"
 }

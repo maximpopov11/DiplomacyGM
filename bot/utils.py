@@ -87,9 +87,9 @@ def get_role_by_player(player: Player, roles: Guild.roles) -> discord.Role | Non
     return None
 
 
-def get_player_by_channel(channel: commands.Context.channel, manager: Manager, server_id: int) -> Player | None:
+def get_player_by_channel(channel: commands.Context.channel, manager: Manager, server_id: int, ignore_catagory=False) -> Player | None:
     name = channel.name
-    if not name.endswith(config.player_channel_suffix) or not config.is_player_category(channel.category.name):
+    if not name.endswith(config.player_channel_suffix) or ((not ignore_catagory) and not config.is_player_category(channel.category.name)):
         return None
     name = name[: -(len(config.player_channel_suffix))]
     return get_player_by_name(name, manager, server_id)
@@ -245,7 +245,7 @@ async def send_message_and_file(
     if messages:
         while messages:
             message = messages.pop()
-            while message:
+            while message != None and len(message) > 0:
                 cutoff = discord_embed_description_limit
                 # Try to find an even line break to split the long messages on
                 if len(message) > discord_embed_description_limit:
@@ -272,7 +272,7 @@ async def send_message_and_file(
 
                 message = message[cutoff:].strip()
 
-    if not embeds:
+    if not embeds and (fields or file or footer_datetime or footer_content):
         embeds = [Embed(
             title=title,
             colour=Colour.from_str(embed_colour)
@@ -287,7 +287,7 @@ async def send_message_and_file(
                 await channel.send(embeds=embeds)
                 embeds = [Embed(
                     title=title,
-                    colour=Colour.from_str(embed_colour)
+                    colour=Colour.from_str(embed_colour),
                 )]
                 title = ""
 
@@ -345,7 +345,11 @@ async def send_message_and_file(
 
         embeds[-1].timestamp = footer_datetime
 
-    return await channel.send(embeds=embeds, file=discord_file)
+    if embeds or file != None:
+        return await channel.send(embeds=embeds, file=discord_file)
+    else:
+        # FIXME: rewrite to make this unnecessary
+        return await asyncio.sleep(0) # do nothing
 
 
 
