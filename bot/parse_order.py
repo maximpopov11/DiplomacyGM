@@ -103,8 +103,10 @@ class TreeToOrder(Transformer):
         if not province.has_supply_center:
                 raise ValueError(f"{location} does not have a supply center.")  
         elif self.player_restriction:
-            if province.core != self.player_restriction or province.owner != self.player_restriction:
-                raise ValueError(f"You do not own or haven't cored {location}.")
+            if province.owner != self.player_restriction:
+                raise ValueError(f"You do not own {location}.")
+            if province.core != self.player_restriction and not "build anywhere" in self.board.data.get("adju flags", []):
+                raise ValueError(f"You haven't cored {location}.")
 
         return location, province.owner, order.Build(location, unit_type)
     
