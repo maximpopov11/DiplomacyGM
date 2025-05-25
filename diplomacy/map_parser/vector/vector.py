@@ -559,6 +559,11 @@ class Parser:
         if color in self.color_to_player:
            return self.color_to_player[color]
         elif self.autodetect_players:
+            neutral_color = self.data["svg config"]["neutral"]
+            if isinstance(neutral_color, dict):
+                neutral_color = neutral_color["standard"]
+            if color == neutral_color:
+                return None
             player = Player(province_name, color, 101, 1, set(), set())
             self.players.add(player)
             self.color_to_player[color] = player
