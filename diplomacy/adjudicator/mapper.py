@@ -61,10 +61,15 @@ class Mapper:
         self.board: Board = board
         self.board_svg: ElementTree = etree.parse(self.board.data["file"])
         self.player_restriction: Player | None = None
-        self.load_colors(color_mode)
+
         self._initialize_scoreboard_locations()
 
         # different colors
+        if "color replacements" in self.board.data["svg config"]:
+            self.replacements = self.board.data["svg config"]["color replacements"]
+        else:
+            self.replacements = None
+        self.load_colors(color_mode)
         if color_mode is not None:
             self.replace_colors(color_mode)
 
@@ -288,21 +293,21 @@ class Mapper:
             self.neutral_color = neutral_colors[color_mode] if color_mode in neutral_colors else neutral_colors["standard"]
         
         self.clear_seas_color = self.board.data["svg config"]["default_sea_color"]
-        if self.clear_seas_color in self.board.data["svg config"]["color replacements"]:
-            if color_mode in self.board.data["svg config"]["color replacements"][self.clear_seas_color]:
-                self.clear_seas_color = self.board.data["svg config"]["color replacements"][self.clear_seas_color][color_mode]
+        if self.replacements != None and self.clear_seas_color in self.replacements:
+            if color_mode in self.replacements[self.clear_seas_color]:
+                self.clear_seas_color = self.replacements[self.clear_seas_color][color_mode]
 
     def replace_colors(self, color_mode: str) -> None:
         other_fills = get_svg_element(self.board_svg, self.board.data["svg config"]["other_fills"])
         background = get_svg_element(self.board_svg, self.board.data["svg config"]["background"])
-        replacements = self.board.data["svg config"]["color replacements"]
-        for element in itertools.chain(other_fills, background):
-            color = get_element_color(element)
-            if color in replacements:
-                if color_mode in replacements[color]:
-                    self.color_element(element, replacements[color][color_mode])
-            elif color_mode == "dark":
-                self.color_element(element, "ffffff")
+        if self.replacements != None:
+            for element in itertools.chain(other_fills, background):
+                color = get_element_color(element)
+                if color in self.replacements:
+                    if color_mode in self.replacements[color]:
+                        self.color_element(element, self.replacements[color][color_mode])
+                elif color_mode == "dark":
+                    self.color_element(element, "ffffff")
 
         # Difficult to detect correctly using either geometry or province names
         # Marking manually would work, but for all svgs is time consuming. TODO
@@ -729,7 +734,6 @@ class Mapper:
 
             if province in self.adjacent_provinces:
                 self.color_element(province_element, self.clear_seas_color)
-
 
             visited_provinces.add(province.name)
 
