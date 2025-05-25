@@ -278,7 +278,9 @@ class Mapper:
 
 
     def load_colors(self, color_mode: str | None = None) -> None:
-        self.player_colors = {}
+        self.player_colors = {
+            "None": "ffffff"
+        }
         for player in self.board.players:
             if color_mode is not None and player.color_dict and color_mode in player.color_dict:
                 color = player.color_dict[color_mode]
@@ -985,19 +987,27 @@ class Mapper:
         ball_marker.append(ball_def)
         defs.append(ball_marker)
 
-        players = self.board.players.union({Player("None", "ffffff", None, None, None, None)})
         if not "no coring" in self.board.data.get("adju flags", []):
-            for mapping in itertools.product(players, players):
-                gradient_def: Element = self.create_element("linearGradient", {"id": f"{mapping[0]}_{mapping[1]}"})
-                first: Element = self.create_element(
-                    "stop", {"offset": "50%", "stop-color": f"#{mapping[0].render_color}"}
-                )
-                second: Element = self.create_element(
-                    "stop", {"offset": "50%", "stop-color": f"#{mapping[1].render_color}"}
-                )
-                gradient_def.append(first)
-                gradient_def.append(second)
-                defs.append(gradient_def)
+            created_defs = set()
+
+            for province in self.board.provinces:
+                if province.has_supply_center and province.half_core != None:
+                    mapping = (province.half_core.name, province.core.name)
+                    if mapping in created_defs:
+                        continue
+
+                    created_defs.add(mapping)
+
+                    gradient_def: Element = self.create_element("linearGradient", {"id": f"{mapping[0]}_{mapping[1]}"})
+                    first: Element = self.create_element(
+                        "stop", {"offset": "50%", "stop-color": f"#{self.player_colors[mapping[0]]}"}
+                    )
+                    second: Element = self.create_element(
+                        "stop", {"offset": "50%", "stop-color": f"#{self.player_colors[mapping[1]]}"}
+                    )
+                    gradient_def.append(first)
+                    gradient_def.append(second)
+                    defs.append(gradient_def)
 
     def color_element(self, element: Element, color: str, key="fill"):
         if len(color) == 6:  # Potentially buggy hack; just assume everything with length 6 is rgb without #
