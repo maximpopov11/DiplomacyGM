@@ -97,7 +97,7 @@ def get_player_by_channel(channel: commands.Context.channel, manager: Manager, s
 
 def get_player_by_name(name: str, manager: Manager, server_id: int) -> Player | None:
     for player in manager.get_board(server_id).players:
-        if player.name.lower() == name.strip().lower():
+        if player.name.lower().replace("-", " ") == name.strip().lower().replace("-", " "):
             return player
     return None
 

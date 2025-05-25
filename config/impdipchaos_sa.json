@@ -1,0 +1,101 @@
+{
+    "name": "Imperial Diplomacy: World Chaos",
+    "file": "assets/worldchaos_sa.svg",
+    "svg config": {
+        "land_layer": "layer6",
+        "island_ring_layer": "layer9",
+        "island_fill_layer": "layer11",
+        "island_borders": "layer5",
+        "sea_borders": "layer2",
+        "province_names": "layer1",
+        "supply_center_icons": "layer3",
+        "season": "layer4",
+        "power_banners": "layer13",
+        "starting_units": "layer10",
+        "unit_output": "layer16",
+        "arrow_output": "layer17",
+		"other_fills": "layer14",
+		"background": "g407997",
+
+        "army": "g652",
+        "retreat_army": "g2176",
+        "fleet": "layer15",
+        "retreat_fleet": "g3300",
+
+        "detect_starting_units": true,
+        "unit_type_labeled": false,
+
+
+        "unit_labels": true,
+        "province_labels": true,
+        "center_labels": true,
+
+        "default_sea_color": "d4dae1",
+
+		"color replacements": {
+			"c6b7ab": {"dark": "B7AB80"},
+			"b2bdd1": {"dark": "325B68"},
+			"b99a82": {"dark": "8a836b"},
+			"333333": {"dark": "0A3542"},
+			"d4dae1": {"dark": "396B70"}
+		},
+
+        "border_margin_hint": 1,
+        "year": 1641,
+
+        "map_width": 2873,
+        "unit_radius": 10,
+        "order_stroke_width": 2,
+        "neutral": {"standard": "c6b7ab", "dark": "B7AB80", "pink": "c6b7ab", "blue": "c6b7ab"},
+        "neutral_sc": "ffffff",
+        "loc_x_offset": 7.7655,
+        "loc_y_offset": 7.033,
+        "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
+    },
+    "adju flags": [
+        "build anywhere",
+        "no coring",
+        "initial builds"
+    ],
+    "flags": ["weak channel checking"],
+
+    "overrides": {
+        "high provinces": {
+            "SAO": {
+                "num": 5,
+                "type": "SEA",
+                "adjacencies": ["SPO1", "SPO2", "SPO3", "Guiana Current", "St. Marcos Bay", "Mauritsstad", "Todos os Santos Bay", "Guanabara Bay", "Rio Grande Rise", "Argentine Basin", "Bahia Grande"]
+            },
+            "SPO": {
+                "num": 3,
+                "type": "SEA",
+                "adjacencies": ["SAO1", "SAO2", "SAO3", "SAO4", "SAO5", "Bahia Grande", "Mar de Hoces", "Chiloe", "Roggeveen Basin", "Peru Basin", "Kawesqar"]
+            }
+        },
+        "provinces": {
+            "Panama": {
+                "coasts": {
+                   "nc": [
+                        "Bay of Panama"
+                   ],
+                   "sc": [
+                        "Colon Ridge"
+                   ]
+                }
+            },
+            "SPO1": {
+                "unit_loc": [[4061.260, 1509.495]],
+                "retreat_unit_loc": [[4073.260, 1521.495]]
+            },
+            "SPO2": {
+                "unit_loc": [[4138.259, 1509.495]],
+                "retreat_unit_loc": [[4150.259, 1521.495]]
+            },
+            "SPO3": {
+                "unit_loc": [[4215.260, 1510.000]],
+                "retreat_unit_loc": [[4227.260, 1522.000]]
+            }
+        }
+    },
+    "players": "chaos"
+}
