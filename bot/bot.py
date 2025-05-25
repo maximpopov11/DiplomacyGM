@@ -112,7 +112,6 @@ async def on_command_error(ctx, error):
                 f"errored in {time_spent}s"
             )
             await send_message_and_file(channel=ctx.channel, message=str(error), embed_colour=ERROR_COLOUR)
-            raise error
 
 
 @bot.command(help="Checks bot listens and responds.")
