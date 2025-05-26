@@ -245,7 +245,7 @@ async def send_message_and_file(
     if messages:
         while messages:
             message = messages.pop()
-            while message != None and len(message) > 0:
+            while message != None:
                 cutoff = discord_embed_description_limit
                 # Try to find an even line break to split the long messages on
                 if len(message) > discord_embed_description_limit:
@@ -272,7 +272,7 @@ async def send_message_and_file(
 
                 message = message[cutoff:].strip()
 
-    if not embeds and (fields or file or footer_datetime or footer_content):
+    if not embeds:
         embeds = [Embed(
             title=title,
             colour=Colour.from_str(embed_colour)
@@ -345,12 +345,7 @@ async def send_message_and_file(
 
         embeds[-1].timestamp = footer_datetime
 
-    if embeds or file != None:
-        return await channel.send(embeds=embeds, file=discord_file)
-    else:
-        # FIXME: rewrite to make this unnecessary
-        return await asyncio.sleep(0) # do nothing
-
+    return await channel.send(embeds=embeds, file=discord_file)
 
 
 def get_orders(board: Board, player_restriction: Player | None, ctx: Context, fields: bool = False, subset: str | None = None) -> str | List[Tuple[str, str]]:
