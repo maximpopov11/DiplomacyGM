@@ -556,9 +556,8 @@ class Parser:
 
     def get_element_player(self, element: Element, province_name: str="") -> Player:
         color = get_element_color(element)
-        if color in self.color_to_player:
-           return self.color_to_player[color]
-        elif self.autodetect_players:
+        #FIXME: only works if there's one person per province
+        if self.autodetect_players:
             neutral_color = self.data["svg config"]["neutral"]
             if isinstance(neutral_color, dict):
                 neutral_color = neutral_color["standard"]
@@ -568,6 +567,8 @@ class Parser:
             self.players.add(player)
             self.color_to_player[color] = player
             return player
+        elif color in self.color_to_player:
+           return self.color_to_player[color]
         else:
             raise Exception(f"Unknown player color: {color}")
 
