@@ -151,10 +151,13 @@ class _DatabaseConnection:
 
             if owner is not None:
                 owner_player = board.get_player(owner)
-                province.owner = owner_player
+                if owner_player is None:
+                    logger.warning(f"Couldn't corresponding player for {owner} in DB")
+                else:
+                    province.owner = owner_player
 
-                if province.has_supply_center:
-                    owner_player.centers.add(province)
+                    if province.has_supply_center:
+                        owner_player.centers.add(province)
             else:
                 province.owner = None
 
