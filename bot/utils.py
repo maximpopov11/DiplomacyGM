@@ -245,7 +245,7 @@ async def send_message_and_file(
     if messages:
         while messages:
             message = messages.pop()
-            while message != None:
+            while message:
                 cutoff = discord_embed_description_limit
                 # Try to find an even line break to split the long messages on
                 if len(message) > discord_embed_description_limit:
