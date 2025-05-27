@@ -23,6 +23,7 @@
         "detect_starting_units": true,
         "unit_type_labeled": false,
 
+        "default_sea_color": "d4dae1",
 
         "unit_labels": true,
         "province_labels": true,
