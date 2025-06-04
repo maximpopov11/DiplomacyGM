@@ -1150,3 +1150,18 @@ async def wipe(ctx: commands.Context, manager: Manager) -> None:
     for channel in guild.channels:
         if channel.name in cs:
             await channel.delete()
+
+async def nick(ctx: commands.Context, manager: Manager) -> None:
+    name: str = ctx.author.nick
+    if name == None:
+        return
+    if ']' in name:
+        prefix, name = name.split('] ', 1)
+        prefix = prefix + '] '
+    else:
+        prefix = ''
+    name = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
+    if name == '':
+        raise Exception("A nickname must be at least 1 character")
+    ctx.author.edit(nick=prefix+name)
+    return "Nick updated"

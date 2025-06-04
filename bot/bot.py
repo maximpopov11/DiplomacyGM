@@ -404,6 +404,9 @@ async def ping_players(ctx: commands.Context) -> None:
 async def delete_game(ctx: commands.Context) -> None:
     await command.delete_game(ctx, manager)
 
+@bot.command(brief="Changes your nickname")
+async def nick(ctx: commands.Context) -> None:
+    await command.nick(ctx, manager)
 
 def run():
     token = os.getenv("DISCORD_TOKEN")
