@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS players (
     color varchar(6),
     liege text,
     points int,
-    discord_id varchar(20),
+    discord_id text,
     PRIMARY KEY (board_id, player_name),
     FOREIGN KEY (board_id, liege) REFERENCES players (board_id, player_name),
     FOREIGN KEY (board_id) REFERENCES boards (board_id));
