@@ -103,20 +103,22 @@ class _DatabaseConnection:
         board.fish = fish
         board.board_id = board_id
 
-        player_data = cursor.execute("SELECT player_name, color, vassaliser, points FROM players WHERE board_id=?", (board_id,)).fetchall()
-        player_info_by_name = {player_name: (color, vassiliser, points) for player_name, color, vassiliser, points in player_data}
+        player_data = cursor.execute("SELECT player_name, color, liege, points, discord_id FROM players WHERE board_id=?", (board_id,)).fetchall()
+        player_info_by_name = {player_name: (color, liege, points, discord_id) for player_name, color, liege, points, discord_id in player_data}
         name_to_player = {player.name: player for player in board.players}
         for player in board.players:
             if player.name not in player_info_by_name:
                 logger.warning(f"Couldn't find player {player.name} in DB")
                 continue
-            color, vassiliser, points = player_info_by_name[player.name]
+            color, liege, points, discord_id = player_info_by_name[player.name]
             player.render_color = color
-            if vassiliser is not None:
+            if liege is not None:
                 try:
-                    player.vassilier = name_to_player[vassiliser]
+                    player.liege = name_to_player[liege]
                 except KeyError:
-                    logger.warning(f"Invalid vassaliser of player {player.name}: {vassiliser}")
+                    logger.warning(f"Invalid liege of player {player.name}: {liege}")
+            if discord_id is not None:
+                player.discord_id = discord_id
             player.points = points
             player.units = set()
             player.centers = set()
@@ -249,8 +251,8 @@ class _DatabaseConnection:
             (board_id, board.get_phase_and_year_string(), board.datafile, board.fish),
         )
         cursor.executemany(
-            "INSERT INTO players (board_id, player_name, color, vassaliser, points) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
-            [(board_id, player.name, player.render_color, (None if player.vassilier is None else str(player.vassilier)), player.points) for player in board.players],
+            "INSERT INTO players (board_id, player_name, color, liege, points) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+            [(board_id, player.name, player.render_color, (None if player.liege is None else str(player.liege)), player.points) for player in board.players],
         )
 
         # cache = []

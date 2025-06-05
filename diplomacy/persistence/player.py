@@ -42,7 +42,8 @@ class Player:
         self.build_orders: set[order.PlayerOrder] = set()
 
         self.points: int = 0
-        self.vassilier: Player | None = None
+        self.liege: Player | None = None
+        self.discord_id = None
 
     def __str__(self):
         return self.name

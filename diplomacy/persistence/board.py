@@ -220,3 +220,6 @@ class Board:
             return f"{str(1-year)} BC"
         else:
             return str(year)
+        
+    def is_chaos(self) -> bool:
+        return self.data["players"] == "chaos"

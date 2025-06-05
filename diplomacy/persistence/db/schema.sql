@@ -8,10 +8,11 @@ CREATE TABLE IF NOT EXISTS players (
     board_id int,
     player_name text,
     color varchar(6),
-    vassaliser text,
+    liege text,
     points int,
+    discord_id varchar(20),
     PRIMARY KEY (board_id, player_name),
-    FOREIGN KEY (board_id, vassaliser) REFERENCES players (board_id, player_name),
+    FOREIGN KEY (board_id, liege) REFERENCES players (board_id, player_name),
     FOREIGN KEY (board_id) REFERENCES boards (board_id));
 CREATE TABLE IF NOT EXISTS provinces (
     board_id int,

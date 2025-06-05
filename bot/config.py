@@ -16,6 +16,7 @@ _gm_roles: set[str] = {
     "gm",
     "heavenly angel",
     "emergency gm",
+    "bot manager"
 }
 
 
@@ -43,7 +44,7 @@ def is_gm_category(category: str) -> bool:
 
 
 # Discord channels in which GMs are allowed to use non-public commands (e.g. adjudication)
-_gm_channels: set[str] = {"admin-chat"}
+_gm_channels: set[str] = {"admin-chat", "bot-spam"}
 
 
 def is_gm_channel(channel: str) -> bool:

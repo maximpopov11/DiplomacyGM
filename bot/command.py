@@ -753,6 +753,53 @@ async def province_info(ctx: commands.Context, manager: Manager) -> None:
                                 message=out)
 
 
+async def player_info(ctx: commands.Context, manager: Manager) -> None:
+    board = manager.get_board(ctx.guild.id)
+
+    if not board.orders_enabled:
+        perms.gm_context_check(ctx, "Orders locked! If you think this is an error, contact a GM.", 
+            "You cannot use .province_info in a non-GM channel while orders are locked.")
+        return
+ 
+    player_name = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
+    if not player_name:
+        log_command(logger, ctx, message=f"No province given")
+        await send_message_and_file(channel=ctx.channel,
+                                    title="No province given",
+                                    message="Usage: .province_info <player>")
+        return
+    player: Player = board.get_player(player_name)
+    if player is None:
+        log_command(logger, ctx, message=f"Player `{player}` not found")
+        await send_message_and_file(channel=ctx.channel,
+                                    title=f"Could not find province {player_name}")
+        return
+
+    # FOW permissions
+    if not board.is_chaos():
+        await send_message_and_file(channel=ctx.channel,
+                                    title=f"This command only works for chaos")
+        return
+
+    # f"Initial/Current/Victory SC Count [Score]: {player.iscc}/{len(player.centers)}/{player.vscc} [{player.score()}%]\n" + \
+
+    # fmt: off
+    out = f"Player: {"TODO"}\n" + \
+        f"Color: #{player.render_color}\n" + \
+        f"Points: {player.points}\n" + \
+        f"Vassals: {"TODO"}\n" + \
+        f"Liege: {player.liege if player.liege else "None"}\n" + \
+        f"Units: {("\n- " + "\n- ".join([unit.location() for unit in player.units])) if len(player.units) > 0 else "None"}\n" + \
+        f"Centers ({len(player.centers)}): {("\n- " + "\n- ".join([center.name for center in player.centers])) if len(player.centers) > 0 else "None"}\n"
+    # fmt: on
+    log_command(logger, ctx, message=f"Got info for player {player}")
+
+    # FIXME title should probably include what coast it is.
+    await send_message_and_file(channel=ctx.channel,
+                                title=player.name,
+                                message=out)
+
+
 @perms.player("view visible provinces")
 async def visible_provinces(player: Player | None, ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)

@@ -92,6 +92,7 @@ def get_player_by_channel(channel: commands.Context.channel, manager: Manager, s
     if not name.endswith(config.player_channel_suffix) or ((not ignore_catagory) and not config.is_player_category(channel.category.name)):
         return None
     name = name[: -(len(config.player_channel_suffix))]
+    print(name)
     return get_player_by_name(name, manager, server_id)
 
 

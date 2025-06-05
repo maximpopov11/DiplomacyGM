@@ -349,6 +349,13 @@ async def info(ctx: commands.Context) -> None:
 async def province_info(ctx: commands.Context) -> None:
     await command.province_info(ctx, manager)
 
+@bot.command(
+    brief="outputs information about a specific player",
+    aliases=["player"],
+)
+async def player_info(ctx: commands.Context) -> None:
+    await command.player_info(ctx, manager)
+
 @bot.command(brief="outputs the provinces you can see")
 async def visible_info(ctx: commands.Context) -> None:
     await command.visible_provinces(ctx, manager)
