@@ -606,7 +606,7 @@ class Mapper:
                     destloc = order.destination
                     if destloc.get_unit() and destloc.get_unit().coast:
                         destloc = destloc.get_unit().coast
-                    for coord in order.destination.all_locs:
+                    for coord in destloc.all_locs:
                         self._draw_hold(coord)
 
             # if two units are support-holding each other
@@ -913,15 +913,12 @@ class Mapper:
     def _draw_retreat_options(self, unit: Unit, svg):
         root = svg.getroot()
         if not unit.retreat_options:
-            self._draw_force_disband(unit.province.retreat_unit_coordinate, svg)
-        # if we're drawing possible retreat locs, why show it as dislodged at all?
-        # else:
-        #     self._draw_disband(unit.location().retreat_unit_coordinate, svg)
+            self._draw_force_disband(unit.location().retreat_unit_coordinate, svg)
 
         for retreat_province in unit.retreat_options:
             root.append(
                 self._draw_retreat_move(
-                    RetreatMove(retreat_province), unit.province.retreat_unit_coordinate, use_moves_svg=False
+                    RetreatMove(retreat_province), unit.location().retreat_unit_coordinate, use_moves_svg=False
                 )
             )
 
