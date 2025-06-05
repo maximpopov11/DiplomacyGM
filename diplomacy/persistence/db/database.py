@@ -117,6 +117,7 @@ class _DatabaseConnection:
                     player.liege = name_to_player[liege]
                 except KeyError:
                     logger.warning(f"Invalid liege of player {player.name}: {liege}")
+                player.liege.vassels.append(player)
             if discord_id is not None:
                 player.discord_id = discord_id
             player.points = points
