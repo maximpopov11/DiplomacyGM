@@ -103,14 +103,21 @@ class _DatabaseConnection:
         board.fish = fish
         board.board_id = board_id
 
-        player_data = cursor.execute("SELECT player_name, color FROM players WHERE board_id=?", (board_id,)).fetchall()
-        player_info_by_name = {player_name: color for player_name, color in player_data}
+        player_data = cursor.execute("SELECT player_name, color, vassaliser, points FROM players WHERE board_id=?", (board_id,)).fetchall()
+        player_info_by_name = {player_name: (color, vassiliser, points) for player_name, color, vassiliser, points in player_data}
+        name_to_player = {player.name: player for player in board.players}
         for player in board.players:
             if player.name not in player_info_by_name:
                 logger.warning(f"Couldn't find player {player.name} in DB")
                 continue
-            color = player_info_by_name[player.name]
+            color, vassiliser, points = player_info_by_name[player.name]
             player.render_color = color
+            if vassiliser is not None:
+                try:
+                    player.vassilier = name_to_player[vassiliser]
+                except KeyError:
+                    logger.warning(f"Invalid vassaliser of player {player.name}: {vassiliser}")
+            player.points = points
             player.units = set()
             player.centers = set()
             # TODO - player build orders
@@ -242,8 +249,8 @@ class _DatabaseConnection:
             (board_id, board.get_phase_and_year_string(), board.datafile, board.fish),
         )
         cursor.executemany(
-            "INSERT INTO players (board_id, player_name, color) VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
-            [(board_id, player.name, player.render_color) for player in board.players],
+            "INSERT INTO players (board_id, player_name, color, vassaliser, points) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+            [(board_id, player.name, player.render_color, (None if player.vassilier is None else str(player.vassilier)), player.points) for player in board.players],
         )
 
         # cache = []
