@@ -610,7 +610,6 @@ async def get_scoreboard(ctx: commands.Context, manager: Manager) -> None:
         perms.gm_perms_check(ctx, "get scoreboard")
 
     the_player = perms.get_player_by_context(ctx, manager)
-    print(the_player)
 
     response = ""
     if board.is_chaos():
@@ -786,14 +785,6 @@ async def province_info(ctx: commands.Context, manager: Manager) -> None:
     await send_message_and_file(channel=ctx.channel,
                                 title=province.name,
                                 message=out)
-
-async def meow(ctx: commands.Context, manager: Manager):
-    board = manager.get_board(ctx.guild.id)
-    for player in board.players:
-        channel = await get_channel_by_player(player, ctx, manager)
-        if not channel:
-            await send_message_and_file(channel=ctx.channel,
-                        title=f"Could not find channel for {player.name}")
 
 async def player_info(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)

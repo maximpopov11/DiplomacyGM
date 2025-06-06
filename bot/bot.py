@@ -352,13 +352,6 @@ async def info(ctx: commands.Context) -> None:
 async def province_info(ctx: commands.Context) -> None:
     await command.province_info(ctx, manager)
 
-@bot.command(
-    brief="meow",
-)
-async def meow(ctx: commands.Context) -> None:
-    await command.meow(ctx, manager)
-
-
 
 @bot.command(
     brief="outputs information about a specific player",
