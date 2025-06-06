@@ -109,7 +109,7 @@ async def on_command_error(ctx, error):
             logger.log(
                 logging.ERROR,
                 f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
-                f"errored in {time_spent}s"
+                f"errored in {time_spent}s\n"
             )
             await send_message_and_file(channel=ctx.channel, message=str(error), embed_colour=ERROR_COLOUR)
 

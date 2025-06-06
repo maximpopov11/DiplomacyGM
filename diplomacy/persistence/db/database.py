@@ -18,6 +18,7 @@ from diplomacy.persistence.order import (
     RetreatMove,
     Build,
     Disband,
+    Vassal
 )
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType, Unit
@@ -402,8 +403,20 @@ class _DatabaseConnection:
                     getattr(build_order, "unit_type", None) == UnitType.ARMY,
                 )
                 for player in players
-                for build_order in player.build_orders
+                for build_order in player.build_orders if isinstance(build_order, (Build, Disband))
             ],
+        )
+        cursor.executemany(
+            "INSERT INTO vassal_orders (board_id, phase, player, target_player) VALUES (?, ?, ?, ?) ",
+            [
+                (
+                    board.board_id,
+                    board.get_phase_and_year_string(),
+                    player.name,
+                    build_order.player.name
+                )
+                for build_order in player.build_orders if isinstance(build_order, ())
+            ]
         )
         cursor.close()
         self._connection.commit()

@@ -140,3 +140,14 @@ class Disband(PlayerOrder):
 
     def __str__(self):
         return f"Disband {self.location}"
+
+
+class Vassal(Order):
+    """Either liege or vassal."""
+
+    def __init__(self, player: Player):
+        super().__init__()
+        self.player = player
+
+    def __str__(self):
+        return f"Vassal {self.player}"

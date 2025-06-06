@@ -61,4 +61,14 @@ CREATE TABLE IF NOT EXISTS builds(
     FOREIGN KEY (board_id, phase) REFERENCES boards (board_id, phase),
     FOREIGN KEY (board_id, player) REFERENCES players (board_id, player_name),
     FOREIGN KEY (board_id, phase, location) REFERENCES provinces (board_id, phase, province_name)
-)
+);
+
+CREATE TABLE IF NOT EXISTS vassal_orders (
+    board_id int,
+    phase text,
+    player text,
+    target_player text,
+    PRIMARY KEY (board_id, phase, player, target_player),
+    FOREIGN KEY (board_id, player) REFERENCES players (board_id, player),
+    FOREIGN KEY (board_id, target_player) REFERENCES players (board_id, player)
+);
