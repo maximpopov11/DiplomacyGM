@@ -1237,7 +1237,7 @@ async def nick(ctx: commands.Context, manager: Manager) -> None:
     if name == None:
         name = ctx.author.name
     if ']' in name:
-        prefix, name = name.split('] ', 1)
+        prefix = name.split('] ', 1)[0]
         prefix = prefix + '] '
     else:
         prefix = ''
