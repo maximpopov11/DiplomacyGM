@@ -302,10 +302,13 @@ async def scoreboard(ctx: commands.Context) -> None:
     * set_player_color <player_name> <hex_code>
     * create_unit {A, F} <player_name> <province_name>
     * create_dislodged_unit {A, F} <player_name> <province_name> <retreat_option1> <retreat_option2>...
+    * delete_dislodged_unit <province_name>
     * delete_unit <province_name>
     * move_unit <province_name> <province_name>
     * dislodge_unit <province_name> <retreat_option1> <retreat_option2>...
-    * make_units_claim_provinces {True|(False) - whether or not to claim SCs}""",
+    * make_units_claim_provinces {True|(False) - whether or not to claim SCs}
+    * set_player_points <player_name> <integer>
+    """,
 )
 async def edit(ctx: commands.Context) -> None:
     await command.edit(ctx, manager)
@@ -348,6 +351,7 @@ async def info(ctx: commands.Context) -> None:
 )
 async def province_info(ctx: commands.Context) -> None:
     await command.province_info(ctx, manager)
+
 
 @bot.command(
     brief="outputs information about a specific player",

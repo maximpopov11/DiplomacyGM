@@ -288,8 +288,6 @@ class Mapper:
                 color = player.render_color
             self.player_colors[player.name] = color
         
-        print(self.player_colors)
-
         neutral_colors = self.board.data["svg config"]["neutral"]
         if isinstance(neutral_colors, str):
             self.neutral_color = neutral_colors
@@ -361,8 +359,6 @@ class Mapper:
         else:
             players = self.board.get_players_by_score()
 
-
-        # FIXME don't be hacky
         if not "no coring" in self.board.data.get("adju flags", []):
             for power_element in all_power_banners_element:
                 for i, player in enumerate(players):
@@ -376,7 +372,8 @@ class Mapper:
                             power_element[5][0].text = "???"
                         break
         else:
-            for i, player in enumerate(self.board.get_players_by_score()):
+            #FIXME only sorts by points right now
+            for i, player in enumerate(self.board.get_players_by_points()):
                 if i >= len(self.scoreboard_power_locations):
                     break
                 for power_element in all_power_banners_element:
@@ -385,8 +382,8 @@ class Mapper:
                         self.color_element(power_element[0], player.render_color)
                         power_element[1][0].text = player.name
                         power_element.set("transform", self.scoreboard_power_locations[i])
-                        power_element[5][0].text = str(len(player.centers))
-                        power_element[6][0].text = "0"
+                        power_element[4][0].text = str(len(player.centers))
+                        power_element[5][0].text = str(player.points)
                         break       
 
     def _draw_side_panel_date(self, svg: ElementTree) -> None:

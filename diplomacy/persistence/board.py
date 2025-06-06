@@ -47,6 +47,9 @@ class Board:
     def get_players_by_score(self) -> list[Player]:
         return sorted(self.players, key=lambda sort_player: sort_player.score(), reverse=True)
 
+    def get_players_by_points(self) -> list[Player]:
+        return sorted(self.players, key=lambda sort_player: (-sort_player.points, sort_player.name.lower()), reverse=False)
+
     # TODO: this can be made faster if necessary
     def get_province(self, name: str) -> Province:
         province, _ = self.get_province_and_coast(name)

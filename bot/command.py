@@ -17,7 +17,7 @@ import bot.perms as perms
 from bot.config import is_bumble, temporary_bumbles, ERROR_COLOUR
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
-from bot.utils import (get_filtered_orders, get_orders,
+from bot.utils import (get_channel_by_player, get_filtered_orders, get_orders,
                        get_orders_log, get_player_by_channel, send_message_and_file,
                        get_role_by_player, log_command, fish_pop_model)
 from diplomacy.adjudicator.utils import svg_to_png
@@ -504,6 +504,7 @@ async def view_current(player: Player | None, ctx: commands.Context, manager: Ma
         else:
             file, file_name = manager.draw_fow_current_map(ctx.guild.id, player, color_mode)
     except Exception as err:
+        logger.error(err, exc_info=True)
         log_command(logger, ctx, message=f"Failed to generate map for an unknown reason", level=logging.ERROR)
         await send_message_and_file(channel=ctx.channel,
                                     title="Unknown Error: Please contact your local bot dev",
@@ -608,17 +609,50 @@ async def get_scoreboard(ctx: commands.Context, manager: Manager) -> None:
     if board.fow:
         perms.gm_perms_check(ctx, "get scoreboard")
 
+    the_player = perms.get_player_by_context(ctx, manager)
+
     response = ""
-    for player in board.get_players_by_score():
+    if board.is_chaos():
+        scoreboard_rows = []
 
-        if (player_role := get_role_by_player(player, ctx.guild.roles)) is not None:
-            player_name = player_role.mention
-        else:
-            player_name = player.name
+        latest_index = -1
+        latest_points = float("inf")
 
-        response += (f"\n**{player_name}**: "
-                     f"{len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}"
-                     f"{len(player.centers) - len(player.units)}) [{round(player.score()*100, 1)}%]")
+        for i, player in enumerate(board.get_players_by_points()):
+            points = player.points
+
+            if points < latest_points:
+                latest_index = i
+                latest_points = points
+
+            if i <= 25 or player == the_player:
+                scoreboard_rows.append((latest_index+1, player))
+            elif the_player == None:
+                break
+            elif the_player == player:
+                scoreboard_rows.append((latest_index+1, player))
+                break
+
+        index_length = len(str(scoreboard_rows[-1][0]))
+        points_length = len(str(scoreboard_rows[0][1]))
+
+        for index, player in scoreboard_rows:
+            response += (f"\n\#{index : >{index_length}} | {player.points : <{points_length}} | **{player.name}**: "
+                        f"{len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}"
+                        f"{len(player.centers) - len(player.units)})")
+    else:
+        response = ""
+        for player in board.get_players_by_score():
+
+            if (player_role := get_role_by_player(player, ctx.guild.roles)) is not None:
+                player_name = player_role.mention
+            else:
+                player_name = player.name
+
+            response += (f"\n**{player_name}**: "
+                        f"{len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}"
+                        f"{len(player.centers) - len(player.units)}) [{round(player.score()*100, 1)}%]")
+
     log_command(logger, ctx, message="Generated scoreboard")
     await send_message_and_file(channel=ctx.channel,
                                 title=f"{board.phase.name}" + " " + f"{board.get_year_str()}",
@@ -716,7 +750,7 @@ async def province_info(ctx: commands.Context, manager: Manager) -> None:
 
     # FOW permissions
     if board.fow:
-        player = perms.get_player_by_context(ctx, manager, "get province info")
+        player = perms.require_player_by_context(ctx, manager, "get province info")
         if player and not province in board.get_visible_provinces(player):
             log_command(logger, ctx, message=f"Province `{province_name}` hidden by fow to player")
             await send_message_and_file(channel=ctx.channel,
@@ -752,7 +786,6 @@ async def province_info(ctx: commands.Context, manager: Manager) -> None:
                                 title=province.name,
                                 message=out)
 
-
 async def player_info(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
 
@@ -768,11 +801,14 @@ async def player_info(ctx: commands.Context, manager: Manager) -> None:
                                     title="No province given",
                                     message="Usage: .province_info <player>")
         return
-    player: Player = board.get_player(player_name)
+
+    # HACK: chaos has same name of players as provinces so we exploit that    
+    province, _ = board.get_province_and_coast(player_name)
+    player: Player = board.get_player(province.name.lower())
     if player is None:
         log_command(logger, ctx, message=f"Player `{player}` not found")
         await send_message_and_file(channel=ctx.channel,
-                                    title=f"Could not find province {player_name}")
+                                    title=f"Could not find player {player_name}")
         return
 
     # FOW permissions
@@ -803,8 +839,6 @@ async def player_info(ctx: commands.Context, manager: Manager) -> None:
 @perms.player("view visible provinces")
 async def visible_provinces(player: Player | None, ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
-
-
 
     if not player or not board.fow:
         log_command(logger, ctx, message=f"No fog of war game")
