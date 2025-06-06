@@ -6,7 +6,19 @@ from bot.utils import is_gm, is_gm_channel, get_player_by_role, is_player_channe
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
 
-def get_player_by_context(ctx: commands.Context, manager: Manager, description: str):
+def get_player_by_context(ctx: commands.Context, manager: Manager):
+    #FIXME cleaner way of doing this
+    board = manager.get_board(ctx.guild.id)
+    # return if in order channel
+    weak_channel_checking = "weak channel checking" in board.data.get("flags", [])
+    if board.fow or weak_channel_checking:
+        player = get_player_by_channel(ctx.channel, manager, ctx.guild.id, ignore_catagory=weak_channel_checking)
+    else:
+        player = get_player_by_role(ctx.message.author, manager, ctx.guild.id)
+    
+    return player
+
+def require_player_by_context(ctx: commands.Context, manager: Manager, description: str):
     #FIXME cleaner way of doing this
     board = manager.get_board(ctx.guild.id)
     # return if in order channel
@@ -37,7 +49,7 @@ def player(description: str = "run this command"):
         function: Callable[[Player | None, commands.Context, Manager], tuple[str, str | None]]
     ) -> Callable[[commands.Context, Manager], tuple[str, str | None]]:
         def f(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
-            player = get_player_by_context(ctx, manager, description)
+            player = require_player_by_context(ctx, manager, description)
             return function(player, ctx, manager)
 
         return f

@@ -92,13 +92,30 @@ def get_player_by_channel(channel: commands.Context.channel, manager: Manager, s
     if not name.endswith(config.player_channel_suffix) or ((not ignore_catagory) and not config.is_player_category(channel.category.name)):
         return None
     name = name[: -(len(config.player_channel_suffix))]
-    print(name)
     return get_player_by_name(name, manager, server_id)
+
+#FIXME this is done pretty poorly
+async def get_channel_by_player(player: Player, ctx: commands.Context, manager: Manager) -> GuildChannel:
+    guild = ctx.guild
+    guild_id = guild.id
+    board = manager.get_board(guild_id)
+
+    channel_name = player.name.lower().replace(" ", "-").replace("\'", "").replace(".", "") + config.player_channel_suffix
+
+    for category in guild.categories:
+        if not config.is_player_category(category.name) and not board.is_chaos():
+            continue
+
+        for channel in category.channels:
+            if channel.name == channel_name:
+                return channel
+
+    return None
 
 
 def get_player_by_name(name: str, manager: Manager, server_id: int) -> Player | None:
     for player in manager.get_board(server_id).players:
-        if player.name.lower().replace("-", " ") == name.strip().lower().replace("-", " "):
+        if player.name.lower().replace("-", " ").replace("\'", "").replace(".", "") == name.strip().lower().replace("-", " ").replace("\'", "").replace(".", ""):
             return player
     return None
 

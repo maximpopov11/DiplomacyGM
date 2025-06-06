@@ -21,6 +21,9 @@ _move_unit_str = "move unit"
 _dislodge_unit_str = "dislodge unit"
 _make_units_claim_provinces_str = "make units claim provinces"
 
+# chaos
+_set_player_points_str = "set player points"
+
 
 def parse_edit_state(message: str, board: Board) -> dict[str, ...]:
     invalid: list[tuple[str, Exception]] = []
@@ -90,6 +93,8 @@ def _parse_command(command: str, board: Board) -> None:
         _make_units_claim_provinces(keywords, board)
     elif command_type == _delete_dislodged_unit_str:
         _delete_dislodged_unit(keywords, board)
+    elif command_type == _set_player_points_str:
+        _set_player_points(keywords, board)
     else:
         raise RuntimeError(f"No command key phrases found")
 
@@ -280,7 +285,7 @@ def _dislodge_unit(keywords: list[str], board: Board) -> None:
         raise RuntimeError("Cannot create a dislodged unit in move phase")
 
 
-def _make_units_claim_provinces(keywords, board):
+def _make_units_claim_provinces(keywords: list[str], board: Board) -> None:
     claim_centers = False
     if keywords:
         claim_centers = keywords[0].lower() == "true"
@@ -291,3 +296,15 @@ def _make_units_claim_provinces(keywords, board):
                 "UPDATE provinces SET owner=? WHERE board_id=? and phase=? and province_name=?",
                 (unit.player.name, board.board_id, board.get_phase_and_year_string(), unit.province.name),
             )
+
+def _set_player_points(keywords: list[str], board: Board) -> None:
+    player = board.get_player(keywords[0])
+    points = int(keywords[1])
+    if points < 0:
+        raise ValueError("Can't have a negative number of points!")
+
+    player.points = points
+    get_connection().execute_arbitrary_sql(
+        "UPDATE players SET points=? WHERE board_id=? and player_name=?",
+        (points, board.board_id, player.name),
+    )
