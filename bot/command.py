@@ -909,6 +909,9 @@ async def publicize(ctx: commands.Context, manager: Manager) -> None:
     spectator_permissions = PermissionOverwrite(view_channel=True, send_messages=False)
     await channel.set_permissions(target=spectator_role, overwrite=spectator_permissions)
 
+    # Update name
+    await channel.edit(name=channel.name.replace("orders", "void"))
+
     await send_message_and_file(channel=channel, message="Finished publicizing void.")
 
 

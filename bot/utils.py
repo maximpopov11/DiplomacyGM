@@ -89,9 +89,18 @@ def get_player_by_channel(channel: commands.Context.channel, manager: Manager, s
         channel = channel.parent
     
     name = channel.name
-    if not name.endswith(config.player_channel_suffix) or ((not ignore_catagory) and not config.is_player_category(channel.category.name)):
+    if (not ignore_catagory) and not config.is_player_category(channel.category.name):
         return None
-    name = name[: -(len(config.player_channel_suffix))]
+    
+    #TODO hacky, allow for renaming to void for chaos
+    if manager.get_board(server_id).is_chaos() and name.endswith("-void"):
+        name = name[: -5]
+    else:
+        if not name.endswith(config.player_channel_suffix):
+            return
+        
+        name = name[: -(len(config.player_channel_suffix))]
+
     return manager.get_board(server_id).get_cleaned_player(name)
 
 #FIXME this is done pretty poorly
