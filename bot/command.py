@@ -8,7 +8,7 @@ from typing import Callable
 from scipy.integrate import odeint
 
 from black.trans import defaultdict
-from discord import CategoryChannel, Role, HTTPException, NotFound, TextChannel
+from discord import CategoryChannel, Member, Role, HTTPException, NotFound, TextChannel
 from discord import PermissionOverwrite
 from discord.ext import commands
 
@@ -637,7 +637,7 @@ async def get_scoreboard(ctx: commands.Context, manager: Manager) -> None:
         points_length = len(str(scoreboard_rows[0][1]))
 
         for index, player in scoreboard_rows:
-            response += (f"\n\#{index : >{index_length}} | {player.points : <{points_length}} | **{player.name}**: "
+            response += (f"\n\\#{index : >{index_length}} | {player.points : <{points_length}} | **{player.name}**: "
                         f"{len(player.centers)} ({'+' if len(player.centers) - len(player.units) >= 0 else ''}"
                         f"{len(player.centers) - len(player.units)})")
     else:
@@ -989,7 +989,7 @@ async def publish_fow_order_logs(ctx: commands.Context, manager: Manager):
 async def ping_players(ctx: commands.Context, manager: Manager) -> None:
     perms.gm_perms_check(ctx, "ping players")
 
-    player_category = None
+    player_categories: list[CategoryChannel] = []
 
     timestamp = re.match(r"<t:(\d+):[a-zA-Z]>", ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip())
     if timestamp:
@@ -1000,122 +1000,145 @@ async def ping_players(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(guild_id)
 
     for category in guild.categories:
-        if config.is_player_category(category.name):
-            player_category = category
-            break
+        # TODO hacky
+        if config.is_player_category(category.name) or (board.is_chaos() and "Order" in category.name):
+            player_categories.append(category)
 
-    if not player_category:
+    if len(player_categories) == 0:
         log_command(logger, ctx, message=f"No player category found")
         await send_message_and_file(channel=ctx.channel,
                                     message="No player category found",
                                     embed_colour=ERROR_COLOUR)
         return
 
-    name_to_player: dict[str, Player] = dict()
-    player_to_role: dict[Player | None, Role] = dict()
-    for player in board.players:
-        name_to_player[player.name.lower()] = player
-    
-    player_roles: set[Role] = set()
+    # find player roles
+    if not board.is_chaos():
+        name_to_player: dict[str, Player] = dict()
+        player_to_role: dict[Player | None, Role] = dict()
+        for player in board.players:
+            name_to_player[player.name.lower()] = player
+        
+        player_roles: set[Role] = set()
 
-    for role in guild.roles:
-        if config.is_player_role(role.name):
-            player_roles.add(role)
+        for role in guild.roles:
+            if config.is_player_role(role.name):
+                player_roles.add(role)
 
-        player = name_to_player.get(role.name.lower())
-        if player:
-            player_to_role[player] = role
+            player = name_to_player.get(role.name.lower())
+            if player:
+                player_to_role[player] = role
 
-    if len(player_roles) == 0:
-        log_command(logger, ctx, message=f"No player role found")
-        await send_message_and_file(channel=ctx.channel,
-                                    message="No player role found",
-                                    embed_colour=ERROR_COLOUR)
-        return
+        if len(player_roles) == 0:
+            log_command(logger, ctx, message=f"No player role found")
+            await send_message_and_file(channel=ctx.channel,
+                                        message="No player role found",
+                                        embed_colour=ERROR_COLOUR)
+            return
 
     response = None
     pinged_players = 0
+    failed_players = []
 
-    for channel in player_category.channels:
-        player = get_player_by_channel(channel, manager, guild.id)
+    for player_category in player_categories:
+        for channel in player_category.channels:
+            player = get_player_by_channel(channel, manager, guild.id, ignore_catagory=board.is_chaos())
 
-        if not player:
-            continue
+            if not player:
+                await send_message_and_file(channel=ctx.channel,
+                                            title=f"Couldn't find player for {channel}")
+                continue
 
-        role = player_to_role.get(player)
-        if not role:
-            log_command(f"Missing player role for player {player.name} in guild {guild_id}", level=logging.WARN)
-            continue
+            if not board.is_chaos():
+                role = player_to_role.get(player)
+                if not role:
+                    log_command(f"Missing player role for player {player.name} in guild {guild_id}", level=logging.WARN)
+                    continue
 
-        # Find users which have a player role to not ping spectators
-        users = set(filter(lambda m: len(set(m.roles) & player_roles) > 0, role.members))
-
-        if len(users) == 0:
-            continue
-
-        if phase.is_builds(board.phase):
-            count = len(player.centers) - len(player.units)
-
-            current = 0
-            has_disbands = False
-            has_builds = False
-            for order in player.build_orders:
-                if isinstance(order, Disband):
-                    current -= 1
-                    has_disbands = True
-                elif isinstance(order, Build):
-                    current += 1
-                    has_builds = True
-
-            difference = abs(current-count)
-            if difference != 1:
-                order_text = "orders"
+                # Find users which have a player role to not ping spectators
+                users = set(filter(lambda m: len(set(m.roles) & player_roles) > 0, role.members))
             else:
-                order_text = "order"
+                users = set()
+                # Find users with access to this channel
+                for overwritter, permission in channel.overwrites.items():
+                    if isinstance(overwritter, Member):
+                        if permission.view_channel:
+                            users.add(overwritter)
+                        pass
 
-            if has_builds and has_disbands:
-                response = f"Hey {''.join([u.mention for u in users])}, you have both build and disband orders. Please get this looked at."
-            elif count >= 0:
-                available_centers = [center for center in player.centers if center.unit is None and center.core == player]
-                available = min(len(available_centers), count)
+            if len(users) == 0:
+                failed_players.append(player)
+                continue
 
-                difference = abs(current - available)
-                if current > available:
-                    response = f"Hey {''.join([u.mention for u in users])}, you have {difference} more build {order_text} than possible. Please get this looked at."
-                elif current < available:
-                    response = f"Hey {''.join([u.mention for u in users])}, you have {difference} less build {order_text} than necessary. Make sure that you want to waive."
-            elif count < 0:
-                if current < count:
-                    response = f"Hey {''.join([u.mention for u in users])}, you have {difference} more disband {order_text} than necessary. Please get this looked at."
-                elif current > count:
-                    response = f"Hey {''.join([u.mention for u in users])}, you have {difference} less disband {order_text} than required. Please get this looked at."
-        else:
-            if phase.is_retreats(board.phase):
-                in_moves = lambda u: u == u.province.dislodged_unit
-            else:
-                in_moves = lambda _: True
-
-            missing = [unit for unit in player.units if unit.order is None and in_moves(unit)]
-            if len(missing) != 1:
-                unit_text = "units"
-            else:
-                unit_text = "unit"
-
-            if missing:
-                response = f"Hey **{''.join([u.mention for u in users])}**, you are missing moves for the following {len(missing)} {unit_text}:"
-                for unit in sorted(missing, key=lambda _unit: _unit.province.name):
-                    response += f"\n{unit}"
-
-        if response:
             pinged_players += 1
-            if timestamp:
-                response += f"\n The orders deadline is {timestamp}."
-            await channel.send(response)
-            response = None
 
-    log_command(logger, ctx, message=f"Pinged {pinged_players} players")
-    await send_message_and_file(channel=ctx.channel,
-                                title=f"Pinged {pinged_players} players")
+            if phase.is_builds(board.phase):
+                count = len(player.centers) - len(player.units)
+
+                current = 0
+                has_disbands = False
+                has_builds = False
+                for order in player.build_orders:
+                    if isinstance(order, Disband):
+                        current -= 1
+                        has_disbands = True
+                    elif isinstance(order, Build):
+                        current += 1
+                        has_builds = True
+
+                difference = abs(current-count)
+                if difference != 1:
+                    order_text = "orders"
+                else:
+                    order_text = "order"
+
+                if has_builds and has_disbands:
+                    response = f"Hey {''.join([u.mention for u in users])}, you have both build and disband orders. Please get this looked at."
+                elif count >= 0:
+                    available_centers = [center for center in player.centers if center.unit is None and center.core == player]
+                    available = min(len(available_centers), count)
+
+                    difference = abs(current - available)
+                    if current > available:
+                        response = f"Hey {''.join([u.mention for u in users])}, you have {difference} more build {order_text} than possible. Please get this looked at."
+                    elif current < available:
+                        response = f"Hey {''.join([u.mention for u in users])}, you have {difference} less build {order_text} than necessary. Make sure that you want to waive."
+                elif count < 0:
+                    if current < count:
+                        response = f"Hey {''.join([u.mention for u in users])}, you have {difference} more disband {order_text} than necessary. Please get this looked at."
+                    elif current > count:
+                        response = f"Hey {''.join([u.mention for u in users])}, you have {difference} less disband {order_text} than required. Please get this looked at."
+            else:
+                if phase.is_retreats(board.phase):
+                    in_moves = lambda u: u == u.province.dislodged_unit
+                else:
+                    in_moves = lambda _: True
+
+                missing = [unit for unit in player.units if unit.order is None and in_moves(unit)]
+                if len(missing) != 1:
+                    unit_text = "units"
+                else:
+                    unit_text = "unit"
+
+                if missing:
+                    response = f"Hey **{''.join([u.mention for u in users])}**, you are missing moves for the following {len(missing)} {unit_text}:"
+                    for unit in sorted(missing, key=lambda _unit: _unit.province.name):
+                        response += f"\n{unit}"
+
+            if response:
+                pinged_players += 1
+                if timestamp:
+                    response += f"\n The orders deadline is {timestamp}."
+                await channel.send(response)
+                response = None
+
+        log_command(logger, ctx, message=f"Pinged {pinged_players} players")
+        await send_message_and_file(channel=ctx.channel,
+                                    title=f"Pinged {pinged_players} players")
+
+        if len(failed_players) > 0:
+            await send_message_and_file(channel=ctx.channel,
+                                    title=f"Failed to ping the following players: {",".join(failed_players)}")
+
 
 async def archive(ctx: commands.Context, _: Manager) -> None:
     perms.gm_perms_check(ctx, "archive")

@@ -1,10 +1,6 @@
 import datetime
-import asyncio
 import io
 import logging
-import os
-import time
-import zipfile
 import discord
 from typing import List, Tuple
 from discord import Embed, Colour, Guild, Message
@@ -92,7 +88,7 @@ def get_player_by_channel(channel: commands.Context.channel, manager: Manager, s
     if not name.endswith(config.player_channel_suffix) or ((not ignore_catagory) and not config.is_player_category(channel.category.name)):
         return None
     name = name[: -(len(config.player_channel_suffix))]
-    return get_player_by_name(name, manager, server_id)
+    return manager.get_board(server_id).get_cleaned_player(name)
 
 #FIXME this is done pretty poorly
 async def get_channel_by_player(player: Player, ctx: commands.Context, manager: Manager) -> GuildChannel:

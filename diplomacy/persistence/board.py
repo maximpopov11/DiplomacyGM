@@ -2,6 +2,7 @@ import re
 import logging
 import time
 
+from bot.sanitize import sanitize_name
 from diplomacy.persistence.phase import Phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.province import Province, ProvinceType, Coast, Location, get_adjacent_provinces
@@ -33,6 +34,8 @@ class Board:
 
         # store as lower case for user input purposes
         self.name_to_player: dict[str, Player] = {player.name.lower(): player for player in self.players}
+        # remove periods and apostrophes
+        self.cleaned_name_to_player: dict[str, Player] = {sanitize_name(player.name.lower()): player for player in self.players}
         self.name_to_province: dict[str, Province] = {}
         self.name_to_coast: dict[str, Coast] = {}
         for location in self.provinces:
@@ -42,6 +45,10 @@ class Board:
 
     def get_player(self, name: str) -> Player:
         return self.name_to_player.get(name.lower())
+
+    def get_cleaned_player(self, name: str) -> Player:
+        return self.cleaned_name_to_player.get(sanitize_name(name.lower()))
+
 
     # TODO: break ties in a fixed manner
     def get_players_by_score(self) -> list[Player]:
