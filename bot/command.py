@@ -1129,13 +1129,13 @@ async def ping_players(ctx: commands.Context, manager: Manager) -> None:
                 await channel.send(response)
                 response = None
 
-        log_command(logger, ctx, message=f"Pinged {pinged_players} players")
-        await send_message_and_file(channel=ctx.channel,
-                                    title=f"Pinged {pinged_players} players")
+    log_command(logger, ctx, message=f"Pinged {pinged_players} players")
+    await send_message_and_file(channel=ctx.channel,
+                                title=f"Pinged {pinged_players} players")
 
-        if len(failed_players) > 0:
-            await send_message_and_file(channel=ctx.channel,
-                                    title=f"Failed to find the following players: {','.join(failed_players)}")
+    if len(failed_players) > 0:
+        await send_message_and_file(channel=ctx.channel,
+                                title=f"Failed to find the following players: {','.join(failed_players)}")
 
 
 async def archive(ctx: commands.Context, _: Manager) -> None:
