@@ -1069,8 +1069,6 @@ async def ping_players(ctx: commands.Context, manager: Manager) -> None:
                 failed_players.append(player)
                 continue
 
-            pinged_players += 1
-
             if phase.is_builds(board.phase):
                 count = len(player.centers) - len(player.units)
 
