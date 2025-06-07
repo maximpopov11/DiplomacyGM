@@ -364,6 +364,9 @@ async def player_info(ctx: commands.Context) -> None:
 async def visible_info(ctx: commands.Context) -> None:
     await command.visible_provinces(ctx, manager)
 
+@bot.command(brief="publicize void for chaos")
+async def publicize(ctx: commands.Context) -> None:
+    await command.publicize(ctx, manager)
 
 @bot.command(brief="outputs all provinces per owner")
 async def all_province_data(ctx: commands.Context) -> None:

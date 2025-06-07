@@ -8,7 +8,7 @@ from typing import Callable
 from scipy.integrate import odeint
 
 from black.trans import defaultdict
-from discord import CategoryChannel, Member, Role, HTTPException, NotFound, TextChannel
+from discord import CategoryChannel, Member, Role, HTTPException, NotFound, TextChannel, Thread
 from discord import PermissionOverwrite
 from discord.ext import commands
 
@@ -18,7 +18,7 @@ from bot.config import is_bumble, temporary_bumbles, ERROR_COLOUR
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
 from bot.utils import (get_channel_by_player, get_filtered_orders, get_orders,
-                       get_orders_log, get_player_by_channel, send_message_and_file,
+                       get_orders_log, get_player_by_channel, is_gm, send_message_and_file,
                        get_role_by_player, log_command, fish_pop_model)
 from diplomacy.adjudicator.utils import svg_to_png
 from diplomacy.persistence import phase
@@ -852,6 +852,64 @@ async def visible_provinces(player: Player | None, ctx: commands.Context, manage
     await send_message_and_file(channel=ctx.channel,
                                 message=", ".join([x.name for x in visible_provinces]))
     return
+
+
+async def publicize(ctx: commands.Context, manager: Manager) -> None:
+    if not is_gm(ctx.message.author):
+        raise PermissionError(f"You cannot publicize a void because you are not a GM.")
+
+    channel = ctx.channel
+    board = manager.get_board(ctx.guild.id)
+
+    if not board.is_chaos():
+        await send_message_and_file(channel=channel,
+                                    message="This command only works for chaos games.",
+                                    embed_colour=ERROR_COLOUR)
+
+    player = get_player_by_channel(channel, manager, ctx.guild.id, ignore_catagory=True)
+
+    #TODO hacky
+    users = []
+    user_permissions: list[tuple[Member, PermissionOverwrite]] = []
+    # Find users with access to this channel
+    for overwritter, user_permission in channel.overwrites.items():
+        if isinstance(overwritter, Member):
+            if user_permission.view_channel:
+                users.append(overwritter)
+                user_permissions.append((overwritter, user_permission))
+
+    #TODO don't hardcode
+    staff_role = None
+    spectator_role = None
+    for role in ctx.guild.roles:
+        if role.name == "World Chaos Staff":
+            staff_role = role
+        elif role.name == "Spectators":
+            spectator_role = role
+
+    if not staff_role or not spectator_role:
+        return
+
+    if not player or len(users) == 0:
+        await send_message_and_file(channel=ctx.channel,
+                                    message="Can't find the applicable user.",
+                                    embed_colour=ERROR_COLOUR)
+        return
+
+    # Create Thread
+    thread: Thread = await channel.create_thread(name=f"{player.name.capitalize()} Orders", reason=f"Creating Orders for {player.name}", invitable=False)
+    await thread.send(f"{''.join([u.mention for u in users])} | {staff_role.mention}")
+
+    # Allow for sending messages in thread
+    for user, permission in user_permissions:
+        permission.send_messages_in_threads = True
+        await channel.set_permissions(target=user, overwrite=permission)
+
+    # Add spectators
+    spectator_permissions = PermissionOverwrite(view_channel=True, send_messages=False)
+    await channel.set_permissions(target=spectator_role, overwrite=spectator_permissions)
+
+    await send_message_and_file(channel=channel, message="Finished publicizing void.")
 
 
 async def all_province_data(ctx: commands.Context, manager: Manager) -> None:

@@ -121,7 +121,7 @@ def _set_phase(keywords: list[str], board: Board) -> None:
 
 def _set_province_core(keywords: list[str], board: Board) -> None:
     province = board.get_province(keywords[0])
-    player = board.get_cleaned_player(keywords[1])
+    player = board.get_player(keywords[1])
     province.core = player
     get_connection().execute_arbitrary_sql(
         "UPDATE provinces SET core=? WHERE board_id=? and phase=? and province_name=?",
@@ -131,7 +131,7 @@ def _set_province_core(keywords: list[str], board: Board) -> None:
 
 def _set_province_half_core(keywords: list[str], board: Board) -> None:
     province = board.get_province(keywords[0])
-    player = board.get_cleaned_player(keywords[1])
+    player = board.get_player(keywords[1])
     province.half_core = player
     get_connection().execute_arbitrary_sql(
         "UPDATE provinces SET half_core=? WHERE board_id=? and phase=? and province_name=?",
@@ -140,7 +140,7 @@ def _set_province_half_core(keywords: list[str], board: Board) -> None:
 
 
 def _set_player_color(keywords: list[str], board: Board) -> None:
-    player = board.get_cleaned_player(keywords[0])
+    player = board.get_player(keywords[0])
     color = keywords[1].lower()
     if not len(color) == 6 or not all(c in string.hexdigits for c in color):
         raise ValueError(f"Unknown hexadecimal color: {color}")
@@ -154,7 +154,7 @@ def _set_player_color(keywords: list[str], board: Board) -> None:
 
 def _set_province_owner(keywords: list[str], board: Board) -> None:
     province = board.get_province(keywords[0])
-    player = board.get_cleaned_player(keywords[1])
+    player = board.get_player(keywords[1])
     board.change_owner(province, player)
     get_connection().execute_arbitrary_sql(
         "UPDATE provinces SET owner=? WHERE board_id=? and phase=? and province_name=?",
@@ -164,7 +164,7 @@ def _set_province_owner(keywords: list[str], board: Board) -> None:
 
 def _create_unit(keywords: list[str], board: Board) -> None:
     unit_type = get_unit_type(keywords[0])
-    player = board.get_cleaned_player(keywords[1])
+    player = board.get_player(keywords[1])
     province, coast = board.get_province_and_coast(keywords[2])
     unit = board.create_unit(unit_type, player, province, coast, None)
     get_connection().execute_arbitrary_sql(
@@ -187,7 +187,7 @@ def _create_unit(keywords: list[str], board: Board) -> None:
 def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
     if phase.is_retreats(board.phase):
         unit_type = get_unit_type(keywords[0])
-        player = board.get_cleaned_player(keywords[1])
+        player = board.get_player(keywords[1])
         province, coast = board.get_province_and_coast(keywords[2])
         retreat_options = set([board.get_province(province_name) for province_name in keywords[3:]])
         if not all(retreat_options):
@@ -298,7 +298,7 @@ def _make_units_claim_provinces(keywords: list[str], board: Board) -> None:
             )
 
 def _set_player_points(keywords: list[str], board: Board) -> None:
-    player = board.get_cleaned_player(keywords[0])
+    player = board.get_player(keywords[0])
     points = int(keywords[1])
     if points < 0:
         raise ValueError("Can't have a negative number of points!")
