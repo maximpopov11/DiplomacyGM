@@ -1092,7 +1092,7 @@ async def ping_players(ctx: commands.Context, manager: Manager) -> None:
                 if has_builds and has_disbands:
                     response = f"Hey {''.join([u.mention for u in users])}, you have both build and disband orders. Please get this looked at."
                 elif count >= 0:
-                    available_centers = [center for center in player.centers if center.unit is None and center.core == player]
+                    available_centers = [center for center in player.centers if center.unit is None and (center.core == player or "build anywhere" in board.data.get("adju flags", []))]
                     available = min(len(available_centers), count)
 
                     difference = abs(current - available)
