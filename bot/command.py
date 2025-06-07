@@ -1051,7 +1051,7 @@ async def ping_players(ctx: commands.Context, manager: Manager) -> None:
             if not board.is_chaos():
                 role = player_to_role.get(player)
                 if not role:
-                    log_command(f"Missing player role for player {player.name} in guild {guild_id}", level=logging.WARN)
+                    log_command(logger, ctx, message=f"Missing player role for player {player.name} in guild {guild_id}", level=logging.WARN)
                     continue
 
                 # Find users which have a player role to not ping spectators
@@ -1135,7 +1135,7 @@ async def ping_players(ctx: commands.Context, manager: Manager) -> None:
 
     if len(failed_players) > 0:
         await send_message_and_file(channel=ctx.channel,
-                                title=f"Failed to find the following players: {','.join(failed_players)}")
+                                title=f"Failed to find the following players: {','.join([player.name for player in failed_players])}")
 
 
 async def archive(ctx: commands.Context, _: Manager) -> None:
