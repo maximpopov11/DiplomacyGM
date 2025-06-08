@@ -33,7 +33,7 @@ def normalize_location(unit_type: UnitType, location: Location):
 class TreeToOrder(Transformer):
     def set_state(self, board: Board, player_restriction: Player | None):
         self.board = board
-        self.flags = board.data.get("adju config", [])
+        self.flags = board.data.get("adju flags", [])
         self.player_restriction = player_restriction
         
     def province(self, s) -> Location:
