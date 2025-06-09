@@ -254,8 +254,9 @@ async def send_message_and_file(
     if convert_svg and file and file_name:
         file, file_name = await svg_to_png(file, file_name)
 
+    # Checks embed title and bodies are within limits.
     if fields:
-        for i, field in enumerate(fields):
+        for i, field in reversed(list(enumerate(fields))):
             if len(field[0]) > 256 or len(field[1]) > 1024:
                 title, body = fields.pop(i)
                 if not message:
