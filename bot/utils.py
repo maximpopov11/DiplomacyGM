@@ -55,6 +55,7 @@ def is_admin(author: commands.Context.author) -> bool:
         169995316680982528,     # Bumble
         450636420558618625,     # Flare
         490633966974533640,     # Elle
+        1352388421003251833,    # Chloe
     ]
 
 
@@ -253,8 +254,9 @@ async def send_message_and_file(
     if convert_svg and file and file_name:
         file, file_name = await svg_to_png(file, file_name)
 
+    # Checks embed title and bodies are within limits.
     if fields:
-        for i, field in enumerate(fields):
+        for i, field in reversed(list(enumerate(fields))):
             if len(field[0]) > 256 or len(field[1]) > 1024:
                 title, body = fields.pop(i)
                 if not message:

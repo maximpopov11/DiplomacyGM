@@ -315,7 +315,7 @@ async def announce(ctx: commands.Context, manager: Manager) -> None:
 
 @perms.admin("list servers")
 async def servers(ctx: commands.Context, manager: Manager) -> None:
-    guilds_with_games = {ctx.bot.get_guild(server_id).id for server_id in manager.list_servers()}
+    servers_with_games = manager.list_servers()
     message = ""
     for server in ctx.bot.guilds:
         if server is None:
@@ -329,7 +329,8 @@ async def servers(ctx: commands.Context, manager: Manager) -> None:
             message += f"\n- {server.name} - Could not find a channel for invite"
             continue
 
-        if server.id in guilds_with_games:
+        if server.id in servers_with_games:
+            servers_with_games.remove(server.id)
             board = manager.get_board(server.id)
             board_state = f" - {board.phase.name} {board.get_year_str()}"
         else:
@@ -343,6 +344,11 @@ async def servers(ctx: commands.Context, manager: Manager) -> None:
             message += f"\n- [{server.name}](<{invite.url}>)"
 
         message += board_state
+
+    # Servers with games the bot is not in
+    if servers_with_games:
+        message += f"\n There is a further {len(servers_with_games)} games in servers I am no longer in"
+
 
     log_command(logger, ctx, f"Sent Announcement into {len(ctx.bot.guilds)} servers")
     await send_message_and_file(channel=ctx.channel,
