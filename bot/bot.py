@@ -284,7 +284,8 @@ async def reload(ctx: commands.Context) -> None:
     await command.reload(ctx, manager)
 
 
-@bot.command(brief="Outputs the scoreboard.", description="Outputs the scoreboard.")
+@bot.command(brief="Outputs the scoreboard.", description="""Outputs the scoreboard.
+In Chaos, is shortened and sorted by points, unless "standard" is an argument""")
 async def scoreboard(ctx: commands.Context) -> None:
     await command.get_scoreboard(ctx, manager)
 

@@ -612,7 +612,7 @@ async def get_scoreboard(ctx: commands.Context, manager: Manager) -> None:
     the_player = perms.get_player_by_context(ctx, manager)
 
     response = ""
-    if board.is_chaos():
+    if board.is_chaos() and not "standard" in ctx.message.content:
         scoreboard_rows = []
 
         latest_index = -1

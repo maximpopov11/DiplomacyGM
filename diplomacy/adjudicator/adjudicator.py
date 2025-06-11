@@ -293,6 +293,8 @@ class BuildsAdjudicator(Adjudicator):
                 if available_builds < 0:
                     logger.warning(f"Player {player.name} disbanded less orders than they should have")
 
+            player.points += len(player.centers)
+
         for player in self._board.players:
             player.build_orders = set()
         return self._board

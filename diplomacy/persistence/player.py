@@ -4,10 +4,16 @@ from typing import TYPE_CHECKING
 
 from diplomacy.persistence import order
 
+from enum import Enum
+
 if TYPE_CHECKING:
     from diplomacy.persistence import province
     from diplomacy.persistence import unit
 
+class VassalType(Enum):
+    '''Needed due to ambiguity, especially after fall moves but before fall retreats'''
+    VASSAL = 'vassal'
+    DUAL = 'dual'
 
 class Player:
     def __init__(
