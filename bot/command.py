@@ -1334,3 +1334,29 @@ async def nick(ctx: commands.Context, manager: Manager) -> None:
         raise Exception("A nickname must be at least 1 character")
     await ctx.author.edit(nick=prefix+name)
     return "Nick updated"
+
+class ContainedPrinter:
+    def __init__(self):
+        self.text = ""
+    def __call__(self, *args):
+        self.text += ' '.join(map(str, args)) + '\n'
+    
+
+@perms.admin("Execute arbitrary code")
+async def exec_py(ctx: commands.Context, manager: Manager) -> None:
+    board = manager.get_board(ctx.guild.id)
+    code = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().strip('`')
+
+    embed_print = ContainedPrinter()
+
+    try:
+        exec(code, {"print": embed_print, "board": board})
+    except Exception as e:
+        embed_print('\n' + repr(e))
+
+    await send_message_and_file(channel=ctx.channel, message=embed_print.text)
+    for player in board.players:
+        print(player.points)
+    manager._database.delete_board(board)
+
+    manager._database.save_board(ctx.guild.id, board)

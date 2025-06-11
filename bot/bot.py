@@ -85,7 +85,7 @@ async def after_any_command(ctx: discord.ext.commands.Context):
     )
 
 
-@bot.event
+#@bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
         # we shouldn't do anything if the user says something like "..."
@@ -422,6 +422,10 @@ async def delete_game(ctx: commands.Context) -> None:
 @bot.command(brief="Changes your nickname")
 async def nick(ctx: commands.Context) -> None:
     await command.nick(ctx, manager)
+
+@bot.command(hidden=True)
+async def exec_py(ctx: commands.Context) -> None:
+    await command.exec_py(ctx, manager)
 
 def run():
     token = os.getenv("DISCORD_TOKEN")

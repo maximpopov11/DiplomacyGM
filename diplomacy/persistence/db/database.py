@@ -253,8 +253,12 @@ class _DatabaseConnection:
             (board_id, board.get_phase_and_year_string(), board.datafile, board.fish),
         )
         cursor.executemany(
-            "INSERT INTO players (board_id, player_name, color, liege, points) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
-            [(board_id, player.name, player.render_color, (None if player.liege is None else str(player.liege)), player.points) for player in board.players],
+            "INSERT INTO players (board_id, player_name, color, liege, points) VALUES (?, ?, ?, ?, ?) ON CONFLICT " \
+            "DO UPDATE SET " \
+            "color = ?, " \
+            "liege = ?, " \
+            "points = ?",
+            [(board_id, player.name, player.render_color, (None if player.liege is None else str(player.liege)), player.points, player.render_color, (None if player.liege is None else str(player.liege)), player.points) for player in board.players],
         )
 
         # cache = []
@@ -438,6 +442,9 @@ class _DatabaseConnection:
         cursor.execute(
             "DELETE FROM retreat_options WHERE board_id=? AND phase=?",
             (board.board_id, board.get_phase_and_year_string()),
+        )
+        cursor.execute(
+            "DELETE FROM vassal_orders WHERE board_id=? AND phase=?", (board.board_id, board.get_phase_and_year_string())
         )
         cursor.close()
         self._connection.commit()
