@@ -52,7 +52,7 @@ class Board:
 
     # TODO: break ties in a fixed manner
     def get_players_by_score(self) -> list[Player]:
-        return sorted(self.players, key=lambda sort_player: (sort_player.score(), sort_player.name.lower()))
+        return sorted(self.players, key=lambda sort_player: (-sort_player.score(), sort_player.name.lower()))
 
     def get_players_by_points(self) -> list[Player]:
         return sorted(self.players, key=lambda sort_player: (-sort_player.points, -len(sort_player.centers), sort_player.name.lower()))
