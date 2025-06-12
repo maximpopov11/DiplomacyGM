@@ -1331,7 +1331,9 @@ async def nick(ctx: commands.Context, manager: Manager) -> None:
         prefix = ''
     name = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
     if name == '':
-        raise Exception("A nickname must be at least 1 character")
+        return "A nickname must be at least 1 character"
+    if len(prefix+name) > 32:
+        return "Nicknames cannot be over 32 characters"
     await ctx.author.edit(nick=prefix+name)
     return "Nick updated"
 
