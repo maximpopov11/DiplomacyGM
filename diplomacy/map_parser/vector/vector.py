@@ -4,7 +4,7 @@ import json
 import logging
 import time
 import numpy as np
-from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import Element, tostring
 
 import shapely
 from lxml import etree
@@ -39,12 +39,18 @@ class Parser:
 
         self.layers = self.data["svg config"]
 
+        for layer in ["land_layer", "island_borders", "island_fill_layer", "sea_borders", "province_names", "supply_center_icons", "army", "retreat_army", "fleet", "retreat_fleet"]:
+            if get_svg_element(svg_root, self.layers[layer]) is None:
+                print(f"bad layer: {layer}")
+
+
         self.land_layer: Element = get_svg_element(svg_root, self.layers["land_layer"])
         self.island_layer: Element = get_svg_element(svg_root, self.layers["island_borders"])
         self.island_fill_layer: Element = get_svg_element(svg_root, self.layers["island_fill_layer"])
         self.sea_layer: Element = get_svg_element(svg_root, self.layers["sea_borders"])
         self.names_layer: Element = get_svg_element(svg_root, self.layers["province_names"])
         self.centers_layer: Element = get_svg_element(svg_root, self.layers["supply_center_icons"])
+
         if self.layers["detect_starting_units"]:
             self.units_layer: Element = get_svg_element(svg_root, self.layers["starting_units"])
         else:
@@ -319,10 +325,11 @@ class Parser:
         province_type: ProvinceType,
     ) -> set[Province]:
         provinces = set()
-        prev_names = set()
         for province_data in provinces_layer.getchildren():
             path_string = province_data.get("d")
             if not path_string:
+                print(tostring(province_data))
+                continue
                 raise RuntimeError("Province path data not found")
             translation = TransGL3(provinces_layer) * TransGL3(province_data)
 
@@ -346,6 +353,8 @@ class Parser:
             name = None
             if self.layers["province_labels"]:
                 name = self._get_province_name(province_data)
+                if name == None:
+                    print(tostring(province_data))
 
             province = Province(
                 name,
@@ -570,7 +579,7 @@ class Parser:
         elif color in self.color_to_player:
            return self.color_to_player[color]
         else:
-            raise Exception(f"Unknown player color: {color}")
+            raise Exception(f"Unknown player color: {color} (in object {tostring(element)})")
 
     def _get_unit_type(self, unit_data: Element) -> UnitType:
         if self.data["svg config"]["unit_type_labeled"]:

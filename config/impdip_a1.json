@@ -1,0 +1,341 @@
+{
+    "name": "Imperial Diplomacy A1",
+    "file": "assets/imperial_diplomacy_a1.svg",
+    "svg config": {
+        "land_layer": "layer6",
+        "island_ring_layer": "layer18",
+        "island_fill_layer": "layer17",
+        "island_borders": "layer16",
+        "sea_borders": "layer14",
+        "province_names": "layer1",
+        "supply_center_icons": "layer3",
+        "season": "layer5",
+        "power_banners": "layer13",
+        "starting_units": "layer4",
+        "unit_output": "layer9",
+        "arrow_output": "layer10",
+
+        "army": "g652",
+        "retreat_army": "g652-3",
+        "fleet": "layer15",
+        "retreat_fleet": "layer15-1",
+
+        "detect_starting_units": true,
+        "unit_type_labeled": false,
+
+        "default_sea_color": "d4dae1",
+
+        "unit_labels": true,
+        "province_labels": true,
+        "center_labels": true,
+
+        "unowned_color": "c6b7ab",
+
+        "border_margin_hint": 1,
+
+        "map_width": 4375,
+        "unit_radius": 10,
+        "order_stroke_width": 2,
+        "neutral": "c6b7ab",
+        "neutral_sc": "ffffff",
+        "loc_x_offset": 7.7655,
+        "loc_y_offset": 7.033,
+        "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
+    },
+    "overrides": {
+        "high provinces": {
+            "NAO": {
+                "num": 5,
+                "type": "SEA",
+                "adjacencies": ["SAO1", "SAO2", "SAO3", "SAO4", "SAO5", "Brattahlid", "Robertstorg", "Labrador Sea", "Strait of Belle Isle", "St. Marguerite Baie", "Massachusetts Bay", "Bermuda", "Saragasso Sea", "Cap Verde Basin", "Azores", "Iberian Current", "Rockall Rise", "Greenland Sea"]
+            },
+            "SAO": {
+                "num": 5,
+                "type": "SEA",
+                "adjacencies": ["NAO1", "NAO2", "NAO3", "NAO4", "NAO5", "Cap Verde Basin", "Serra Leoa Rise", "Mande", "Guinea Rise", "Angola Basin", "St. Helena", "Cape Basin", "Lazarev Sea", "Wendell Sea", "Argentine Basin", "Guanabara Bay", "Todos os Santos Bay", "Mauritsstad", "St. Marcos Bay", "Guiana Current", "Saragasso Sea"]
+            },
+            "NPO": {
+                "num": 5,
+                "type": "SEA",
+                "adjacencies": ["SPO1", "SPO2", "SPO3", "SPO4", "SPO5", "Chukchi Sea", "Cascadia Basin", "Windward Shore", "Hawai'i", "Guatemala Basin",  "Solomon Islands", "Dani", "Halmahera Sea", "Philippene Sea", "Kuroshio Current", "Edo", "Tsugaru Strait", "Kuril Sea", "Sea of Okhotsk", "Koryaks"]
+            },
+            "SPO": {
+                "num": 5,
+                "type": "SEA",
+                "adjacencies": ["NPO1", "NPO2", "NPO3", "NPO4", "NPO5", "Guatemala Basin", "Galapagos", "Peru Basin", "Roggeveen Basin", "Chiloe", "Drake Passage", "Davis Sea", "Nova Zeelandia", "Gunai", "Coral Sea", "Solomon Islands"]
+            },
+            "INO": {
+                "num": 5,
+                "type": "SEA",
+                "adjacencies": ["Laccadive Plateau", "Gulf of Mannar", "Ceylon", "Gulf of Ceylon", "Cocos Basin", "Sumatra", "Mentawai Strait", "Timor Sea", "Kimberley", "Great Australian Bight", "Davis Sea", "Crozet Basin", "Mauritius", "Mascarene Sea", "Somali Basin"]
+            }
+        },
+        "provinces": {
+            "Iqualuit": {
+                "adjacencies": ["Nunavut"]
+            },
+            "Nunavut": {
+                "adjacencies": ["Iqualuit"]
+            },
+            "Edinburgh": {
+                "remove_adjacencies": ["Greenland Sea"]
+            },
+            "Greenland Sea": {
+                "remove_adjacencies": ["Edinburgh"]
+            },
+            "Panama": {
+                "coasts": {
+                    "nc": [
+                        "Bay of Panama"
+                    ],
+                    "sc": [
+                        "Colon Ridge"
+                    ]
+                }
+            },
+            "Honduras": {
+                "coasts": {
+                    "nc": [
+                        "Gulf of Honduras",
+                        "Bay of Panama"
+                    ],
+                    "sc": [
+                        "Guatemala Basin",
+                        "Colon Ridge"
+                    ]
+                }
+            },
+            "Yucatan": {
+                "coasts": {
+                    "nc": [
+                        "Bay of Mexico",
+                        "Yucatan Channel"
+                    ],
+                    "sc": [
+                        "Guatemala Basin"
+                    ]
+                }
+            },
+            "Nakhon Si": {
+                "coasts": {
+                    "ec": [
+                        "Gulf of Siam",
+                        "Natuna Sea"
+                    ],
+                    "wc": [
+                        "Malacca Strait"
+                    ]
+                }
+            },
+            "Malay": {
+                "coasts": {
+                    "ec": [
+                        "Natuna Sea",
+                        "Riau Sea"
+                    ],
+                    "wc": [
+                        "Malacca Strait"
+                    ]
+                }
+            },
+            "Pyeongyang": {
+                "coasts": {
+                    "ec": [
+                        "Oriental Sea"
+                    ],
+                    "wc": [
+                        "Beizhili Sea",
+                        "Yellow Sea"
+                    ]
+                }
+            },
+            "Chukchis": {
+                "coasts": {
+                    "ec": [
+                        "Chukchi Sea"
+                    ],
+                    "wc": [
+                        "Sea of Okhotsk"
+                    ]
+                }
+            },
+            "Rome": {
+                "coasts": {
+                    "ec": [
+                        "Adriatic Sea"
+                    ],
+                    "wc": [
+                        "Ligurian Sea",
+                        "Tyrrhenian Sea"
+                    ]
+                }
+            },
+            "NPO1": {
+                "unit_loc": [[3982.726, 874.217]],
+                "retreat_unit_loc": [[3994.726, 886.217]]
+            },
+            "NPO2": {
+                "unit_loc": [[4059.726, 874.217]],
+                "retreat_unit_loc": [[4071.726, 886.217]]
+            },
+            "NPO3": {
+                "unit_loc": [[4136.726, 874.217]],
+                "retreat_unit_loc": [[4148.726, 886.217]]
+            },
+            "NPO4": {
+                "unit_loc": [[4021.226, 942.459]],
+                "retreat_unit_loc": [[4033.226, 954.459]]
+            },
+            "NPO5": {
+                "unit_loc": [[4098.226, 942.401]],
+                "retreat_unit_loc": [[4110.226, 954.401]]
+            },
+            "SPO1": {
+                "unit_loc": [[4061.260, 1509.495]],
+                "retreat_unit_loc": [[4073.260, 1521.495]]
+            },
+            "SPO2": {
+                "unit_loc": [[4138.259, 1509.495]],
+                "retreat_unit_loc": [[4150.259, 1521.495]]
+            },
+            "SPO3": {
+                "unit_loc": [[4215.260, 1510.000]],
+                "retreat_unit_loc": [[4227.260, 1522.000]]
+            },
+            "SPO4": {
+                "unit_loc": [[4099.759, 1577.737]],
+                "retreat_unit_loc": [[4111.759, 1589.737]]
+            },
+            "SPO5": {
+                "unit_loc": [[4176.760, 1577.678]],
+                "retreat_unit_loc": [[4188.760, 1589.678]]
+            },
+            "Chukchi Sea": {
+                "unit_loc": [[28.000, 241.000]],
+                "retreat_unit_loc": [[72.908, 186.392]]
+            }
+        }
+    },
+    "players": {
+        "Abyssinia": {
+            "color": "a88080",
+            "vscc": 28,
+            "iscc": 4
+        },
+        "Ajuuraan": {
+            "color": "587ba7",
+            "vscc": 28,
+            "iscc": 4
+        },
+        "Athapasca": {
+            "color": "e95a94",
+            "vscc": 28,
+            "iscc": 4
+        },
+        "Austria": {
+            "color": "a17555",
+            "vscc": 28,
+            "iscc": 4
+        },
+        "Ayutthaya": {
+            "color": "9d84ae",
+            "vscc": 28,
+            "iscc": 4
+        },
+        "Bornu": {
+            "color": "ffe680",
+            "vscc": 28,
+            "iscc": 4
+        },
+        "England": {
+            "color": "f94455",
+            "vscc": 54,
+            "iscc": 12
+        },
+        "France": {
+            "color": "66a2e3",
+            "vscc": 54,
+            "iscc": 12
+        },
+        "Inuit": {
+            "color": "afc5d8",
+            "vscc": 35,
+            "iscc": 5
+        },
+        "Kongo": {
+            "color": "9f52c4",
+            "vscc": 35,
+            "iscc": 5
+        },
+        "Mapuche-Tehuelche": {
+            "color": "81889d",
+            "vscc": 28,
+            "iscc": 4
+        },
+        "Ming": {
+            "color": "cadd7e",
+            "vscc": 35,
+            "iscc": 5
+        },
+        "Mughal": {
+            "color": "ab9f26",
+            "vscc": 35,
+            "iscc": 5
+        },
+        "Netherlands": {
+            "color": "fc9c23",
+            "vscc": 64,
+            "iscc": 16
+        },
+        "Ottoman": {
+            "color": "a03838",
+            "vscc": 48,
+            "iscc": 10
+        },
+        "Poland-Lithuania": {
+            "color": "e390b3",
+            "vscc": 42,
+            "iscc": 7
+        },
+        "Portugal": {
+            "color": "3c9553",
+            "vscc": 64,
+            "iscc": 16
+        },
+        "Qing": {
+            "color": "f36678",
+            "vscc": 35,
+            "iscc": 5
+        },
+        "Russia": {
+            "color": "556854",
+            "vscc": 48,
+            "iscc": 10
+        },
+        "Safavid": {
+            "color": "5a887f",
+            "vscc": 35,
+            "iscc": 5
+        },
+        "Sioux": {
+            "color": "84b172",
+            "vscc": 35,
+            "iscc": 5
+        },
+        "Spain": {
+            "color": "f0ce48",
+            "vscc": 64,
+            "iscc": 16
+        },
+        "Sweden": {
+            "color": "4e51ba",
+            "vscc": 35,
+            "iscc": 5
+        },
+        "Tokugawa": {
+            "color": "7cdbc3",
+            "vscc": 28,
+            "iscc": 4
+        }
+    }
+}

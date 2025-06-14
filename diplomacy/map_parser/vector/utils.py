@@ -19,15 +19,20 @@ def get_svg_element(svg_root: ElementTree, element_id: str) -> Element:
     except:
         logger.error(f"{element_id} isn't contained in svg_root")
 
-def get_element_color(element: Element) -> str:
+def get_element_color(element: Element, prefix="fill:") -> str:
     style_string = element.get("style")
     if style_string is None:
         return None
     style = style_string.split(";")
     for value in style:
-        prefix = "fill:#"
         if value.startswith(prefix):
-            return value[len(prefix) :]
+            if value == "none" and prefix == "fill:":
+                return get_element_color(element, "stroke:")
+            else:
+                value = value[len(prefix):]
+                if value.startswith("#"):
+                    value = value[1:]
+                return value
 
 def get_unit_coordinates(
     unit_data: Element,
