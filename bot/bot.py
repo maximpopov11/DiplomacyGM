@@ -85,7 +85,7 @@ async def after_any_command(ctx: discord.ext.commands.Context):
     )
 
 
-#@bot.event
+@bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
         # we shouldn't do anything if the user says something like "..."
