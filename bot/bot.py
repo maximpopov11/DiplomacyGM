@@ -120,6 +120,11 @@ async def ping(ctx: commands.Context) -> None:
 
 
 @bot.command(hidden=True)
+async def pelican(ctx: commands.Context) -> None:
+    await command.pelican(ctx, manager)
+
+
+@bot.command(hidden=True)
 async def bumble(ctx: commands.Context) -> None:
     await command.bumble(ctx, manager)
 

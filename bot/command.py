@@ -52,6 +52,29 @@ async def ping(ctx: commands.Context, _: Manager) -> None:
     await send_message_and_file(channel=ctx.channel, title=response)
 
 
+async def pelican(ctx: commands.Context, manager: Manager) -> None:
+    pelican_places = {
+        "your home": 15,
+        "a kebab store": 12,
+        "a jungle": 10,
+        "a cursed IKEA": 10,
+        "a supermarket": 9,
+        "Formosa": 8,
+        "the Vatican at night": 7,
+        "your dreams": 5,
+        "a german bureaucracy office": 5,
+        "a karaoke bar in Tokyo": 5,
+        "a quantum physics lecture": 4,
+        "your own mind": 3,
+        "Area 51": 2,
+        "the Teletubbies’ homeland": 0.9,
+        "Summoners’ Rift": 0.1,
+    }
+    chosen_place = random.choices(list(pelican_places.keys()), weights=list(pelican_places.values()), k=1)[0]
+    message = f"A pelican is chasing you through {chosen_place}!"
+    await send_message_and_file(channel=ctx.channel, title=message)
+
+
 async def bumble(ctx: commands.Context, manager: Manager) -> None:
     list_of_bumble = list("bumble")
     random.shuffle(list_of_bumble)
