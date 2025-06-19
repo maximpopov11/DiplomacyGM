@@ -854,7 +854,7 @@ async def player_info(ctx: commands.Context, manager: Manager) -> None:
         f"Points: {player.points}\n" + \
         f"Vassals: {', '.join(map(str, player.vassals))}\n" + \
         f"Liege: {player.liege if player.liege else 'None'}\n" + \
-        f"Units: {(bullet + bullet.join([unit.location() for unit in player.units])) if len(player.units) > 0 else 'None'}\n" + \
+        f"Units: {(bullet + bullet.join([unit.location().name for unit in player.units])) if len(player.units) > 0 else 'None'}\n" + \
         f"Centers ({len(player.centers)}): {(bullet + bullet.join([center.name for center in player.centers])) if len(player.centers) > 0 else 'None'}\n"
     # fmt: on
     log_command(logger, ctx, message=f"Got info for player {player}")
