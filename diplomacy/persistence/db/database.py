@@ -206,43 +206,46 @@ class _DatabaseConnection:
         # AAAAA We shouldn't be having to loop twice; why is ComplexOrder.source a Unit? Turn it into a province or something
         # Currently we have to loop twice because it's a unit and we need to have all the units set up before parsing orders because of it
         for unit_info in unit_data:
-            location, is_dislodged, owner, is_army, order_type, order_destination, order_source = unit_info
-            if order_type is not None:
-                order_classes = [
-                    Hold,
-                    Core,
-                    Move,
-                    ConvoyMove,
-                    ConvoyTransport,
-                    Support,
-                    RetreatMove,
-                    RetreatDisband,
-                ]
-                order_class = next(_class for _class in order_classes if _class.__name__ == order_type)
-                destination_province = None
-                if order_destination is not None:
-                    destination_province, destination_coast = board.get_province_and_coast(order_destination)
-                    if destination_coast is not None:
-                        destination_province = destination_coast
-                if order_source is not None:
-                    source_province, source_coast = board.get_province_and_coast(order_source)
-                    if source_coast is not None:
-                        source_province = source_coast
-                if order_class in [Hold, Core, RetreatDisband]:
-                    order = order_class()
-                elif order_class in [Move, ConvoyMove, RetreatMove]:
-                    order = order_class(destination=destination_province)
-                elif order_class in [Support, ConvoyTransport]:
-                    order = order_class(destination=destination_province, source=source_province)
-                else:
-                    raise ValueError(f"Could not parse {order_class}")
+            try:
+                location, is_dislodged, owner, is_army, order_type, order_destination, order_source = unit_info
+                if order_type is not None:
+                    order_classes = [
+                        Hold,
+                        Core,
+                        Move,
+                        ConvoyMove,
+                        ConvoyTransport,
+                        Support,
+                        RetreatMove,
+                        RetreatDisband,
+                    ]
+                    order_class = next(_class for _class in order_classes if _class.__name__ == order_type)
+                    destination_province = None
+                    if order_destination is not None:
+                        destination_province, destination_coast = board.get_province_and_coast(order_destination)
+                        if destination_coast is not None:
+                            destination_province = destination_coast
+                    if order_source is not None:
+                        source_province, source_coast = board.get_province_and_coast(order_source)
+                        if source_coast is not None:
+                            source_province = source_coast
+                    if order_class in [Hold, Core, RetreatDisband]:
+                        order = order_class()
+                    elif order_class in [Move, ConvoyMove, RetreatMove]:
+                        order = order_class(destination=destination_province)
+                    elif order_class in [Support, ConvoyTransport]:
+                        order = order_class(destination=destination_province, source=source_province)
+                    else:
+                        raise ValueError(f"Could not parse {order_class}")
 
-                province, coast = board.get_province_and_coast(location)
-                if is_dislodged:
-                    province.dislodged_unit.order = order
-                else:
-                    province.unit.order = order
-
+                    province, coast = board.get_province_and_coast(location)
+                    if is_dislodged:
+                        province.dislodged_unit.order = order
+                    else:
+                        province.unit.order = order
+            except:
+                logger.warning("BAD UNIT INFO: replacing with hold")
+                continue
         return board
 
     def save_board(self, board_id: int, board: Board):
