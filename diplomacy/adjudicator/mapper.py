@@ -288,6 +288,25 @@ class Mapper:
                 color = player.render_color
             self.player_colors[player.name] = color
         
+        print(color_mode)
+        if color_mode in ["kingdoms", "empires"]:
+            #TODO: draw dual monarchies as stripes
+            if color_mode == "empires":
+                for player in self.board.players:
+                    if not player.vassals:
+                        continue
+                    for vassal in player.vassals:
+                        self.player_colors[vassal.name] = self.player_colors[player.name]
+                        if not vassal.vassals:
+                            continue
+                        for subvassal in vassal.vassals:
+                            self.player_colors[subvassal.name] = self.player_colors[player.name]
+            else:
+                for player in self.board.players:
+                    if player.vassals and not player.liege:
+                        for vassal in player.vassals:
+                            self.player_colors[vassal.name] = self.player_colors[player.name]
+
         neutral_colors = self.board.data["svg config"]["neutral"]
         if isinstance(neutral_colors, str):
             self.neutral_color = neutral_colors
@@ -310,6 +329,8 @@ class Mapper:
                         self.color_element(element, self.replacements[color][color_mode])
                 elif color_mode == "dark":
                     self.color_element(element, "ffffff")
+                
+                    
 
         # Difficult to detect correctly using either geometry or province names
         # Marking manually would work, but for all svgs is time consuming. TODO

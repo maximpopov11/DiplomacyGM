@@ -118,7 +118,7 @@ class _DatabaseConnection:
                     player.liege = name_to_player[liege]
                 except KeyError:
                     logger.warning(f"Invalid liege of player {player.name}: {liege}")
-                player.liege.vassels.append(player)
+                player.liege.vassals.append(player)
             if discord_id is not None:
                 player.discord_id = discord_id
             player.points = points
@@ -419,7 +419,8 @@ class _DatabaseConnection:
                     player.name,
                     build_order.player.name
                 )
-                for build_order in player.build_orders if isinstance(build_order, ())
+                for player in players
+                for build_order in player.build_orders if isinstance(build_order, (Vassal))
             ]
         )
         cursor.close()

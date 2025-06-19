@@ -36,7 +36,7 @@ ping_text_choices = [
     "fervently believes in the power of",
     "is being mind controlled by",
 ]
-color_options = {"standard", "dark", "pink", "blue"}
+color_options = {"standard", "dark", "pink", "blue", "kingdoms", "empires"}
 
 async def ping(ctx: commands.Context, _: Manager) -> None:
     response = "Beep Boop"
@@ -852,7 +852,7 @@ async def player_info(ctx: commands.Context, manager: Manager) -> None:
     bullet = "\n- "
     out = f"Color: #{player.render_color}\n" + \
         f"Points: {player.points}\n" + \
-        f"Vassals: {', '.join(player.vassels)}\n" + \
+        f"Vassals: {', '.join(map(str, player.vassals))}\n" + \
         f"Liege: {player.liege if player.liege else 'None'}\n" + \
         f"Units: {(bullet + bullet.join([unit.location() for unit in player.units])) if len(player.units) > 0 else 'None'}\n" + \
         f"Centers ({len(player.centers)}): {(bullet + bullet.join([center.name for center in player.centers])) if len(player.centers) > 0 else 'None'}\n"
@@ -1378,10 +1378,8 @@ async def exec_py(ctx: commands.Context, manager: Manager) -> None:
         exec(code, {"print": embed_print, "board": board})
     except Exception as e:
         embed_print('\n' + repr(e))
-
-    await send_message_and_file(channel=ctx.channel, message=embed_print.text)
-    for player in board.players:
-        print(player.points)
+    if embed_print.text:
+        await send_message_and_file(channel=ctx.channel, message=embed_print.text)
     manager._database.delete_board(board)
 
     manager._database.save_board(ctx.guild.id, board)
