@@ -13,6 +13,9 @@ retreat: (retreat_order
 build: ( build_unit
        | disband_unit
        | vassal_order
+       | liege_order
+       | monarchy_order
+       | disown_order
        | non_build_order) WS
 
 move_order: unit WS MOVE WS province
@@ -33,24 +36,35 @@ retreat_order: retreat_unit WS RETREAT WS province
 
 disband_order: ( retreat_unit WS DISBAND ) | ( DISBAND WS retreat_unit )
 
-non_retreat_order: (support_order | convoy_order | core_order | build_unit | vassal_order)
+non_retreat_order: (support_order | convoy_order | core_order | build_unit | vassal_order | liege_order | monarchy_order | disown_order)
 
 disband_unit: ( unit WS DISBAND ) | ( DISBAND WS unit )
 
 build_unit: ( BUILD WS DESCRIPTOR province ) | ( BUILD WS province DESCRIPTOR )
 
-vassal_order: ( VASSILIZE WS province ) | (province WS VASSILIZE)
+vassal_order: ( VASSALIZE WS province ) | (province WS VASSALIZE)
+
+liege_order: (ALLEGIANCE WS province) | (province WS ALLEGIANCE)
+
+monarchy_order: (MONARCHY WS province) | (province WS MONARCHY)
+
+disown_order: (DISOWN WS province) | (province WS DISOWN)
 
 non_build_order: (move_order | hold_order | support_order | convoy_order | core_order)
 
 SUPPORT_HOLD.3 : /(support|supports|s)[ \-_]?(hold|holds|h|stand|stands)/i
 
-VASSILIZE.2 : "d m"
-            | "dual monarchy"
-            | "vassalize"
+VASSALIZE.2 : "vassalize"
             | "vassal"
-            | "v"
-            | "submit"
+
+ALLEGIANCE.2 : "liege"
+             | "submit"
+             | "allegiance"
+
+MONARCHY.2 : "dual monarchy"
+           | "d m"
+
+DISOWN.2 : "disown"
 
 HOLD.2 : "h"
        | "hold"

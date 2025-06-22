@@ -18,7 +18,11 @@ from diplomacy.persistence.order import (
     RetreatMove,
     Build,
     Disband,
-    Vassal
+    Vassal,
+    Liege,
+    DualMonarchy,
+    Disown,
+    RelationshipOrder
 )
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType, Unit
@@ -130,17 +134,52 @@ class _DatabaseConnection:
                 "SELECT player, location, is_build, is_army FROM builds WHERE board_id=? and phase=?",
                 (board_id, board.get_phase_and_year_string()),
             ).fetchall()
-            player_by_name = {player.name: player for player in board.players}
-            for player_name, location, is_build, is_army in builds_data:
+
+            def get_player_by_name(player_name) -> Player | None:
+                player_by_name = {player.name: player for player in board.players}
+
                 if player_name not in player_by_name:
                     logger.warning(f"Unknown player: {player_name}")
+                    return None
+                
+                return player_by_name[player_name]
+            
+            for player_name, location, is_build, is_army in builds_data:
+                
+                player = get_player_by_name(player_name)
+                
+                if player is None:
                     continue
-                player = player_by_name[player_name]
+
                 if is_build:
                     player_order = Build(board.get_location(location), UnitType.ARMY if is_army else UnitType.FLEET)
                 else:
                     player_order = Disband(board.get_location(location))
+                
                 player.build_orders.add(player_order)
+            
+            vassals_data = cursor.execute(
+                "SELECT player, target_player, order_type FROM vassal_orders WHERE board_id=? and phase=?",
+                (board_id, board.get_phase_and_year_string()),
+            ).fetchall()
+            
+            order_classes = [
+                Vassal,
+                Liege,
+                DualMonarchy,
+                Disown
+            ]
+
+            for player_name, target_player_name, order_type in vassals_data:
+                player = get_player_by_name(player_name)
+                target_player = get_player_by_name(target_player_name)
+                order_class = next(order_class for order_class in order_classes if order_class.__name__ == order_type)
+
+                order = order_class(target_player)
+
+
+                player.build_orders.add(order)
+
 
         province_data = cursor.execute(
             "SELECT province_name, owner, core, half_core FROM provinces WHERE board_id=? and phase=?",
@@ -414,16 +453,17 @@ class _DatabaseConnection:
             ],
         )
         cursor.executemany(
-            "INSERT INTO vassal_orders (board_id, phase, player, target_player) VALUES (?, ?, ?, ?) ",
+            "INSERT INTO vassal_orders (board_id, phase, player, target_player, order_type) VALUES (?, ?, ?, ?, ?) ",
             [
                 (
                     board.board_id,
                     board.get_phase_and_year_string(),
                     player.name,
-                    build_order.player.name
+                    build_order.player.name,
+                    build_order.__class__.__name__
                 )
                 for player in players
-                for build_order in player.build_orders if isinstance(build_order, (Vassal))
+                for build_order in player.build_orders if isinstance(build_order, RelationshipOrder)
             ]
         )
         cursor.close()

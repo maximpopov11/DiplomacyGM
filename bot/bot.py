@@ -106,12 +106,14 @@ async def on_command_error(ctx, error):
 
             await send_message_and_file(channel=ctx.channel, message=str(error.original), embed_colour=ERROR_COLOUR)
         else:
-            logger.log(
-                logging.ERROR,
+            logger.error(
                 f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
                 f"errored in {time_spent}s\n"
             )
-            await send_message_and_file(channel=ctx.channel, message=str(error), embed_colour=ERROR_COLOUR)
+            logger.error(
+                error.original
+            )
+            await send_message_and_file(channel=ctx.channel, message=str(error.original), embed_colour=ERROR_COLOUR)
 
 
 @bot.command(help="Checks bot listens and responds.")

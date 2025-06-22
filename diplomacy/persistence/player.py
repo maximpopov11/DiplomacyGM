@@ -15,6 +15,11 @@ class VassalType(Enum):
     VASSAL = 'vassal'
     DUAL = 'dual'
 
+class PlayerClass(Enum):
+    DUCHY = 'Duchy'
+    KINGDOM = 'Kingdom'
+    EMPIRE = 'Empire'
+
 class Player:
     def __init__(
         self,
@@ -60,3 +65,12 @@ class Player:
             return (len(self.centers) - self.iscc) / (self.vscc - self.iscc)
         else:
             return (len(self.centers) / self.iscc) - 1
+
+    def get_class(self) -> PlayerClass:
+        scs = len(self.centers)
+        if scs >= 6:
+            return PlayerClass.EMPIRE
+        elif scs >= 3:
+            return PlayerClass.KINGDOM
+        else:
+            return PlayerClass.DUCHY

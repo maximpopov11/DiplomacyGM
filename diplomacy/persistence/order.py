@@ -142,12 +142,41 @@ class Disband(PlayerOrder):
         return f"Disband {self.location}"
 
 
-class Vassal(Order):
-    """Either liege or vassal."""
+class RelationshipOrder(Order):
+    """Vassal, Dual Monarchy, etc"""
+
+    nameId: str = None
 
     def __init__(self, player: Player):
         super().__init__()
         self.player = player
+    
+    def __hash__(self):
+        return hash(self.player)
+    
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and self.player == other.player
+
+class Vassal(RelationshipOrder):
+    """Specifies player to vassalize."""
 
     def __str__(self):
-        return f"Vassal {self.player}"
+        return f"Vassalize {self.player}"
+
+class Liege(RelationshipOrder):
+    """Specifies player to swear allegiance to."""
+
+    def __str__(self):
+        return f"Liege {self.player}"
+
+class DualMonarchy(RelationshipOrder):
+    """Specifies player to swear allegiance to."""
+
+    def __str__(self):
+        return f"Dual Monarchy with {self.player}"
+
+class Disown(RelationshipOrder):
+    """Specifies player to drop as a vassal."""
+
+    def __str__(self):
+        return f"Disown {self.player}"

@@ -132,6 +132,51 @@ class TreeToOrder(Transformer):
             raise ValueError(f"A vassal_order currently must be made in a orders channel due to ambiguity")
         return None, self.player_restriction, order.Vassal(refrenced_player)
 
+    def liege_order(self, s):
+        if isinstance(s[0], Location):
+            l = s[0]
+        else:
+            l = s[2]
+        refrenced_player = None
+        for player in self.board.players:
+            if player.name == l.name:
+                refrenced_player = player
+        if refrenced_player is None:
+            raise ValueError(f"{l.name} doesn't match the name of any player")
+        if self.player_restriction is None:
+            raise ValueError(f"A vassal_order currently must be made in a orders channel due to ambiguity")
+        return None, self.player_restriction, order.Liege(refrenced_player)
+
+    def monarchy_order(self, s):
+        if isinstance(s[0], Location):
+            l = s[0]
+        else:
+            l = s[2]
+        refrenced_player = None
+        for player in self.board.players:
+            if player.name == l.name:
+                refrenced_player = player
+        if refrenced_player is None:
+            raise ValueError(f"{l.name} doesn't match the name of any player")
+        if self.player_restriction is None:
+            raise ValueError(f"A vassal_order currently must be made in a orders channel due to ambiguity")
+        return None, self.player_restriction, order.DualMonarchy(refrenced_player)
+
+    def disown_order(self, s):
+        if isinstance(s[0], Location):
+            l = s[0]
+        else:
+            l = s[2]
+        refrenced_player = None
+        for player in self.board.players:
+            if player.name == l.name:
+                refrenced_player = player
+        if refrenced_player is None:
+            raise ValueError(f"{l.name} doesn't match the name of any player")
+        if self.player_restriction is None:
+            raise ValueError(f"A vassal_order currently must be made in a orders channel due to ambiguity")
+        return None, self.player_restriction, order.Disown(refrenced_player)
+
     def build(self, s):
         build_order = s[0]
         if self.player_restriction is not None and self.player_restriction != build_order[1]:
