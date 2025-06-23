@@ -2,7 +2,7 @@ import datetime
 import logging
 
 from discord.ext.commands import Paginator
-from lark import Lark, Transformer, UnexpectedEOF
+from lark import Lark, Transformer, UnexpectedEOF, UnexpectedCharacters
 from lark.exceptions import VisitError
 
 from bot.config import ERROR_COLOUR, PARTIAL_ERROR_COLOUR
@@ -297,6 +297,10 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
                 logger.info(e)
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: Please fix this order and try again")
+            except UnexpectedCharacters as e:
+                logger.info(e)
+                orderoutput.append(f"\u001b[0;31m{order}")
+                errors.append(f"`{order}`: Please fix this order and try again")
         database = get_connection()
         database.save_build_orders_for_players(board, player_restriction)
     elif phase.is_moves(board.phase) or phase.is_retreats(board.phase):
@@ -322,7 +326,10 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
                 logger.info(e)
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: Please fix this order and try again")
-
+            except UnexpectedCharacters as e:
+                logger.info(e)
+                orderoutput.append(f"\u001b[0;31m{order}")
+                errors.append(f"`{order}`: Please fix this order and try again")
         database = get_connection()
         database.save_order_for_units(board, movement)
     else:

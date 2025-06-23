@@ -3,6 +3,8 @@ import os
 import re
 import datetime
 import random
+
+from discord import Forbidden
 from dotenv.main import load_dotenv
 
 from bot.config import ERROR_COLOUR
@@ -89,7 +91,39 @@ async def after_any_command(ctx: discord.ext.commands.Context):
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
         # we shouldn't do anything if the user says something like "..."
+        return
+
+    try:
+        # mark the message as failed
+        await ctx.message.add_reaction("❌")
+        await ctx.message.remove_reaction("👍", bot.user)
+    except Exception:
+        # if reactions fail continue handling error
         pass
+
+
+    if type(error.original) == PermissionError:
+        await send_message_and_file(channel=ctx.channel, message=str(error.original), embed_colour=ERROR_COLOUR)
+        return
+
+    time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
+    logger.log(
+        logging.ERROR,
+        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
+        f"errored in {time_spent}s\n"
+    )
+
+    if type(error.original) == Forbidden:
+        await send_message_and_file(
+            channel=ctx.channel,
+            message=f"I do not have the correct permissions to do this.\n"
+                    f"I might not be setup correctly.\n"
+                    f"If this is unexpected please contact a GM or reach out in: "
+                    f"https://discord.com/channels/1201167737163104376/1286027175048253573"
+                    f" or "
+                    f"https://discord.com/channels/1201167737163104376/1280587781638459528",
+            embed_colour=ERROR_COLOUR
+        )
     else:
         time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
 

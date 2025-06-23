@@ -1354,18 +1354,31 @@ async def nick(ctx: commands.Context, manager: Manager) -> None:
         prefix = ''
     name = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
     if name == '':
-        return "A nickname must be at least 1 character"
-    if len(prefix+name) > 32:
-        return "Nicknames cannot be over 32 characters"
-    await ctx.author.edit(nick=prefix+name)
-    return "Nick updated"
+        await send_message_and_file(
+            channel=ctx.channel,
+            embed_colour=ERROR_COLOUR,
+            message=f"A nickname must be at least 1 character"
+        )
+        return
+    if len(prefix + name) > 32:
+        await send_message_and_file(
+            channel=ctx.channel,
+            embed_colour=ERROR_COLOUR,
+            message=f"A nickname must be at less than 32 total characters.\n Yours is {len(prefix + name)}"
+        )
+        return
+    await ctx.author.edit(nick=prefix + name)
+    await send_message_and_file(
+        channel=ctx.channel,
+        message=f"Nickname updated to `{prefix + name}`"
+    )
 
 class ContainedPrinter:
     def __init__(self):
         self.text = ""
     def __call__(self, *args):
         self.text += ' '.join(map(str, args)) + '\n'
-    
+
 
 @perms.admin("Execute arbitrary code")
 async def exec_py(ctx: commands.Context, manager: Manager) -> None:
