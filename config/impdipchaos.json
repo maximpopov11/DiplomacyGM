@@ -58,7 +58,8 @@
     "adju flags": [
         "build anywhere",
         "no coring",
-        "initial builds"
+        "initial builds",
+        "vassal system"
     ],
     "flags": ["weak channel checking"],
 

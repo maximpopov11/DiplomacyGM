@@ -22,6 +22,8 @@ from diplomacy.persistence.order import (
     Liege,
     DualMonarchy,
     Disown,
+    Defect,
+    RebellionMarker,
     RelationshipOrder
 )
 from diplomacy.persistence.player import Player
@@ -167,7 +169,9 @@ class _DatabaseConnection:
                 Vassal,
                 Liege,
                 DualMonarchy,
-                Disown
+                Disown,
+                Defect,
+                RebellionMarker
             ]
 
             for player_name, target_player_name, order_type in vassals_data:

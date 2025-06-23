@@ -180,3 +180,15 @@ class Disown(RelationshipOrder):
 
     def __str__(self):
         return f"Disown {self.player}"
+
+class Defect(RelationshipOrder):
+    """Defect. Player is always your liege"""
+
+    def __str__(self):
+        return "Defect"
+
+class RebellionMarker(RelationshipOrder):
+    """Psudorder to mark rebellion from player due to class"""
+
+    def __str__(self):
+        return f"(Rebelling from {self.player})"

@@ -16,6 +16,7 @@ build: ( build_unit
        | liege_order
        | monarchy_order
        | disown_order
+       | defect_order
        | non_build_order) WS
 
 move_order: unit WS MOVE WS province
@@ -36,7 +37,7 @@ retreat_order: retreat_unit WS RETREAT WS province
 
 disband_order: ( retreat_unit WS DISBAND ) | ( DISBAND WS retreat_unit )
 
-non_retreat_order: (support_order | convoy_order | core_order | build_unit | vassal_order | liege_order | monarchy_order | disown_order)
+non_retreat_order: (support_order | convoy_order | core_order | build_unit | vassal_order | liege_order | monarchy_order | disown_order | defect_order)
 
 disband_unit: ( unit WS DISBAND ) | ( DISBAND WS unit )
 
@@ -50,9 +51,13 @@ monarchy_order: (MONARCHY WS province) | (province WS MONARCHY)
 
 disown_order: (DISOWN WS province) | (province WS DISOWN)
 
+defect_order: DEFECT
+
 non_build_order: (move_order | hold_order | support_order | convoy_order | core_order)
 
 SUPPORT_HOLD.3 : /(support|supports|s)[ \-_]?(hold|holds|h|stand|stands)/i
+
+DEFECT.2 : "defect"
 
 VASSALIZE.2 : "vassalize"
             | "vassal"

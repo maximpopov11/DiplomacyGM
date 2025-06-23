@@ -16,9 +16,9 @@ class VassalType(Enum):
     DUAL = 'dual'
 
 class PlayerClass(Enum):
-    DUCHY = 'Duchy'
-    KINGDOM = 'Kingdom'
-    EMPIRE = 'Empire'
+    DUCHY = 0
+    KINGDOM = 1
+    EMPIRE = 2
 
 class Player:
     def __init__(

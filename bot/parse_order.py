@@ -185,6 +185,11 @@ class TreeToOrder(Transformer):
         build_order[1].build_orders.add(build_order[2])
         return build_order[0]
 
+    def defect_order(self, s):
+        if not self.player_restriction or self.player_restriction.liege:
+            raise Exception("No liege to defect from!")
+        return None, self.player_restriction, order.Defect(self.player_restriction.liege)
+
     def non_build_order(self, s):
         raise Exception("This type of order cannot be issued during build phases")
 

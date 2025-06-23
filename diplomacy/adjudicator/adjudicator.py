@@ -23,7 +23,10 @@ from diplomacy.persistence.order import (
     ComplexOrder,
     Build,
     Disband,
+    RebellionMarker
 )
+
+from diplomacy.persistence.player import Player, PlayerClass
 from diplomacy.persistence.province import Location, Coast, Province, ProvinceType, get_adjacent_provinces
 from diplomacy.persistence.unit import UnitType, Unit
 
@@ -355,6 +358,25 @@ class RetreatsAdjudicator(Adjudicator):
 
         for unit in self._board.units:
             unit.order = None
+
+        if self._board.phase.name.startswith("Fall") and "vassal system" in self._board.data.get("adju flags", []):
+            for player in self._board.players:
+                if player.liege in player.vassals:
+                    other = player.liege
+                    if (not player.get_class() == PlayerClass.KINGDOM) or (not other.get_class() == PlayerClass.KINGDOM):
+                        # Dual Monarchy breaks
+                        for p in (player, other):
+                            p.vassals = []
+                            p.liege = None
+                
+                elif player.liege:
+                    if player.liege.get_class().value <= player.get_class().value:
+                        liege = player.liege
+                        player.liege = None
+                        liege.vassals.remove(player)
+                        player.build_orders.add(RebellionMarker(liege))
+
+            
 
         return self._board
 
