@@ -378,6 +378,71 @@ async def servers(ctx: commands.Context, manager: Manager) -> None:
                                 title=f"{len(ctx.bot.guilds)} Servers",
                                 message=message)
 
+@perms.admin("allocate roles to user(s)")
+async def bulk_allocate_role(ctx: commands.Context, manager: Manager) -> None:
+    guild = ctx.guild
+    if guild is None:
+        return
+
+    # extract roles to be allocated based off of mentions
+    # .bulk_allocate_role <@B1.4 Player> <@B1.4 GM Team> ...
+    roles = ctx.message.role_mentions
+    role_names = list(map(lambda r: r.name, roles))
+    if len(roles) == 0:
+        return
+    
+    # parse usernames from trailing contents 
+    # .bulk_allocate_role @B1.4 Player elisha thisisflare kingofprussia ...
+    content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+
+    usernames = []
+    components = content.split(" ")
+    for comp in components:
+        if comp in roles:
+            continue
+
+        usernames.append(comp)
+
+    success_count = 0
+    failed = []
+    skipped = []
+    for user in usernames:
+        # FIND USER FROM USERNAME
+        member = discord.utils.find(
+            lambda m: (m.global_name and m.global_name.lower() == user.lower()) or m.name.lower() == user.lower(),
+            guild.members
+        )
+        
+        if not member or member is None:
+            failed.append((user, "Member not Found"))
+            continue
+
+        for role in roles:
+            if role in member.roles:
+                skipped.append((user, role.name))
+
+            try:
+                await member.add_roles(role)
+                success_count += 1
+            except Exception as e:
+                failed.append((user, f"Error Adding Role- {e}"))
+
+    failed_out = '\n'.join([f"{u}: {m}" for u, m in failed])
+    skipped_out = '\n'.join([f"{u}: {m}" for u, m in failed])
+    out = f"Allocated Roles {', '.join(role_names)} to {len(usernames)} users.\n" + \
+        f"Succeeded in applying a role {success_count} times.\n" + \
+        f"Failed {len(failed)} times.\n" + \
+        f"Skipped {len(skipped)} times for already having the role.\n" + \
+        "----\n" + \
+        f"Failed Reasons:\n{failed_out}\n" + \
+        "----\n" + \
+        f"Skipped Reasons:\n{skipped_out}\n" + \
+        "----\n"
+
+    await send_message_and_file(channel=ctx.channel,
+                                title="Wave Allocation Info",
+                                message=out)
+
 @perms.player("order")
 async def order(player: Player | None, ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
