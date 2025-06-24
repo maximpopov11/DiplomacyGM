@@ -36,7 +36,8 @@ ping_text_choices = [
     "fervently believes in the power of",
     "is being mind controlled by",
 ]
-color_options = {"standard", "dark", "pink", "blue"}
+color_options = {"standard", "dark", "pink", "blue", "kingdoms", "empires"}
+
 
 async def ping(ctx: commands.Context, _: Manager) -> None:
     response = "Beep Boop"
@@ -50,6 +51,29 @@ async def ping(ctx: commands.Context, _: Manager) -> None:
             name = author.name
         response = name + " " + random.choice(ping_text_choices) + content
     await send_message_and_file(channel=ctx.channel, title=response)
+
+
+async def pelican(ctx: commands.Context, manager: Manager) -> None:
+    pelican_places = {
+        "your home": 15,
+        "a kebab store": 12,
+        "a jungle": 10,
+        "a cursed IKEA": 10,
+        "a supermarket": 9,
+        "Formosa": 8,
+        "the Vatican at night": 7,
+        "your dreams": 5,
+        "a german bureaucracy office": 5,
+        "a karaoke bar in Tokyo": 5,
+        "a quantum physics lecture": 4,
+        "your own mind": 3,
+        "Area 51": 2,
+        "the Teletubbies’ homeland": 0.9,
+        "Summoners’ Rift": 0.1,
+    }
+    chosen_place = random.choices(list(pelican_places.keys()), weights=list(pelican_places.values()), k=1)[0]
+    message = f"A pelican is chasing you through {chosen_place}!"
+    await send_message_and_file(channel=ctx.channel, title=message)
 
 
 async def bumble(ctx: commands.Context, manager: Manager) -> None:
@@ -832,9 +856,9 @@ async def player_info(ctx: commands.Context, manager: Manager) -> None:
     bullet = "\n- "
     out = f"Color: #{player.render_color}\n" + \
         f"Points: {player.points}\n" + \
-        f"Vassals: {', '.join(player.vassels)}\n" + \
+        f"Vassals: {', '.join(map(str, player.vassals))}\n" + \
         f"Liege: {player.liege if player.liege else 'None'}\n" + \
-        f"Units: {(bullet + bullet.join([unit.location() for unit in player.units])) if len(player.units) > 0 else 'None'}\n" + \
+        f"Units: {(bullet + bullet.join([unit.location().name for unit in player.units])) if len(player.units) > 0 else 'None'}\n" + \
         f"Centers ({len(player.centers)}): {(bullet + bullet.join([center.name for center in player.centers])) if len(player.centers) > 0 else 'None'}\n"
     # fmt: on
     log_command(logger, ctx, message=f"Got info for player {player}")
@@ -1370,9 +1394,8 @@ async def exec_py(ctx: commands.Context, manager: Manager) -> None:
     except Exception as e:
         embed_print('\n' + repr(e))
 
-    await send_message_and_file(channel=ctx.channel, message=embed_print.text)
-    for player in board.players:
-        print(player.points)
+    if embed_print.text:
+        await send_message_and_file(channel=ctx.channel, message=embed_print.text)
     manager._database.delete_board(board)
 
     manager._database.save_board(ctx.guild.id, board)

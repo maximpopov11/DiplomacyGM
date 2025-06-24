@@ -384,16 +384,6 @@ async def edit(ctx: commands.Context) -> None:
     await command.edit(ctx, manager)
 
 
-@bot.group(
-    brief="Edits the game state.",
-    description="""Admin-only edit commands""",
-
-)
-async def admin_edit(ctx: commands.Context) -> None:
-    if ctx.invoked_subcommand is None:
-        await ctx.send_help(entity=admin_edit)
-
-
 @bot.command(brief="Clears all players orders.")
 @gm_only("remove all orders")
 async def remove_all(ctx: commands.Context) -> None:
