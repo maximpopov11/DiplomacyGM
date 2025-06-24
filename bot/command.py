@@ -278,7 +278,7 @@ async def botsay(ctx: commands.Context, _: Manager) -> None:
 
 @perms.admin("send a GM announcement")
 async def announce(ctx: commands.Context, manager: Manager) -> None:
-    guilds_with_games = {ctx.bot.get_guild(server_id).id for server_id in manager.list_servers()}
+    guilds_with_games = manager.list_servers()
     content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
     content = re.sub(r'<@&[0-9]{16,20}>', r'{}', content)
     roles = list(map(lambda role: role.name,ctx.message.role_mentions))
