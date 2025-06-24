@@ -8,6 +8,7 @@ from discord import Forbidden
 from dotenv.main import load_dotenv
 
 from bot.config import ERROR_COLOUR
+from bot.perms import admin_only, CommandPermissionError, gm_only
 from bot.utils import send_message_and_file
 load_dotenv()
 
@@ -93,17 +94,26 @@ async def on_command_error(ctx, error):
         # we shouldn't do anything if the user says something like "..."
         return
 
+    if isinstance(error, (
+            commands.CommandInvokeError,
+            commands.ConversionError,
+            commands.HybridCommandError
+    )):
+        original = error.original
+    else:
+        original = error
+
     try:
         # mark the message as failed
         await ctx.message.add_reaction("❌")
         await ctx.message.remove_reaction("👍", bot.user)
     except Exception:
-        # if reactions fail continue handling error
+        # if reactions fail, ignore and continue handling existing exception
         pass
 
 
-    if type(error.original) == PermissionError:
-        await send_message_and_file(channel=ctx.channel, message=str(error.original), embed_colour=ERROR_COLOUR)
+    if isinstance(original, CommandPermissionError):
+        await send_message_and_file(channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR)
         return
 
     time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
@@ -113,7 +123,7 @@ async def on_command_error(ctx, error):
         f"errored in {time_spent}s\n"
     )
 
-    if type(error.original) == Forbidden:
+    if isinstance(original, Forbidden):
         await send_message_and_file(
             channel=ctx.channel,
             message=f"I do not have the correct permissions to do this.\n"
@@ -136,18 +146,18 @@ async def on_command_error(ctx, error):
             # if reactions fail continue handling error
             pass
 
-        if type(error.original) == PermissionError:
+        if isinstance(original, CommandPermissionError):
 
-            await send_message_and_file(channel=ctx.channel, message=str(error.original), embed_colour=ERROR_COLOUR)
+            await send_message_and_file(channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR)
         else:
             logger.error(
                 f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
                 f"errored in {time_spent}s\n"
             )
             logger.error(
-                error.original
+                original
             )
-            await send_message_and_file(channel=ctx.channel, message=str(error.original), embed_colour=ERROR_COLOUR)
+            await send_message_and_file(channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR)
 
 
 @bot.command(help="Checks bot listens and responds.")
@@ -188,15 +198,18 @@ async def advice(ctx: commands.Context) -> None:
 
 
 @bot.command(hidden=True)
+@gm_only("botsay")
 async def botsay(ctx: commands.Context) -> None:
     await command.botsay(ctx, manager)
 
 
 @bot.command(hidden=True)
+@admin_only("send a GM announcement")
 async def announce(ctx: commands.Context) -> None:
     await command.announce(ctx, manager)
 
 @bot.command(hidden=True)
+@admin_only("list servers")
 async def servers(ctx: commands.Context) -> None:
     await command.servers(ctx, manager)
 
@@ -246,16 +259,20 @@ async def view_orders(ctx: commands.Context) -> None:
     brief="Sends all previous orders",
     description="For GM: Sends orders from previous phase to #orders-log",
 )
+@gm_only("publish orders")
 async def publish_orders(ctx: commands.Context) -> None:
     await command.publish_orders(ctx, manager)
+
 
 @bot.command(
     brief="Sends fog of war maps",
     description="""
     * publish_fow_moves {Country|(None) - whether or not to send for a specific country}
     """,)
+@gm_only("publish fow moves")
 async def publish_fow_moves(ctx: commands.Context) -> None:
     await command.publish_fow_moves(ctx, manager)
+
 
 @bot.command(
     brief="Sends fog of war orders",
@@ -263,6 +280,7 @@ async def publish_fow_moves(ctx: commands.Context) -> None:
     * publish_fow_orders {Country|(None) - whether or not to send for a specific country}
     """,
 )
+@gm_only("send fow order logs")
 async def publish_fow_orders(ctx: commands.Context) -> None:
     await command.publish_fow_order_logs(ctx, manager)
 
@@ -282,6 +300,7 @@ async def publish_fow_orders(ctx: commands.Context) -> None:
 async def view_map(ctx: commands.Context) -> None:
     await command.view_map(ctx, manager)
 
+
 @bot.command(
     brief="Outputs the current map without any orders.",
     description="""
@@ -295,12 +314,14 @@ async def view_map(ctx: commands.Context) -> None:
 async def view_current(ctx: commands.Context) -> None:
     await command.view_current(ctx, manager)
 
+
 @bot.command(
     brief="Outputs a interactive svg that you can issue orders in",
     aliases=["g"],
 )
 async def view_gui(ctx: commands.Context) -> None:
     await command.view_gui(ctx, manager)
+
 
 @bot.command(brief="Adjudicates the game and outputs the moves and results maps.",
     description="""
@@ -311,16 +332,19 @@ async def view_gui(ctx: commands.Context) -> None:
     * pass standard, dark, blue, or pink for different color modes if present
     """
 )
+@gm_only("adjudicate")
 async def adjudicate(ctx: commands.Context) -> None:
     await command.adjudicate(ctx, manager)
 
 
 @bot.command(brief="Rolls back to the previous game state.")
+@gm_only("rollback")
 async def rollback(ctx: commands.Context) -> None:
     await command.rollback(ctx, manager)
 
 
 @bot.command(brief="Reloads the current board with what is in the DB")
+@gm_only("reload")
 async def reload(ctx: commands.Context) -> None:
     await command.reload(ctx, manager)
 
@@ -355,11 +379,23 @@ async def scoreboard(ctx: commands.Context) -> None:
     * set_player_points <player_name> <integer>
     """,
 )
+@gm_only("edit")
 async def edit(ctx: commands.Context) -> None:
     await command.edit(ctx, manager)
 
 
+@bot.group(
+    brief="Edits the game state.",
+    description="""Admin-only edit commands""",
+
+)
+async def admin_edit(ctx: commands.Context) -> None:
+    if ctx.invoked_subcommand is None:
+        await ctx.send_help(entity=admin_edit)
+
+
 @bot.command(brief="Clears all players orders.")
+@gm_only("remove all orders")
 async def remove_all(ctx: commands.Context) -> None:
     await command.remove_all(ctx, manager)
 
@@ -370,6 +406,7 @@ async def remove_all(ctx: commands.Context) -> None:
              Note: Currently does not persist after the bot is restarted""",
     aliases=["lock"]
 )
+@gm_only("lock orders")
 async def lock_orders(ctx: commands.Context) -> None:
     await command.disable_orders(ctx, manager)
 
@@ -378,6 +415,7 @@ async def lock_orders(ctx: commands.Context) -> None:
     brief="re-enables orders",
     aliases=["unlock"]
 )
+@gm_only("unlock orders")
 async def unlock_orders(ctx: commands.Context) -> None:
     await command.enable_orders(ctx, manager)
 
@@ -405,13 +443,16 @@ async def province_info(ctx: commands.Context) -> None:
 async def player_info(ctx: commands.Context) -> None:
     await command.player_info(ctx, manager)
 
+
 @bot.command(brief="outputs the provinces you can see")
 async def visible_info(ctx: commands.Context) -> None:
     await command.visible_provinces(ctx, manager)
 
+
 @bot.command(brief="publicize void for chaos")
 async def publicize(ctx: commands.Context) -> None:
     await command.publicize(ctx, manager)
+
 
 @bot.command(brief="outputs all provinces per owner")
 async def all_province_data(ctx: commands.Context) -> None:
@@ -422,6 +463,7 @@ async def all_province_data(ctx: commands.Context) -> None:
     brief="Create a game of Imp Dip and output the map.",
     description="Create a game of Imp Dip and output the map. (there are no other variant options at this time)",
 )
+@gm_only("create a game")
 async def create_game(ctx: commands.Context) -> None:
     await command.create_game(ctx, manager)
 
@@ -431,6 +473,7 @@ async def create_game(ctx: commands.Context) -> None:
     description="""Used after a game is done. Will make all channels in category viewable by all server members, but no messages allowed.
     * .archive [link to any channel in category]""",
 )
+@gm_only("archive")
 async def archive(ctx: commands.Context) -> None:
     await command.archive(ctx, manager)
 
@@ -439,6 +482,7 @@ async def archive(ctx: commands.Context) -> None:
     brief="blitz",
     description="Creates all possible channels between two players for blitz in available comms channels."
 )
+@gm_only("create blitz comms channels")
 async def blitz(ctx: commands.Context) -> None:
     await command.blitz(ctx, manager)
 
@@ -456,18 +500,24 @@ async def blitz(ctx: commands.Context) -> None:
     You may also specify a timestamp to send a deadline to the players.
     * .ping_players <timestamp>
     """)
+@gm_only("ping players")
 async def ping_players(ctx: commands.Context) -> None:
     await command.ping_players(ctx, manager)
 
+
 @bot.command(brief="permanently deletes a game, cannot be undone")
+@gm_only("delete the game")
 async def delete_game(ctx: commands.Context) -> None:
     await command.delete_game(ctx, manager)
+
 
 @bot.command(brief="Changes your nickname")
 async def nick(ctx: commands.Context) -> None:
     await command.nick(ctx, manager)
 
+
 @bot.command(hidden=True)
+@admin_only("Execute arbitrary code")
 async def exec_py(ctx: commands.Context) -> None:
     await command.exec_py(ctx, manager)
 

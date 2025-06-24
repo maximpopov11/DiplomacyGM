@@ -1,10 +1,16 @@
 from typing import Callable
 
+
 from discord.ext import commands
 
 from bot.utils import is_gm, is_gm_channel, get_player_by_role, is_player_channel, get_player_by_channel, is_admin
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
+
+class CommandPermissionError(commands.CheckFailure):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(message)
 
 def get_player_by_context(ctx: commands.Context, manager: Manager):
     #FIXME cleaner way of doing this
@@ -32,18 +38,18 @@ def require_player_by_context(ctx: commands.Context, manager: Manager, descripti
     
     if player:
         if not is_player_channel(player.name, ctx.channel):
-            raise PermissionError(f"You cannot {description} as a player outside of your orders channel.")
+            raise CommandPermissionError(f"You cannot {description} as a player outside of your orders channel.")
     else:
         if not is_gm(ctx.message.author):
-            raise PermissionError(f"You cannot {description} because you are neither a GM nor a player.")
+            raise CommandPermissionError(f"You cannot {description} because you are neither a GM nor a player.")
         player_channel = get_player_by_channel(ctx.channel, manager, ctx.guild.id)
         if player_channel is not None:
             player = player_channel
         elif not is_gm_channel(ctx.channel):
-            raise PermissionError(f"You cannot {description} as a GM in a non-GM channel.")
+            raise CommandPermissionError(f"You cannot {description} as a GM in a non-GM channel.")
     return player
 
-# adds one extra argument, player, which is None if run by a GM
+# adds one extra argument, player in a player's channel, which is None if run by a GM in a GM channel
 def player(description: str = "run this command"):
     def player_check(
         function: Callable[[Player | None, commands.Context, Manager], tuple[str, str | None]]
@@ -57,42 +63,25 @@ def player(description: str = "run this command"):
     return player_check
 
 
-def gm_context_check(ctx: commands.Context, not_gm: str, not_channel):
+def assert_gm_only(ctx: commands.Context, description: str = "run this command"):
     if not is_gm(ctx.message.author):
-        raise PermissionError(not_gm)
+        raise CommandPermissionError(f"You cannot {description} because you are not a GM.")
+    elif not is_gm_channel(ctx.channel):
+        raise CommandPermissionError(f"You cannot {description} in a non-GM channel.")
+    else:
+        return True
 
-    if not is_gm_channel(ctx.channel):
-        raise PermissionError(not_channel)
 
-def gm_perms_check(ctx, description):
-    gm_context_check(ctx, f"You cannot {description} because you are not a GM.", f"You cannot {description} in a non-GM channel.")
+def gm_only(description: str = "run this command"):
+    return commands.check(lambda ctx: assert_gm_only(ctx, description))
 
-def admin_perms_check(ctx, description):
+
+def assert_admin_only(ctx: commands.Context, description: str = "run this command"):
     if not is_admin(ctx.message.author):
-        raise PermissionError(f"You cannot {description} as you are not an admin")
+        raise CommandPermissionError(f"You cannot {description} as you are not an admin")
+    else:
+        return True
 
-def gm(description: str = "run this command"):
-    def gm_check(
-        function: Callable[[commands.Context, Manager], tuple[str, str | None]]
-    ) -> Callable[[commands.Context, Manager], tuple[str, str | None]]:
 
-        def f(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
-            gm_perms_check(ctx, description)
-            return function(ctx, manager)
-
-        return f
-
-    return gm_check
-
-def admin(description: str = "run this command"):
-    def admin_check(
-        function: Callable[[commands.Context, Manager], tuple[str, str | None]]
-    ) -> Callable[[commands.Context, Manager], tuple[str, str | None]]:
-
-        def f(ctx: commands.Context, manager: Manager) -> tuple[str, str | None]:
-            admin_perms_check(ctx, description)
-            return function(ctx, manager)
-
-        return f
-
-    return admin_check
+def admin_only(description: str = "run this command"):
+    return commands.check(lambda ctx: assert_admin_only(ctx, description))

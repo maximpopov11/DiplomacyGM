@@ -17,7 +17,7 @@ import bot.perms as perms
 from bot.config import is_bumble, temporary_bumbles, ERROR_COLOUR
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
-from bot.utils import (get_channel_by_player, get_filtered_orders, get_orders,
+from bot.utils import (get_filtered_orders, get_orders,
                        get_orders_log, get_player_by_channel, is_gm, send_message_and_file,
                        get_role_by_player, log_command, fish_pop_model)
 from diplomacy.adjudicator.utils import svg_to_png
@@ -249,7 +249,6 @@ async def advice(ctx: commands.Context, _: Manager) -> None:
     await send_message_and_file(channel=ctx.channel, title=message)
 
 
-@perms.gm("botsay")
 async def botsay(ctx: commands.Context, _: Manager) -> None:
     # noinspection PyTypeChecker
     if len(ctx.message.channel_mentions) == 0:
@@ -276,7 +275,6 @@ async def botsay(ctx: commands.Context, _: Manager) -> None:
                                 )
 
 
-@perms.admin("send a GM announcement")
 async def announce(ctx: commands.Context, manager: Manager) -> None:
     guilds_with_games = manager.list_servers()
     content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
@@ -424,7 +422,7 @@ async def view_orders(player: Player | None, ctx: commands.Context, manager: Man
                                 title=f"{board.phase.name} {board.get_year_str()}",
                                 message=order_text)
 
-@perms.gm("publish orders")
+
 async def publish_orders(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_previous_board(ctx.guild.id)
     if not board:
@@ -566,7 +564,7 @@ async def view_gui(player: Player | None, ctx: commands.Context, manager: Manage
                                 convert_svg=False,
                                 file_in_embed=False)
 
-@perms.gm("adjudicate")
+
 async def adjudicate(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
 
@@ -589,21 +587,19 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> None:
                                 convert_svg=return_svg,
                                 file_in_embed=False)
 
-@perms.gm("rollback")
+
 async def rollback(ctx: commands.Context, manager: Manager) -> None:
     message = manager.rollback(ctx.guild.id)
     log_command(logger, ctx, message=message['message'])
     await send_message_and_file(channel=ctx.channel, **message)
 
 
-@perms.gm("reload")
 async def reload(ctx: commands.Context, manager: Manager) -> None:
     message = manager.reload(ctx.guild.id)
     log_command(logger, ctx, message=message['message'])
     await send_message_and_file(channel=ctx.channel, **message)
 
 
-@perms.gm("remove all orders")
 async def remove_all(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
     for unit in board.units:
@@ -620,7 +616,7 @@ async def get_scoreboard(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
 
     if board.fow:
-        perms.gm_perms_check(ctx, "get scoreboard")
+        perms.assert_gm_only(ctx, "get scoreboard")
 
     the_player = perms.get_player_by_context(ctx, manager)
 
@@ -672,7 +668,7 @@ async def get_scoreboard(ctx: commands.Context, manager: Manager) -> None:
                                 message=response)
 
 
-@perms.gm("edit")
+
 async def edit(ctx: commands.Context, manager: Manager) -> None:
     edit_commands = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
     message = parse_edit_state(edit_commands, manager.get_board(ctx.guild.id))
@@ -680,7 +676,6 @@ async def edit(ctx: commands.Context, manager: Manager) -> None:
     await send_message_and_file(channel=ctx.channel, **message)
 
 
-@perms.gm("create a game")
 async def create_game(ctx: commands.Context, manager: Manager) -> None:
     gametype = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
     if gametype == "":
@@ -694,7 +689,6 @@ async def create_game(ctx: commands.Context, manager: Manager) -> None:
                                 message=message)
 
 
-@perms.gm("unlock orders")
 async def enable_orders(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
     board.orders_enabled = True
@@ -704,7 +698,6 @@ async def enable_orders(ctx: commands.Context, manager: Manager) -> None:
                                 message=f"{board.phase.name} {board.get_year_str()}")
 
 
-@perms.gm("lock orders")
 async def disable_orders(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
     board.orders_enabled = False
@@ -714,12 +707,12 @@ async def disable_orders(ctx: commands.Context, manager: Manager) -> None:
                                 message=f"{board.phase.name} {board.get_year_str()}")
 
 
-@perms.gm("delete the game")
 async def delete_game(ctx: commands.Context, manager: Manager) -> None:
     manager.total_delete(ctx.guild.id)
     log_command(logger, ctx, message=f"Deleted game")
     await send_message_and_file(channel=ctx.channel,
                                 title="Deleted game")
+
 
 async def info(ctx: commands.Context, manager: Manager) -> None:
     try:
@@ -745,7 +738,7 @@ async def province_info(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
 
     if not board.orders_enabled:
-        perms.gm_context_check(ctx, "Orders locked! If you think this is an error, contact a GM.",
+        perms.assert_gm_only(ctx, "Orders locked! If you think this is an error, contact a GM.",
             "You cannot use .province_info in a non-GM channel while orders are locked.")
         return
 
@@ -801,11 +794,12 @@ async def province_info(ctx: commands.Context, manager: Manager) -> None:
                                 title=province.name,
                                 message=out)
 
+
 async def player_info(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
 
     if not board.orders_enabled:
-        perms.gm_context_check(ctx, "Orders locked! If you think this is an error, contact a GM.",
+        perms.assert_gm_only(ctx, "Orders locked! If you think this is an error, contact a GM.",
             "You cannot use .province_info in a non-GM channel while orders are locked.")
         return
 
@@ -934,7 +928,7 @@ async def all_province_data(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
 
     if not board.orders_enabled:
-        perms.gm_perms_check(ctx, "call .all_province_data while orders are locked")
+        perms.assert_gm_only(ctx, "call .all_province_data while orders are locked")
 
     province_by_owner = defaultdict(list)
     for province in board.provinces:
@@ -969,7 +963,7 @@ from bot.utils import is_gm_channel
 async def publish_fow_current(ctx: commands.Context, manager: Manager):
     await publish_map(ctx, manager, "starting map", lambda m, s, p: m.draw_fow_current_map(s,p))
 
-@perms.gm("publish fow moves")
+
 async def publish_fow_moves(ctx: commands.Context, manager: Manager,):
     board = manager.get_board(ctx.guild.id)
 
@@ -979,6 +973,7 @@ async def publish_fow_moves(ctx: commands.Context, manager: Manager,):
     filter_player = board.get_player(ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip())
 
     await publish_map(ctx, manager, "moves map", lambda m, s, p: m.draw_fow_moves_map(s,p), filter_player)
+
 
 # FIXME add a decorator / helper method for iterating over all player order channels
 async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_caller: Callable[[Manager, int, Player], tuple[str, str]], filter_player=None):
@@ -1015,8 +1010,10 @@ async def publish_map(ctx: commands.Context, manager: Manager, name: str, map_ca
 
     await asyncio.gather(*tasks)
 
+
 # if possible save one svg slot for others
 fow_export_limit = asyncio.Semaphore(max(int(os.getenv("simultaneous_svg_exports_limit")) - 1, 1))
+
 
 async def map_publish_task(map_maker, channel, message):
     async with fow_export_limit:
@@ -1024,7 +1021,7 @@ async def map_publish_task(map_maker, channel, message):
         file, file_name = await svg_to_png(file, file_name)
         await send_message_and_file(channel=channel, message=message, file=file, file_name=file_name, file_in_embed=False)
 
-@perms.gm("send fow order logs")
+
 async def publish_fow_order_logs(ctx: commands.Context, manager: Manager):
     player_category = None
 
@@ -1063,7 +1060,6 @@ async def publish_fow_order_logs(ctx: commands.Context, manager: Manager):
 
 
 async def ping_players(ctx: commands.Context, manager: Manager) -> None:
-    perms.gm_perms_check(ctx, "ping players")
 
     player_categories: list[CategoryChannel] = []
 
@@ -1215,7 +1211,6 @@ async def ping_players(ctx: commands.Context, manager: Manager) -> None:
 
 
 async def archive(ctx: commands.Context, _: Manager) -> None:
-    perms.gm_perms_check(ctx, "archive")
     categories = [channel.category for channel in ctx.message.channel_mentions]
     if not categories:
         await send_message_and_file(channel=ctx.channel,
@@ -1240,7 +1235,6 @@ async def archive(ctx: commands.Context, _: Manager) -> None:
                                 message=message)
 
 async def blitz(ctx: commands.Context, manager: Manager) -> None:
-    perms.gm_perms_check(ctx, "blitz")
     board = manager.get_board(ctx.guild.id)
     cs = []
     pla = sorted(board.players, key=lambda p: p.name)
@@ -1313,7 +1307,6 @@ async def blitz(ctx: commands.Context, manager: Manager) -> None:
         available -= 1
 
 async def wipe(ctx: commands.Context, manager: Manager) -> None:
-    perms.gm_perms_check(ctx, "wipe")
     board = manager.get_board(ctx.guild.id)
     cs = []
     pla = sorted(board.players, key=lambda p: p.name)
@@ -1366,7 +1359,6 @@ class ContainedPrinter:
         self.text += ' '.join(map(str, args)) + '\n'
 
 
-@perms.admin("Execute arbitrary code")
 async def exec_py(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
     code = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().strip('`')
