@@ -36,7 +36,7 @@ ping_text_choices = [
     "fervently believes in the power of",
     "is being mind controlled by",
 ]
-color_options = {"standard", "dark", "pink", "blue", "kingdoms", "empires"}
+color_options = {"standard", "dark", "pink", "blue"}
 
 async def ping(ctx: commands.Context, _: Manager) -> None:
     response = "Beep Boop"
@@ -50,29 +50,6 @@ async def ping(ctx: commands.Context, _: Manager) -> None:
             name = author.name
         response = name + " " + random.choice(ping_text_choices) + content
     await send_message_and_file(channel=ctx.channel, title=response)
-
-
-async def pelican(ctx: commands.Context, manager: Manager) -> None:
-    pelican_places = {
-        "your home": 15,
-        "a kebab store": 12,
-        "a jungle": 10,
-        "a cursed IKEA": 10,
-        "a supermarket": 9,
-        "Formosa": 8,
-        "the Vatican at night": 7,
-        "your dreams": 5,
-        "a german bureaucracy office": 5,
-        "a karaoke bar in Tokyo": 5,
-        "a quantum physics lecture": 4,
-        "your own mind": 3,
-        "Area 51": 2,
-        "the Teletubbies’ homeland": 0.9,
-        "Summoners’ Rift": 0.1,
-    }
-    chosen_place = random.choices(list(pelican_places.keys()), weights=list(pelican_places.values()), k=1)[0]
-    message = f"A pelican is chasing you through {chosen_place}!"
-    await send_message_and_file(channel=ctx.channel, title=message)
 
 
 async def bumble(ctx: commands.Context, manager: Manager) -> None:
@@ -111,7 +88,7 @@ async def fish(ctx: commands.Context, manager: Manager) -> None:
 
     time_now = time.time()
     delta_t = time_now - board.fish_pop["time"]
-    
+
 
     board.fish_pop["time"] = time_now
     board.fish_pop["fish_pop"] = odeint(fish_pop_model, board.fish_pop["fish_pop"], [0, delta_t], args=args)[1]
@@ -216,7 +193,7 @@ async def global_leaderboard(ctx: commands.Context, manager: Manager) -> None:
             text += f"\\#{i + 1 : >{len(index)}} | {board[1].fish : <{max_fishes}} | {bold}{guild.name}{bold}\n"
     if this_board is not None and this_board not in raw_boards[:9]:
         text += f"\n\\#{index} | {this_board.fish : <{max_fishes}} | {ctx.guild.name}"
-    
+
     await send_message_and_file(channel=ctx.channel,
                                 title="Global Fishing Leaderboard",
                                 message=text)
@@ -424,7 +401,7 @@ async def view_orders(player: Player | None, ctx: commands.Context, manager: Man
     arguments = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip().lower().split()
     subset = "missing" if {"missing", "miss", "m"} & set(arguments) else None
     subset = "submitted" if {"submitted", "submit", "sub", "s"} & set(arguments) else subset
-    
+
     try:
         board = manager.get_board(ctx.guild.id)
         order_text = get_orders(board, player, ctx, subset=subset)
@@ -490,7 +467,7 @@ async def view_map(player: Player | None, ctx: commands.Context, manager: Manage
                                     message="If you think this is an error, contact a GM.",
                                     embed_colour=ERROR_COLOUR)
         return
-    
+
     try:
         if not board.fow:
             file, file_name = manager.draw_moves_map(ctx.guild.id, player, color_mode)
@@ -750,19 +727,21 @@ async def info(ctx: commands.Context, manager: Manager) -> None:
                                      f"{'Open' if board.orders_enabled else 'Locked'}" )
     await send_message_and_file(channel=ctx.channel,
                                 message=(f"Year: {board.get_year_str()}\n"
-                                       f"Phase: {str(board.phase)}\n"
-                                       f"Orders are: {'Open' if board.orders_enabled else 'Locked'}\n"
-                                       f"Game Type: {str(board.datafile)}"))
+                                         f"Phase: {str(board.phase)}\n"
+                                         f"Orders are {'Open' if board.orders_enabled else 'Locked'}\n"
+                                         f"Game Type: {str(board.datafile)}\n"
+                                         f"Chaos: {':white_check_mark:' if board.is_chaos() else ':x:'}\n"
+                                         f"Fog of War: {':white_check_mark:' if board.fow else ':x:'}"))
 
 
 async def province_info(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
 
     if not board.orders_enabled:
-        perms.gm_context_check(ctx, "Orders locked! If you think this is an error, contact a GM.", 
+        perms.gm_context_check(ctx, "Orders locked! If you think this is an error, contact a GM.",
             "You cannot use .province_info in a non-GM channel while orders are locked.")
         return
- 
+
     province_name = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
     if not province_name:
         log_command(logger, ctx, message=f"No province given")
@@ -785,7 +764,7 @@ async def province_info(ctx: commands.Context, manager: Manager) -> None:
             await send_message_and_file(channel=ctx.channel,
                                         title=f"Province {province.name} is not visible to you")
             return
-    
+
     # fmt: off
     if not coast:
         out = f"Type: {province.type.name}\n" + \
@@ -819,10 +798,10 @@ async def player_info(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
 
     if not board.orders_enabled:
-        perms.gm_context_check(ctx, "Orders locked! If you think this is an error, contact a GM.", 
+        perms.gm_context_check(ctx, "Orders locked! If you think this is an error, contact a GM.",
             "You cannot use .province_info in a non-GM channel while orders are locked.")
         return
- 
+
     player_name = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
     if not player_name:
         log_command(logger, ctx, message=f"No province given")
@@ -831,7 +810,7 @@ async def player_info(ctx: commands.Context, manager: Manager) -> None:
                                     message="Usage: .province_info <player>")
         return
 
-    # HACK: chaos has same name of players as provinces so we exploit that    
+    # HACK: chaos has same name of players as provinces so we exploit that
     province, _ = board.get_province_and_coast(player_name)
     player: Player = board.get_player(province.name.lower())
     if player is None:
@@ -852,9 +831,9 @@ async def player_info(ctx: commands.Context, manager: Manager) -> None:
     bullet = "\n- "
     out = f"Color: #{player.render_color}\n" + \
         f"Points: {player.points}\n" + \
-        f"Vassals: {', '.join(map(str, player.vassals))}\n" + \
+        f"Vassals: {', '.join(player.vassels)}\n" + \
         f"Liege: {player.liege if player.liege else 'None'}\n" + \
-        f"Units: {(bullet + bullet.join([unit.location().name for unit in player.units])) if len(player.units) > 0 else 'None'}\n" + \
+        f"Units: {(bullet + bullet.join([unit.location() for unit in player.units])) if len(player.units) > 0 else 'None'}\n" + \
         f"Centers ({len(player.centers)}): {(bullet + bullet.join([center.name for center in player.centers])) if len(player.centers) > 0 else 'None'}\n"
     # fmt: on
     log_command(logger, ctx, message=f"Got info for player {player}")
@@ -949,7 +928,7 @@ async def all_province_data(ctx: commands.Context, manager: Manager) -> None:
 
     if not board.orders_enabled:
         perms.gm_perms_check(ctx, "call .all_province_data while orders are locked")
-    
+
     province_by_owner = defaultdict(list)
     for province in board.provinces:
         owner = province.owner
@@ -1062,13 +1041,13 @@ async def publish_fow_order_logs(ctx: commands.Context, manager: Manager):
     name_to_player: dict[str, Player] = {}
     for player in board.players:
         name_to_player[player.name.lower()] = player
-    
+
     for channel in player_category.channels:
         player = get_player_by_channel(channel, manager, guild.id)
 
         if not player or (filter_player and player != filter_player):
             continue
-        
+
         message = get_filtered_orders(board, player)
 
         await send_message_and_file(channel=channel, message=message)
@@ -1107,7 +1086,7 @@ async def ping_players(ctx: commands.Context, manager: Manager) -> None:
         player_to_role: dict[Player | None, Role] = dict()
         for player in board.players:
             name_to_player[player.name.lower()] = player
-        
+
         player_roles: set[Role] = set()
 
         for role in guild.roles:
@@ -1279,7 +1258,7 @@ async def blitz(ctx: commands.Context, manager: Manager) -> None:
     # if available < len(cs):
     #     await send_message_and_file(channel=ctx.channel, message="Not enough available comms")
     #     return
-    
+
     name_to_player: dict[str, Player] = dict()
     player_to_role: dict[Player | None, Role] = dict()
     for player in board.players:
@@ -1303,7 +1282,7 @@ async def blitz(ctx: commands.Context, manager: Manager) -> None:
         if not player_to_role.get(player):
             await send_message_and_file(channel=ctx.channel, message=f"Missing player role for {player.name}")
             return
-        
+
     current_cat = cos.pop(0)
     available = 50 - len(current_cat.channels)
     while len(cs) > 0:
@@ -1391,8 +1370,10 @@ async def exec_py(ctx: commands.Context, manager: Manager) -> None:
         exec(code, {"print": embed_print, "board": board})
     except Exception as e:
         embed_print('\n' + repr(e))
-    if embed_print.text:
-        await send_message_and_file(channel=ctx.channel, message=embed_print.text)
+
+    await send_message_and_file(channel=ctx.channel, message=embed_print.text)
+    for player in board.players:
+        print(player.points)
     manager._database.delete_board(board)
 
     manager._database.save_board(ctx.guild.id, board)
