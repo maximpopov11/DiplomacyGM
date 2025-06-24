@@ -378,6 +378,52 @@ async def servers(ctx: commands.Context, manager: Manager) -> None:
                                 title=f"{len(ctx.bot.guilds)} Servers",
                                 message=message)
 
+@perms.admin("allocate_wave")
+async def bulk_allocate_role(ctx: commands.Context, role: Role, *usernames) -> None:
+    guild = ctx.guild
+    if guild is None:
+        return
+    
+    success_count = 0
+    failed = []
+    skipped = []
+
+    for user in usernames:
+        # FIND USER FROM USERNAME
+        member = discord.utils.find(
+            lambda m: (m.global_name and m.global_name.lower() == user.lower()) or m.name.lower() == user.lower(),
+            guild.members
+        )
+        
+        if not member or member is None:
+            failed.append((user, "Member not Found"))
+            continue
+
+        if role in member.roles:
+            skipped.append(user)
+            continue
+
+        try:
+            await member.add_roles(role)
+            success_count += 1
+        except Exception as e:
+            failed.append((user, f"Error Adding Role- {e}"))
+
+    failed_out = '\n'.join([f"{u}: {m}" for u, m in failed])
+    skipped_out = '\n'.join(skipped)
+    out = f"Allocated Role {role.name}[{role.id}] to {success_count} users.\n" + \
+        f"Failed for {len(failed)} users.\n" + \
+        f"Skipped {len(skipped)} users for already having the role.\n" + \
+        "----\n" + \
+        f"Failed:\n{failed_out}\n" + \
+        "----\n" + \
+        f"Skipped:\n{skipped_out}\n" + \
+        "----\n"
+
+    await send_message_and_file(channel=ctx.channel,
+                                title="Wave Allocation Info",
+                                message=out)
+
 @perms.player("order")
 async def order(player: Player | None, ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
