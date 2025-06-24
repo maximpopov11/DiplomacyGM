@@ -350,7 +350,7 @@ async def servers(ctx: commands.Context, manager: Manager) -> None:
         message += f"\n There is a further {len(servers_with_games)} games in servers I am no longer in"
 
 
-    log_command(logger, ctx, f"Sent Announcement into {len(ctx.bot.guilds)} servers")
+    log_command(logger, ctx, f"Found {len(ctx.bot.guilds)} Servers")
     await send_message_and_file(channel=ctx.channel,
                                 title=f"{len(ctx.bot.guilds)} Servers",
                                 message=message)
