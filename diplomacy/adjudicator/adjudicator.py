@@ -23,6 +23,11 @@ from diplomacy.persistence.order import (
     ComplexOrder,
     Build,
     Disband,
+    Disown,
+    Vassal,
+    Liege,
+    Defect,
+    DualMonarchy,
     RebellionMarker
 )
 
@@ -256,6 +261,81 @@ class BuildsAdjudicator(Adjudicator):
     def __init__(self, board: Board):
         super().__init__(board)
 
+    def vassal_adju(self):
+        for player in self._board.players:
+            scs = 0
+            for vassal in player.vassals:
+                scs += len(vassal.centers)
+            if scs > len(player.centers):
+                for order in player.vassal_orders.values():
+                    player.new_vassals = player.vassals
+                    if isinstance(order, Disown) and order.player in player.vassals:
+                        player.new_vassals.remove(order.player)
+                    scs2 = 0
+                    for vassal in player.new_vassals:
+                        scs2 += len(vassal.centers)
+                    if scs2 > len(player.centers):
+                        player.new_vassals = []
+            else:
+                player.new_vassals = player.vassals
+                for order in player.vassal_orders.values():
+                    if isinstance(order, Vassal):
+                        vassal = order.player
+                        if player in vassal.vassal_orders and isinstance(vassal.vassal_orders[player], Liege):
+                            if (not vassal.liege) or (vassal.liege in player.vassal_orders and isinstance(player.vassal_orders[vassal.liege], RebellionMarker)):
+                                player.new_vassals.append(vassal)
+                
+        for player in self._board.players:
+            new_liege = None
+            overcommited = False
+            for liege in self._board.players:
+                if player in liege.new_vassals:
+                    if new_liege is None:
+                        new_liege = liege
+                    else:
+                        overcommited = True
+                        break
+            if overcommited:
+                for liege in self._board.players:
+                    if player in liege.new_vassals:
+                        liege.new_vassals.remove(player)
+            for order in player.vassal_orders:
+                if isinstance(order, Defect):
+                    if player in order.player.new_vassals:
+                        order.player.new_vassals.remove(player)
+                        new_liege = None
+            player.new_liege = new_liege
+            
+        for play in self._board.players:
+            player.liege = player.new_liege
+            player.vassals = player.new_vassals
+        
+        for player in self._board.players:
+            for order in player.vassal_orders.values():
+                if isinstance(order, DualMonarchy) and player in order.player.vassal_orders and isinstance(order.player.vassal_orders[player], DualMonarchy):
+                    other = order.player
+                    if other.liege == None and not other.vassals and player.liege == None and not player.vassals:
+                        other.vassals = [player]
+                        player.vassals = [other]
+                        other.liege = player
+                        player.liege = other
+
+
+        for player in self._board.players:
+            player.points += len(player.centers)
+            if not player.liege in player.vassals:
+                for vassal in player.vassals:
+                    player.points += len(vassal.centers)
+                    for subvassal in vassal.vassals:
+                        player.points += len(subvassal.centers)
+            else:
+                player.points += len(player.liege.centers)
+                continue
+
+            if player.liege:
+                player.points += len(player.liege.centers) // 2
+
+
     def run(self) -> Board:
         for player in self._board.players:
             available_builds = len(player.centers) - len(player.units)
@@ -296,8 +376,8 @@ class BuildsAdjudicator(Adjudicator):
                 if available_builds < 0:
                     logger.warning(f"Player {player.name} disbanded less orders than they should have")
 
-        for player in self._board.players:
-            player.points += len(player.centers)
+        if "vassal system" in self._board.data.get("adju flags", []):
+            self.vassal_adju()
 
 
 
