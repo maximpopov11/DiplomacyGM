@@ -52,6 +52,8 @@ class Player:
 
         self.build_orders: set[order.PlayerOrder] = set()
 
+        self.vassal_orders: dict[Player, order.RelationshipOrder] = {}
+
         self.points: int = 0
         self.liege: Player | None = None
         self.discord_id = None
