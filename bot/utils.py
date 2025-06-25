@@ -398,7 +398,7 @@ def get_orders(board: Board, player_restriction: Player | None, ctx: Context, fi
 
                 title = f"**{player_name}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
                 body = ""
-                for unit in player.build_orders:
+                for unit in player.build_orders | set(player.vassal_orders.values()):
                     body += f"\n{unit}"
 
                 if fields:
