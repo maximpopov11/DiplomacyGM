@@ -181,7 +181,7 @@ class TreeToOrder(Transformer):
         build_order = s[0]
         if self.player_restriction is not None and self.player_restriction != build_order[1]:
             raise Exception(f"Cannot issue order for {build_order[0].name} as you do not control it")
-        if isinstance(s[2], order.PlayerOrder):
+        if isinstance(build_order[2], order.PlayerOrder):
             remove_player_order_for_location(self.board, build_order[1], build_order[0])
             build_order[1].build_orders.add(build_order[2])
         else:
@@ -299,15 +299,15 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
                 generator.transform(cmd)
                 orderoutput.append(f"\u001b[0;32m{order}")
             except VisitError as e:
-                logger.info(e)
+                logger.exception(e)
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: {str(e).splitlines()[-1]}")
             except UnexpectedEOF as e:
-                logger.info(e)
+                logger.exception(e)
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: Please fix this order and try again")
             except UnexpectedCharacters as e:
-                logger.info(e)
+                logger.exception(e)
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: Please fix this order and try again")
         database = get_connection()
@@ -328,15 +328,15 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
                 movement.append(generator.transform(cmd))
                 orderoutput.append(f"\u001b[0;32m{order}")
             except VisitError as e:
-                logger.info(e)
+                logger.exception(e)
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: {str(e).splitlines()[-1]}")
             except UnexpectedEOF as e:
-                logger.info(e)
+                logger.exception(e)
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: Please fix this order and try again")
             except UnexpectedCharacters as e:
-                logger.info(e)
+                logger.exception(e)
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: Please fix this order and try again")
         database = get_connection()
@@ -479,9 +479,10 @@ def remove_player_order_for_location(board: Board, player: Player, location: Loc
     return False
 
 def remove_relationship_order(board: Board, order: order.RelationshipOrder, player: Player):
-    del player.vassal_orders[order.player]
+    if order.player in player.vassal_orders:
+        del player.vassal_orders[order.player]
     database = get_connection()
     database.execute_arbitrary_sql(
         "DELETE FROM vassal_orders WHERE board_id=? and phase=? and player=? and target_player=?",
-        (board.board_id, board.get_phase_and_year_string(), player, order.player)
+        (board.board_id, board.get_phase_and_year_string(), player.name, order.player.name)
     )
