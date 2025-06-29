@@ -354,6 +354,8 @@ async def scoreboard(ctx: commands.Context) -> None:
     * dislodge_unit <province_name> <retreat_option1> <retreat_option2>...
     * make_units_claim_provinces {True|(False) - whether or not to claim SCs}
     * set_player_points <player_name> <integer>
+    * set_player_vassal <liege> <vassal>
+    * remove_relationship <player1> <player2>
     """,
 )
 async def edit(ctx: commands.Context) -> None:
