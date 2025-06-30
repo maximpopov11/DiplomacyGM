@@ -498,6 +498,11 @@ async def nick(ctx: commands.Context) -> None:
     await command.nick(ctx, manager)
 
 
+@bot.command(brief="Request to spectate a player")
+async def spec(ctx: commands.Context) -> None:
+    await command.spec(ctx, manager)
+
+
 @bot.command(hidden=True)
 async def exec_py(ctx: commands.Context) -> None:
     await command.exec_py(ctx, manager)
