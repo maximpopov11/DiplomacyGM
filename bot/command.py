@@ -5,7 +5,6 @@ import random
 import time
 from random import randrange
 from typing import Callable
-from numpy import choose
 from scipy.integrate import odeint
 
 from black.trans import defaultdict
@@ -20,6 +19,7 @@ from discord import (
 )
 from discord import PermissionOverwrite
 from discord.ext import commands
+from discord.utils import find as discord_find
 
 from bot import config
 import bot.perms as perms
@@ -448,16 +448,24 @@ async def bulk_allocate_role(ctx: commands.Context, manager: Manager) -> None:
     usernames = []
     components = content.split(" ")
     for comp in components:
+        if comp == "":
+            continue
+
+        match = re.match(r"<@&\d+>", comp)
+        if match:
+            continue
+
         usernames.append(comp)
+
+    print(usernames)
 
     success_count = 0
     failed = []
     skipped = []
     for user in usernames:
         # FIND USER FROM USERNAME
-        member = discord.utils.find(
-            lambda m: (m.global_name and m.global_name.lower() == user.lower())
-            or m.name.lower() == user.lower(),
+        member = discord_find(
+            lambda m: m.name == user,
             guild.members,
         )
 
@@ -467,7 +475,8 @@ async def bulk_allocate_role(ctx: commands.Context, manager: Manager) -> None:
 
         for role in roles:
             if role in member.roles:
-                skipped.append((user, role.name))
+                skipped.append((user, f"already had role @{role.name}"))
+                continue
 
             try:
                 await member.add_roles(role)
@@ -476,7 +485,7 @@ async def bulk_allocate_role(ctx: commands.Context, manager: Manager) -> None:
                 failed.append((user, f"Error Adding Role- {e}"))
 
     failed_out = "\n".join([f"{u}: {m}" for u, m in failed])
-    skipped_out = "\n".join([f"{u}: {m}" for u, m in failed])
+    skipped_out = "\n".join([f"{u}: {m}" for u, m in skipped])
     out = (
         f"Allocated Roles {', '.join(role_names)} to {len(usernames)} users.\n"
         + f"Succeeded in applying a role {success_count} times.\n"
