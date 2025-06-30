@@ -448,9 +448,6 @@ async def bulk_allocate_role(ctx: commands.Context, manager: Manager) -> None:
     usernames = []
     components = content.split(" ")
     for comp in components:
-        if comp in role_names:
-            continue
-
         usernames.append(comp)
 
     success_count = 0
