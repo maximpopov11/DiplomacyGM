@@ -154,14 +154,14 @@ async def on_command_error(ctx, error):
         else:
             logger.error(
                 f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
-                f"errored in {time_spent}s\n"
+
+                f"errored in {time_spent}s\n",
+                exc_info=error.original
             )
-            logger.error(error.original)
-            await send_message_and_file(
-                channel=ctx.channel,
-                message=str(error.original),
-                embed_colour=ERROR_COLOUR,
-            )
+            # logger.error(
+            #     stack_info=True
+            # )
+            await send_message_and_file(channel=ctx.channel, message=str(error.original), embed_colour=ERROR_COLOUR)
 
 
 @bot.command(help="Checks bot listens and responds.")
@@ -381,6 +381,8 @@ async def scoreboard(ctx: commands.Context) -> None:
     * dislodge_unit <province_name> <retreat_option1> <retreat_option2>...
     * make_units_claim_provinces {True|(False) - whether or not to claim SCs}
     * set_player_points <player_name> <integer>
+    * set_player_vassal <liege> <vassal>
+    * remove_relationship <player1> <player2>
     """,
 )
 async def edit(ctx: commands.Context) -> None:

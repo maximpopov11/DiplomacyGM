@@ -182,7 +182,7 @@ class _DatabaseConnection:
                 order = order_class(target_player)
 
 
-                player.build_orders.add(order)
+                player.vassal_orders[target_player] = order
 
 
         province_data = cursor.execute(
@@ -453,7 +453,7 @@ class _DatabaseConnection:
                     getattr(build_order, "unit_type", None) == UnitType.ARMY,
                 )
                 for player in players
-                for build_order in player.build_orders if isinstance(build_order, (Build, Disband))
+                for build_order in player.build_orders
             ],
         )
         cursor.executemany(
@@ -467,7 +467,7 @@ class _DatabaseConnection:
                     build_order.__class__.__name__
                 )
                 for player in players
-                for build_order in player.build_orders if isinstance(build_order, RelationshipOrder)
+                for build_order in player.vassal_orders.values()
             ]
         )
         cursor.close()

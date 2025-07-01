@@ -246,8 +246,8 @@
         },
         "Ajuuraan": {
             "color": {"standard": "587ba7", "dark": "4A688D", "pink": "FF6AB9", "blue": "924EEF"},
-            "vscc": 32,
-            "iscc": 4
+            "vscc": 36,
+            "iscc": 5
         },
         "Athapasca": {
             "color": {"standard": "e95a94", "dark": "BB4C79", "pink": "FF69B4", "blue": "63E8DD"},
