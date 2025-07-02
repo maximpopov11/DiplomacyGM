@@ -50,6 +50,8 @@ MESSAGES = [
 
 @bot.event
 async def on_ready():
+    await bot.tree.sync()
+
     guild = bot.get_guild(
         impdip_server
     )  # Ensure bot is connected to the correct server
@@ -164,65 +166,256 @@ async def on_command_error(ctx, error):
             )
 
 
+class SpecView(discord.ui.View):
+    def __init__(
+        self,
+        member: discord.Member,
+        game_name: str,
+        channel_url: str,
+        role: discord.Role,
+        cspec_role: discord.Role,
+    ):
+        super().__init__(timeout=None)
+        self.member = member
+        self.game_name = game_name
+        self.url = channel_url
+        self.power_role = role
+        self.spec_role = cspec_role
+
+    @discord.ui.button(label="Accept", style=discord.ButtonStyle.success)
+    async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message(
+            f"Accept response sent to {self.member.mention}!", ephemeral=True
+        )
+
+        await self.member.send(
+            f"Response from: {self.game_name}\n"
+            + f"You have been accepted as a spectator for: @{self.power_role.name}\n"
+            + f"Go to {self.url} to watch them play!"
+        )
+        await self.member.add_roles(self.power_role, self.spec_role)
+
+        if interaction.message:
+            await interaction.message.delete()
+
+    @discord.ui.button(label="Reject", style=discord.ButtonStyle.success)
+    async def reject(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message(
+            f"Reject response sent to {self.member.mention}!", ephemeral=True
+        )
+
+        await self.member.send(
+            f"Response from: {self.game_name}\n"
+            + f"You have been rejected as a spectator for: @{self.power_role.name}\n"
+        )
+
+        if interaction.message:
+            await interaction.message.delete()
+
+
+@bot.tree.command(
+    name="spec",
+    description="Specatate a Player",
+)
+async def spec(interaction: discord.Interaction, power_role: discord.Role):
+    guild = interaction.guild
+    if not guild:
+        return
+
+    # server ignore list
+    if guild.id in [impdip_server]:
+        await interaction.response.send_message(
+            "Can't request to spectate in the Hub server!"
+        )
+        return
+
+    # ignore if DM channel
+    if isinstance(interaction.channel, discord.DMChannel):
+        await interaction.response.send_message(
+            "Please use the spectate command in a Game server!"
+        )
+        return
+    elif not interaction.channel:
+        return
+
+    if interaction.channel.name != "the-public-square":
+        channel = discord.utils.find(
+            lambda c: c.name == "the-public-square", guild.text_channels
+        )
+        if channel:
+            await interaction.response.send_message(
+                f"Can't request here! Go to the public square: {channel.mention}",
+                ephemeral=True,
+            )
+
+        return
+
+    # prevent spectating non-power roles
+    if (
+        power_role.name
+        in [
+            "Admin",
+            "Moderators",
+            "GM",
+            "Heavenly Angel",
+            "Player",
+            "Country Spectator",
+        ]
+        or power_role.name.find("-orders") != -1
+    ):
+        await interaction.response.send_message(
+            "Can't spectate that role!", ephemeral=True
+        )
+        return
+
+    # get country spectator role
+    cspec_role = discord.utils.find(
+        lambda r: r.name == "Country Spectator", guild.roles
+    )
+    if not cspec_role:
+        await interaction.response.send_message(
+            "Could not find country spectator role! Contact GM."
+        )
+        return
+
+    member = guild.get_member(interaction.user.id)
+    if not member:
+        return
+
+    # if player already a player or country spec
+    if any(map(lambda r: r.name in ["Player", "Country Spectator"], member.roles)):
+        await interaction.response.send_message(
+            "Can't request to spectate another power, you are either a Player or already a Spectator.",
+            ephemeral=True,
+        )
+
+        return
+
+    # get power channel to send request
+    role_channel = discord.utils.find(
+        lambda c: c.name == f"{power_role.name.lower()}-orders", guild.text_channels
+    )
+    role_void = discord.utils.find(
+        lambda c: c.name == f"{power_role.name.lower()}-void", guild.text_channels
+    )
+    if not role_channel or not role_void:
+        await interaction.response.send_message(
+            "Please specify a playable power.", ephemeral=True
+        )
+        return
+
+    # send request message to player
+    out = (
+        f"Spectator request from {interaction.user.mention}\n"
+        + "- (if the buttons do not work, contact your GM)"
+    )
+    url = f"https://discord.com/channels/{guild.id}/{role_void.id}"  # link to void channel (for accept message)
+    await role_channel.send(
+        content=out,
+        view=SpecView(member, guild.name, url, power_role, cspec_role),
+    )
+
+    # send ack to requesting user
+    await interaction.response.send_message(
+        "Spectator application sent! You should hear a response via DM.", ephemeral=True
+    )
+
+
 @bot.command(help="Checks bot listens and responds.")
 async def ping(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.ping(ctx, manager)
 
 
 @bot.command(hidden=True)
 async def pelican(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.pelican(ctx, manager)
 
 
 @bot.command(hidden=True)
 async def bumble(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.bumble(ctx, manager)
 
 
 @bot.command(hidden=True)
 async def fish(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await ctx.message.add_reaction("🐟")
     await command.fish(ctx, manager)
 
 
 @bot.command(hidden=True)
 async def phish(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await ctx.message.add_reaction("🐟")
     await command.phish(ctx, manager)
 
 
 @bot.command(hidden=True)
 async def cheat(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.cheat(ctx, manager)
 
 
 @bot.command(hidden=True)
 async def advice(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.advice(ctx, manager)
 
 
 @bot.command(hidden=True)
 async def botsay(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.botsay(ctx, manager)
 
 
 @bot.command(hidden=True)
 async def announce(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.announce(ctx, manager)
 
 
 @bot.command(hidden=True)
 async def servers(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.servers(ctx, manager)
 
 
 @bot.command(hidden=True)
 async def bulk_allocate_role(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.bulk_allocate_role(ctx, manager)
 
 
 @bot.command(brief="Shows global fish leaderboard")
 async def global_leaderboard(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.global_leaderboard(ctx, manager)
 
 
@@ -238,6 +431,9 @@ async def global_leaderboard(ctx: commands.Context) -> None:
     aliases=["o", "orders"],
 )
 async def order(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.order(ctx, manager)
 
 
@@ -248,6 +444,9 @@ async def order(ctx: commands.Context) -> None:
     aliases=["remove", "rm", "removeorders"],
 )
 async def remove_order(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.remove_order(ctx, manager)
 
 
@@ -259,6 +458,9 @@ async def remove_order(ctx: commands.Context) -> None:
     aliases=["v", "view", "vieworders", "view-orders"],
 )
 async def view_orders(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.view_orders(ctx, manager)
 
 
@@ -267,6 +469,9 @@ async def view_orders(ctx: commands.Context) -> None:
     description="For GM: Sends orders from previous phase to #orders-log",
 )
 async def publish_orders(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.publish_orders(ctx, manager)
 
 
@@ -277,6 +482,9 @@ async def publish_orders(ctx: commands.Context) -> None:
     """,
 )
 async def publish_fow_moves(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.publish_fow_moves(ctx, manager)
 
 
@@ -287,6 +495,9 @@ async def publish_fow_moves(ctx: commands.Context) -> None:
     """,
 )
 async def publish_fow_orders(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.publish_fow_order_logs(ctx, manager)
 
 
@@ -303,6 +514,9 @@ async def publish_fow_orders(ctx: commands.Context) -> None:
     aliases=["viewmap", "vm"],
 )
 async def view_map(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.view_map(ctx, manager)
 
 
@@ -317,6 +531,9 @@ async def view_map(ctx: commands.Context) -> None:
     aliases=["viewcurrent", "vc"],
 )
 async def view_current(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.view_current(ctx, manager)
 
 
@@ -325,6 +542,9 @@ async def view_current(ctx: commands.Context) -> None:
     aliases=["g"],
 )
 async def view_gui(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.view_gui(ctx, manager)
 
 
@@ -339,16 +559,25 @@ async def view_gui(ctx: commands.Context) -> None:
     """,
 )
 async def adjudicate(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.adjudicate(ctx, manager)
 
 
 @bot.command(brief="Rolls back to the previous game state.")
 async def rollback(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.rollback(ctx, manager)
 
 
 @bot.command(brief="Reloads the current board with what is in the DB")
 async def reload(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.reload(ctx, manager)
 
 
@@ -359,6 +588,9 @@ async def reload(ctx: commands.Context) -> None:
     aliases=["leaderboard"],
 )
 async def scoreboard(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.get_scoreboard(ctx, manager)
 
 
@@ -384,11 +616,17 @@ async def scoreboard(ctx: commands.Context) -> None:
     """,
 )
 async def edit(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.edit(ctx, manager)
 
 
 @bot.command(brief="Clears all players orders.")
 async def remove_all(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.remove_all(ctx, manager)
 
 
@@ -399,16 +637,25 @@ async def remove_all(ctx: commands.Context) -> None:
     aliases=["lock"],
 )
 async def lock_orders(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.disable_orders(ctx, manager)
 
 
 @bot.command(brief="re-enables orders", aliases=["unlock"])
 async def unlock_orders(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.enable_orders(ctx, manager)
 
 
 @bot.command(brief="outputs information about the current game", aliases=["i"])
 async def info(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.info(ctx, manager)
 
 
@@ -417,6 +664,9 @@ async def info(ctx: commands.Context) -> None:
     aliases=["province"],
 )
 async def province_info(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.province_info(ctx, manager)
 
 
@@ -425,21 +675,33 @@ async def province_info(ctx: commands.Context) -> None:
     aliases=["player"],
 )
 async def player_info(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.player_info(ctx, manager)
 
 
 @bot.command(brief="outputs the provinces you can see")
 async def visible_info(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.visible_provinces(ctx, manager)
 
 
 @bot.command(brief="publicize void for chaos")
 async def publicize(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.publicize(ctx, manager)
 
 
 @bot.command(brief="outputs all provinces per owner")
 async def all_province_data(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.all_province_data(ctx, manager)
 
 
@@ -448,6 +710,9 @@ async def all_province_data(ctx: commands.Context) -> None:
     description="Create a game of Imp Dip and output the map. (there are no other variant options at this time)",
 )
 async def create_game(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.create_game(ctx, manager)
 
 
@@ -457,6 +722,9 @@ async def create_game(ctx: commands.Context) -> None:
     * .archive [link to any channel in category]""",
 )
 async def archive(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.archive(ctx, manager)
 
 
@@ -465,6 +733,9 @@ async def archive(ctx: commands.Context) -> None:
     description="Creates all possible channels between two players for blitz in available comms channels.",
 )
 async def blitz(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.blitz(ctx, manager)
 
 
@@ -485,26 +756,33 @@ async def blitz(ctx: commands.Context) -> None:
     """,
 )
 async def ping_players(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.ping_players(ctx, manager)
 
 
 @bot.command(brief="permanently deletes a game, cannot be undone")
 async def delete_game(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.delete_game(ctx, manager)
 
 
 @bot.command(brief="Changes your nickname")
 async def nick(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.nick(ctx, manager)
-
-
-@bot.command(brief="Request to spectate a player")
-async def spec(ctx: commands.Context) -> None:
-    await command.spec(ctx, manager)
 
 
 @bot.command(hidden=True)
 async def exec_py(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
     await command.exec_py(ctx, manager)
 
 
