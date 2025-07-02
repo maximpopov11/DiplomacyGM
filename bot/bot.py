@@ -8,6 +8,7 @@ from discord import Forbidden
 from dotenv.main import load_dotenv
 
 from bot.config import ERROR_COLOUR
+from bot.perms import admin_only, CommandPermissionError, gm_only
 from bot.utils import send_message_and_file
 
 load_dotenv()
@@ -104,37 +105,45 @@ async def on_command_error(ctx, error):
         # we shouldn't do anything if the user says something like "..."
         return
 
+    if isinstance(error, (
+            commands.CommandInvokeError,
+            commands.ConversionError,
+            commands.HybridCommandError
+    )):
+        original = error.original
+    else:
+        original = error
+
     try:
         # mark the message as failed
         await ctx.message.add_reaction("❌")
         await ctx.message.remove_reaction("👍", bot.user)
     except Exception:
-        # if reactions fail continue handling error
+        # if reactions fail, ignore and continue handling existing exception
         pass
 
-    if type(error.original) == PermissionError:
-        await send_message_and_file(
-            channel=ctx.channel, message=str(error.original), embed_colour=ERROR_COLOUR
-        )
+
+    if isinstance(original, CommandPermissionError):
+        await send_message_and_file(channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR)
         return
 
     time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
     logger.log(
         logging.ERROR,
         f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
-        f"errored in {time_spent}s\n",
+        f"errored in {time_spent}s\n"
     )
 
-    if type(error.original) == Forbidden:
+    if isinstance(original, Forbidden):
         await send_message_and_file(
             channel=ctx.channel,
             message=f"I do not have the correct permissions to do this.\n"
-            f"I might not be setup correctly.\n"
-            f"If this is unexpected please contact a GM or reach out in: "
-            f"https://discord.com/channels/1201167737163104376/1286027175048253573"
-            f" or "
-            f"https://discord.com/channels/1201167737163104376/1280587781638459528",
-            embed_colour=ERROR_COLOUR,
+                    f"I might not be setup correctly.\n"
+                    f"If this is unexpected please contact a GM or reach out in: "
+                    f"https://discord.com/channels/1201167737163104376/1286027175048253573"
+                    f" or "
+                    f"https://discord.com/channels/1201167737163104376/1280587781638459528",
+            embed_colour=ERROR_COLOUR
         )
     else:
         time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
@@ -147,23 +156,18 @@ async def on_command_error(ctx, error):
             # if reactions fail continue handling error
             pass
 
-        if type(error.original) == PermissionError:
-            await send_message_and_file(
-                channel=ctx.channel,
-                message=str(error.original),
-                embed_colour=ERROR_COLOUR,
-            )
+        if isinstance(original, CommandPermissionError):
+
+            await send_message_and_file(channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR)
         else:
             logger.error(
                 f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
-
-                f"errored in {time_spent}s\n",
-                exc_info=error.original
+                f"errored in {time_spent}s\n"
             )
-            # logger.error(
-            #     stack_info=True
-            # )
-            await send_message_and_file(channel=ctx.channel, message=str(error.original), embed_colour=ERROR_COLOUR)
+            logger.error(
+                original
+            )
+            await send_message_and_file(channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR)
 
 
 class SpecView(discord.ui.View):
@@ -380,6 +384,7 @@ async def advice(ctx: commands.Context) -> None:
 
 
 @bot.command(hidden=True)
+@gm_only("botsay")
 async def botsay(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -388,6 +393,7 @@ async def botsay(ctx: commands.Context) -> None:
 
 
 @bot.command(hidden=True)
+@admin_only("send a GM announcement")
 async def announce(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -396,6 +402,7 @@ async def announce(ctx: commands.Context) -> None:
 
 
 @bot.command(hidden=True)
+@admin_only("list servers")
 async def servers(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -404,6 +411,7 @@ async def servers(ctx: commands.Context) -> None:
 
 
 @bot.command(hidden=True)
+@admin_only("allocate roles to user(s)")
 async def bulk_allocate_role(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -468,6 +476,7 @@ async def view_orders(ctx: commands.Context) -> None:
     brief="Sends all previous orders",
     description="For GM: Sends orders from previous phase to #orders-log",
 )
+@gm_only("publish orders")
 async def publish_orders(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -479,8 +488,8 @@ async def publish_orders(ctx: commands.Context) -> None:
     brief="Sends fog of war maps",
     description="""
     * publish_fow_moves {Country|(None) - whether or not to send for a specific country}
-    """,
-)
+    """,)
+@gm_only("publish fow moves")
 async def publish_fow_moves(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -494,6 +503,7 @@ async def publish_fow_moves(ctx: commands.Context) -> None:
     * publish_fow_orders {Country|(None) - whether or not to send for a specific country}
     """,
 )
+@gm_only("send fow order logs")
 async def publish_fow_orders(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -558,6 +568,7 @@ async def view_gui(ctx: commands.Context) -> None:
     * pass standard, dark, blue, or pink for different color modes if present
     """,
 )
+@gm_only("adjudicate")
 async def adjudicate(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -566,6 +577,7 @@ async def adjudicate(ctx: commands.Context) -> None:
 
 
 @bot.command(brief="Rolls back to the previous game state.")
+@gm_only("rollback")
 async def rollback(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -574,6 +586,7 @@ async def rollback(ctx: commands.Context) -> None:
 
 
 @bot.command(brief="Reloads the current board with what is in the DB")
+@gm_only("reload")
 async def reload(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -581,11 +594,10 @@ async def reload(ctx: commands.Context) -> None:
     await command.reload(ctx, manager)
 
 
-@bot.command(
-    brief="Outputs the scoreboard.",
+@bot.command(brief="Outputs the scoreboard.",
     description="""Outputs the scoreboard.
     In Chaos, is shortened and sorted by points, unless "standard" is an argument""",
-    aliases=["leaderboard"],
+    aliases=["leaderboard"]
 )
 async def scoreboard(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
@@ -617,6 +629,7 @@ async def scoreboard(ctx: commands.Context) -> None:
     * remove_relationship <player1> <player2>
     """,
 )
+@gm_only("edit")
 async def edit(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -625,6 +638,7 @@ async def edit(ctx: commands.Context) -> None:
 
 
 @bot.command(brief="Clears all players orders.")
+@gm_only("remove all orders")
 async def remove_all(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -638,6 +652,7 @@ async def remove_all(ctx: commands.Context) -> None:
              Note: Currently does not persist after the bot is restarted""",
     aliases=["lock"],
 )
+@gm_only("lock orders")
 async def lock_orders(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -645,7 +660,11 @@ async def lock_orders(ctx: commands.Context) -> None:
     await command.disable_orders(ctx, manager)
 
 
-@bot.command(brief="re-enables orders", aliases=["unlock"])
+@bot.command(
+    brief="re-enables orders",
+    aliases=["unlock"]
+)
+@gm_only("unlock orders")
 async def unlock_orders(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -653,7 +672,10 @@ async def unlock_orders(ctx: commands.Context) -> None:
     await command.enable_orders(ctx, manager)
 
 
-@bot.command(brief="outputs information about the current game", aliases=["i"])
+@bot.command(
+    brief="outputs information about the current game",
+    aliases=["i"]
+)
 async def info(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -711,6 +733,7 @@ async def all_province_data(ctx: commands.Context) -> None:
     brief="Create a game of Imp Dip and output the map.",
     description="Create a game of Imp Dip and output the map. (there are no other variant options at this time)",
 )
+@gm_only("create a game")
 async def create_game(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -723,6 +746,7 @@ async def create_game(ctx: commands.Context) -> None:
     description="""Used after a game is done. Will make all channels in category viewable by all server members, but no messages allowed.
     * .archive [link to any channel in category]""",
 )
+@gm_only("archive")
 async def archive(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -734,6 +758,7 @@ async def archive(ctx: commands.Context) -> None:
     brief="blitz",
     description="Creates all possible channels between two players for blitz in available comms channels.",
 )
+@gm_only("create blitz comms channels")
 async def blitz(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -755,8 +780,8 @@ async def blitz(ctx: commands.Context) -> None:
     2. They are missing move orders or retreat orders.
     You may also specify a timestamp to send a deadline to the players.
     * .ping_players <timestamp>
-    """,
-)
+    """)
+@gm_only("ping players")
 async def ping_players(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -765,6 +790,7 @@ async def ping_players(ctx: commands.Context) -> None:
 
 
 @bot.command(brief="permanently deletes a game, cannot be undone")
+@gm_only("delete the game")
 async def delete_game(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -776,11 +802,17 @@ async def delete_game(ctx: commands.Context) -> None:
 async def nick(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
-
     await command.nick(ctx, manager)
 
+    
+@bot.command(brief="Request to spectate a player")
+async def spec(ctx: commands.Context) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+    await command.spec(ctx, manager)
 
 @bot.command(hidden=True)
+@admin_only("Execute arbitrary code")
 async def exec_py(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
