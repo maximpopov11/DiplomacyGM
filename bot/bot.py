@@ -105,11 +105,14 @@ async def on_command_error(ctx, error):
         # we shouldn't do anything if the user says something like "..."
         return
 
-    if isinstance(error, (
+    if isinstance(
+        error,
+        (
             commands.CommandInvokeError,
             commands.ConversionError,
-            commands.HybridCommandError
-    )):
+            commands.HybridCommandError,
+        ),
+    ):
         original = error.original
     else:
         original = error
@@ -122,28 +125,29 @@ async def on_command_error(ctx, error):
         # if reactions fail, ignore and continue handling existing exception
         pass
 
-
     if isinstance(original, CommandPermissionError):
-        await send_message_and_file(channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR)
+        await send_message_and_file(
+            channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR
+        )
         return
 
     time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
     logger.log(
         logging.ERROR,
         f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
-        f"errored in {time_spent}s\n"
+        f"errored in {time_spent}s\n",
     )
 
     if isinstance(original, Forbidden):
         await send_message_and_file(
             channel=ctx.channel,
             message=f"I do not have the correct permissions to do this.\n"
-                    f"I might not be setup correctly.\n"
-                    f"If this is unexpected please contact a GM or reach out in: "
-                    f"https://discord.com/channels/1201167737163104376/1286027175048253573"
-                    f" or "
-                    f"https://discord.com/channels/1201167737163104376/1280587781638459528",
-            embed_colour=ERROR_COLOUR
+            f"I might not be setup correctly.\n"
+            f"If this is unexpected please contact a GM or reach out in: "
+            f"https://discord.com/channels/1201167737163104376/1286027175048253573"
+            f" or "
+            f"https://discord.com/channels/1201167737163104376/1280587781638459528",
+            embed_colour=ERROR_COLOUR,
         )
     else:
         time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
@@ -157,17 +161,18 @@ async def on_command_error(ctx, error):
             pass
 
         if isinstance(original, CommandPermissionError):
-
-            await send_message_and_file(channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR)
+            await send_message_and_file(
+                channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR
+            )
         else:
             logger.error(
                 f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
                 f"errored in {time_spent}s\n"
             )
-            logger.error(
-                original
+            logger.error(original)
+            await send_message_and_file(
+                channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR
             )
-            await send_message_and_file(channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR)
 
 
 class SpecView(discord.ui.View):
@@ -415,9 +420,13 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
         return
 
     _team = discord.utils.get(guild.roles, name="GM Team")
-    _angel = discord.utils.get(guild.roles, name="Heavenly Angel")
+    _team_roles = [
+        _team,
+        discord.utils.get(guild.roles, name="GM"),
+        discord.utils.get(guild.roles, name="Heavenly Angel"),
+    ]
     _elle = discord.utils.find(lambda m: m.name == "eelisha", guild.members)
-    if _angel not in _member.roles:
+    if not any(_role in _member.roles for _role in _team_roles):
         if _elle:
             await interaction.response.send_message(
                 f"Bot is not an angel! Notifying {_team.mention} and {_elle.mention}!"
@@ -700,7 +709,8 @@ async def publish_orders(ctx: commands.Context) -> None:
     brief="Sends fog of war maps",
     description="""
     * publish_fow_moves {Country|(None) - whether or not to send for a specific country}
-    """,)
+    """,
+)
 @gm_only("publish fow moves")
 async def publish_fow_moves(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
@@ -806,10 +816,11 @@ async def reload(ctx: commands.Context) -> None:
     await command.reload(ctx, manager)
 
 
-@bot.command(brief="Outputs the scoreboard.",
+@bot.command(
+    brief="Outputs the scoreboard.",
     description="""Outputs the scoreboard.
     In Chaos, is shortened and sorted by points, unless "standard" is an argument""",
-    aliases=["leaderboard"]
+    aliases=["leaderboard"],
 )
 async def scoreboard(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
@@ -872,10 +883,7 @@ async def lock_orders(ctx: commands.Context) -> None:
     await command.disable_orders(ctx, manager)
 
 
-@bot.command(
-    brief="re-enables orders",
-    aliases=["unlock"]
-)
+@bot.command(brief="re-enables orders", aliases=["unlock"])
 @gm_only("unlock orders")
 async def unlock_orders(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
@@ -884,10 +892,7 @@ async def unlock_orders(ctx: commands.Context) -> None:
     await command.enable_orders(ctx, manager)
 
 
-@bot.command(
-    brief="outputs information about the current game",
-    aliases=["i"]
-)
+@bot.command(brief="outputs information about the current game", aliases=["i"])
 async def info(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -992,7 +997,8 @@ async def blitz(ctx: commands.Context) -> None:
     2. They are missing move orders or retreat orders.
     You may also specify a timestamp to send a deadline to the players.
     * .ping_players <timestamp>
-    """)
+    """,
+)
 @gm_only("ping players")
 async def ping_players(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
