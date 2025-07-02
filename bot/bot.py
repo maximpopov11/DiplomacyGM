@@ -325,6 +325,193 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
     )
 
 
+class SpecView(discord.ui.View):
+    def __init__(
+        self,
+        member: discord.Member,
+        game_name: str,
+        admin_channel: discord.TextChannel,
+        channel_url: str,
+        role: discord.Role,
+        cspec_role: discord.Role,
+    ):
+        super().__init__(timeout=None)
+        self.member = member
+        self.game_name = game_name
+        self.admin_channel = admin_channel
+        self.url = channel_url
+        self.power_role = role
+        self.spec_role = cspec_role
+
+    @discord.ui.button(label="Accept", style=discord.ButtonStyle.success)
+    async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message(
+            f"Accept response sent to {self.member.mention}!", ephemeral=True
+        )
+
+        await self.member.send(
+            f"Response from: {self.game_name}\n"
+            + f"You have been accepted as a spectator for: @{self.power_role.name}\n"
+            + f"Go to {self.url} to watch them play!"
+        )
+        await self.member.add_roles(self.power_role, self.spec_role)
+
+        out = "[SPECTATOR LOG] {self.member.mention} approved for power {self.role.mention}"
+        await self.admin_channel.send(out)
+
+        if interaction.message:
+            await interaction.message.delete()
+
+    @discord.ui.button(label="Reject", style=discord.ButtonStyle.danger)
+    async def reject(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message(
+            f"Reject response sent to {self.member.mention}!", ephemeral=True
+        )
+
+        await self.member.send(
+            f"Response from: {self.game_name}\n"
+            + f"You have been rejected as a spectator for: @{self.power_role.name}\n"
+        )
+
+        out = "[SPECTATOR LOG] {self.member.mention} rejected for power {self.role.mention}"
+        await self.admin_channel.send(out)
+
+        if interaction.message:
+            await interaction.message.delete()
+
+
+@bot.tree.command(
+    name="spec",
+    description="Specatate a Player",
+)
+async def spec(interaction: discord.Interaction, power_role: discord.Role):
+    guild = interaction.guild
+    if not guild:
+        return
+
+    # server ignore list
+    if guild.id in [impdip_server]:
+        await interaction.response.send_message(
+            "Can't request to spectate in the Hub server!", ephemeral=True
+        )
+        return
+
+    # ignore if DM channel
+    if isinstance(interaction.channel, discord.DMChannel):
+        await interaction.response.send_message(
+            "Please use the spectate command in a Game server!"
+        )
+        return
+    elif not interaction.channel:
+        return
+
+    if interaction.channel.name != "the-public-square":
+        channel = discord.utils.find(
+            lambda c: c.name == "the-public-square", guild.text_channels
+        )
+        if channel:
+            await interaction.response.send_message(
+                f"Can't request here! Go to the public square: {channel.mention}",
+                ephemeral=True,
+            )
+
+        return
+
+    # prevent spectating non-power roles
+    if (
+        power_role.name
+        in [
+            "Admin",
+            "Moderators",
+            "GM",
+            "Heavenly Angel",
+            "GM Team",
+            "Player",
+            "Spectator",
+            "Country Spectator",
+            "Dead",
+            "DiploGM",
+        ]
+        or power_role.name.find("-orders") != -1
+    ):
+        await interaction.response.send_message(
+            "Can't spectate that role!", ephemeral=True
+        )
+        return
+
+    # get country spectator role
+    cspec_role = discord.utils.find(
+        lambda r: r.name == "Country Spectator", guild.roles
+    )
+    if not cspec_role:
+        await interaction.response.send_message(
+            "Could not find country spectator role! Contact GM."
+        )
+        return
+
+    member = guild.get_member(interaction.user.id)
+    if not member:
+        return
+
+    # if player already a player or country spec
+    if any(
+        map(
+            lambda r: r.name in ["Player", "Spectator", "Country Spectator", "Dead"],
+            member.roles,
+        )
+    ):
+        await interaction.response.send_message(
+            "Can't request to spectate that power, you are either a Player or already a Spectator.",
+            ephemeral=True,
+        )
+
+        return
+
+    # get power channel to send request
+    role_channel = discord.utils.find(
+        lambda c: c.name == f"{power_role.name.lower()}-orders", guild.text_channels
+    )
+    role_void = discord.utils.find(
+        lambda c: c.name == f"{power_role.name.lower()}-void", guild.text_channels
+    )
+    if not role_channel or not role_void:
+        await interaction.response.send_message(
+            "Please specify a playable power.", ephemeral=True
+        )
+        return
+
+    admin_channel = discord.utils.find(
+        lambda c: c.name == "admin-chat", guild.text_channels
+    )
+    if not admin_channel:
+        logger.warning(f"Server: {guild.name} does not have an #admin-chat channel.")
+        await interaction.response.send_message(
+            "Could not process your request. (Contact Admin)", ephemeral=True
+        )
+        return
+
+    out = (
+        "[SPECTATOR LOG] {self.member.mention} requested for power {self.role.mention}"
+    )
+    await admin_channel.send(out)
+
+    # send request message to player
+    out = (
+        f"{power_role.mention}: Spectator request from {interaction.user.mention}\n"
+        + "- (if the buttons do not work, contact your GM)"
+    )
+    url = f"https://discord.com/channels/{guild.id}/{role_void.id}"  # link to void channel (for accept message)
+    await role_channel.send(
+        content=out,
+        view=SpecView(member, guild.name, admin_channel, url, power_role, cspec_role),
+    )
+
+    # send ack to requesting user
+    await interaction.response.send_message(
+        "Spectator application sent! You should hear a response via DM.", ephemeral=True
+    )
+
+
 @bot.command(help="Checks bot listens and responds.")
 async def ping(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
@@ -802,14 +989,9 @@ async def delete_game(ctx: commands.Context) -> None:
 async def nick(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
+
     await command.nick(ctx, manager)
 
-    
-@bot.command(brief="Request to spectate a player")
-async def spec(ctx: commands.Context) -> None:
-    if isinstance(ctx.channel, discord.DMChannel):
-        return
-    await command.spec(ctx, manager)
 
 @bot.command(hidden=True)
 @admin_only("Execute arbitrary code")
