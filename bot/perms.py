@@ -63,9 +63,9 @@ def player(description: str = "run this command"):
     return player_check
 
 
-def assert_gm_only(ctx: commands.Context, description: str = "run this command"):
+def assert_gm_only(ctx: commands.Context, description: str = "run this command", non_gm_alt: str = None):
     if not is_gm(ctx.message.author):
-        raise CommandPermissionError(f"You cannot {description} because you are not a GM.")
+        raise CommandPermissionError(non_gm_alt or f"You cannot {description} because you are not a GM.")
     elif not is_gm_channel(ctx.channel):
         raise CommandPermissionError(f"You cannot {description} in a non-GM channel.")
     else:

@@ -421,7 +421,7 @@ async def servers(ctx: commands.Context, manager: Manager) -> None:
     )
 
 
-@perms.admin("allocate roles to user(s)")
+
 async def bulk_allocate_role(ctx: commands.Context, manager: Manager) -> None:
     guild = ctx.guild
     if guild is None:
@@ -990,8 +990,11 @@ async def province_info(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
 
     if not board.orders_enabled:
-        perms.assert_gm_only(ctx, "Orders locked! If you think this is an error, contact a GM.",
-            "You cannot use .province_info in a non-GM channel while orders are locked.")
+        perms.assert_gm_only(
+            ctx,
+            "You cannot use .province_info in a non-GM channel while orders are locked.",
+            non_gm_alt="Orders locked! If you think this is an error, contact a GM."
+        )
         return
 
     province_name = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
@@ -1059,8 +1062,11 @@ async def player_info(ctx: commands.Context, manager: Manager) -> None:
     board = manager.get_board(ctx.guild.id)
 
     if not board.orders_enabled:
-        perms.assert_gm_only(ctx, "Orders locked! If you think this is an error, contact a GM.",
-            "You cannot use .province_info in a non-GM channel while orders are locked.")
+        perms.assert_gm_only(
+            ctx,
+            "You cannot use .province_info in a non-GM channel while orders are locked.",
+            non_gm_alt= "Orders locked! If you think this is an error, contact a GM."
+        )
         return
 
     player_name = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip()
