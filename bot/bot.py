@@ -223,10 +223,14 @@ class SpecView(discord.ui.View):
 @bot.tree.command(
     name="spec",
     description="Specatate a Player",
+    override=True,
 )
 async def spec(interaction: discord.Interaction, power_role: discord.Role):
     guild = interaction.guild
     if not guild:
+        return
+
+    if not bot.user:  # bot is somehow offline
         return
 
     # server ignore list
@@ -245,6 +249,26 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
     elif not interaction.channel:
         return
 
+    _member = guild.get_member(bot.user.id)
+    if not _member:
+        return
+
+    _team = discord.utils.get(guild.roles, name="GM Team")
+    _angel = discord.utils.get(guild.roles, name="Heavenly Angel")
+    _elle = discord.utils.find(lambda m: m.name == "eelisha", guild.members)
+    if _angel not in _member.roles:
+        if _elle:
+            await interaction.response.send_message(
+                f"Bot is not an angel! Notifying {_team.mention} and {_elle.mention}!"
+            )
+        else:
+            await interaction.response.send_message(
+                f"Bot is not an angel! Notifying {_team.mention}!"
+            )
+
+        return
+
+    # make sure spec is in public square
     if interaction.channel.name != "the-public-square":
         channel = discord.utils.find(
             lambda c: c.name == "the-public-square", guild.text_channels
