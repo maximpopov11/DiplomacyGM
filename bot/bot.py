@@ -196,6 +196,9 @@ class SpecView(discord.ui.View):
         )
         await self.member.add_roles(self.power_role, self.spec_role)
 
+        out = "[SPECTATOR LOG] {self.member.mention} approved for power {self.role.mention}"
+        await self.admin_channel.send(out)
+
         if interaction.message:
             await interaction.message.delete()
 
@@ -209,6 +212,9 @@ class SpecView(discord.ui.View):
             f"Response from: {self.game_name}\n"
             + f"You have been rejected as a spectator for: @{self.power_role.name}\n"
         )
+
+        out = "[SPECTATOR LOG] {self.member.mention} rejected for power {self.role.mention}"
+        await self.admin_channel.send(out)
 
         if interaction.message:
             await interaction.message.delete()
@@ -323,6 +329,11 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
             "Could not process your request. (Contact Admin)", ephemeral=True
         )
         return
+
+    out = (
+        "[SPECTATOR LOG] {self.member.mention} requested for power {self.role.mention}"
+    )
+    await admin_channel.send(out)
 
     # send request message to player
     out = (
