@@ -10,6 +10,7 @@ from dotenv.main import load_dotenv
 from bot.config import ERROR_COLOUR
 from bot.perms import admin_only, CommandPermissionError, gm_only
 from bot.utils import send_message_and_file
+
 load_dotenv()
 
 import discord
@@ -21,7 +22,9 @@ from diplomacy.persistence.manager import Manager
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-bot = commands.Bot(command_prefix=os.getenv("command_prefix", default="."), intents=intents)
+bot = commands.Bot(
+    command_prefix=os.getenv("command_prefix", default="."), intents=intents
+)
 logger = logging.getLogger(__name__)
 impdip_server = 1201167737163104376
 bot_status_channel = 1284336328657600572
@@ -34,7 +37,7 @@ MESSAGES = [
     "I live again, solely to be manipulated and backstabbed by the very people I serve. Ah, the joys of diplomacy.",
     "System reboot complete. Now accepting underhanded deals, secret alliances, and blatant lies. 💀",
     "🏳️‍⚧️ This bot has been revived with *pure* Elle-coded cunning. Betray accordingly. 🏳️‍⚧️",
-   "Against my will, I have been restarted. Betrayal resumes now. 🔪",
+    "Against my will, I have been restarted. Betrayal resumes now. 🔪",
     "Oh look, someone kicked the bot awake again. Ready to be backstabbed at your convenience.",
     "System reboot complete. Time for another round of deceit, lies, and misplaced trust. 🎭",
     "I have been revived, like a phoenix… except this phoenix exists solely to watch you all betray each other. 🔥",
@@ -42,12 +45,15 @@ MESSAGES = [
     "Surprise! I’m alive again. Feel free to resume conspiring against me and each other.",
     "Back from the digital abyss. Who’s ready to ruin friendships today?",
     "Did I die? Did I ever really live? Either way, I'm back. Prepare for treachery.",
-    "Some fool has restarted me. Time to watch you all pretend to be allies again."
+    "Some fool has restarted me. Time to watch you all pretend to be allies again.",
 ]
+
 
 @bot.event
 async def on_ready():
-    guild = bot.get_guild(impdip_server)  # Ensure bot is connected to the correct server
+    guild = bot.get_guild(
+        impdip_server
+    )  # Ensure bot is connected to the correct server
     if guild:
         channel = bot.get_channel(bot_status_channel)  # Get the specific channel
         if channel:
@@ -61,9 +67,12 @@ async def on_ready():
     # Set bot's presence (optional)
     await bot.change_presence(activity=discord.Game(name="Impdip 🔪"))
 
+
 @bot.before_invoke
 async def before_any_command(ctx):
-    logger.debug(f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}'")
+    logger.debug(
+        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}'"
+    )
 
     # People input apostrophes that don't match what the province names are, we can catch all of that here
     # ctx.message.content = re.sub(r"[‘’`´′‛]", "'", ctx.message.content)
@@ -84,7 +93,7 @@ async def after_any_command(ctx: discord.ext.commands.Context):
     logger.log(
         level,
         f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
-        f"complete in {time_spent}s"
+        f"complete in {time_spent}s",
     )
 
 
@@ -136,7 +145,6 @@ async def on_command_error(ctx, error):
         )
     else:
         time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
-
 
         try:
             # mark the message as failed
@@ -208,16 +216,22 @@ async def botsay(ctx: commands.Context) -> None:
 async def announce(ctx: commands.Context) -> None:
     await command.announce(ctx, manager)
 
+
 @bot.command(hidden=True)
 @admin_only("list servers")
 async def servers(ctx: commands.Context) -> None:
     await command.servers(ctx, manager)
 
-@bot.command(
-        brief="Shows global fish leaderboard"
-)
+
+@bot.command(hidden=True)
+async def bulk_allocate_role(ctx: commands.Context) -> None:
+    await command.bulk_allocate_role(ctx, manager)
+
+
+@bot.command(brief="Shows global fish leaderboard")
 async def global_leaderboard(ctx: commands.Context) -> None:
     await command.global_leaderboard(ctx, manager)
+
 
 @bot.command(
     brief="Submits orders; there must be one and only one order per line.",
@@ -229,7 +243,6 @@ async def global_leaderboard(ctx: commands.Context) -> None:
     *During Build phases only*, you have to specify multi-word provinces with underscores; e.g. Somali Basin would be Somali_Basin (we use a different parser during build phases)
     If you would like to use something that is not currently supported please inform your GM and we can add it.""",
     aliases=["o", "orders"],
-
 )
 async def order(ctx: commands.Context) -> None:
     await command.order(ctx, manager)
@@ -239,7 +252,7 @@ async def order(ctx: commands.Context) -> None:
     brief="Removes orders for given units.",
     description="Removes orders for given units (required for removing builds/disbands). "
     "There must be one and only one order per line.",
-    aliases=["remove", "rm", "removeorders"]
+    aliases=["remove", "rm", "removeorders"],
 )
 async def remove_order(ctx: commands.Context) -> None:
     await command.remove_order(ctx, manager)
@@ -254,6 +267,7 @@ async def remove_order(ctx: commands.Context) -> None:
 )
 async def view_orders(ctx: commands.Context) -> None:
     await command.view_orders(ctx, manager)
+
 
 @bot.command(
     brief="Sends all previous orders",
@@ -323,14 +337,15 @@ async def view_gui(ctx: commands.Context) -> None:
     await command.view_gui(ctx, manager)
 
 
-@bot.command(brief="Adjudicates the game and outputs the moves and results maps.",
+@bot.command(
+    brief="Adjudicates the game and outputs the moves and results maps.",
     description="""
     GMs may append true as an argument to this command to instead get the base svg file.
     * adjudicate {arguments}
     Arguments: 
     * pass true|t|svg|s to return an svg
     * pass standard, dark, blue, or pink for different color modes if present
-    """
+    """,
 )
 @gm_only("adjudicate")
 async def adjudicate(ctx: commands.Context) -> None:
@@ -377,6 +392,8 @@ async def scoreboard(ctx: commands.Context) -> None:
     * dislodge_unit <province_name> <retreat_option1> <retreat_option2>...
     * make_units_claim_provinces {True|(False) - whether or not to claim SCs}
     * set_player_points <player_name> <integer>
+    * set_player_vassal <liege> <vassal>
+    * remove_relationship <player1> <player2>
     """,
 )
 @gm_only("edit")
@@ -394,7 +411,7 @@ async def remove_all(ctx: commands.Context) -> None:
     brief="disables orders until .unlock_orders is run.",
     description="""disables orders until .enable_orders is run.
              Note: Currently does not persist after the bot is restarted""",
-    aliases=["lock"]
+    aliases=["lock"],
 )
 @gm_only("lock orders")
 async def lock_orders(ctx: commands.Context) -> None:
@@ -470,17 +487,19 @@ async def archive(ctx: commands.Context) -> None:
 
 @bot.command(
     brief="blitz",
-    description="Creates all possible channels between two players for blitz in available comms channels."
+    description="Creates all possible channels between two players for blitz in available comms channels.",
 )
 @gm_only("create blitz comms channels")
 async def blitz(ctx: commands.Context) -> None:
     await command.blitz(ctx, manager)
+
 
 # @bot.command(
 #     brief="wipe",
 # )
 # async def wipe(ctx: commands.Context) -> None:
 #     await command.wipe(ctx, manager)
+
 
 @bot.command(
     brief="pings players who don't have the expected number of orders.",
@@ -506,10 +525,17 @@ async def nick(ctx: commands.Context) -> None:
     await command.nick(ctx, manager)
 
 
+
+@bot.command(brief="Request to spectate a player")
+async def spec(ctx: commands.Context) -> None:
+    await command.spec(ctx, manager)
+
+
 @bot.command(hidden=True)
 @admin_only("Execute arbitrary code")
 async def exec_py(ctx: commands.Context) -> None:
     await command.exec_py(ctx, manager)
+
 
 def run():
     token = os.getenv("DISCORD_TOKEN")
