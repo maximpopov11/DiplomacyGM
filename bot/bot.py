@@ -397,7 +397,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
 
     if not bot.user:  # bot is somehow offline
         return
-      
+
     # server ignore list
     if guild.id in [impdip_server]:
         await interaction.response.send_message(
@@ -414,7 +414,6 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
     elif not interaction.channel:
         return
 
-
     _member = guild.get_member(bot.user.id)
     if not _member:
         return
@@ -429,11 +428,11 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
     if not any(_role in _member.roles for _role in _team_roles):
         if _elle:
             await interaction.response.send_message(
-                f"Bot is not an angel! Notifying {_team.mention} and {_elle.mention}!"
+                f"Bot is not on the GM Team! Notifying {_team.mention} and {_elle.mention}!"
             )
         else:
             await interaction.response.send_message(
-                f"Bot is not an angel! Notifying {_team.mention}!"
+                f"Bot is not on the GM Team! Notifying {_team.mention}!"
             )
 
         return
