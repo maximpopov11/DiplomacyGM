@@ -21,6 +21,7 @@ _move_unit_str = "move unit"
 _dislodge_unit_str = "dislodge unit"
 _make_units_claim_provinces_str = "make units claim provinces"
 _set_player_vassal_str = "set vassal"
+_remove_vassal_str = "remove relationship"
 
 # chaos
 _set_player_points_str = "set player points"
@@ -98,6 +99,8 @@ def _parse_command(command: str, board: Board) -> None:
         _set_player_points(keywords, board)
     elif command_type == _set_player_vassal_str:
         _set_player_vassal(keywords, board)
+    elif command_type == _remove_vassal_str:
+        _remove_player_vassal(keywords, board)
     else:
         raise RuntimeError(f"No command key phrases found")
 
@@ -321,3 +324,15 @@ def _set_player_vassal(keywords: list[str], board: Board) -> None:
         "UPDATE players SET liege=? WHERE board_id=? and player_name=?",
         (liege.name, board.board_id, vassal.name)
     )
+
+def _remove_player_vassal(keywords: list[str], board: Board) -> None:
+    player1 = board.get_player(keywords[0])
+    player2 = board.get_player(keywords[1])
+    for vassal, liege in ((player1, player2), (player2, player1)):
+        if vassal.liege == liege:
+            vassal.liege = None
+            liege.vassals.remove(vassal)
+            get_connection().execute_arbitrary_sql(
+                "UPDATE players SET liege=? WHERE board_id=? and player_name=?",
+                (None, board.board_id, vassal.name)
+            )

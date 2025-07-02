@@ -8,6 +8,7 @@ from discord import Forbidden
 from dotenv.main import load_dotenv
 
 from bot.config import ERROR_COLOUR
+from bot.perms import admin_only, CommandPermissionError, gm_only
 from bot.utils import send_message_and_file
 
 load_dotenv()
@@ -104,37 +105,45 @@ async def on_command_error(ctx, error):
         # we shouldn't do anything if the user says something like "..."
         return
 
+    if isinstance(error, (
+            commands.CommandInvokeError,
+            commands.ConversionError,
+            commands.HybridCommandError
+    )):
+        original = error.original
+    else:
+        original = error
+
     try:
         # mark the message as failed
         await ctx.message.add_reaction("❌")
         await ctx.message.remove_reaction("👍", bot.user)
     except Exception:
-        # if reactions fail continue handling error
+        # if reactions fail, ignore and continue handling existing exception
         pass
 
-    if type(error.original) == PermissionError:
-        await send_message_and_file(
-            channel=ctx.channel, message=str(error.original), embed_colour=ERROR_COLOUR
-        )
+
+    if isinstance(original, CommandPermissionError):
+        await send_message_and_file(channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR)
         return
 
     time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
     logger.log(
         logging.ERROR,
         f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
-        f"errored in {time_spent}s\n",
+        f"errored in {time_spent}s\n"
     )
 
-    if type(error.original) == Forbidden:
+    if isinstance(original, Forbidden):
         await send_message_and_file(
             channel=ctx.channel,
             message=f"I do not have the correct permissions to do this.\n"
-            f"I might not be setup correctly.\n"
-            f"If this is unexpected please contact a GM or reach out in: "
-            f"https://discord.com/channels/1201167737163104376/1286027175048253573"
-            f" or "
-            f"https://discord.com/channels/1201167737163104376/1280587781638459528",
-            embed_colour=ERROR_COLOUR,
+                    f"I might not be setup correctly.\n"
+                    f"If this is unexpected please contact a GM or reach out in: "
+                    f"https://discord.com/channels/1201167737163104376/1286027175048253573"
+                    f" or "
+                    f"https://discord.com/channels/1201167737163104376/1280587781638459528",
+            embed_colour=ERROR_COLOUR
         )
     else:
         time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
@@ -147,23 +156,173 @@ async def on_command_error(ctx, error):
             # if reactions fail continue handling error
             pass
 
-        if type(error.original) == PermissionError:
-            await send_message_and_file(
-                channel=ctx.channel,
-                message=str(error.original),
-                embed_colour=ERROR_COLOUR,
-            )
+        if isinstance(original, CommandPermissionError):
+
+            await send_message_and_file(channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR)
         else:
             logger.error(
                 f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
                 f"errored in {time_spent}s\n"
             )
-            logger.error(error.original)
-            await send_message_and_file(
-                channel=ctx.channel,
-                message=str(error.original),
-                embed_colour=ERROR_COLOUR,
+            logger.error(
+                original
             )
+            await send_message_and_file(channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR)
+
+
+class SpecView(discord.ui.View):
+    def __init__(
+        self,
+        member: discord.Member,
+        game_name: str,
+        channel_url: str,
+        role: discord.Role,
+        cspec_role: discord.Role,
+    ):
+        super().__init__(timeout=None)
+        self.member = member
+        self.game_name = game_name
+        self.url = channel_url
+        self.power_role = role
+        self.spec_role = cspec_role
+
+    @discord.ui.button(label="Accept", style=discord.ButtonStyle.success)
+    async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message(
+            f"Accept response sent to {self.member.mention}!", ephemeral=True
+        )
+
+        await self.member.send(
+            f"Response from: {self.game_name}\n"
+            + f"You have been accepted as a spectator for: @{self.power_role.name}\n"
+            + f"Go to {self.url} to watch them play!"
+        )
+        await self.member.add_roles(self.power_role, self.spec_role)
+
+        if interaction.message:
+            await interaction.message.delete()
+
+    @discord.ui.button(label="Reject", style=discord.ButtonStyle.success)
+    async def reject(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message(
+            f"Reject response sent to {self.member.mention}!", ephemeral=True
+        )
+
+        await self.member.send(
+            f"Response from: {self.game_name}\n"
+            + f"You have been rejected as a spectator for: @{self.power_role.name}\n"
+        )
+
+        if interaction.message:
+            await interaction.message.delete()
+
+
+@bot.tree.command(
+    name="spec",
+    description="Specatate a Player",
+)
+async def spec(interaction: discord.Interaction, power_role: discord.Role):
+    guild = interaction.guild
+    if not guild:
+        return
+
+    # server ignore list
+    if guild.id in [impdip_server]:
+        await interaction.response.send_message(
+            "Can't request to spectate in the Hub server!"
+        )
+        return
+
+    # ignore if DM channel
+    if isinstance(interaction.channel, discord.DMChannel):
+        await interaction.response.send_message(
+            "Please use the spectate command in a Game server!"
+        )
+        return
+    elif not interaction.channel:
+        return
+
+    if interaction.channel.name != "the-public-square":
+        channel = discord.utils.find(
+            lambda c: c.name == "the-public-square", guild.text_channels
+        )
+        if channel:
+            await interaction.response.send_message(
+                f"Can't request here! Go to the public square: {channel.mention}",
+                ephemeral=True,
+            )
+
+        return
+
+    # prevent spectating non-power roles
+    if (
+        power_role.name
+        in [
+            "Admin",
+            "Moderators",
+            "GM",
+            "Heavenly Angel",
+            "Player",
+            "Country Spectator",
+        ]
+        or power_role.name.find("-orders") != -1
+    ):
+        await interaction.response.send_message(
+            "Can't spectate that role!", ephemeral=True
+        )
+        return
+
+    # get country spectator role
+    cspec_role = discord.utils.find(
+        lambda r: r.name == "Country Spectator", guild.roles
+    )
+    if not cspec_role:
+        await interaction.response.send_message(
+            "Could not find country spectator role! Contact GM."
+        )
+        return
+
+    member = guild.get_member(interaction.user.id)
+    if not member:
+        return
+
+    # if player already a player or country spec
+    if any(map(lambda r: r.name in ["Player", "Country Spectator"], member.roles)):
+        await interaction.response.send_message(
+            "Can't request to spectate another power, you are either a Player or already a Spectator.",
+            ephemeral=True,
+        )
+
+        return
+
+    # get power channel to send request
+    role_channel = discord.utils.find(
+        lambda c: c.name == f"{power_role.name.lower()}-orders", guild.text_channels
+    )
+    role_void = discord.utils.find(
+        lambda c: c.name == f"{power_role.name.lower()}-void", guild.text_channels
+    )
+    if not role_channel or not role_void:
+        await interaction.response.send_message(
+            "Please specify a playable power.", ephemeral=True
+        )
+        return
+
+    # send request message to player
+    out = (
+        f"Spectator request from {interaction.user.mention}\n"
+        + "- (if the buttons do not work, contact your GM)"
+    )
+    url = f"https://discord.com/channels/{guild.id}/{role_void.id}"  # link to void channel (for accept message)
+    await role_channel.send(
+        content=out,
+        view=SpecView(member, guild.name, url, power_role, cspec_role),
+    )
+
+    # send ack to requesting user
+    await interaction.response.send_message(
+        "Spectator application sent! You should hear a response via DM.", ephemeral=True
+    )
 
 
 class SpecView(discord.ui.View):
@@ -179,6 +338,7 @@ class SpecView(discord.ui.View):
         super().__init__(timeout=None)
         self.member = member
         self.game_name = game_name
+        self.admin_channel = admin_channel
         self.url = channel_url
         self.power_role = role
         self.spec_role = cspec_role
@@ -435,6 +595,7 @@ async def advice(ctx: commands.Context) -> None:
 
 
 @bot.command(hidden=True)
+@gm_only("botsay")
 async def botsay(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -443,6 +604,7 @@ async def botsay(ctx: commands.Context) -> None:
 
 
 @bot.command(hidden=True)
+@admin_only("send a GM announcement")
 async def announce(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -451,6 +613,7 @@ async def announce(ctx: commands.Context) -> None:
 
 
 @bot.command(hidden=True)
+@admin_only("list servers")
 async def servers(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -459,6 +622,7 @@ async def servers(ctx: commands.Context) -> None:
 
 
 @bot.command(hidden=True)
+@admin_only("allocate roles to user(s)")
 async def bulk_allocate_role(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -523,6 +687,7 @@ async def view_orders(ctx: commands.Context) -> None:
     brief="Sends all previous orders",
     description="For GM: Sends orders from previous phase to #orders-log",
 )
+@gm_only("publish orders")
 async def publish_orders(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -534,8 +699,8 @@ async def publish_orders(ctx: commands.Context) -> None:
     brief="Sends fog of war maps",
     description="""
     * publish_fow_moves {Country|(None) - whether or not to send for a specific country}
-    """,
-)
+    """,)
+@gm_only("publish fow moves")
 async def publish_fow_moves(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -549,6 +714,7 @@ async def publish_fow_moves(ctx: commands.Context) -> None:
     * publish_fow_orders {Country|(None) - whether or not to send for a specific country}
     """,
 )
+@gm_only("send fow order logs")
 async def publish_fow_orders(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -613,6 +779,7 @@ async def view_gui(ctx: commands.Context) -> None:
     * pass standard, dark, blue, or pink for different color modes if present
     """,
 )
+@gm_only("adjudicate")
 async def adjudicate(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -621,6 +788,7 @@ async def adjudicate(ctx: commands.Context) -> None:
 
 
 @bot.command(brief="Rolls back to the previous game state.")
+@gm_only("rollback")
 async def rollback(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -629,6 +797,7 @@ async def rollback(ctx: commands.Context) -> None:
 
 
 @bot.command(brief="Reloads the current board with what is in the DB")
+@gm_only("reload")
 async def reload(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -636,11 +805,10 @@ async def reload(ctx: commands.Context) -> None:
     await command.reload(ctx, manager)
 
 
-@bot.command(
-    brief="Outputs the scoreboard.",
+@bot.command(brief="Outputs the scoreboard.",
     description="""Outputs the scoreboard.
     In Chaos, is shortened and sorted by points, unless "standard" is an argument""",
-    aliases=["leaderboard"],
+    aliases=["leaderboard"]
 )
 async def scoreboard(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
@@ -668,8 +836,11 @@ async def scoreboard(ctx: commands.Context) -> None:
     * dislodge_unit <province_name> <retreat_option1> <retreat_option2>...
     * make_units_claim_provinces {True|(False) - whether or not to claim SCs}
     * set_player_points <player_name> <integer>
+    * set_player_vassal <liege> <vassal>
+    * remove_relationship <player1> <player2>
     """,
 )
+@gm_only("edit")
 async def edit(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -678,6 +849,7 @@ async def edit(ctx: commands.Context) -> None:
 
 
 @bot.command(brief="Clears all players orders.")
+@gm_only("remove all orders")
 async def remove_all(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -691,6 +863,7 @@ async def remove_all(ctx: commands.Context) -> None:
              Note: Currently does not persist after the bot is restarted""",
     aliases=["lock"],
 )
+@gm_only("lock orders")
 async def lock_orders(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -698,7 +871,11 @@ async def lock_orders(ctx: commands.Context) -> None:
     await command.disable_orders(ctx, manager)
 
 
-@bot.command(brief="re-enables orders", aliases=["unlock"])
+@bot.command(
+    brief="re-enables orders",
+    aliases=["unlock"]
+)
+@gm_only("unlock orders")
 async def unlock_orders(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -706,7 +883,10 @@ async def unlock_orders(ctx: commands.Context) -> None:
     await command.enable_orders(ctx, manager)
 
 
-@bot.command(brief="outputs information about the current game", aliases=["i"])
+@bot.command(
+    brief="outputs information about the current game",
+    aliases=["i"]
+)
 async def info(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -764,6 +944,7 @@ async def all_province_data(ctx: commands.Context) -> None:
     brief="Create a game of Imp Dip and output the map.",
     description="Create a game of Imp Dip and output the map. (there are no other variant options at this time)",
 )
+@gm_only("create a game")
 async def create_game(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -776,6 +957,7 @@ async def create_game(ctx: commands.Context) -> None:
     description="""Used after a game is done. Will make all channels in category viewable by all server members, but no messages allowed.
     * .archive [link to any channel in category]""",
 )
+@gm_only("archive")
 async def archive(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -787,6 +969,7 @@ async def archive(ctx: commands.Context) -> None:
     brief="blitz",
     description="Creates all possible channels between two players for blitz in available comms channels.",
 )
+@gm_only("create blitz comms channels")
 async def blitz(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -808,8 +991,8 @@ async def blitz(ctx: commands.Context) -> None:
     2. They are missing move orders or retreat orders.
     You may also specify a timestamp to send a deadline to the players.
     * .ping_players <timestamp>
-    """,
-)
+    """)
+@gm_only("ping players")
 async def ping_players(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -818,6 +1001,7 @@ async def ping_players(ctx: commands.Context) -> None:
 
 
 @bot.command(brief="permanently deletes a game, cannot be undone")
+@gm_only("delete the game")
 async def delete_game(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
@@ -834,6 +1018,7 @@ async def nick(ctx: commands.Context) -> None:
 
 
 @bot.command(hidden=True)
+@admin_only("Execute arbitrary code")
 async def exec_py(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
