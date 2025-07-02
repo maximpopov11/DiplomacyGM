@@ -392,7 +392,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
 
     if not bot.user:  # bot is somehow offline
         return
-
+      
     # server ignore list
     if guild.id in [impdip_server]:
         await interaction.response.send_message(
@@ -408,6 +408,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
         return
     elif not interaction.channel:
         return
+
 
     _member = guild.get_member(bot.user.id)
     if not _member:
