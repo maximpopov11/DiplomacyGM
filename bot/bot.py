@@ -179,6 +179,7 @@ class SpecView(discord.ui.View):
         super().__init__(timeout=None)
         self.member = member
         self.game_name = game_name
+        self.admin_channel = admin_channel
         self.url = channel_url
         self.power_role = role
         self.spec_role = cspec_role
