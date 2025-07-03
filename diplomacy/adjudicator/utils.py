@@ -31,10 +31,10 @@ async def svg_to_png(svg: bytes, file_name: str):
         return bytes(data), base + ".png"
 
 
-async def png_to_jpg(png: bytes, file_name: str) -> (bytes, str):
+async def png_to_jpg(png: bytes, file_name: str) -> (bytes, str, str):
     async with external_task_limit:
         p = await asyncio.create_subprocess_shell("magick png:- jpg:-", stdout=PIPE,
                                                   stdin=PIPE, stderr=PIPE)
         data, error = await p.communicate(input=png)
         base = os.path.splitext(file_name)[0]
-        return bytes(data), base + ".jpg"
+        return bytes(data), base + ".jpg", error
