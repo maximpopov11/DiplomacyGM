@@ -328,6 +328,27 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
 
         return
 
+    requester = guild.get_member(interaction.user.id)
+    if not requester:
+        return
+
+    # check for membership and verification on the hub Server
+    hub = bot.get_guild(impdip_server)
+    if not hub:
+        return
+    hub_requester = discord.utils.get(hub.members, name=interaction.user.name)
+    if not hub_requester:
+        await interaction.response.send_message(
+            f"You are not a member of the Hub Server! Notifying {_team.mention}!"
+        )
+        return
+
+    if not discord.utils.get(hub_requester.roles, name="Impdip Verified"):
+        await interaction.response.send_message(
+            f"You are not verified on the Hub Server! Notifying {_team.mention}!"
+        )
+        return
+
     admin_channel = discord.utils.find(
         lambda c: c.name == "admin-chat", guild.text_channels
     )
@@ -351,7 +372,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
                 "You have already been approved as a spectator in this server.",
                 ephemeral=True,
             )
-            return
+        return
 
     # prevent spectating non-power roles
     if (
@@ -385,15 +406,11 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
         )
         return
 
-    member = guild.get_member(interaction.user.id)
-    if not member:
-        return
-
     # if player already a player or country spec
     if any(
         map(
             lambda r: r.name in ["Player", "Spectator", "Country Spectator", "Dead"],
-            member.roles,
+            requester.roles,
         )
     ):
         await interaction.response.send_message(
@@ -416,7 +433,9 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
         )
         return
 
-    out = f"[SPECTATOR LOG] {member.mention} requested for power {power_role.mention}"
+    out = (
+        f"[SPECTATOR LOG] {requester.mention} requested for power {power_role.mention}"
+    )
     await admin_channel.send(out)
 
     # send request message to player
@@ -427,7 +446,9 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
     url = f"https://discord.com/channels/{guild.id}/{role_void.id}"  # link to void channel (for accept message)
     await role_channel.send(
         content=out,
-        view=SpecView(member, guild.name, admin_channel, url, power_role, cspec_role),
+        view=SpecView(
+            requester, guild.name, admin_channel, url, power_role, cspec_role
+        ),
     )
 
     # send ack to requesting user
