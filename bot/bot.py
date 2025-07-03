@@ -233,7 +233,6 @@ class SpecView(discord.ui.View):
 @bot.tree.command(
     name="spec",
     description="Specatate a Player",
-    override=True,
 )
 async def spec(interaction: discord.Interaction, power_role: discord.Role):
     guild = interaction.guild
