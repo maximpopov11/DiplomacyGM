@@ -206,7 +206,7 @@ class SpecView(discord.ui.View):
         )
         await self.member.add_roles(self.power_role, self.spec_role)
 
-        out = "[SPECTATOR LOG] {self.member.mention} approved for power {self.role.mention}"
+        out = f"[SPECTATOR LOG] {self.member.mention} approved for power {self.power_role.mention}"
         await self.admin_channel.send(out)
 
         if interaction.message:
@@ -223,7 +223,7 @@ class SpecView(discord.ui.View):
             + f"You have been rejected as a spectator for: @{self.power_role.name}\n"
         )
 
-        out = "[SPECTATOR LOG] {self.member.mention} rejected for power {self.role.mention}"
+        out = f"[SPECTATOR LOG] {self.member.mention} rejected for power {self.power_role.mention}"
         await self.admin_channel.send(out)
 
         if interaction.message:
@@ -256,8 +256,8 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
     elif not interaction.channel:
         return
 
+    # check bot is on the gm team (for add_roles permissions)
     _member = guild.get_member(bot.user.id)
-
     _team = discord.utils.get(guild.roles, name="GM Team")
     _team_roles = [
         _team,
@@ -278,6 +278,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
 
         return
 
+    # check public square
     if interaction.channel.name != "the-public-square":
         channel = discord.utils.find(
             lambda c: c.name == "the-public-square", guild.text_channels
@@ -363,9 +364,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
         )
         return
 
-    out = (
-        "[SPECTATOR LOG] {self.member.mention} requested for power {self.role.mention}"
-    )
+    out = f"[SPECTATOR LOG] {member.mention} requested for power {power_role.mention}"
     await admin_channel.send(out)
 
     # send request message to player
