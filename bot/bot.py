@@ -51,7 +51,10 @@ MESSAGES = [
 
 @bot.event
 async def on_ready():
-    await bot.tree.sync()
+    try:
+        await bot.tree.sync()
+    except discord.app_commands.CommandAlreadyRegistered:
+        pass
 
     guild = bot.get_guild(
         impdip_server
@@ -195,6 +198,27 @@ class SpecView(discord.ui.View):
 
     @discord.ui.button(label="Accept", style=discord.ButtonStyle.success)
     async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # check if player has country spectator role already (HAS NOT LEFT THE SERVER AFTER SPECTATING)
+        if self.spec_role in self.member.roles:
+            await interaction.response.send_message(
+                f"{self.member.mention} is already spectating a player!", ephemeral=True
+            )
+            if interaction.message:
+                await interaction.message.delete()
+
+            return
+
+        # check if db has a log of requesting player being accepted (HAS LEFT AND REJOINED THE SERVER AFTER SPECTATING)
+        if manager.get_spec_request(interaction.guild.id, self.member.id):
+            await interaction.response.send_message(
+                f"{self.member.mention} has previously been accepted as a Spectator.",
+                ephemeral=True,
+            )
+            if interaction.message:
+                await interaction.message.delete()
+
+            return
+
         await interaction.response.send_message(
             f"Accept response sent to {self.member.mention}!", ephemeral=True
         )
@@ -208,6 +232,11 @@ class SpecView(discord.ui.View):
 
         out = f"[SPECTATOR LOG] {self.member.mention} approved for power {self.power_role.mention}"
         await self.admin_channel.send(out)
+
+        # record acceptance to db and manager
+        manager.save_spec_request(
+            interaction.guild.id, self.member.id, self.power_role.id
+        )
 
         if interaction.message:
             await interaction.message.delete()
@@ -233,11 +262,13 @@ class SpecView(discord.ui.View):
 @bot.tree.command(
     name="spec",
     description="Specatate a Player",
-    override=True,
 )
 async def spec(interaction: discord.Interaction, power_role: discord.Role):
     guild = interaction.guild
     if not guild:
+        return
+
+    if not bot.user:
         return
 
     # server ignore list
@@ -258,6 +289,9 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
 
     # check bot is on the gm team (for add_roles permissions)
     _member = guild.get_member(bot.user.id)
+    if not _member:
+        return
+
     _team = discord.utils.get(guild.roles, name="GM Team")
     _team_roles = [
         _team,
@@ -267,12 +301,12 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
     _elle = discord.utils.get(guild.members, name="eelisha")
 
     if not any([_role in _member.roles for _role in _team_roles]):
-        if _elle:
-            await interaction.response.message(
+        if _elle is not None:
+            await interaction.response.send_message(
                 f"Bot is not on GM Team! Alerting {_team.mention} and {_elle.mention}!"
             )
         else:
-            await interaction.response.message(
+            await interaction.response.send_message(
                 f"Bot is not on GM Team! Alerting {_team.mention}!"
             )
 
@@ -290,6 +324,31 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
             )
 
         return
+
+    admin_channel = discord.utils.find(
+        lambda c: c.name == "admin-chat", guild.text_channels
+    )
+    if not admin_channel:
+        logger.warning(f"Server: {guild.name} does not have an #admin-chat channel.")
+        await interaction.response.send_message(
+            "Could not process your request. (Contact Admin)", ephemeral=True
+        )
+        return
+
+    # CHECK IF USER HAS BEEN ACCEPTED IN THIS SERVER BEFORE
+    prev_request = manager.get_spec_request(guild.id, interaction.user.id)
+    if prev_request:
+        prev_role = guild.get_role(prev_request.role_id)
+        if prev_role:
+            await admin_channel.send(
+                f"[SPECTATOR LOG] {interaction.user.mention} has requested to spectate {power_role.mention} after already being accepted for role: {prev_role.mention}"
+            )
+
+            await interaction.response.send_message(
+                "You have already been approved as a spectator in this server.",
+                ephemeral=True,
+            )
+            return
 
     # prevent spectating non-power roles
     if (
@@ -351,16 +410,6 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
     if not role_channel or not role_void:
         await interaction.response.send_message(
             "Please specify a playable power.", ephemeral=True
-        )
-        return
-
-    admin_channel = discord.utils.find(
-        lambda c: c.name == "admin-chat", guild.text_channels
-    )
-    if not admin_channel:
-        logger.warning(f"Server: {guild.name} does not have an #admin-chat channel.")
-        await interaction.response.send_message(
-            "Could not process your request. (Contact Admin)", ephemeral=True
         )
         return
 

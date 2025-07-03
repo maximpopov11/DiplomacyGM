@@ -1,4 +1,5 @@
 import logging
+from os import supports_dir_fd
 import sqlite3
 from collections.abc import Iterable
 
@@ -24,9 +25,10 @@ from diplomacy.persistence.order import (
     Disown,
     Defect,
     RebellionMarker,
-    RelationshipOrder
+    RelationshipOrder,
 )
 from diplomacy.persistence.player import Player
+from diplomacy.persistence.spec_request import SpecRequest
 from diplomacy.persistence.unit import UnitType, Unit
 
 logger = logging.getLogger(__name__)
@@ -41,7 +43,9 @@ class _DatabaseConnection:
             logger.info("Connection to SQLite DB successful")
         except IOError as ex:
             logger.error("Could not open SQLite DB", exc_info=ex)
-            self._connection = sqlite3.connect(":memory:")  # Special wildcard; in-memory db
+            self._connection = sqlite3.connect(
+                ":memory:"
+            )  # Special wildcard; in-memory db
 
         self._initialize_schema()
 
@@ -76,7 +80,9 @@ class _DatabaseConnection:
             if fish is None:
                 fish = 0
 
-            board = self._get_board(board_id, current_phase, year, fish, data_file, cursor)
+            board = self._get_board(
+                board_id, current_phase, year, fish, data_file, cursor
+            )
 
             boards[board_id] = board
 
@@ -84,11 +90,19 @@ class _DatabaseConnection:
         logger.info("Successfully loaded")
         return boards
 
-    def get_board(self, board_id: int, board_phase: phase.Phase, year: int, fish: int, data_file: str) -> Board | None:
+    def get_board(
+        self,
+        board_id: int,
+        board_phase: phase.Phase,
+        year: int,
+        fish: int,
+        data_file: str,
+    ) -> Board | None:
         cursor = self._connection.cursor()
 
         board_data = cursor.execute(
-            "SELECT * FROM boards WHERE board_id=? and phase=?", (board_id, f"{year} {board_phase.name}")
+            "SELECT * FROM boards WHERE board_id=? and phase=?",
+            (board_id, f"{year} {board_phase.name}"),
         ).fetchone()
         if not board_data:
             cursor.close()
@@ -99,7 +113,13 @@ class _DatabaseConnection:
         return board
 
     def _get_board(
-        self, board_id: int, board_phase: phase.Phase, year: int, fish: int, data_file: str, cursor
+        self,
+        board_id: int,
+        board_phase: phase.Phase,
+        year: int,
+        fish: int,
+        data_file: str,
+        cursor,
     ) -> Board:
         logger.info(f"Loading board with ID {board_id}")
         # TODO - we should eventually store things like coords, adjacencies, etc
@@ -110,8 +130,14 @@ class _DatabaseConnection:
         board.fish = fish
         board.board_id = board_id
 
-        player_data = cursor.execute("SELECT player_name, color, liege, points, discord_id FROM players WHERE board_id=?", (board_id,)).fetchall()
-        player_info_by_name = {player_name: (color, liege, points, discord_id) for player_name, color, liege, points, discord_id in player_data}
+        player_data = cursor.execute(
+            "SELECT player_name, color, liege, points, discord_id FROM players WHERE board_id=?",
+            (board_id,),
+        ).fetchall()
+        player_info_by_name = {
+            player_name: (color, liege, points, discord_id)
+            for player_name, color, liege, points, discord_id in player_data
+        }
         name_to_player = {player.name: player for player in board.players}
         for player in board.players:
             if player.name not in player_info_by_name:
@@ -143,54 +169,60 @@ class _DatabaseConnection:
                 if player_name not in player_by_name:
                     logger.warning(f"Unknown player: {player_name}")
                     return None
-                
+
                 return player_by_name[player_name]
-            
+
             for player_name, location, is_build, is_army in builds_data:
-                
+
                 player = get_player_by_name(player_name)
-                
+
                 if player is None:
                     continue
 
                 if is_build:
-                    player_order = Build(board.get_location(location), UnitType.ARMY if is_army else UnitType.FLEET)
+                    player_order = Build(
+                        board.get_location(location),
+                        UnitType.ARMY if is_army else UnitType.FLEET,
+                    )
                 else:
                     player_order = Disband(board.get_location(location))
-                
+
                 player.build_orders.add(player_order)
-            
+
             vassals_data = cursor.execute(
                 "SELECT player, target_player, order_type FROM vassal_orders WHERE board_id=? and phase=?",
                 (board_id, board.get_phase_and_year_string()),
             ).fetchall()
-            
+
             order_classes = [
                 Vassal,
                 Liege,
                 DualMonarchy,
                 Disown,
                 Defect,
-                RebellionMarker
+                RebellionMarker,
             ]
 
             for player_name, target_player_name, order_type in vassals_data:
                 player = get_player_by_name(player_name)
                 target_player = get_player_by_name(target_player_name)
-                order_class = next(order_class for order_class in order_classes if order_class.__name__ == order_type)
+                order_class = next(
+                    order_class
+                    for order_class in order_classes
+                    if order_class.__name__ == order_type
+                )
 
                 order = order_class(target_player)
 
-
                 player.vassal_orders[target_player] = order
-
 
         province_data = cursor.execute(
             "SELECT province_name, owner, core, half_core FROM provinces WHERE board_id=? and phase=?",
             (board_id, board.get_phase_and_year_string()),
         ).fetchall()
         province_info_by_name = {
-            province_name: (owner, core, half_core) for province_name, owner, core, half_core in province_data
+            province_name: (owner, core, half_core)
+            for province_name, owner, core, half_core in province_data
         }
         unit_data = cursor.execute(
             "SELECT location, is_dislodged, owner, is_army, order_type, order_destination, order_source FROM units WHERE board_id=? and phase=?",
@@ -206,7 +238,9 @@ class _DatabaseConnection:
             if owner is not None:
                 owner_player = board.get_player(owner)
                 if owner_player is None:
-                    logger.warning(f"Couldn't find corresponding player for {owner} in DB")
+                    logger.warning(
+                        f"Couldn't find corresponding player for {owner} in DB"
+                    )
                 else:
                     province.owner = owner_player
 
@@ -228,7 +262,15 @@ class _DatabaseConnection:
             province.dislodged_unit = None
         board.units.clear()
         for unit_info in unit_data:
-            location, is_dislodged, owner, is_army, order_type, order_destination, order_source = unit_info
+            (
+                location,
+                is_dislodged,
+                owner,
+                is_army,
+                order_type,
+                order_destination,
+                order_source,
+            ) = unit_info
             province, coast = board.get_province_and_coast(location)
             owner_player = board.get_player(owner)
             if is_dislodged:
@@ -236,10 +278,18 @@ class _DatabaseConnection:
                     "SELECT retreat_loc FROM retreat_options WHERE board_id=? and phase=? and origin=?",
                     (board_id, board.get_phase_and_year_string(), location),
                 )
-                retreat_options = set(map(board.get_location, set().union(*retreat_ops)))
+                retreat_options = set(
+                    map(board.get_location, set().union(*retreat_ops))
+                )
             else:
                 retreat_options = None
-            unit = Unit(UnitType.ARMY if is_army else UnitType.FLEET, owner_player, province, coast, retreat_options)
+            unit = Unit(
+                UnitType.ARMY if is_army else UnitType.FLEET,
+                owner_player,
+                province,
+                coast,
+                retreat_options,
+            )
             if is_dislodged:
                 province.dislodged_unit = unit
             else:
@@ -250,7 +300,15 @@ class _DatabaseConnection:
         # Currently we have to loop twice because it's a unit and we need to have all the units set up before parsing orders because of it
         for unit_info in unit_data:
             try:
-                location, is_dislodged, owner, is_army, order_type, order_destination, order_source = unit_info
+                (
+                    location,
+                    is_dislodged,
+                    owner,
+                    is_army,
+                    order_type,
+                    order_destination,
+                    order_source,
+                ) = unit_info
                 if order_type is not None:
                     order_classes = [
                         Hold,
@@ -262,14 +320,22 @@ class _DatabaseConnection:
                         RetreatMove,
                         RetreatDisband,
                     ]
-                    order_class = next(_class for _class in order_classes if _class.__name__ == order_type)
+                    order_class = next(
+                        _class
+                        for _class in order_classes
+                        if _class.__name__ == order_type
+                    )
                     destination_province = None
                     if order_destination is not None:
-                        destination_province, destination_coast = board.get_province_and_coast(order_destination)
+                        destination_province, destination_coast = (
+                            board.get_province_and_coast(order_destination)
+                        )
                         if destination_coast is not None:
                             destination_province = destination_coast
                     if order_source is not None:
-                        source_province, source_coast = board.get_province_and_coast(order_source)
+                        source_province, source_coast = board.get_province_and_coast(
+                            order_source
+                        )
                         if source_coast is not None:
                             source_province = source_coast
                     if order_class in [Hold, Core, RetreatDisband]:
@@ -277,7 +343,9 @@ class _DatabaseConnection:
                     elif order_class in [Move, ConvoyMove, RetreatMove]:
                         order = order_class(destination=destination_province)
                     elif order_class in [Support, ConvoyTransport]:
-                        order = order_class(destination=destination_province, source=source_province)
+                        order = order_class(
+                            destination=destination_province, source=source_province
+                        )
                     else:
                         raise ValueError(f"Could not parse {order_class}")
 
@@ -299,12 +367,24 @@ class _DatabaseConnection:
             (board_id, board.get_phase_and_year_string(), board.datafile, board.fish),
         )
         cursor.executemany(
-            "INSERT INTO players (board_id, player_name, color, liege, points) VALUES (?, ?, ?, ?, ?) ON CONFLICT " \
-            "DO UPDATE SET " \
-            "color = ?, " \
-            "liege = ?, " \
+            "INSERT INTO players (board_id, player_name, color, liege, points) VALUES (?, ?, ?, ?, ?) ON CONFLICT "
+            "DO UPDATE SET "
+            "color = ?, "
+            "liege = ?, "
             "points = ?",
-            [(board_id, player.name, player.render_color, (None if player.liege is None else str(player.liege)), player.points, player.render_color, (None if player.liege is None else str(player.liege)), player.points) for player in board.players],
+            [
+                (
+                    board_id,
+                    player.name,
+                    player.render_color,
+                    (None if player.liege is None else str(player.liege)),
+                    player.points,
+                    player.render_color,
+                    (None if player.liege is None else str(player.liege)),
+                    player.points,
+                )
+                for player in board.players
+            ],
         )
 
         # cache = []
@@ -368,9 +448,19 @@ class _DatabaseConnection:
                     unit.player.name,
                     unit.unit_type == UnitType.ARMY,
                     unit.order.__class__.__name__ if unit.order is not None else None,
-                    getattr(getattr(unit.order, "destination", None), "name", None) if unit.order is not None else None,
                     (
-                        getattr(getattr(getattr(unit.order, "source", None), "province", None), "name", None)
+                        getattr(getattr(unit.order, "destination", None), "name", None)
+                        if unit.order is not None
+                        else None
+                    ),
+                    (
+                        getattr(
+                            getattr(
+                                getattr(unit.order, "source", None), "province", None
+                            ),
+                            "name",
+                            None,
+                        )
                         if unit.order is not None
                         else None
                     ),
@@ -381,7 +471,12 @@ class _DatabaseConnection:
         cursor.executemany(
             "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
             [
-                (board_id, board.get_phase_and_year_string(), unit.location().name, retreat_option.name)
+                (
+                    board_id,
+                    board.get_phase_and_year_string(),
+                    unit.location().name,
+                    retreat_option.name,
+                )
                 for unit in board.units
                 if unit.retreat_options is not None
                 for retreat_option in unit.retreat_options
@@ -398,7 +493,11 @@ class _DatabaseConnection:
             [
                 (
                     unit.order.__class__.__name__ if unit.order is not None else None,
-                    getattr(getattr(unit.order, "destination", None), "name", None) if unit.order is not None else None,
+                    (
+                        getattr(getattr(unit.order, "destination", None), "name", None)
+                        if unit.order is not None
+                        else None
+                    ),
                     (
                         getattr(getattr(unit.order, "source", None), "name", None)
                         if unit.order is not None
@@ -415,7 +514,11 @@ class _DatabaseConnection:
         cursor.executemany(
             "DELETE FROM retreat_options WHERE board_id=? and phase=? and origin=?",
             [
-                (board.board_id, board.get_phase_and_year_string(), unit.location().name)
+                (
+                    board.board_id,
+                    board.get_phase_and_year_string(),
+                    unit.location().name,
+                )
                 for unit in units
                 if unit.retreat_options is not None
             ],
@@ -423,7 +526,12 @@ class _DatabaseConnection:
         cursor.executemany(
             "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
             [
-                (board.board_id, board.get_phase_and_year_string(), unit.location().name, retreat_option.name)
+                (
+                    board.board_id,
+                    board.get_phase_and_year_string(),
+                    unit.location().name,
+                    retreat_option.name,
+                )
                 for unit in units
                 if unit.retreat_options is not None
                 for retreat_option in unit.retreat_options
@@ -464,35 +572,69 @@ class _DatabaseConnection:
                     board.get_phase_and_year_string(),
                     player.name,
                     build_order.player.name,
-                    build_order.__class__.__name__
+                    build_order.__class__.__name__,
                 )
                 for player in players
                 for build_order in player.vassal_orders.values()
-            ]
+            ],
         )
+        cursor.close()
+        self._connection.commit()
+
+    def get_spec_requests(self) -> dict[int, list[SpecRequest]]:
+        requests = {}
+
+        cursor = self._connection.cursor()
+        request_data = cursor.execute(
+            "SELECT (server_id, user_id, role_id) FROM spec_requests"
+        )
+        cursor.close()
+
+        for s_id, u_id, r_id in request_data:
+            if s_id not in requests:
+                requests[s_id] = []
+
+            request = SpecRequest(s_id, u_id, r_id)
+            requests[s_id].append(request)
+
+        return requests
+
+    def save_spec_request(self, request: SpecRequest):
+        cursor = self._connection.cursor()
+
+        cursor.execute(
+            "INSERT INTO spec_requests (server_id, user_id, role_id) VALUES (?, ?, ?)",
+            (request.server_id, request.user_id, request.role_id),
+        )
+
         cursor.close()
         self._connection.commit()
 
     def delete_board(self, board: Board):
         cursor = self._connection.cursor()
         cursor.execute(
-            "DELETE FROM boards WHERE board_id=? AND phase=?", (board.board_id, board.get_phase_and_year_string())
+            "DELETE FROM boards WHERE board_id=? AND phase=?",
+            (board.board_id, board.get_phase_and_year_string()),
         )
         cursor.execute(
-            "DELETE FROM provinces WHERE board_id=? AND phase=?", (board.board_id, board.get_phase_and_year_string())
+            "DELETE FROM provinces WHERE board_id=? AND phase=?",
+            (board.board_id, board.get_phase_and_year_string()),
         )
         cursor.execute(
-            "DELETE FROM units WHERE board_id=? AND phase=?", (board.board_id, board.get_phase_and_year_string())
+            "DELETE FROM units WHERE board_id=? AND phase=?",
+            (board.board_id, board.get_phase_and_year_string()),
         )
         cursor.execute(
-            "DELETE FROM builds WHERE board_id=? AND phase=?", (board.board_id, board.get_phase_and_year_string())
+            "DELETE FROM builds WHERE board_id=? AND phase=?",
+            (board.board_id, board.get_phase_and_year_string()),
         )
         cursor.execute(
             "DELETE FROM retreat_options WHERE board_id=? AND phase=?",
             (board.board_id, board.get_phase_and_year_string()),
         )
         cursor.execute(
-            "DELETE FROM vassal_orders WHERE board_id=? AND phase=?", (board.board_id, board.get_phase_and_year_string())
+            "DELETE FROM vassal_orders WHERE board_id=? AND phase=?",
+            (board.board_id, board.get_phase_and_year_string()),
         )
         cursor.close()
         self._connection.commit()
@@ -503,8 +645,11 @@ class _DatabaseConnection:
         cursor.execute("DELETE FROM provinces WHERE board_id=?", (board.board_id,))
         cursor.execute("DELETE FROM units WHERE board_id=?", (board.board_id,))
         cursor.execute("DELETE FROM builds WHERE board_id=?", (board.board_id,))
-        cursor.execute("DELETE FROM retreat_options WHERE board_id=?", (board.board_id,))
+        cursor.execute(
+            "DELETE FROM retreat_options WHERE board_id=?", (board.board_id,)
+        )
         cursor.execute("DELETE FROM players WHERE board_id=?", (board.board_id,))
+        cursor.execute("DELETE FROM spec_requests WHERE server_id=?", (board.board_id,))
         cursor.close()
         self._connection.commit()
 

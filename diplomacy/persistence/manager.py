@@ -8,6 +8,7 @@ from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db import database
 from diplomacy.persistence.player import Player
+from diplomacy.persistence.spec_request import SpecRequest
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,9 @@ class Manager:
     def __init__(self):
         self._database = database.get_connection()
         self._boards: dict[int, Board] = self._database.get_boards()
+        self._spec_requests: dict[int, list[SpecRequest]] = (
+            self._database.get_spec_requests()
+        )
         # TODO: have multiple for each variant?
         # do it like this so that the parser can cache data between board initilizations
 
@@ -35,6 +39,27 @@ class Manager:
 
         return f"{self._boards[server_id].data['name']} game created"
 
+    def get_spec_request(self, server_id: int, user_id: int) -> SpecRequest | None:
+        if server_id not in self._spec_requests:
+            return None
+
+        for req in self._spec_requests:
+            if req.user_id == user_id:
+                return req
+
+        return None
+
+    def save_spec_request(self, server_id: int, user_id: int, role_id: int) -> str:
+        obj = SpecRequest(server_id, user_id, role_id)
+
+        if self.get_spec_request(server_id, user_id):
+            return "User has already been accepted for a request in this Server."
+
+        self._spec_requests[server_id].append(obj)
+        self._database.save_spec_request(obj)
+
+        return "Request Logged!"
+
     def get_board(self, server_id: int) -> Board:
         board = self._boards.get(server_id)
         if not board:
@@ -45,12 +70,17 @@ class Manager:
         self._database.total_delete(self._boards[server_id])
         del self._boards[server_id]
 
-    def draw_moves_map(self, server_id: int, player_restriction: Player | None, color_mode: str | None = None) -> tuple[str, str]:
+    def draw_moves_map(
+        self,
+        server_id: int,
+        player_restriction: Player | None,
+        color_mode: str | None = None,
+    ) -> tuple[str, str]:
         start = time.time()
 
-        svg, file_name = Mapper(self._boards[server_id], color_mode = color_mode).draw_moves_map(
-            self._boards[server_id].phase, player_restriction
-        )
+        svg, file_name = Mapper(
+            self._boards[server_id], color_mode=color_mode
+        ).draw_moves_map(self._boards[server_id].phase, player_restriction)
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
@@ -74,31 +104,47 @@ class Manager:
         elapsed = time.time() - start
         logger.info(f"manager.adjudicate.{server_id}.{elapsed}s")
 
-    def draw_fow_current_map(self, server_id: int, player_restriction: Player | None, color_mode: str | None = None) -> tuple[str, str]:
+    def draw_fow_current_map(
+        self,
+        server_id: int,
+        player_restriction: Player | None,
+        color_mode: str | None = None,
+    ) -> tuple[str, str]:
         start = time.time()
 
-        svg, file_name = Mapper(self._boards[server_id], player_restriction, color_mode).draw_current_map()
+        svg, file_name = Mapper(
+            self._boards[server_id], player_restriction, color_mode
+        ).draw_current_map()
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_fow_current_map.{server_id}.{elapsed}s")
         return svg, file_name
 
-    def draw_current_map(self, server_id: int, color_mode: str | None = None) -> tuple[str, str]:
+    def draw_current_map(
+        self, server_id: int, color_mode: str | None = None
+    ) -> tuple[str, str]:
         start = time.time()
 
-        svg, file_name = Mapper(self._boards[server_id], color_mode=color_mode).draw_current_map()
+        svg, file_name = Mapper(
+            self._boards[server_id], color_mode=color_mode
+        ).draw_current_map()
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_current_map.{server_id}.{elapsed}s")
         return svg, file_name
 
-    def draw_fow_players_moves_map(self, server_id: int, player_restriction: Player | None, color_mode: str | None = None) -> tuple[str, str]:
+    def draw_fow_players_moves_map(
+        self,
+        server_id: int,
+        player_restriction: Player | None,
+        color_mode: str | None = None,
+    ) -> tuple[str, str]:
         start = time.time()
 
         if player_restriction:
-            svg, file_name = Mapper(self._boards[server_id], player_restriction, color_mode=color_mode).draw_moves_map(
-                self._boards[server_id].phase, player_restriction
-            )
+            svg, file_name = Mapper(
+                self._boards[server_id], player_restriction, color_mode=color_mode
+            ).draw_moves_map(self._boards[server_id].phase, player_restriction)
         else:
             svg, file_name = Mapper(self._boards[server_id], None).draw_moves_map(
                 self._boards[server_id].phase, None
@@ -108,34 +154,46 @@ class Manager:
         logger.info(f"manager.draw_fow_players_moves_map.{server_id}.{elapsed}s")
         return svg, file_name
 
-    def draw_fow_moves_map(self, server_id: int, player_restriction: Player | None) -> tuple[str, str]:
+    def draw_fow_moves_map(
+        self, server_id: int, player_restriction: Player | None
+    ) -> tuple[str, str]:
         start = time.time()
 
-        svg, file_name = Mapper(self._boards[server_id], player_restriction).draw_moves_map(
-            self._boards[server_id].phase, None
-        )
+        svg, file_name = Mapper(
+            self._boards[server_id], player_restriction
+        ).draw_moves_map(self._boards[server_id].phase, None)
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_fow_moves_map.{server_id}.{elapsed}s")
         return svg, file_name
 
-    def draw_fow_gui_map(self, server_id: int, player_restriction: Player | None, color_mode: str | None = None) -> tuple[str, str]:
+    def draw_fow_gui_map(
+        self,
+        server_id: int,
+        player_restriction: Player | None,
+        color_mode: str | None = None,
+    ) -> tuple[str, str]:
         start = time.time()
 
-        svg, file_name = Mapper(self._boards[server_id], player_restriction, color_mode=color_mode).draw_gui_map(
-            self._boards[server_id].phase, None
-        )
+        svg, file_name = Mapper(
+            self._boards[server_id], player_restriction, color_mode=color_mode
+        ).draw_gui_map(self._boards[server_id].phase, None)
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_fow_moves_map.{server_id}.{elapsed}s")
         return svg, file_name
 
-    def draw_gui_map(self, server_id: int, player_restriction: Player | None, color_mode: str | None = None) -> tuple[str, str]:
+    def draw_gui_map(
+        self,
+        server_id: int,
+        player_restriction: Player | None,
+        color_mode: str | None = None,
+    ) -> tuple[str, str]:
         start = time.time()
 
-        svg, file_name = Mapper(self._boards[server_id], color_mode = color_mode).draw_gui_map(
-            self._boards[server_id].phase, player_restriction
-        )
+        svg, file_name = Mapper(
+            self._boards[server_id], color_mode=color_mode
+        ).draw_gui_map(self._boards[server_id].phase, player_restriction)
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
@@ -150,9 +208,13 @@ class Manager:
         if board.phase.name == "Spring Moves":
             last_phase_year -= 1
 
-        old_board = self._database.get_board(board.board_id, last_phase, last_phase_year, board.fish, board.datafile)
+        old_board = self._database.get_board(
+            board.board_id, last_phase, last_phase_year, board.fish, board.datafile
+        )
         if old_board is None:
-            raise ValueError(f"There is no {last_phase_year} {last_phase.name} board for this server")
+            raise ValueError(
+                f"There is no {last_phase_year} {last_phase.name} board for this server"
+            )
 
         self._database.delete_board(board)
         self._boards[server_id] = old_board
@@ -169,16 +231,22 @@ class Manager:
         last_phase_year = board.year
         if board.phase.name == "Spring Moves":
             last_phase_year -= 1
-        old_board = self._database.get_board(board.board_id, last_phase, last_phase_year, board.fish, board.datafile)
+        old_board = self._database.get_board(
+            board.board_id, last_phase, last_phase_year, board.fish, board.datafile
+        )
         return old_board
 
     def reload(self, server_id: int) -> dict[str, ...]:
         logger.info(f"Reloading server {server_id}")
         board = self._boards[server_id]
 
-        loaded_board = self._database.get_board(server_id, board.phase, board.year, board.fish, board.datafile)
+        loaded_board = self._database.get_board(
+            server_id, board.phase, board.year, board.fish, board.datafile
+        )
         if loaded_board is None:
-            raise ValueError(f"There is no {board.year} {board.phase.name} board for this server")
+            raise ValueError(
+                f"There is no {board.year} {board.phase.name} board for this server"
+            )
 
         self._boards[server_id] = loaded_board
         mapper = Mapper(loaded_board)
