@@ -43,13 +43,17 @@ class Manager:
         if server_id not in self._spec_requests:
             return None
 
-        for req in self._spec_requests:
+        for req in self._spec_requests[server_id]:
             if req.user_id == user_id:
                 return req
 
         return None
 
     def save_spec_request(self, server_id: int, user_id: int, role_id: int) -> str:
+        # create new list if first time in server
+        if server_id not in self._spec_requests:
+            self._spec_requests[server_id] = []
+
         obj = SpecRequest(server_id, user_id, role_id)
 
         if self.get_spec_request(server_id, user_id):
@@ -58,7 +62,7 @@ class Manager:
         self._spec_requests[server_id].append(obj)
         self._database.save_spec_request(obj)
 
-        return "Request Logged!"
+        return f"Approved request Logged!"
 
     def get_board(self, server_id: int) -> Board:
         board = self._boards.get(server_id)

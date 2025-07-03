@@ -234,8 +234,11 @@ class SpecView(discord.ui.View):
         await self.admin_channel.send(out)
 
         # record acceptance to db and manager
-        manager.save_spec_request(
+        resp = manager.save_spec_request(
             interaction.guild.id, self.member.id, self.power_role.id
+        )
+        await self.admin_channel.send(
+            f"[SPECTATOR LOG] for {self.member.mention}: {resp}"
         )
 
         if interaction.message:
