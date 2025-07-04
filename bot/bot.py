@@ -51,7 +51,10 @@ MESSAGES = [
 
 @bot.event
 async def on_ready():
-    await bot.tree.sync()
+    try:
+        await bot.tree.sync()
+    except discord.app_commands.CommandAlreadyRegistered:
+        pass
 
     guild = bot.get_guild(
         impdip_server
@@ -195,6 +198,27 @@ class SpecView(discord.ui.View):
 
     @discord.ui.button(label="Accept", style=discord.ButtonStyle.success)
     async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # check if player has country spectator role already (HAS NOT LEFT THE SERVER AFTER SPECTATING)
+        if self.spec_role in self.member.roles:
+            await interaction.response.send_message(
+                f"{self.member.mention} is already spectating a player!", ephemeral=True
+            )
+            if interaction.message:
+                await interaction.message.delete()
+
+            return
+
+        # check if db has a log of requesting player being accepted (HAS LEFT AND REJOINED THE SERVER AFTER SPECTATING)
+        if manager.get_spec_request(interaction.guild.id, self.member.id):
+            await interaction.response.send_message(
+                f"{self.member.mention} has previously been accepted as a Spectator.",
+                ephemeral=True,
+            )
+            if interaction.message:
+                await interaction.message.delete()
+
+            return
+
         await interaction.response.send_message(
             f"Accept response sent to {self.member.mention}!", ephemeral=True
         )
@@ -208,6 +232,14 @@ class SpecView(discord.ui.View):
 
         out = f"[SPECTATOR LOG] {self.member.mention} approved for power {self.power_role.mention}"
         await self.admin_channel.send(out)
+
+        # record acceptance to db and manager
+        resp = manager.save_spec_request(
+            interaction.guild.id, self.member.id, self.power_role.id
+        )
+        await self.admin_channel.send(
+            f"[SPECTATOR LOG] for {self.member.mention}: {resp}"
+        )
 
         if interaction.message:
             await interaction.message.delete()
@@ -239,6 +271,9 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
     if not guild:
         return
 
+    if not bot.user:
+        return
+
     # server ignore list
     if guild.id in [impdip_server]:
         await interaction.response.send_message(
@@ -257,6 +292,9 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
 
     # check bot is on the gm team (for add_roles permissions)
     _member = guild.get_member(bot.user.id)
+    if not _member:
+        return
+
     _team = discord.utils.get(guild.roles, name="GM Team")
     _team_roles = [
         _team,
@@ -266,12 +304,12 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
     _elle = discord.utils.get(guild.members, name="eelisha")
 
     if not any([_role in _member.roles for _role in _team_roles]):
-        if _elle:
-            await interaction.response.message(
+        if _elle is not None:
+            await interaction.response.send_message(
                 f"Bot is not on GM Team! Alerting {_team.mention} and {_elle.mention}!"
             )
         else:
-            await interaction.response.message(
+            await interaction.response.send_message(
                 f"Bot is not on GM Team! Alerting {_team.mention}!"
             )
 
@@ -288,6 +326,52 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
                 ephemeral=True,
             )
 
+        return
+
+    requester = guild.get_member(interaction.user.id)
+    if not requester:
+        return
+
+    # check for membership and verification on the hub Server
+    hub = bot.get_guild(impdip_server)
+    if not hub:
+        return
+    hub_requester = discord.utils.get(hub.members, name=interaction.user.name)
+    if not hub_requester:
+        await interaction.response.send_message(
+            f"You are not a member of the Hub Server! Notifying {_team.mention}!"
+        )
+        return
+
+    if not discord.utils.get(hub_requester.roles, name="ImpDip Verified"):
+        await interaction.response.send_message(
+            f"You are not verified on the Hub Server! Notifying {_team.mention}!"
+        )
+        return
+
+    admin_channel = discord.utils.find(
+        lambda c: c.name == "admin-chat", guild.text_channels
+    )
+    if not admin_channel:
+        logger.warning(f"Server: {guild.name} does not have an #admin-chat channel.")
+        await interaction.response.send_message(
+            "Could not process your request. (Contact Admin)", ephemeral=True
+        )
+        return
+
+    # CHECK IF USER HAS BEEN ACCEPTED IN THIS SERVER BEFORE
+    prev_request = manager.get_spec_request(guild.id, interaction.user.id)
+    if prev_request:
+        prev_role = guild.get_role(prev_request.role_id)
+        if prev_role:
+            await admin_channel.send(
+                f"[SPECTATOR LOG] {interaction.user.mention} has requested to spectate {power_role.mention} after already being accepted for role: {prev_role.mention}"
+            )
+
+            await interaction.response.send_message(
+                "You have already been approved as a spectator in this server.",
+                ephemeral=True,
+            )
         return
 
     # prevent spectating non-power roles
@@ -322,15 +406,11 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
         )
         return
 
-    member = guild.get_member(interaction.user.id)
-    if not member:
-        return
-
     # if player already a player or country spec
     if any(
         map(
             lambda r: r.name in ["Player", "Spectator", "Country Spectator", "Dead"],
-            member.roles,
+            requester.roles,
         )
     ):
         await interaction.response.send_message(
@@ -353,17 +433,9 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
         )
         return
 
-    admin_channel = discord.utils.find(
-        lambda c: c.name == "admin-chat", guild.text_channels
+    out = (
+        f"[SPECTATOR LOG] {requester.mention} requested for power {power_role.mention}"
     )
-    if not admin_channel:
-        logger.warning(f"Server: {guild.name} does not have an #admin-chat channel.")
-        await interaction.response.send_message(
-            "Could not process your request. (Contact Admin)", ephemeral=True
-        )
-        return
-
-    out = f"[SPECTATOR LOG] {member.mention} requested for power {power_role.mention}"
     await admin_channel.send(out)
 
     # send request message to player
@@ -374,7 +446,9 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
     url = f"https://discord.com/channels/{guild.id}/{role_void.id}"  # link to void channel (for accept message)
     await role_channel.send(
         content=out,
-        view=SpecView(member, guild.name, admin_channel, url, power_role, cspec_role),
+        view=SpecView(
+            requester, guild.name, admin_channel, url, power_role, cspec_role
+        ),
     )
 
     # send ack to requesting user

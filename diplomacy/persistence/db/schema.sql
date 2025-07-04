@@ -73,3 +73,10 @@ CREATE TABLE IF NOT EXISTS vassal_orders (
     FOREIGN KEY (board_id, player) REFERENCES players (board_id, player),
     FOREIGN KEY (board_id, target_player) REFERENCES players (board_id, player)
 );
+CREATE TABLE IF NOT EXISTS spec_requests (
+	request_id INTEGER PRIMARY KEY AUTOINCREMENT,
+	server_id INTEGER NOT NULL,
+	user_id INTEGER NOT NULL,
+	role_id INTEGER NOT NULL,
+	UNIQUE (server_id, user_id) -- only one approved request can be stored per server
+);
