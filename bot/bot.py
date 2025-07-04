@@ -343,7 +343,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
         )
         return
 
-    if not discord.utils.get(hub_requester.roles, name="Impdip Verified"):
+    if not discord.utils.get(hub_requester.roles, name="ImpDip Verified"):
         await interaction.response.send_message(
             f"You are not verified on the Hub Server! Notifying {_team.mention}!"
         )
