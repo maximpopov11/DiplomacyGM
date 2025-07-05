@@ -586,8 +586,8 @@ class _DatabaseConnection:
 
         cursor = self._connection.cursor()
         request_data = cursor.execute(
-            "SELECT (server_id, user_id, role_id) FROM spec_requests"
-        )
+            "SELECT server_id, user_id, role_id FROM spec_requests"
+        ).fetchall()
         cursor.close()
 
         for s_id, u_id, r_id in request_data:

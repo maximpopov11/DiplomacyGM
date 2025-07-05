@@ -335,7 +335,7 @@ async def send_message_and_file(
                 f"png is too big ({len(file)}); converting to jpg"
             )
             file, file_name, error = await png_to_jpg(file, file_name)
-            error = re.sub('\s+',' ', str(error)[2:-1])
+            error = re.sub('\\s+',' ', str(error)[2:-1])
             if len(error) > 0:
                 _log_command(
                     logger,
