@@ -1,5 +1,6 @@
 import datetime
 import io
+import re
 import logging
 import discord
 from typing import List, Tuple
@@ -333,8 +334,18 @@ async def send_message_and_file(
                 "?",
                 f"png is too big ({len(file)}); converting to jpg"
             )
-            file, file_name = await png_to_jpg(file, file_name)
-            if len(file) > discord_file_limit:
+            file, file_name, error = await png_to_jpg(file, file_name)
+            error = re.sub('\\s+',' ', str(error)[2:-1])
+            if len(error) > 0:
+                _log_command(
+                    logger,
+                    "?",
+                    channel.guild.name,
+                    channel.name,
+                    "?",
+                    f"png to jpeg conversion errors: {error}",
+                )
+            if len(file) > discord_file_limit or len(file) == 0:
                 _log_command(
                     logger,
                     "?",
