@@ -937,7 +937,8 @@ async def nick(ctx: commands.Context) -> None:
 
 @bot.command(
     brief="Records the approval of a spec reqeust",
-    description="""Used to record an approved spectator request if /spec fails.
+    description="""[Only to be used by GMs]
+    Used to record an approved spectator request if /spec fails.
     Usage: .record_spec @User @Nation""",
 )
 @gm_only("record a spec")
