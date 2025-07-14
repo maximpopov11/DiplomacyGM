@@ -53,63 +53,7 @@
         "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
     },
     "overrides": {
-        "high provinces": {
-            "NAO": {
-                "num": 5,
-                "type": "SEA",
-                "adjacencies": ["SAO1", "SAO2", "SAO3", "SAO4", "SAO5", "Brattahlid", "Tunumiisut", "Greenland Sea", "Denmark Strait", "Rockall Rise", "Iberian Current", "Azores", "Madeira Plain", "Canary Basin", "Leeward Sea", "Sargasso Sea", "Bermuda", "Gulf of Maine", "St. Marguerite Baie", "Placentia Bay", "Newfoundland Banks", "Labrador Sea", "Frederikshaab"]
-            },
-            "SAO": {
-                "num": 5,
-                "type": "SEA",
-                "adjacencies": ["NAO1", "NAO2", "NAO3", "NAO4", "NAO5", "SPO1", "SPO2", "SPO3", "Leeward Sea", "Guiana Current", "St. Marcos Bay", "Mauritsstad", "Todos os Santos Bay", "Guanabara Bay", "Rio Grande Rise", "Argentine Basin", "Bahia Grande", "Southern Sea", "Cape Khoe", "Cape Basin", "St. Helena", "Angola Basin", "Gold Coast", "Serra Leoa Rise", "Seewarte Seamounts", "Canary Basin"]
-            },
-            "NPO": {
-                "num": 5,
-                "type": "SEA",
-                "adjacencies": ["SPO1", "SPO2", "SPO3", "Peru Basin", "Galapagos", "Guatemala Basin", "Berlanga Ridge", "Hawai'i", "North Equatorial Current", "Gulf of Anadyr", "Karaginskiy Gulf", "Koryaks", "Kuril Sea", "Tsugaru Strait", "Edo", "Kuroshio Current", "Philippine Sea", "Halmahera Sea", "Solomon Islands"]
-            },
-            "SPO": {
-                "num": 3,
-                "type": "SEA",
-                "adjacencies": ["NPO1", "NPO2", "NPO3", "NPO4", "NPO5", "SAO1", "SAO2", "SAO3", "SAO4", "SAO5", "Solomon Islands", "Coral Sea", "Wurruk", "Antarctic Basin", "Aotearoa", "Bahia Grande", "Mar de Hoces", "Chiloe", "Roggeveen Basin", "Peru Basin", "Kawesqar"]
-            },
-            "INO": {
-                "num": 5,
-                "type": "SEA",
-                "adjacencies": ["New Holland", "Timor Sea", "Mentawai Strait", "Sumatra", "Cocos Basin", "Gulf of Ceylon", "Ceylon", "Gulf of Mannar", "Somali Basin", "Seychelles Sea", "Seychelles", "Mascarene Sea", "Reunion", "Crozet Basin", "Antarctic Basin", "Great Australian Bight"]
-            },
-            "GPL": {
-                "num": 3,
-                "type": "LAND",
-                "adjacencies": ["Assiniboine", "Winipek", "Ojibwe", "Illinois", "Miami", "Cherokee", "Caddo", "Apache", "Kiowa", "Arapaho", "Lakota"]
-            }
-        },
         "provinces": {
-            "Iqaluit": {
-                "adjacencies": ["Nunavut"]
-            },
-            "Nunavut": {
-                "adjacencies": ["Iqaluit"]
-            },
-            "Yokuts": {
-                "adjacencies": ["Washo"]
-            },
-            "Washo": {
-                "adjacencies": ["Yokuts"]
-            },
-            "Edinburgh": {
-                "remove_adjacencies": ["Greenland Sea"]
-            },
-            "Greenland Sea": {
-                "remove_adjacencies": ["Edinburgh"]
-            },
-            "Azores": {
-                "adjacencies": ["Rockall Rise"]
-            },
-            "Rockall Rise": {
-                "adjacencies": ["Azores"]
-            },
             "Panama": {
                 "coasts": {
                    "nc": [
@@ -232,8 +176,12 @@
                 "retreat_unit_loc": [[4227.260, 1522.000]]
             },
             "Chukchi Sea": {
-                "unit_loc": [[28.000, 241.000]],
+                "unit_loc": [[26.000, 268.000]],
                 "retreat_unit_loc": [[72.908, 186.392]]
+            },
+            "Gulf of Anadyr": {
+                "unit_loc": [[29.000, 421.000]],
+                "retreat_unit_loc": [[14.500, 391.000]]
             }
 
         }

@@ -131,7 +131,7 @@ def parse_path(path_string: str, translation: TransGL3):
             elif command.lower() in ["c"]:
                 expected_arguments = 3
             elif command.lower() in ["a"]:
-                expected_arguments = 4
+                expected_arguments = 5
             else:
                 raise RuntimeError(f"Unknown SVG path command {command}")
 
