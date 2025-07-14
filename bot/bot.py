@@ -935,6 +935,31 @@ async def nick(ctx: commands.Context) -> None:
     await command.nick(ctx, manager)
 
 
+@bot.command(
+    brief="Records the approval of a spec reqeust",
+    description="""[Only to be used by GMs]
+    Used to record an approved spectator request if /spec fails.
+    Usage: .record_spec @User @Nation""",
+)
+@gm_only("record a spec")
+async def record_spec(ctx: commands.Context, manager: Manager) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
+    await command.record_spec(ctx, manager)
+
+
+@bot.command(
+    brief="Backlogs the approval for all current Country Spectators", hidden=True
+)
+@gm_only("backlog spectators")
+async def backlog_specs(ctx: commands.Context, manager: Manager) -> None:
+    if isinstance(ctx.channel, discord.DMChannel):
+        return
+
+    await command.backlog_specs(ctx, manager)
+
+
 @bot.command(hidden=True)
 @admin_only("Execute arbitrary code")
 async def exec_py(ctx: commands.Context) -> None:

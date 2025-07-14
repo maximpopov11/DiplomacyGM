@@ -432,6 +432,7 @@ async def bulk_allocate_role(ctx: commands.Context, manager: Manager) -> None:
     roles = ctx.message.role_mentions
     role_names = list(map(lambda r: r.name, roles))
     if len(roles) == 0:
+        await send_message_and_file(channel=ctx.channel, title="Error", message="No roles were supplied to allocate. Please include a role mention in the command.")
         return
 
     # parse usernames from trailing contents
@@ -449,8 +450,6 @@ async def bulk_allocate_role(ctx: commands.Context, manager: Manager) -> None:
             continue
 
         usernames.append(comp)
-
-    print(usernames)
 
     success_count = 0
     failed = []
@@ -1717,6 +1716,59 @@ async def nick(ctx: commands.Context, manager: Manager) -> None:
     await send_message_and_file(
         channel=ctx.channel, message=f"Nickname updated to `{prefix + name}`"
     )
+
+async def record_spec(ctx: commands.Context, manager: Manager) -> None:
+    guild = ctx.guild 
+    if not guild:
+        return
+
+    if len(ctx.message.role_mentions) == 0:
+        await send_message_and_file(channel=ctx.channel, title="Error", message="Did not mention a nation.", embed_colour=ERROR_COLOUR)
+        return
+
+    if len(ctx.message.mentions) == 0:
+        await send_message_and_file(channel=ctx.channel, title="Error", message="Did not mention a user.", embed_colour=ERROR_COLOUR)
+        return
+
+    user = ctx.message.mentions[0]
+    user_id = user.id
+
+    power_role = ctx.message.role_mentions[0]
+    power_id = power_role.id
+
+    out = manager.save_spec_request(guild.id, user_id, power_id)
+    await send_message_and_file(
+        channel=ctx.channel, message=out
+    )
+
+async def backlog_specs(ctx: commands.Context, manager: Manager) -> None:
+    guild = ctx.guild
+    if not guild:
+        return
+
+    cspec = discord_find(lambda r: r.name == "Country Spectator", guild.roles)
+    if cspec is None:
+        await send_message_and_file(channel=ctx.channel, title="Error", message="There is no Country Spectator role in this server.")
+        return
+
+    out = ""
+    for member in guild.members:
+        if cspec not in member.roles:
+            continue
+        
+        power_role = None
+        for role in member.roles:
+            if discord_find(lambda c: c.name == f"{role.name.lower()}-orders", guild.text_channels):
+                power_role = role
+                break
+
+        if power_role is None:
+            continue
+
+        result = manager.save_spec_request(guild.id, member.id, power_role.id)
+        out += f"{member.mention} -> {power_role.mention}: {result}\n"
+
+    await send_message_and_file(channel=ctx.channel, title="Spectator Backlog Results", message=out)
 
 class ContainedPrinter:
     def __init__(self):
