@@ -220,7 +220,7 @@ class SpecView(discord.ui.View):
             return
 
         await interaction.response.edit_message(
-            f"Accept response sent to {self.member.mention}!", ephemeral=True
+            content=f"Accept response sent to {self.member.mention}!"
         )
 
         await self.member.send(
@@ -245,7 +245,7 @@ class SpecView(discord.ui.View):
     @discord.ui.button(label="Reject", style=discord.ButtonStyle.danger)
     async def reject(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.edit_message(
-            f"Reject response sent to {self.member.mention}!", ephemeral=True
+           content=f"Reject response sent to {self.member.mention}!"
         )
 
         await self.member.send(
@@ -483,6 +483,16 @@ class PronounView(discord.ui.View):
             content=f"Your pronouns have been set to **{title}**.", view=None
         )
 
+        out_channel = discord.utils.find(lambda c: c.name == "player-information", self.guild.text_channels)
+        if out_channel and discord.utils.find(lambda r: r.name == "Player", member.roles):
+            out = f"{member.mention} has updated their pronouns to: {title}"
+            await out_channel.send(out)
+        elif out_channel is None and self.guild.id != impdip_server:
+            await interaction.response.send_message("There is no player-information channel to log the change! (You still received your role)", ephemeral=True)
+        else:
+            await interaction.response.send_message("Your role has been given! It has not been announced.", ephemeral=True)
+
+
     @discord.ui.button(label="He/Him")
     async def hehim(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.assign(interaction, button.label)
@@ -591,6 +601,15 @@ class TimezoneSelect(discord.ui.Select):
         await interaction.response.edit_message(
             content=f"✅ Your timezone has been set to **{label}**.", view=None
         )
+        
+        out_channel = discord.utils.find(lambda c: c.name == "player-information", self.guild.text_channels)
+        if out_channel and discord.utils.find(lambda r: r.name == "Player", member.roles):
+            out = f"{member.mention} has updated their timezone to: {label}"
+            await out_channel.send(out)
+        elif out_channel is None and self.guild.id != impdip_server:
+            await interaction.response.send_message("There is no player-information channel to log the change! (You still received your role)", ephemeral=True)
+        else:
+            await interaction.response.send_message("Your role has been given! It has not been announced.", ephemeral=True)
 
 
 class TimezoneView(discord.ui.View):
