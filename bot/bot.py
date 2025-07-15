@@ -220,7 +220,7 @@ class SpecView(discord.ui.View):
             return
 
         await interaction.response.edit_message(
-            content=f"Accept response sent to {self.member.mention}!"
+            content=f"Accept response sent to {self.member.mention}!", view=None
         )
 
         await self.member.send(
@@ -245,7 +245,7 @@ class SpecView(discord.ui.View):
     @discord.ui.button(label="Reject", style=discord.ButtonStyle.danger)
     async def reject(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.edit_message(
-           content=f"Reject response sent to {self.member.mention}!"
+           content=f"Reject response sent to {self.member.mention}!", view=None
         )
 
         await self.member.send(
