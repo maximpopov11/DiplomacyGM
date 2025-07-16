@@ -756,7 +756,7 @@ async def view_current(
     log_command(
         logger,
         ctx,
-        message=f"Generated moves map for {phase_str} {year}",
+        message=f"Generated current map for {phase_str} {year}",
     )
     await send_message_and_file(
         channel=ctx.channel,
