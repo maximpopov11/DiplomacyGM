@@ -613,6 +613,30 @@ async def publish_orders(ctx: commands.Context, manager: Manager) -> None:
         )
 
 
+def parse_season(arguments: list[str, ...], default_year: str) -> tuple[str, phase] | None:
+    year, season, retreat = default_year, None, False
+    for s in arguments:
+        if s.isnumeric() and int(s) > 1640:
+            year = s
+            
+        if s.lower() in ["spring", "s", "sm", "sr"]:
+            season = "Spring"
+        elif s.lower() in ["fall", "f", "fm", "fr"]:
+            season =  "Fall"
+        elif s.lower() in ["winter", "w", "wa"]:
+            season = "Winter"
+        
+        if s.lower() in ["retreat", "retreats", "r", "sr", "fr"]:
+            retreat = True
+            
+    if season is None:
+        return None
+    if season == "Winter":
+        parsed_phase = phase.get("Winter Builds")
+    else:
+        parsed_phase = phase.get(season + " " + ("Retreats" if retreat else "Moves"))
+    return (year, parsed_phase)
+
 @perms.player("view map")
 async def view_map(
     player: Player | None, ctx: commands.Context, manager: Manager
@@ -627,6 +651,10 @@ async def view_map(
     color_arguments = list(color_options & set(arguments))
     color_mode = color_arguments[0] if color_arguments else None
     board = manager.get_board(ctx.guild.id)
+    season = parse_season(arguments, board.get_year_str())
+    
+    year = board.get_year_str() if season is None else season[0]
+    phase_str = board.phase.name if season is None else season[1].name
 
     if player and not board.orders_enabled:
         log_command(logger, ctx, f"Orders locked - not processing")
@@ -640,7 +668,7 @@ async def view_map(
 
     try:
         if not board.fow:
-            file, file_name = manager.draw_moves_map(ctx.guild.id, player, color_mode)
+            file, file_name = manager.draw_moves_map(ctx.guild.id, player, color_mode, season)
         else:
             file, file_name = manager.draw_fow_players_moves_map(
                 ctx.guild.id, player, color_mode
@@ -662,11 +690,11 @@ async def view_map(
     log_command(
         logger,
         ctx,
-        message=f"Generated moves map for {board.phase.name} {board.get_year_str()}",
+        message=f"Generated moves map for {phase_str} {year}",
     )
     await send_message_and_file(
         channel=ctx.channel,
-        title=f"{board.phase.name} {board.get_year_str()}",
+        title=f"{phase_str} {year}",
         file=file,
         file_name=file_name,
         convert_svg=convert_svg,
@@ -688,6 +716,10 @@ async def view_current(
     color_arguments = list(color_options & set(arguments))
     color_mode = color_arguments[0] if color_arguments else None
     board = manager.get_board(ctx.guild.id)
+    season = parse_season(arguments, board.get_year_str())
+    
+    year = board.get_year_str() if season is None else season[0]
+    phase_str = board.phase.name if season is None else season[1].name
 
     if player and not board.orders_enabled:
         log_command(logger, ctx, f"Orders locked - not processing")
@@ -701,7 +733,7 @@ async def view_current(
 
     try:
         if not board.fow:
-            file, file_name = manager.draw_current_map(ctx.guild.id, color_mode)
+            file, file_name = manager.draw_current_map(ctx.guild.id, color_mode, season)
         else:
             file, file_name = manager.draw_fow_current_map(
                 ctx.guild.id, player, color_mode
@@ -723,11 +755,11 @@ async def view_current(
     log_command(
         logger,
         ctx,
-        message=f"Generated current map for {board.phase.name} {board.get_year_str()}",
+        message=f"Generated current map for {phase_str} {year}",
     )
     await send_message_and_file(
         channel=ctx.channel,
-        title=f"{board.phase.name} {board.get_year_str()}",
+        title=f"{phase_str} {year}",
         file=file,
         file_name=file_name,
         convert_svg=convert_svg,

@@ -114,7 +114,7 @@ class Mapper:
     def is_moveable(self, unit: Unit):
         if unit.province not in self.adjacent_provinces:
             return False
-        if self.player_restriction and unit.player != self.player_restriction:
+        if self.player_restriction and unit.player.name != self.player_restriction.name:
             return False
         if phase.is_retreats(self.current_phase) and unit.province.dislodged_unit != unit:
             return False
@@ -289,7 +289,6 @@ class Mapper:
                 color = player.render_color
             self.player_colors[player.name] = color
         
-        print(color_mode)
         if color_mode in ["kingdoms", "empires"]:
             #TODO: draw dual monarchies as stripes
             if color_mode == "empires":

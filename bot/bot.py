@@ -653,6 +653,7 @@ async def publish_fow_orders(ctx: commands.Context) -> None:
     Arguments: 
     * pass true|t|svg|s to return an svg
     * pass standard, dark, blue, or pink for different color modes if present
+    * pass season and optionally year for older maps
     """,
     aliases=["viewmap", "vm"],
 )
