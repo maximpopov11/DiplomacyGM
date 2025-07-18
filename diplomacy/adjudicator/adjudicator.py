@@ -266,9 +266,9 @@ class BuildsAdjudicator(Adjudicator):
             scs = 0
             for vassal in player.vassals:
                 scs += len(vassal.centers)
+            player.new_vassals = player.vassals.copy()
             if scs > len(player.centers):
                 for order in player.vassal_orders.values():
-                    player.new_vassals = player.vassals
                     if isinstance(order, Disown) and order.player in player.vassals:
                         player.new_vassals.remove(order.player)
                     scs2 = 0
@@ -277,7 +277,6 @@ class BuildsAdjudicator(Adjudicator):
                     if scs2 > len(player.centers):
                         player.new_vassals = []
             else:
-                player.new_vassals = player.vassals
                 for order in player.vassal_orders.values():
                     if isinstance(order, Vassal):
                         vassal = order.player
@@ -306,7 +305,7 @@ class BuildsAdjudicator(Adjudicator):
                         new_liege = None
             player.new_liege = new_liege
             
-        for play in self._board.players:
+        for player in self._board.players:
             player.liege = player.new_liege
             player.vassals = player.new_vassals
         
