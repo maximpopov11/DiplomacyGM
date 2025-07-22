@@ -418,10 +418,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
     role_channel = discord.utils.find(
         lambda c: c.name == f"{power_role.name.lower()}-orders", guild.text_channels
     )
-    role_void = discord.utils.find(
-        lambda c: c.name == f"{power_role.name.lower()}-void", guild.text_channels
-    )
-    if not (role_channel or role_void):
+    if not (role_channel):
         await interaction.response.send_message(
             "Please specify a playable power.", ephemeral=True
         )
@@ -437,7 +434,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
         f"{power_role.mention}: Spectator request from {interaction.user.mention}\n"
         + "- (if the buttons do not work, contact your GM)"
     )
-    url = f"https://discord.com/channels/{guild.id}/{role_void.id}"  # link to void channel (for accept message)
+    url = f"https://discord.com/channels/{guild.id}/{interaction.channel.id}"  # link to void channel (for accept message)
     await role_channel.send(
         content=out,
         view=SpecView(
