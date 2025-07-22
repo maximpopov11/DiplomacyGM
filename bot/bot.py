@@ -241,11 +241,10 @@ class SpecView(discord.ui.View):
             f"[SPECTATOR LOG] for {self.member.mention}: {resp}"
         )
 
-
     @discord.ui.button(label="Reject", style=discord.ButtonStyle.danger)
     async def reject(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.edit_message(
-           content=f"Reject response sent to {self.member.mention}!", view=None
+            content=f"Reject response sent to {self.member.mention}!", view=None
         )
 
         await self.member.send(
@@ -384,7 +383,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
             "Dead",
             "DiploGM",
         ]
-        or power_role.name.find("-orders") != -1
+        or power_role.name.find("orders") != -1
     ):
         await interaction.response.send_message(
             "Can't spectate that role!", ephemeral=True
@@ -422,7 +421,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
     role_void = discord.utils.find(
         lambda c: c.name == f"{power_role.name.lower()}-void", guild.text_channels
     )
-    if not role_channel or not role_void:
+    if not (role_channel or role_void):
         await interaction.response.send_message(
             "Please specify a playable power.", ephemeral=True
         )
@@ -450,6 +449,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
     await interaction.response.send_message(
         "Spectator application sent! You should hear a response via DM.", ephemeral=True
     )
+
 
 class PronounView(discord.ui.View):
     def __init__(self, guild: discord.Guild):
@@ -483,15 +483,23 @@ class PronounView(discord.ui.View):
             content=f"Your pronouns have been set to **{title}**.", view=None
         )
 
-        out_channel = discord.utils.find(lambda c: c.name == "player-information", self.guild.text_channels)
-        if out_channel and discord.utils.find(lambda r: r.name == "Player", member.roles):
+        out_channel = discord.utils.find(
+            lambda c: c.name == "player-information", self.guild.text_channels
+        )
+        if out_channel and discord.utils.find(
+            lambda r: r.name == "Player", member.roles
+        ):
             out = f"{member.mention} has updated their pronouns to: {title}"
             await out_channel.send(out)
         elif out_channel is None and self.guild.id != impdip_server:
-            await interaction.response.send_message("There is no player-information channel to log the change! (You still received your role)", ephemeral=True)
+            await interaction.response.send_message(
+                "There is no player-information channel to log the change! (You still received your role)",
+                ephemeral=True,
+            )
         else:
-            await interaction.response.send_message("Your role has been given! It has not been announced.", ephemeral=True)
-
+            await interaction.response.send_message(
+                "Your role has been given! It has not been announced.", ephemeral=True
+            )
 
     @discord.ui.button(label="He/Him")
     async def hehim(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -502,11 +510,15 @@ class PronounView(discord.ui.View):
         await self.assign(interaction, button.label)
 
     @discord.ui.button(label="They/Them")
-    async def theythem(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def theythem(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         await self.assign(interaction, button.label)
 
     @discord.ui.button(label="Username")
-    async def username(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def username(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         await self.assign(interaction, button.label)
 
     @discord.ui.button(label="Ask Me")
@@ -514,8 +526,11 @@ class PronounView(discord.ui.View):
         await self.assign(interaction, button.label)
 
     @discord.ui.button(label="Any")
-    async def anynoun(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def anynoun(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         await self.assign(interaction, button.label)
+
 
 @bot.tree.command(
     name="pronouns",
@@ -601,15 +616,24 @@ class TimezoneSelect(discord.ui.Select):
         await interaction.response.edit_message(
             content=f"✅ Your timezone has been set to **{label}**.", view=None
         )
-        
-        out_channel = discord.utils.find(lambda c: c.name == "player-information", self.guild.text_channels)
-        if out_channel and discord.utils.find(lambda r: r.name == "Player", member.roles):
+
+        out_channel = discord.utils.find(
+            lambda c: c.name == "player-information", self.guild.text_channels
+        )
+        if out_channel and discord.utils.find(
+            lambda r: r.name == "Player", member.roles
+        ):
             out = f"{member.mention} has updated their timezone to: {label}"
             await out_channel.send(out)
         elif out_channel is None and self.guild.id != impdip_server:
-            await interaction.response.send_message("There is no player-information channel to log the change! (You still received your role)", ephemeral=True)
+            await interaction.response.send_message(
+                "There is no player-information channel to log the change! (You still received your role)",
+                ephemeral=True,
+            )
         else:
-            await interaction.response.send_message("Your role has been given! It has not been announced.", ephemeral=True)
+            await interaction.response.send_message(
+                "Your role has been given! It has not been announced.", ephemeral=True
+            )
 
 
 class TimezoneView(discord.ui.View):
