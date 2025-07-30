@@ -383,7 +383,7 @@ class BuildsAdjudicator(Adjudicator):
 
         for player in self._board.players:
             player.build_orders = set()
-            player.waived_builds = 0
+            player.waived_orders = 0
         return self._board
 
 
