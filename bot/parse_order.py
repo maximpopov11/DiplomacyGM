@@ -327,7 +327,7 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
             if not order.strip():
                 continue
             try:
-                logger.info(order)
+                logger.debug(order)
                 cmd = parser.parse(order.strip().lower() + " ")
                 movement.append(generator.transform(cmd))
                 orderoutput.append(f"\u001b[0;32m{order}")
