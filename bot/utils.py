@@ -402,15 +402,17 @@ def get_orders(board: Board, player_restriction: Player | None, ctx: Context, fi
                 else:
                     player_name = player.name
                 
-                if subset == "missing" and abs(len(player.centers) - len(player.units)) == len(player.build_orders):
+                if subset == "missing" and abs(len(player.centers) - len(player.units) - player.waived_orders) == len(player.build_orders):
                     continue
-                if subset == "submitted" and len(player.build_orders) == 0:
+                if subset == "submitted" and len(player.build_orders) == 0 and player.waived_orders == 0:
                     continue
 
                 title = f"**{player_name}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
                 body = ""
                 for unit in player.build_orders | set(player.vassal_orders.values()):
                     body += f"\n{unit}"
+                if player.waived_orders > 0:
+                    body += f"\nWaive {player.waived_orders}"
 
                 if fields:
                     response.append((f"", f"{title}{body}"))

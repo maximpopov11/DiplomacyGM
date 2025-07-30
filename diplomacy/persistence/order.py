@@ -141,6 +141,13 @@ class Disband(PlayerOrder):
     def __str__(self):
         return f"Disband {self.location}"
 
+class Waive(Order):
+    def __init__(self, quantity: int):
+        super().__init__()
+        self.quantity: int = quantity
+
+    def __str__(self):
+        return f"Waive {self.quantity}"
 
 class RelationshipOrder(Order):
     """Vassal, Dual Monarchy, etc"""
