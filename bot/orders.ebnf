@@ -12,6 +12,7 @@ retreat: (retreat_order
 
 build: ( build_unit
        | disband_unit
+	   | waive_order
        | vassal_order
        | liege_order
        | monarchy_order
@@ -37,11 +38,13 @@ retreat_order: retreat_unit WS RETREAT WS province
 
 disband_order: ( retreat_unit WS DISBAND ) | ( DISBAND WS retreat_unit )
 
-non_retreat_order: (support_order | convoy_order | core_order | build_unit | vassal_order | liege_order | monarchy_order | disown_order | defect_order)
+non_retreat_order: (support_order | convoy_order | core_order | build_unit | waive_order | vassal_order | liege_order | monarchy_order | disown_order | defect_order)
 
 disband_unit: ( unit WS DISBAND ) | ( DISBAND WS unit )
 
 build_unit: ( BUILD WS DESCRIPTOR province ) | ( BUILD WS province DESCRIPTOR )
+
+waive_order: ( WAIVE WS NUMBER )
 
 vassal_order: ( VASSALIZE WS province ) | (province WS VASSALIZE)
 
@@ -119,6 +122,11 @@ DISBAND.2 : "d"
 BUILD.2 : "b"
         | "build"
         | "place"
+
+WAIVE.2: "w"
+       | "waive"
+
+NUMBER : /[0-9]{1,3}/
 
 unit : (DESCRIPTOR)? province
 

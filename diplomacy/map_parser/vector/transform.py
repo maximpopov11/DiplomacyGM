@@ -31,13 +31,13 @@ class TransGL3:
             x_c = float(match.group(1))
             y_c = float(match.group(2))
         elif transform_string.startswith("rotate"):
-            match = re.search(r"rotate\((.*), (.*), (.*)\)")
+            match = re.search(r"rotate\((.*),(.*),(.*)\)", transform_string)
             if not match:
-                match = re.search(r"rotate\((.*)\)")
+                match = re.search(r"rotate\((.*)\)", transform_string)
                 coord = 0, 0
             else:
-                coord = match.group(2), match.group(3)
-            angle = match.group(1) * np.pi / 180
+                coord = float(match.group(2)), float(match.group(3))
+            angle = float(match.group(1)) * np.pi / 180
             pre = TransGL3().init(x_c=-coord[0], y_c=-coord[1])
             post = TransGL3().init(x_c=coord[0], y_c=coord[1])
             cos = np.cos(angle)
@@ -58,7 +58,7 @@ class TransGL3:
             [x_c , y_c , 1]
         ])
         if transform_string.startswith("rotate"):
-            self.matrix = pre @ self.matrix @ post
+            self.matrix = pre.matrix @ self.matrix @ post.matrix
 
     # this is so that functions can create TransGL3 with specific values, not from an element
     def init(self, x_dx=1, y_dy=1, x_dy=0, y_dx=0, x_c=0, y_c=0):

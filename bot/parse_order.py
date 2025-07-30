@@ -117,6 +117,11 @@ class TreeToOrder(Transformer):
             u = s[2]
         return u.location(), u.player, order.Disband(u.location())
     
+    def waive_order(self, s):
+        if self.player_restriction is None:
+            raise ValueError(f"Please order waives in the appropriate player's orders channel.")
+        return None, self.player_restriction, order.Waive(int(s[2]))
+        
     def vassal_order(self, s):
         if isinstance(s[0], Location):
             l = s[0]
@@ -181,7 +186,9 @@ class TreeToOrder(Transformer):
         build_order = s[0]
         if self.player_restriction is not None and self.player_restriction != build_order[1]:
             raise Exception(f"Cannot issue order for {build_order[0].name} as you do not control it")
-        if isinstance(build_order[2], order.PlayerOrder):
+        if isinstance(build_order[2], order.Waive):
+            build_order[1].waived_orders = build_order[2].quantity
+        elif isinstance(build_order[2], order.PlayerOrder):
             remove_player_order_for_location(self.board, build_order[1], build_order[0])
             build_order[1].build_orders.add(build_order[2])
         else:

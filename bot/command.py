@@ -1517,9 +1517,9 @@ async def ping_players(ctx: commands.Context, manager: Manager) -> None:
             if phase.is_builds(board.phase):
                 count = len(player.centers) - len(player.units)
 
-                current = 0
+                current = player.waived_builds
                 has_disbands = False
-                has_builds = False
+                has_builds = player.waived_builds > 0
                 for order in player.build_orders:
                     if isinstance(order, Disband):
                         current -= 1

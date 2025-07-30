@@ -51,6 +51,7 @@ class Player:
         self.units: set[unit.Unit] = units
 
         self.build_orders: set[order.PlayerOrder] = set()
+        self.waived_orders: int = 0
 
         self.vassal_orders: dict[Player, order.RelationshipOrder] = {}
 
