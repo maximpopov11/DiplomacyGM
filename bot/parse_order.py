@@ -306,15 +306,12 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
                 generator.transform(cmd)
                 orderoutput.append(f"\u001b[0;32m{order}")
             except VisitError as e:
-                logger.exception(e)
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: {str(e).splitlines()[-1]}")
             except UnexpectedEOF as e:
-                logger.exception(e)
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: Please fix this order and try again")
             except UnexpectedCharacters as e:
-                logger.exception(e)
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: Please fix this order and try again")
         database = get_connection()
@@ -335,15 +332,12 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
                 movement.append(generator.transform(cmd))
                 orderoutput.append(f"\u001b[0;32m{order}")
             except VisitError as e:
-                logger.exception(e)
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: {str(e).splitlines()[-1]}")
             except UnexpectedEOF as e:
-                logger.exception(e)
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: Please fix this order and try again")
             except UnexpectedCharacters as e:
-                logger.exception(e)
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: Please fix this order and try again")
         database = get_connection()
