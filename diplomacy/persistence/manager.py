@@ -101,7 +101,7 @@ class Manager:
                 player_restriction = None
         svg, file_name = Mapper(
             board, color_mode=color_mode
-        ).draw_moves_map(season, player_restriction)
+        ).draw_moves_map(season, player_restriction=player_restriction)
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
