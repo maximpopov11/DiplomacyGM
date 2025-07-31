@@ -114,7 +114,7 @@ class Mapper:
     def is_moveable(self, unit: Unit):
         if unit.province not in self.adjacent_provinces:
             return False
-        if self.player_restriction and unit.player.name != self.player_restriction:
+        if self.player_restriction.name and unit.player.name != self.player_restriction:
             return False
         if phase.is_retreats(self.current_phase) and unit.province.dislodged_unit != unit:
             return False
