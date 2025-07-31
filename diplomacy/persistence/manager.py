@@ -207,7 +207,7 @@ class Manager:
     def draw_fow_gui_map(
         self,
         server_id: int,
-        player_restriction: Player | None,
+        player_restriction: Player | None = None,
         color_mode: str | None = None,
     ) -> tuple[str, str]:
         start = time.time()
@@ -223,7 +223,7 @@ class Manager:
     def draw_gui_map(
         self,
         server_id: int,
-        player_restriction: Player | None,
+        player_restriction: Player | None = None,
         color_mode: str | None = None,
     ) -> tuple[str, str]:
         start = time.time()

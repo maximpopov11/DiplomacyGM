@@ -793,9 +793,9 @@ async def view_gui(
 
     try:
         if not board.fow:
-            file, file_name = manager.draw_gui_map(ctx.guild.id, color_mode)
+            file, file_name = manager.draw_gui_map(ctx.guild.id, color_mode=color_mode)
         else:
-            file, file_name = manager.draw_fow_gui_map(ctx.guild.id, player, color_mode)
+            file, file_name = manager.draw_fow_gui_map(ctx.guild.id, player_restriction=player, color_mode=color_mode)
     except Exception as err:
         log_command(
             logger,

@@ -3,6 +3,7 @@ import os
 import re
 import datetime
 import random
+import traceback
 
 from discord import Forbidden
 from dotenv.main import load_dotenv
@@ -138,7 +139,8 @@ async def on_command_error(ctx, error):
     logger.log(
         logging.ERROR,
         f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
-        f"errored in {time_spent}s\n",
+        f"errored in {time_spent}s\n"
+        f"{''.join(traceback.format_exception(type(error), error, error.__traceback__))}",
     )
 
     if isinstance(original, Forbidden):
