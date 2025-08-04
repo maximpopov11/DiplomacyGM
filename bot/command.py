@@ -511,11 +511,11 @@ async def order(player: Player | None, ctx: commands.Context, manager: Manager) 
 
     message = parse_order(ctx.message.content, player, board)
     if "title" in message:
-        log_command(logger, ctx, message=message["title"])
+        log_command(logger, ctx, message=message["title"], level=logging.DEBUG)
     elif "message" in message:
-        log_command(logger, ctx, message=message["message"][:100])
+        log_command(logger, ctx, message=message["message"][:100], level=logging.DEBUG)
     elif "messages" in message and len(message["messages"]) > 0:
-        log_command(logger, ctx, message=message["messages"][0][:100])
+        log_command(logger, ctx, message=message["messages"][0][:100], level=logging.DEBUG)
     await send_message_and_file(channel=ctx.channel, **message)
 
 
