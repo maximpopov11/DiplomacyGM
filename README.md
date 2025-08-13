@@ -1,3 +1,9 @@
+### Sample Map Generation Output
+
+<img width="11047" height="4548" alt="ImpDip" src="https://github.com/user-attachments/assets/fb43ec57-d449-4dac-87ba-20560437076f" />
+
+### DiplomacyGM
+
 This project is designed to fully automate the adjudication of Diplomacy games over Discord. The step-by-step process to
 use this bot will be outlined in the near future.
 
