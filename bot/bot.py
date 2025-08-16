@@ -221,8 +221,8 @@ class SpecView(discord.ui.View):
 
             return
 
-        await interaction.response.send_message(
-            f"Accept response sent to {self.member.mention}!", ephemeral=True
+        await interaction.response.edit_message(
+            content=f"Accept response sent to {self.member.mention}!", view=None
         )
 
         await self.member.send(
@@ -243,13 +243,10 @@ class SpecView(discord.ui.View):
             f"[SPECTATOR LOG] for {self.member.mention}: {resp}"
         )
 
-        if interaction.message:
-            await interaction.message.delete()
-
     @discord.ui.button(label="Reject", style=discord.ButtonStyle.danger)
     async def reject(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(
-            f"Reject response sent to {self.member.mention}!", ephemeral=True
+        await interaction.response.edit_message(
+            content=f"Reject response sent to {self.member.mention}!", view=None
         )
 
         await self.member.send(
@@ -259,9 +256,6 @@ class SpecView(discord.ui.View):
 
         out = f"[SPECTATOR LOG] {self.member.mention} rejected for power {self.power_role.mention}"
         await self.admin_channel.send(out)
-
-        if interaction.message:
-            await interaction.message.delete()
 
 
 @bot.tree.command(
@@ -391,7 +385,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
             "Dead",
             "DiploGM",
         ]
-        or power_role.name.find("-orders") != -1
+        or power_role.name.find("orders") != -1
     ):
         await interaction.response.send_message(
             "Can't spectate that role!", ephemeral=True
@@ -426,10 +420,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
     role_channel = discord.utils.find(
         lambda c: c.name == f"{power_role.name.lower()}-orders", guild.text_channels
     )
-    role_void = discord.utils.find(
-        lambda c: c.name == f"{power_role.name.lower()}-void", guild.text_channels
-    )
-    if not role_channel or not role_void:
+    if not (role_channel):
         await interaction.response.send_message(
             "Please specify a playable power.", ephemeral=True
         )
@@ -445,7 +436,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
         f"{power_role.mention}: Spectator request from {interaction.user.mention}\n"
         + "- (if the buttons do not work, contact your GM)"
     )
-    url = f"https://discord.com/channels/{guild.id}/{role_void.id}"  # link to void channel (for accept message)
+    url = f"https://discord.com/channels/{guild.id}/{interaction.channel.id}"  # link to void channel (for accept message)
     await role_channel.send(
         content=out,
         view=SpecView(
@@ -456,6 +447,218 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
     # send ack to requesting user
     await interaction.response.send_message(
         "Spectator application sent! You should hear a response via DM.", ephemeral=True
+    )
+
+
+class PronounView(discord.ui.View):
+    def __init__(self, guild: discord.Guild):
+        super().__init__(timeout=60)
+
+        self.guild = guild
+
+    async def assign(self, interaction: discord.Interaction, title):
+        member = self.guild.get_member(interaction.user.id)
+        if not member:
+            await interaction.followup.send(
+                "Could not find you to add roles.", ephemeral=True
+            )
+            return
+
+        existing = discord.utils.find(
+            lambda r: r.name.find("Pronouns:") != -1, member.roles
+        )
+        if existing:
+            await member.remove_roles(existing)
+
+        role = discord.utils.find(
+            lambda r: r.name == f"Pronouns: {title}", self.guild.roles
+        )
+
+        if not role:
+            role = await self.guild.create_role(name=f"Pronouns: {title}")
+
+        await member.add_roles(role)
+        await interaction.response.edit_message(
+            content=f"Your pronouns have been set to **{title}**.", view=None
+        )
+
+        out_channel = discord.utils.find(
+            lambda c: c.name == "player-information", self.guild.text_channels
+        )
+        if out_channel and discord.utils.find(
+            lambda r: r.name == "Player", member.roles
+        ):
+            out = f"{member.mention} has updated their pronouns to: {title}"
+            await out_channel.send(out)
+        elif out_channel is None and self.guild.id != impdip_server:
+            await interaction.response.send_message(
+                "There is no player-information channel to log the change! (You still received your role)",
+                ephemeral=True,
+            )
+        else:
+            await interaction.response.send_message(
+                "Your role has been given! It has not been announced.", ephemeral=True
+            )
+
+    @discord.ui.button(label="He/Him")
+    async def hehim(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.assign(interaction, button.label)
+
+    @discord.ui.button(label="She/Her")
+    async def sheher(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.assign(interaction, button.label)
+
+    @discord.ui.button(label="They/Them")
+    async def theythem(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        await self.assign(interaction, button.label)
+
+    @discord.ui.button(label="Username")
+    async def username(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        await self.assign(interaction, button.label)
+
+    @discord.ui.button(label="Ask Me")
+    async def askme(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.assign(interaction, button.label)
+
+    @discord.ui.button(label="Any")
+    async def anynoun(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        await self.assign(interaction, button.label)
+
+
+@bot.tree.command(
+    name="pronouns",
+    description="Specatate a Player",
+    guild=discord.Object(id=1262215477237645314),
+)
+async def pronouns(interaction: discord.Interaction):
+    guild = interaction.guild
+    if not guild:
+        return
+
+    if isinstance(interaction.channel, discord.DMChannel):
+        return
+
+    out = "Please select which of these options best represents your pronouns!"
+    view = PronounView(guild)
+    await interaction.response.send_message(content=out, view=view, ephemeral=True)
+
+
+class TimezoneSelect(discord.ui.Select):
+    def __init__(self, guild: discord.Guild):
+        self.guild = guild
+        descriptors = {
+            "-12": "Baker Island Time (BIT)",
+            "-11": "Niue / Samoa Standard Time (SST)",
+            "-10": "Hawaii-Aleutian Standard Time (HST)",
+            "-9": "Alaska Standard Time (AKST)",
+            "-8": "Pacific Standard Time (PST)",
+            "-7": "Mountain Standard Time (MST)",
+            "-6": "Central Standard Time (CST)",
+            "-5": "Eastern Standard Time (EST)",
+            "-4": "Atlantic Standard Time (AST)",
+            "-3": "Argentina / Uruguay / Greenland",
+            "-2": "Fernando de Noronha Time (FNT)",
+            "-1": "Azores Standard Time (AZOT)",
+            "+0": "Greenwich Mean Time (GMT)",
+            "+1": "Central European Time (CET)",
+            "+2": "Eastern European Time (EET)",
+            "+3": "Moscow / Arabia Standard Time",
+            "+4": "Gulf Standard Time (GST)",
+            "+5": "Pakistan Standard Time (PKT)",
+            "+5.5": "India Standard Time (IST)",
+            "+6": "Bangladesh Standard Time (BST)",
+            "+7": "Indochina Time (ICT)",
+            "+8": "China Standard Time (CST)",
+            "+9": "Japan/Korea Standard Time (JST/KST)",
+            "+10": "Australian Eastern Standard Time (AEST)",
+            "+11": "Solomon Islands / New Caledonia",
+            "+12": "New Zealand Standard Time (NZST)",
+        }
+        options = [
+            discord.SelectOption(label=f"UTC{k}", description=v)
+            for k, v in descriptors.items()
+        ]
+        super().__init__(
+            placeholder="Choose your timezone...",
+            min_values=1,
+            max_values=1,
+            options=options,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        member = self.guild.get_member(interaction.user.id)
+        if not member:
+            return
+
+        label = self.values[0]
+        role_name = f"Timezone: {label}"
+
+        # Create role if it doesn't exist
+        role = discord.utils.find(lambda r: r.name == role_name, self.guild.roles)
+        if not role:
+            role = await self.guild.create_role(name=role_name)
+
+        # Remove other timezone roles
+        for other in member.roles:
+            if other.name.startswith("Timezone:"):
+                await member.remove_roles(other)
+
+        await member.add_roles(role)
+
+        # Edit original ephemeral message
+        await interaction.response.edit_message(
+            content=f"✅ Your timezone has been set to **{label}**.", view=None
+        )
+
+        out_channel = discord.utils.find(
+            lambda c: c.name == "player-information", self.guild.text_channels
+        )
+        if out_channel and discord.utils.find(
+            lambda r: r.name == "Player", member.roles
+        ):
+            out = f"{member.mention} has updated their timezone to: {label}"
+            await out_channel.send(out)
+        elif out_channel is None and self.guild.id != impdip_server:
+            await interaction.response.send_message(
+                "There is no player-information channel to log the change! (You still received your role)",
+                ephemeral=True,
+            )
+        else:
+            await interaction.response.send_message(
+                "Your role has been given! It has not been announced.", ephemeral=True
+            )
+
+
+class TimezoneView(discord.ui.View):
+    def __init__(self, guild: discord.Guild):
+        super().__init__(timeout=180)
+        self.add_item(TimezoneSelect(guild))
+
+
+@bot.tree.command(
+    name="timezone",
+    description="Set your timezone",
+    guild=discord.Object(id=1262215477237645314),
+)
+async def timezone(interaction: discord.Interaction):
+    guild = interaction.guild
+    if not guild:
+        return
+
+    if isinstance(interaction.channel, discord.DMChannel):
+        return
+
+    view = TimezoneView(guild)
+    await interaction.response.send_message(
+        "Please select your timezone from the dropdown below:",
+        view=view,
+        ephemeral=True,
     )
 
 
@@ -945,7 +1148,7 @@ async def nick(ctx: commands.Context) -> None:
     Usage: .record_spec @User @Nation""",
 )
 @gm_only("record a spec")
-async def record_spec(ctx: commands.Context, manager: Manager) -> None:
+async def record_spec(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
 
@@ -953,10 +1156,12 @@ async def record_spec(ctx: commands.Context, manager: Manager) -> None:
 
 
 @bot.command(
-    brief="Backlogs the approval for all current Country Spectators", hidden=True
+    brief="Backlogs the approval for all current Country Spectators",
+    description="""[Only to be used by GMs]
+    Used to record all existing County Spectators if undocumented.""",
 )
 @gm_only("backlog spectators")
-async def backlog_specs(ctx: commands.Context, manager: Manager) -> None:
+async def backlog_specs(ctx: commands.Context) -> None:
     if isinstance(ctx.channel, discord.DMChannel):
         return
 
