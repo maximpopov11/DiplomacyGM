@@ -46,6 +46,7 @@ class AdjudicableOrder:
         self.is_convoy: bool = False
         # indicates that a move is also a convoy that failed, so no support holds
         self.not_supportable = False
+        self.is_valid = True
         if isinstance(unit.order, Hold):
             self.type = OrderType.HOLD
         elif isinstance(unit.order, Core):

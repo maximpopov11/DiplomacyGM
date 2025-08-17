@@ -21,6 +21,7 @@ class UnitOrder(Order):
 
     def __init__(self):
         super().__init__()
+        self.hasFailed = False
 
 
 class ComplexOrder(UnitOrder):

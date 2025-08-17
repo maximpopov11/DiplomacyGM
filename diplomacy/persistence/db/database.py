@@ -225,7 +225,7 @@ class _DatabaseConnection:
             for province_name, owner, core, half_core in province_data
         }
         unit_data = cursor.execute(
-            "SELECT location, is_dislodged, owner, is_army, order_type, order_destination, order_source FROM units WHERE board_id=? and phase=?",
+            "SELECT location, is_dislodged, owner, is_army, order_type, order_destination, order_source, failed_order FROM units WHERE board_id=? and phase=?",
             (board_id, board.get_phase_and_year_string()),
         ).fetchall()
         for province in board.provinces:
@@ -270,6 +270,7 @@ class _DatabaseConnection:
                 order_type,
                 order_destination,
                 order_source,
+                hasFailed,
             ) = unit_info
             province, coast = board.get_province_and_coast(location)
             owner_player = board.get_player(owner)
@@ -308,6 +309,7 @@ class _DatabaseConnection:
                     order_type,
                     order_destination,
                     order_source,
+                    hasFailed,
                 ) = unit_info
                 if order_type is not None:
                     order_classes = [
@@ -348,6 +350,8 @@ class _DatabaseConnection:
                         )
                     else:
                         raise ValueError(f"Could not parse {order_class}")
+                    
+                    order.hasFailed = hasFailed
 
                     province, coast = board.get_province_and_coast(location)
                     if is_dislodged:
@@ -438,7 +442,7 @@ class _DatabaseConnection:
         )
         # TODO - this is hacky
         cursor.executemany(
-            "INSERT INTO units (board_id, phase, location, is_dislodged, owner, is_army, order_type, order_destination, order_source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO units (board_id, phase, location, is_dislodged, owner, is_army, order_type, order_destination, order_source, failed_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (
                     board_id,
@@ -464,6 +468,7 @@ class _DatabaseConnection:
                         if unit.order is not None
                         else None
                     ),
+                    unit.order.hasFailed if unit.order is not None else False
                 )
                 for unit in board.units
             ],
@@ -488,7 +493,7 @@ class _DatabaseConnection:
     def save_order_for_units(self, board: Board, units: Iterable[Unit]):
         cursor = self._connection.cursor()
         cursor.executemany(
-            "UPDATE units SET order_type=?, order_destination=?, order_source=? "
+            "UPDATE units SET order_type=?, order_destination=?, order_source=?, failed_order=? "
             "WHERE board_id=? and phase=? and location=? and is_dislodged=?",
             [
                 (
@@ -503,6 +508,7 @@ class _DatabaseConnection:
                         if unit.order is not None
                         else None
                     ),
+                    unit.order.hasFailed if unit.order is not None else False,
                     board.board_id,
                     board.get_phase_and_year_string(),
                     unit.location().name,

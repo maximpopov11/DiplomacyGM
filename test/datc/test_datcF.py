@@ -127,7 +127,7 @@ class TestDATC_F(unittest.TestCase):
         f_skagerrak = b.move(b.germany, UnitType.FLEET, b.skagerrak, b.north_sea)
         f_helgoland_bight = b.supportMove(b.germany, UnitType.FLEET, b.helgoland_bight, f_skagerrak, b.north_sea)
         a_picardy = b.move(b.france, UnitType.ARMY, b.picardy, b.belgium)
-        a_burgundy = b.supportMove(b.france, UnitType.ARMY, b.picardy, a_picardy, b.belgium)
+        a_burgundy = b.supportMove(b.france, UnitType.ARMY, b.burgundy, a_picardy, b.belgium)
 
         b.assertSuccess(a_holland, f_helgoland_bight, a_burgundy)
         b.assertFail(a_picardy, a_london, f_north_sea, a_belgium)
