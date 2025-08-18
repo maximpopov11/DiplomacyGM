@@ -438,6 +438,7 @@ class RetreatsAdjudicator(Adjudicator):
 
         for unit in self._board.units:
             unit.order = None
+            unit.retreat_options = None
 
         if self._board.phase.name.startswith("Fall") and "vassal system" in self._board.data.get("adju flags", []):
             for player in self._board.players:
