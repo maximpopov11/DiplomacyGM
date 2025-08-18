@@ -221,15 +221,17 @@ class SpecView(discord.ui.View):
 
             return
 
-        await interaction.response.send_message(
-            f"Accept response sent to {self.member.mention}!", ephemeral=True
-        )
-
-        await self.member.send(
-            f"Response from: {self.game_name}\n"
-            + f"You have been accepted as a spectator for: @{self.power_role.name}\n"
-            + f"Go to {self.url} to watch them play!"
-        )
+        try:
+            await self.member.send(
+                f"Response from: {self.game_name}\n"
+                + f"You have been accepted as a spectator for: @{self.power_role.name}\n"
+                + f"Go to {self.url} to watch them play!"
+            )
+            await interaction.response.send_message(
+                f"Accept response sent to {self.member.mention}!", ephemeral=True
+            )
+        except:
+            logger.warning(f"Unable to send a message to direct message. The user might have DMs blocked.")
         await self.member.add_roles(self.power_role, self.spec_role)
 
         out = f"[SPECTATOR LOG] {self.member.mention} approved for power {self.power_role.mention}"
@@ -248,14 +250,16 @@ class SpecView(discord.ui.View):
 
     @discord.ui.button(label="Reject", style=discord.ButtonStyle.danger)
     async def reject(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(
-            f"Reject response sent to {self.member.mention}!", ephemeral=True
-        )
-
-        await self.member.send(
-            f"Response from: {self.game_name}\n"
-            + f"You have been rejected as a spectator for: @{self.power_role.name}\n"
-        )
+        try:
+            await self.member.send(
+                f"Response from: {self.game_name}\n"
+                + f"You have been rejected as a spectator for: @{self.power_role.name}\n"
+            )
+            await interaction.response.send_message(
+                f"Reject response sent to {self.member.mention}!", ephemeral=True
+            )
+        except:
+            logger.warning(f"Unable to send a message to direct message. The user might have DMs blocked.")
 
         out = f"[SPECTATOR LOG] {self.member.mention} rejected for power {self.power_role.mention}"
         await self.admin_channel.send(out)
