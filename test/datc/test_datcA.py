@@ -79,8 +79,8 @@ class TestDATC_A(unittest.TestCase):
         f_london = b.move(b.germany, UnitType.FLEET, b.london_c, b.yorkshire_c);
         a_wales = b.supportMove(b.germany, UnitType.ARMY, b.wales, f_london, b.yorkshire)
 
-        b.assertIllegal(a_yorkshire, f_north_sea)
-        b.assertSuccess(f_london, a_liverpool)
+        b.assertIllegal(a_yorkshire, f_north_sea, a_liverpool)
+        b.assertSuccess(f_london)
         b.moves_adjudicate(self)
 
     # NOT APPLICABLE 6_a_6; TEST CASE, ORDERING A UNIT OF ANOTHER COUNTRY

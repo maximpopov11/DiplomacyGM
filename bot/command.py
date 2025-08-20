@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import logging
 import os
 import random
@@ -838,21 +839,32 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> None:
     return_svg = not ({"true", "t", "svg", "s"} & set(arguments))
     color_arguments = list(color_options & set(arguments))
     color_mode = color_arguments[0] if color_arguments else None
+    old_turn = (board.get_year_str(), board.phase)
     # await send_message_and_file(channel=ctx.channel, **await view_map(ctx, manager))
     # await send_message_and_file(channel=ctx.channel, **await view_orders(ctx, manager))
     manager.adjudicate(ctx.guild.id)
 
-    file, file_name = manager.draw_current_map(ctx.guild.id, color_mode)
-
+    
     log_command(
         logger,
         ctx,
         message=f"Adjudication Sucessful for {board.phase.name} {board.get_year_str()}",
     )
+    file, file_name = manager.draw_moves_map(ctx.guild.id, color_mode, turn=old_turn)
+    await send_message_and_file(
+        channel=ctx.channel,
+        title=f"{old_turn[1].name} {old_turn[0]}",
+        message="Moves Map",
+        file=file,
+        file_name=file_name,
+        convert_svg=return_svg,
+        file_in_embed=False,
+    )
+    file, file_name = manager.draw_current_map(ctx.guild.id, color_mode)
     await send_message_and_file(
         channel=ctx.channel,
         title=f"{board.phase.name} {board.get_year_str()}",
-        message="Adjudication has completed successfully",
+        message="Results Map",
         file=file,
         file_name=file_name,
         convert_svg=return_svg,

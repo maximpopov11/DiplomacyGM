@@ -182,8 +182,9 @@ class TestDATC_D(unittest.TestCase):
         a_greece = b.move(b.turkey, UnitType.ARMY, b.greece, b.naples)
         a_bulgaria = b.supportHold(b.turkey, UnitType.ARMY, b.bulgaria, a_greece)
 
-        b.assertNotIllegal(a_greece)
-        b.assertSuccess(f_ionian_sea, a_albania, a_serbia, a_greece, a_bulgaria)
+        b.assertIllegal(a_greece)
+        b.assertSuccess(f_ionian_sea, a_albania, a_serbia)
+        b.assertFail(a_bulgaria)
         b.assertDislodge(a_greece)
         b.moves_adjudicate(self)
 
@@ -595,6 +596,7 @@ class TestDATC_D(unittest.TestCase):
         b.assertNotDislodge(f_baltic_sea)
         b.moves_adjudicate(self)
 
+    # DEVIATES
     def test_6_d_28(self):
         """ 6.D.28. TEST CASE, IMPOSSIBLE MOVE AND SUPPORT
             If a move is impossible then it can be treated as "illegal", which makes a hold support possible.
@@ -607,6 +609,8 @@ class TestDATC_D(unittest.TestCase):
             and the fleet in Rumania will not be dislodged.
             I prefer that the move is "illegal", which means that the fleet in the Black Sea does not dislodge the
             supported Russian fleet.
+            
+            Note that we treat impossible moves as unsupportable, so the test case has been adjusted accordingly.
         """ 
         b = BoardBuilder()
         f_rumania = b.move(b.russia, UnitType.FLEET, b.rumania_c, b.holland_c)
@@ -615,9 +619,9 @@ class TestDATC_D(unittest.TestCase):
         a_bulgaria = b.supportMove(b.turkey, UnitType.ARMY, b.bulgaria, f_black_sea, b.rumania)
 
         b.assertIllegal(f_rumania)
-        b.assertSuccess(a_budapest)
-        b.assertFail(f_black_sea)
-        b.assertNotDislodge(f_rumania)
+        b.assertSuccess(f_black_sea)
+        b.assertFail(a_budapest)
+        b.assertDislodge(f_rumania)
         b.moves_adjudicate(self)
 
     def test_6_d_29(self):
@@ -633,6 +637,8 @@ class TestDATC_D(unittest.TestCase):
             Budapest valid and the fleet in Rumania will not be dislodged.
             I prefer that unambiguous orders are not changed and that the move is "illegal". That means that the fleet
             in the Black Sea does not dislodge the supported Russian fleet.
+            
+            Note that we treat impossible moves as unsupportable, so the test case has been adjusted accordingly.
         """
         b = BoardBuilder()
         f_rumania = b.move(b.russia, UnitType.FLEET, b.rumania_c, b.bulgaria_sc)
@@ -641,9 +647,9 @@ class TestDATC_D(unittest.TestCase):
         a_bulgaria = b.supportMove(b.turkey, UnitType.ARMY, b.bulgaria, f_black_sea, b.rumania)
 
         b.assertIllegal(f_rumania)
-        b.assertSuccess(a_budapest)
-        b.assertFail(f_black_sea)
-        b.assertNotDislodge(f_rumania)
+        b.assertSuccess(f_black_sea)
+        b.assertFail(a_budapest)
+        b.assertDislodge(f_rumania)
         b.moves_adjudicate(self)
 
     def test_6_d_30(self):
@@ -659,6 +665,8 @@ class TestDATC_D(unittest.TestCase):
             that makes the hold support of the fleet in the Aegean Sea valid and the Russian fleet will not be
             dislodged. I don't like default coasts and I prefer that the move is "illegal". That means that the fleet
             in the Black Sea does not dislodge the supported Russian fleet.
+            
+            Note that we treat impossible moves as unsupportable, so the test case has been adjusted accordingly.
         """
         b = BoardBuilder()
         f_constantinople = b.move(b.russia, UnitType.FLEET, b.constantinople_c, b.bulgaria)
@@ -666,9 +674,9 @@ class TestDATC_D(unittest.TestCase):
         f_black_sea = b.move(b.turkey, UnitType.FLEET, b.black_sea, b.constantinople_c)
         a_bulgaria = b.supportMove(b.turkey, UnitType.ARMY, b.bulgaria, f_black_sea, b.constantinople_c)
 
-        b.assertNotDislodge(f_constantinople)
-        b.assertFail(f_black_sea)
-        b.assertSuccess(f_aegean_sea, a_bulgaria)
+        b.assertDislodge(f_constantinople)
+        b.assertFail(f_aegean_sea)
+        b.assertSuccess(f_black_sea, a_bulgaria)
         b.moves_adjudicate(self)
 
     def test_6_d_31(self):
@@ -686,16 +694,16 @@ class TestDATC_D(unittest.TestCase):
             then this impossible support must be ignored and the second order must be carried out.
             I prefer that impossible orders are "illegal" and ignored. If there would be a second order for the fleet
             in the Black Sea, that order should be carried out.
+            
+            Note that we treat impossible moves as unsupportable, so the test case has been adjusted accordingly.
         """
         b = BoardBuilder()
         a_rumania = b.move(b.austria, UnitType.ARMY, b.rumania, b.armenia)
         f_black_sea = b.supportMove(b.turkey, UnitType.FLEET, b.black_sea, a_rumania, b.armenia)
 
-        b.assertNotIllegal(a_rumania)
-        b.assertIllegal(f_black_sea)
+        b.assertIllegal(a_rumania, f_black_sea)
         b.moves_adjudicate(self)
 
-    # DEVIATES
     def test_6_d_32(self):
         """ 6.D.32. TEST CASE, A MISSING FLEET
             The previous test cases contained an order that was impossible even when some other pieces on the board
@@ -720,7 +728,8 @@ class TestDATC_D(unittest.TestCase):
 
         b.assertDislodge(a_yorkshire)
         b.assertIllegal(a_yorkshire)
-        b.assertSuccess(f_edinburgh, f_london)
+        b.assertSuccess(f_edinburgh)
+        b.assertFail(f_london)
         # deviates since we consider invalid moves as not support holdable
         b.assertSuccess(a_liverpool)
         b.moves_adjudicate(self)

@@ -19,7 +19,7 @@ class TestDATC_E(unittest.TestCase):
         """
         b = BoardBuilder()
         a_berlin = b.move(b.germany, UnitType.ARMY, b.berlin, b.prussia)
-        f_kiel = b.move(b.germany, UnitType.FLEET, b.kiel_c, b.berlin)
+        f_kiel = b.move(b.germany, UnitType.FLEET, b.kiel_c, b.berlin_c)
         a_silesia = b.supportMove(b.germany, UnitType.ARMY, b.silesia, a_berlin, b.prussia)
         a_prussia = b.move(b.russia, UnitType.ARMY, b.prussia, b.berlin)
 

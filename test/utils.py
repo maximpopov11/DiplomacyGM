@@ -25,8 +25,8 @@ class BoardBuilder():
             players=set(),
             provinces=set(),
             units=set(),
-            phase=Phase(f"{season} 1901", None, None),
-            data=None,
+            phase=Phase(f"{season} 1901", 0, None, None),
+            data={'adju flags': {'vassal system': None}},
             datafile=None,
             fow=False
         )

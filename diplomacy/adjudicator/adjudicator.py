@@ -34,6 +34,7 @@ from diplomacy.persistence.order import (
 from diplomacy.persistence.player import Player, PlayerClass
 from diplomacy.persistence.province import Location, Coast, Province, ProvinceType, get_adjacent_provinces
 from diplomacy.persistence.unit import UnitType, Unit
+from diplomacy.persistence.db import database
 
 logger = logging.getLogger(__name__)
 
@@ -490,8 +491,7 @@ class MovesAdjudicator(Adjudicator):
                     valid, reason = order_is_valid(
                         unit.location(), ConvoyMove(unit.order.destination), strict_convoys_supports=False
                     )
-                    if not valid:  # move is invalid in the first place, becomes hold
-                        unit.order = Hold()
+                    if not valid:  # move is invalid in the first place, so it is a failed move
                         not_supportable = True
                         failed = True
                     else:
@@ -500,21 +500,21 @@ class MovesAdjudicator(Adjudicator):
                         )
 
                         if not strict_valid:  # move is valid but no convoy, so it is a failed move
-                            unit.order = Hold()
                             not_supportable = True
+                            failed = True
                         else:
                             unit.order = ConvoyMove(unit.order.destination)
                 elif isinstance(unit.order, Core):
-                    unit.order = Hold()
                     not_supportable = True
                     failed = True
                 else:
-                    unit.order = Hold()
                     failed = True
 
+            order = AdjudicableOrder(unit)
             if failed:
                 self.failed_or_invalid_units.add(MapperInformation(unit))
-            order = AdjudicableOrder(unit)
+                order.is_valid = False
+                unit.order.hasFailed = True
             if not_supportable:
                 order.not_supportable = True
 
@@ -562,6 +562,8 @@ class MovesAdjudicator(Adjudicator):
             order.state = ResolutionState.UNRESOLVED
         for order in self.orders:
             self._resolve_order(order)
+            order.base_unit.order.hasFailed = (order.resolution == Resolution.FAILS)
+        database.get_connection().save_order_for_units(self._board, set(o.base_unit for o in self.orders))
         self._update_board()
         return self._board
 
@@ -693,6 +695,8 @@ class MovesAdjudicator(Adjudicator):
                 # coring should fail even if the attack comes from the same nation
                 if move_here.country == order.country and order.type == OrderType.SUPPORT:
                     continue
+                if not move_here.is_valid:
+                    continue
                 if not move_here.is_convoy:
                     if move_here.current_province != order.destination_province:
                         return Resolution.FAILS
@@ -800,6 +804,11 @@ class MovesAdjudicator(Adjudicator):
         if order.state == ResolutionState.GUESSING:
             if order not in self._dependencies:
                 self._dependencies.append(order)
+            return order.resolution
+            
+        if not order.is_valid:
+            order.resolution = Resolution.FAILS
+            order.state = ResolutionState.RESOLVED
             return order.resolution
 
         old_dependency_count = len(self._dependencies)

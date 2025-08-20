@@ -418,26 +418,26 @@ class Mapper:
     def _draw_order(self, unit: Unit, coordinate: tuple[float, float], current_phase: phase.Phase) -> None:
         order = unit.order
         if isinstance(order, Hold):
-            self._draw_hold(coordinate)
+            self._draw_hold(coordinate, order.hasFailed)
         elif isinstance(order, Core):
-            self._draw_core(coordinate)
+            self._draw_core(coordinate, order.hasFailed)
         elif isinstance(order, Move):
             # moves are just convoyed moves that have no convoys
-            return self._draw_convoyed_move(unit, coordinate)
+            return self._draw_convoyed_move(unit, coordinate, order.hasFailed)
         elif isinstance(order, ConvoyMove):
             logger.warning("Convoy move is depricated; use move instead")
-            return self._draw_convoyed_move(unit, coordinate)
+            return self._draw_convoyed_move(unit, coordinate, order.hasFailed)
         elif isinstance(order, Support):
-            return self._draw_support(unit, coordinate)
+            return self._draw_support(unit, coordinate, order.hasFailed)
         elif isinstance(order, ConvoyTransport):
-            self._draw_convoy(order, coordinate)
+            self._draw_convoy(order, coordinate, order.hasFailed)
         elif isinstance(order, RetreatMove):
             return self._draw_retreat_move(order, coordinate)
         elif isinstance(order, RetreatDisband):
             self._draw_force_disband(coordinate, self._moves_svg)
         else:
             if phase.is_moves(current_phase):
-                self._draw_hold(coordinate)
+                self._draw_hold(coordinate, order.hasFailed)
             else:
                 self._draw_force_disband(coordinate, self._moves_svg)
             logger.debug(f"None order found: hold drawn. Coordinates: {coordinate}")
@@ -454,7 +454,7 @@ class Mapper:
         else:
             logger.error(f"Could not draw player order {order}")
 
-    def _draw_hold(self, coordinate: tuple[float, float]) -> None:
+    def _draw_hold(self, coordinate: tuple[float, float], hasFailed: bool) -> None:
         element = self._moves_svg.getroot()
         drawn_order = self.create_element(
             "circle",
@@ -463,13 +463,13 @@ class Mapper:
                 "cy": coordinate[1],
                 "r": self.board.data["svg config"]["unit_radius"],
                 "fill": "none",
-                "stroke": "black",
+                "stroke": "red" if hasFailed else "black",
                 "stroke-width": self.board.data["svg config"]["order_stroke_width"],
             },
         )
         element.append(drawn_order)
 
-    def _draw_core(self, coordinate: tuple[float, float]) -> None:
+    def _draw_core(self, coordinate: tuple[float, float], hasFailed: bool) -> None:
         element = self._moves_svg.getroot()
         drawn_order = self.create_element(
             "rect",
@@ -479,7 +479,7 @@ class Mapper:
                 "width": self.board.data["svg config"]["unit_radius"] * 2,
                 "height": self.board.data["svg config"]["unit_radius"] * 2,
                 "fill": "none",
-                "stroke": "black",
+                "stroke": "red" if hasFailed else "black",
                 "stroke-width": self.board.data["svg config"]["order_stroke_width"],
                 "transform": f"rotate(45 {coordinate[0]} {coordinate[1]})",
             },
@@ -562,7 +562,7 @@ class Mapper:
 
         return min_subsets
 
-    def _draw_convoyed_move(self, unit: Unit, coordinate: tuple[float, float]):
+    def _draw_convoyed_move(self, unit: Unit, coordinate: tuple[float, float], hasFailed: bool):
         valid_convoys = self._get_all_paths(unit)
         # TODO: make this a setting
         if False:
@@ -602,9 +602,10 @@ class Mapper:
                 s += f"{f(g(p[x-1:x+2]))}, {f(p[x])} S "
 
             s += f"{f(p[-2])}, {f(p[-1])}"
-            return self._draw_path(s)
+            stroke_color = "red" if hasFailed else "black"
+            return self._draw_path(s, stroke_color = stroke_color)
 
-    def _draw_support(self, unit: Unit, coordinate: tuple[float, float]) -> None:
+    def _draw_support(self, unit: Unit, coordinate: tuple[float, float], hasFailed: bool) -> None:
         order: Support = unit.order
         x1 = coordinate[0]
         y1 = coordinate[1]
@@ -625,7 +626,7 @@ class Mapper:
                     if destloc.get_unit() and destloc.get_unit().coast:
                         destloc = destloc.get_unit().coast
                     for coord in destloc.all_locs:
-                        self._draw_hold(coord)
+                        self._draw_hold(coord, False)
 
             # if two units are support-holding each other
             destorder = order.destination.get_unit().order
@@ -652,7 +653,7 @@ class Mapper:
             {
                 "d": f"M {x1},{y1} Q {x2},{y2} {x3},{y3}",
                 "fill": "none",
-                "stroke": "black",
+                "stroke": "red" if hasFailed else "black",
                 "stroke-dasharray": f"{dasharray_size} {dasharray_size}",
                 "stroke-width": self.board.data["svg config"]["order_stroke_width"],
                 "stroke-linecap": "round",
@@ -662,7 +663,7 @@ class Mapper:
         )
         return drawn_order
 
-    def _draw_convoy(self, order: ConvoyTransport, coordinate: tuple[float, float]) -> None:
+    def _draw_convoy(self, order: ConvoyTransport, coordinate: tuple[float, float], hasFailed: bool) -> None:
         element = self._moves_svg.getroot()
         drawn_order = self.create_element(
             "circle",
@@ -671,7 +672,7 @@ class Mapper:
                 "cy": coordinate[1],
                 "r": self.board.data["svg config"]["unit_radius"] / 2,
                 "fill": "none",
-                "stroke": "black",
+                "stroke": "red" if hasFailed else "black",
                 "stroke-width": self.board.data["svg config"]["order_stroke_width"] * 2 / 3,
             },
         )
