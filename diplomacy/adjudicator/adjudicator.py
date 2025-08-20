@@ -476,6 +476,9 @@ class MovesAdjudicator(Adjudicator):
             # Replace invalid orders with holds
             # Importantly, this includes supports for which the corresponding unit didn't make the same move
             # Same for convoys
+            
+            if unit.order is None:
+                unit.order = Hold()
 
             failed: bool = False
             # indicates that an illegal move / core can't be support held
@@ -784,6 +787,8 @@ class MovesAdjudicator(Adjudicator):
                     }
 
         for opponent in orders_to_overcome:
+            if not opponent.is_valid:
+                continue
             # don't need to overcome failed convoys
             if opponent.is_convoy and self._adjudicate_convoys_for_order(opponent) == Resolution.FAILS:
                 continue
