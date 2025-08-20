@@ -246,7 +246,7 @@ class Manager:
             last_phase_year -= 1
 
         old_board = self._database.get_board(
-            board.board_id, last_phase, last_phase_year, board.fish, board.datafile
+            board.board_id, last_phase, last_phase_year, board.fish, board.datafile, clear_status=True
         )
         if old_board is None:
             raise ValueError(

@@ -97,6 +97,7 @@ class _DatabaseConnection:
         year: int,
         fish: int,
         data_file: str,
+        clear_status: bool = False,
     ) -> Board | None:
         cursor = self._connection.cursor()
 
@@ -108,7 +109,7 @@ class _DatabaseConnection:
             cursor.close()
             return None
 
-        board = self._get_board(board_id, board_phase, year, fish, data_file, cursor)
+        board = self._get_board(board_id, board_phase, year, fish, data_file, cursor, clear_status)
         cursor.close()
         return board
 
@@ -120,6 +121,7 @@ class _DatabaseConnection:
         fish: int,
         data_file: str,
         cursor,
+        clear_status: bool = False,
     ) -> Board:
         logger.info(f"Loading board with ID {board_id}")
         # TODO - we should eventually store things like coords, adjacencies, etc
@@ -224,6 +226,11 @@ class _DatabaseConnection:
             province_name: (owner, core, half_core)
             for province_name, owner, core, half_core in province_data
         }
+        
+        if clear_status:
+            cursor.execute("UPDATE units SET failed_order=False WHERE board_id=? and phase=?",
+                (board_id, board.get_phase_and_year_string()))
+        
         unit_data = cursor.execute(
             "SELECT location, is_dislodged, owner, is_army, order_type, order_destination, order_source, failed_order FROM units WHERE board_id=? and phase=?",
             (board_id, board.get_phase_and_year_string()),
