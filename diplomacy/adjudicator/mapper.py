@@ -437,7 +437,7 @@ class Mapper:
             self._draw_force_disband(coordinate, self._moves_svg)
         else:
             if phase.is_moves(current_phase):
-                self._draw_hold(coordinate, order.hasFailed)
+                self._draw_hold(coordinate, False)
             else:
                 self._draw_force_disband(coordinate, self._moves_svg)
             logger.debug(f"None order found: hold drawn. Coordinates: {coordinate}")
