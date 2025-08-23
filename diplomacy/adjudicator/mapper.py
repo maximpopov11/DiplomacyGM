@@ -954,7 +954,7 @@ class Mapper:
         # each power is placed in the right spot based on the transform field which has value of "tranlate($x,$y)" where x,y
         # are floating point numbers; we parse these via regex and sort by y-value
         self.scoreboard_power_locations.sort(
-            key=lambda loc: float(re.match(r"translate\((-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)\)", loc).groups()[1])
+            key=lambda loc: float(re.match(r"translate\((-?\d+(?:\.\d+)?(?:e-?\d+)?),\s*(-?\d+(?:\.\d+)?(?:e-?\d+)?)\)", loc).groups()[1])
         )
 
     def add_arrow_definition_to_svg(self, svg: ElementTree) -> None:
