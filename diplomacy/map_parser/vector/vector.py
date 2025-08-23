@@ -514,7 +514,7 @@ class Parser:
                         continue
 
                 coordinate = get_unit_coordinates(unit_data)
-                translated_coordinate = unit_translation.transform(layer_translation.transform(coordinate))
+                translated_coordinate = layer_translation.transform(unit_translation.transform(coordinate))
                 if coast:
                     setattr(coast, province_key, translated_coordinate)
                 else:
