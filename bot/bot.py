@@ -9,7 +9,7 @@ from discord import Forbidden
 from dotenv.main import load_dotenv
 
 from bot.config import ERROR_COLOUR
-from bot.perms import admin_only, CommandPermissionError, gm_only
+from bot.perms import admin_only, CommandPermissionError, gm_only, mod_only
 from bot.utils import send_message_and_file
 
 load_dotenv()
@@ -471,7 +471,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
 
 
 @bot.command(help="Returns all shared guilds between DiploGM and user.")
-@gm_only("find mutuals with user")
+@mod_only("find mutuals with user")
 async def membership(ctx: commands.Context) -> None:
     await command.membership(ctx, manager)
 

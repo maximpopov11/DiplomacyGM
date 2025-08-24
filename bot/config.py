@@ -9,6 +9,16 @@ PARTIAL_ERROR_COLOUR = "#FF7700"
 def _is_member(string: str, group: set) -> bool:
     return string.lower() in group
 
+# Discord roles which are allowed access to moderator commands
+_mod_roles: set[str] = {
+    "executive",
+    "admin",
+    "moderators",
+    "moderator",
+}
+
+def is_mod_role(role_name: str) -> bool:
+    return _is_member(role_name, _mod_roles)
 
 # Discord roles which are allowed full access to bot commands
 _gm_roles: set[str] = {

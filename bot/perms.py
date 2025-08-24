@@ -3,7 +3,7 @@ from typing import Callable
 
 from discord.ext import commands
 
-from bot.utils import is_gm, is_gm_channel, get_player_by_role, is_player_channel, get_player_by_channel, is_admin
+from bot.utils import is_gm, is_gm_channel, get_player_by_role, is_moderator, is_player_channel, get_player_by_channel, is_admin
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
 
@@ -62,6 +62,15 @@ def player(description: str = "run this command"):
 
     return player_check
 
+
+def assert_mod_only(ctx: commands.Context, description: str = "run this command") -> bool:
+    if not is_moderator(ctx.message.author):
+        raise CommandPermissionError(f"You cannot {description} as you are not a moderator")
+
+    return True
+
+def mod_only(description: str = "run this command"):
+    return commands.check(lambda ctx: assert_mod_only(ctx, description))
 
 def assert_gm_only(ctx: commands.Context, description: str = "run this command", non_gm_alt: str = None):
     if not is_gm(ctx.message.author):
