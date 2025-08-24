@@ -1881,12 +1881,12 @@ async def membership(ctx: commands.Context, _: Manager) -> None:
 
     member = ctx.message.mentions[0]
 
-    out = ""
+    out = f"Number of servers: {len(member.mutual_guilds)}\n---\n"
     for shared in member.mutual_guilds:
         out += f"{shared.name}\n"
 
     await send_message_and_file(
-        channel=ctx.channel, title=f"Mutual servers with {member.mention}", message=out
+        channel=ctx.channel, title=f"Mutual servers with {member.name}\n{member.mention}", message=out
     )
 
 
