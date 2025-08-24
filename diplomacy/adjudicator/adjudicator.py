@@ -144,7 +144,7 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
             if strict_coast_movement:
                 if isinstance(source, Coast) and isinstance(destination, Coast):
                     # coast to coast
-                    check = destination in source.get_adjacent_coasts()
+                    check = destination in source.adjacent_coasts
                 elif isinstance(source, Coast) and isinstance(destination, Province):
                     # coast to sea / island
                     if destination.type == ProvinceType.LAND:

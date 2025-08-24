@@ -241,6 +241,8 @@ class Parser:
                     province.adjacent.update(self.names_to_provinces(data["adjacencies"]))
                 if "remove_adjacencies" in data:
                     province.adjacent.difference_update(self.names_to_provinces(data["remove_adjacencies"]))
+                if "remove_adjacent_coasts" in data:
+                    province.nonadjacent_coasts.update(data["remove_adjacent_coasts"])
                 if "coasts" in data:
                     province.coasts = set()
                     for coast_name, coast_adjacent in data["coasts"].items():
@@ -272,6 +274,10 @@ class Parser:
         # set coasts
         for province in provinces:
             province.set_coasts()
+
+        for province in provinces:
+            for coast in province.coasts:
+                coast.set_adjacent_coasts()
 
         # impassible provinces aren't in the list; they're "ghost" and only show up
         # when explicitly asked for in costal topology algorithms

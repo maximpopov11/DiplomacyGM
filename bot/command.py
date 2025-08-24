@@ -23,7 +23,6 @@ from discord.ext import commands
 from discord.utils import find as discord_find
 
 from bot import config
-from bot.bot import impdip_server
 import bot.perms as perms
 from bot.config import is_bumble, temporary_bumbles, ERROR_COLOUR
 from bot.parse_edit_state import parse_edit_state
@@ -1888,7 +1887,7 @@ async def membership(ctx: commands.Context, _: Manager) -> None:
         out += f"{shared.name}\n"
 
     await send_message_and_file(
-        channel=ctx.channel, title=f"Mutual servers with {member.name}\n{member.mention}", message=out
+        channel=ctx.channel, title=f"Mutual servers with {member.name}\n{member.mention}", message=out, embed_colour="green" 
     )
 
 
