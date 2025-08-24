@@ -99,11 +99,8 @@ async def assert_mod_only(
             "Cannot fetch the Imperial Diplomacy Hub server when checking moderator permissions."
         )
 
-    try:
-        _member = await _hub.fetch_member(ctx.author.id)
-        if not _member:
-            raise HTTPException
-    except HTTPException:
+    _member = _hub.get_member(ctx.author.id)
+    if not _member:
         raise CommandPermissionError(
             f"You cannot {description} as you could not be found as a member of the Imperial Diplomacy Hub server."
         )
