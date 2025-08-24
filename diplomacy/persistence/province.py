@@ -85,6 +85,7 @@ class Province(Location):
         self.owner: player.Player | None = owner
         self.unit: unit.Unit | None = local_unit
         self.dislodged_unit: unit.Unit | None = None
+        self.nonadjacent_coasts: set[str] = set()
 
     def __str__(self):
         return self.name
@@ -171,6 +172,7 @@ class Coast(Location):
         super().__init__(name, primary_unit_coordinate, retreat_unit_coordinate)
         self.adjacent_seas: set[Province] = adjacent_seas
         self.province: Province = province
+        self.adjacent_coasts: set[Coast] = set()
 
     def __str__(self):
         return self.name
@@ -262,7 +264,7 @@ class Coast(Location):
         return False
 
 
-    def get_adjacent_coasts(self) -> set[Coast]:
+    def set_adjacent_coasts(self):
         # TODO: (BETA) this will generate false positives (e.g. mini province keeping 2 big province coasts apart)
         adjacent_coasts: set[Coast] = set()
         if self.province.type == ProvinceType.ISLAND:
@@ -270,21 +272,24 @@ class Coast(Location):
                 for coast in province2.coasts:
                     if self.province in coast.adjacent_seas:
                         adjacent_coasts.add(coast)
-            return adjacent_coasts
+            self.adjacent_coasts = adjacent_coasts
+            return
       
         for province2 in self.province.adjacent:
             for coast2 in province2.coasts:
+                if coast2.name in self.province.nonadjacent_coasts:
+                    continue
                 if Coast.detect_costal_connection(self, coast2):
                     adjacent_coasts.add(coast2)
-        return adjacent_coasts
+        self.adjacent_coasts = adjacent_coasts
 
     def get_adjacent_locations(self) -> set[Location]:
-        return self.adjacent_seas.union(self.get_adjacent_coasts())
+        return self.adjacent_seas.union(self.adjacent_coasts)
 
 
-def get_adjacent_provinces(location: Location) -> set[Province]:
+def get_adjacent_provinces(location: Location) -> set[Province] | set[Coast]:
     if isinstance(location, Coast):
-        return location.adjacent_seas | {coast.province for coast in location.get_adjacent_coasts()}
+        return location.adjacent_seas | {coast.province for coast in location.adjacent_coasts}
     if isinstance(location, Province):
         return location.adjacent
     raise ValueError(f"Location {location} should be Coast or Province")

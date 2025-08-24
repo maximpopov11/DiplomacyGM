@@ -19,6 +19,7 @@
     "coast_markers": "layer10",
     "background": "layer2",
     "sidebar": "layer7",
+    "impassibles_layer": "layer9",
 
     "army": "layer16",
     "retreat_army": "g1107",
@@ -350,16 +351,19 @@
         "remove_adjacencies": ["Vila Real"]
       },
       "Chugoku": {
-        "adjacencies": ["Tokyo"]
+        "adjacencies": ["Tokyo"],
+        "remove_adjacent_coasts": ["Fukuoka coast"]
+      },
+      "Fukuoka": {
+        "remove_adjacent_coasts": ["Chugoku coast"]
       },
       "Tokyo": {
         "adjacencies": ["Chugoku", "Hokkaido"],
-        "coasts": {
-          "coast": ["Chugoku", "Kuril Basin", "Ryukyu Trench", "Sea of Japan"]
-        }
+        "remove_adjacent_coasts": ["Hokkaido coast"]
       },
       "Hokkaido": {
-        "adjacencies": ["Tokyo"]
+        "adjacencies": ["Tokyo"],
+        "remove_adjacent_coasts": ["Tokyo coast"]
       },
       "Sea of Japan": {
         "adjacencies": ["Ryukyu Trench", "Kuril Basin"]
@@ -377,14 +381,40 @@
         "adjacencies": ["Auckland"]
       },
       "St. John's": {
-        "adjacencies": ["Quebec"]
+        "adjacencies": ["Quebec"],
+        "remove_adjacent_coasts": ["Quebec ec"]
       },
       "Quebec": {
         "adjacencies": ["St. John's"],
         "coasts": {
-          "wc": ["Hudson Bay"],
-          "ec": ["Bay of Fundy"]
-        }
+          "wc": ["Hudson Bay", "Labrador"],
+          "ec": ["Bay of Fundy", "Labrador"]
+        },
+        "remove_adjacent_coasts": ["St. John's coast"]
+      },
+      "Baltic Sea": {
+        "adjacencies": ["Skagerrak"]
+      },
+      "Skagerrak": {
+        "adjacencies": ["Baltic Sea"]
+      },
+      "Cop.": {
+        "adjacencies": ["Malmo", "Midt"],
+        "remove_adjacent_coasts": ["Malmo coast", "Midt coast"]
+      },
+      "Malmo": {
+        "adjacencies": ["Cop."],
+        "remove_adjacent_coasts": ["Cop. coast"]
+      },
+      "Midt": {
+        "adjacencies": ["Cop."],
+        "remove_adjacent_coasts": ["Cop. coast"]
+      },
+      "Davao": {
+        "remove_adjacent_coasts": ["Manila coast"]
+      },
+      "Manila": {
+        "remove_adjacent_coasts": ["Davao coast"]
       }
     }
   },
