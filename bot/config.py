@@ -13,6 +13,8 @@ def _is_member(string: str, group: set) -> bool:
 # Discord roles which are allowed full access to bot commands
 _gm_roles: set[str] = {
     "admin",
+    "moderator",
+    "moderators",
     "gm",
     "heavenly angel",
     "emergency gm",
