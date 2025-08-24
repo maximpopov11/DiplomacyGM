@@ -409,6 +409,12 @@
       "Midt": {
         "adjacencies": ["Cop."],
         "remove_adjacent_coasts": ["Cop. coast"]
+      },
+      "Davao": {
+        "remove_adjacent_coasts": ["Manila coast"]
+      },
+      "Manila": {
+        "remove_adjacent_coasts": ["Davao coast"]
       }
     }
   },
