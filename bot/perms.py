@@ -47,7 +47,7 @@ def require_player_by_context(ctx: commands.Context, manager: Manager, descripti
         if player_channel is not None:
             player = player_channel
         elif not is_gm_channel(ctx.channel):
-            raise CommandPermissionError(f"You cannot {description} as a GM in a non-GM channel.")
+            raise CommandPermissionError(f"You cannot {description} as a GM in non-player and non-GM channels.")
     return player
 
 # adds one extra argument, player in a player's channel, which is None if run by a GM in a GM channel
