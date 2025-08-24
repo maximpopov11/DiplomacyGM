@@ -273,6 +273,10 @@ class Parser:
         for province in provinces:
             province.set_coasts()
 
+        for province in provinces:
+            for coast in province.coasts:
+                coast.set_adjacent_coasts()
+
         # impassible provinces aren't in the list; they're "ghost" and only show up
         # when explicitly asked for in costal topology algorithms
         provinces = [p for p in provinces if not p.type == ProvinceType.IMPASSIBLE]
