@@ -108,6 +108,11 @@ async def assert_mod_only(
             f"You cannot {description} as you are not a moderator on the Imperial Diplomacy Hub server."
         )
 
+    if not is_moderator(ctx.author):
+        raise CommandPermissionError(
+            f"You cannot {description} as you are not a moderator on the current server."
+        )
+
     return True
 
 
