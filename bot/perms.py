@@ -1,6 +1,6 @@
 from typing import Callable
 
-
+from discord import HTTPException
 from discord.ext import commands
 
 from bot.config import IMPDIP_SERVER_ID
@@ -95,12 +95,17 @@ async def assert_mod_only(
 ) -> bool:
     _hub = ctx.bot.get_guild(IMPDIP_SERVER_ID)
     if not _hub:
-        raise RuntimeError("Cannot fetch the Imperial Diplomacy Hub server.")
+        raise RuntimeError(
+            "Cannot fetch the Imperial Diplomacy Hub server when checking moderator permissions."
+        )
 
-    _member = await _hub.fetch_member(ctx.author.id)
-    if not _member:
+    try:
+        _member = await _hub.fetch_member(ctx.author.id)
+        if not _member:
+            raise HTTPException
+    except HTTPException:
         raise CommandPermissionError(
-            f"You cannot {description} as you are not a member of the Imperial Diplomacy Hub server."
+            f"You cannot {description} as you could not be found as a member of the Imperial Diplomacy Hub server."
         )
 
     if not is_moderator(_member):
