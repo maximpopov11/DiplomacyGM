@@ -23,6 +23,7 @@ from discord.ext import commands
 from discord.utils import find as discord_find
 
 from bot import config
+from bot.bot import impdip_server
 import bot.perms as perms
 from bot.config import is_bumble, temporary_bumbles, ERROR_COLOUR
 from bot.parse_edit_state import parse_edit_state
@@ -35,6 +36,7 @@ from bot.utils import (
     get_player_by_channel,
     get_player_by_name,
     is_gm,
+    is_moderator,
     send_message_and_file,
     get_role_by_player,
     log_command,
