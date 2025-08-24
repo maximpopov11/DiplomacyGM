@@ -399,12 +399,15 @@
         "adjacencies": ["Baltic Sea"]
       },
       "Cop.": {
+        "adjacencies": ["Malmo", "Midt"],
         "remove_adjacent_coasts": ["Malmo coast", "Midt coast"]
       },
       "Malmo": {
+        "adjacencies": ["Cop."],
         "remove_adjacent_coasts": ["Cop. coast"]
       },
       "Midt": {
+        "adjacencies": ["Cop."],
         "remove_adjacent_coasts": ["Cop. coast"]
       }
     }
