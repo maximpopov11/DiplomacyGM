@@ -59,6 +59,12 @@ def is_admin(author: commands.Context.author) -> bool:
         1352388421003251833,    # Chloe
     ]
 
+def is_moderator(author: commands.Context.author) -> bool:
+    for role in author.roles:
+        if config.is_mod_role(role.name):
+            return True
+
+    return False
 
 def is_gm(author: commands.Context.author) -> bool:
     for role in author.roles:

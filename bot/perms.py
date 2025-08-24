@@ -3,7 +3,8 @@ from typing import Callable
 
 from discord.ext import commands
 
-from bot.utils import is_gm, is_gm_channel, get_player_by_role, is_player_channel, get_player_by_channel, is_admin
+from bot.bot import impdip_server
+from bot.utils import is_gm, is_gm_channel, get_player_by_role, is_moderator, is_player_channel, get_player_by_channel, is_admin
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
 
@@ -62,6 +63,23 @@ def player(description: str = "run this command"):
 
     return player_check
 
+
+def assert_mod_only(ctx: commands.Context, description: str = "run this command") -> bool:
+    _hub = ctx.bot.fetch_guild(impdip_server)
+    if not _hub:
+        raise RuntimeError("Cannot fetch the Imperial Diplomacy Hub server.")
+
+    _member = _hub.fetch_member(ctx.author.id)
+    if not _member:
+        raise CommandPermissionError(f"You cannot {description} as you are not a member of the Imperial Diplomacy Hub server.")
+
+    if not is_moderator(_member):
+        raise CommandPermissionError(f"You cannot {description} as you are not a moderator on the Imperial Diplomacy Hub server.")
+
+    return True
+
+def mod_only(description: str = "run this command"):
+    return commands.check(lambda ctx: assert_mod_only(ctx, description))
 
 def assert_gm_only(ctx: commands.Context, description: str = "run this command", non_gm_alt: str = None):
     if not is_gm(ctx.message.author):

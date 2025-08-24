@@ -49,14 +49,16 @@ class Manager:
 
         return None
 
-    def save_spec_request(self, server_id: int, user_id: int, role_id: int) -> str:
+    def save_spec_request(
+        self, server_id: int, user_id: int, role_id: int, override=False
+    ) -> str:
         # create new list if first time in server
         if server_id not in self._spec_requests:
             self._spec_requests[server_id] = []
 
         obj = SpecRequest(server_id, user_id, role_id)
 
-        if self.get_spec_request(server_id, user_id):
+        if self.get_spec_request(server_id, user_id) and not override:
             return "User has already been accepted for a request in this Server."
 
         self._spec_requests[server_id].append(obj)
