@@ -85,6 +85,7 @@ class Province(Location):
         self.owner: player.Player | None = owner
         self.unit: unit.Unit | None = local_unit
         self.dislodged_unit: unit.Unit | None = None
+        self.nonadjacent_coasts: set[str] = set()
 
     def __str__(self):
         return self.name
@@ -276,6 +277,8 @@ class Coast(Location):
       
         for province2 in self.province.adjacent:
             for coast2 in province2.coasts:
+                if coast2.name in self.province.nonadjacent_coasts:
+                    continue
                 if Coast.detect_costal_connection(self, coast2):
                     adjacent_coasts.add(coast2)
         self.adjacent_coasts = adjacent_coasts
