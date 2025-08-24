@@ -175,7 +175,6 @@ class _DatabaseConnection:
                 return player_by_name[player_name]
 
             for player_name, location, is_build, is_army in builds_data:
-
                 player = get_player_by_name(player_name)
 
                 if player is None:
@@ -616,7 +615,7 @@ class _DatabaseConnection:
         cursor = self._connection.cursor()
 
         cursor.execute(
-            "INSERT INTO spec_requests (server_id, user_id, role_id) VALUES (?, ?, ?)",
+            "INSERT OR REPLACE INTO spec_requests (server_id, user_id, role_id) VALUES (?, ?, ?)",
             (request.server_id, request.user_id, request.role_id),
         )
 
