@@ -8,7 +8,11 @@ import traceback
 from discord import Forbidden
 from dotenv.main import load_dotenv
 
-from bot.config import ERROR_COLOUR
+from bot.config import (
+    ERROR_COLOUR,
+    IMPDIP_SERVER_ID,
+    IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID,
+)
 from bot.perms import admin_only, CommandPermissionError, gm_only, mod_only
 from bot.utils import send_message_and_file
 
@@ -27,8 +31,6 @@ bot = commands.Bot(
     command_prefix=os.getenv("command_prefix", default="."), intents=intents
 )
 logger = logging.getLogger(__name__)
-impdip_server = 1201167737163104376
-bot_status_channel = 1284336328657600572
 
 manager = Manager()
 
@@ -58,17 +60,19 @@ async def on_ready():
         pass
 
     guild = bot.get_guild(
-        impdip_server
+        IMPDIP_SERVER_ID
     )  # Ensure bot is connected to the correct server
     if guild:
-        channel = bot.get_channel(bot_status_channel)  # Get the specific channel
+        channel = bot.get_channel(
+            IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID
+        )  # Get the specific channel
         if channel:
             message = random.choice(MESSAGES)  # Select a random message
             await channel.send(message)
         else:
-            print(f"Channel with ID {bot_status_channel} not found.")
+            print(f"Channel with ID {IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID} not found.")
     else:
-        print(f"Guild with ID {impdip_server} not found.")
+        print(f"Guild with ID {IMPDIP_SERVER_ID} not found.")
 
     # Set bot's presence (optional)
     await bot.change_presence(activity=discord.Game(name="Impdip 🔪"))
@@ -288,7 +292,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
         return
 
     # server ignore list
-    if guild.id in [impdip_server]:
+    if guild.id in [IMPDIP_SERVER_ID]:
         await interaction.response.send_message(
             "Can't request to spectate in the Hub server!", ephemeral=True
         )
@@ -346,7 +350,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
         return
 
     # check for membership and verification on the hub Server
-    hub = bot.get_guild(impdip_server)
+    hub = bot.get_guild(IMPDIP_SERVER_ID)
     if not hub:
         return
     hub_requester = discord.utils.get(hub.members, name=interaction.user.name)

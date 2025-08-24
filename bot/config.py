@@ -1,5 +1,8 @@
 from diplomacy.persistence.board import Board
 
+IMPDIP_SERVER_ID = 1201167737163104376
+IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID = 1284336328657600572
+
 ERROR_COLOUR = "#FF0000"
 PARTIAL_ERROR_COLOUR = "#FF7700"
 
@@ -9,6 +12,7 @@ PARTIAL_ERROR_COLOUR = "#FF7700"
 def _is_member(string: str, group: set) -> bool:
     return string.lower() in group
 
+
 # Discord roles which are allowed access to moderator commands
 _mod_roles: set[str] = {
     "executive",
@@ -17,8 +21,10 @@ _mod_roles: set[str] = {
     "moderator",
 }
 
+
 def is_mod_role(role_name: str) -> bool:
     return _is_member(role_name, _mod_roles)
+
 
 # Discord roles which are allowed full access to bot commands
 _gm_roles: set[str] = {
@@ -28,17 +34,19 @@ _gm_roles: set[str] = {
     "gm",
     "heavenly angel",
     "emergency gm",
-    "bot manager"
+    "bot manager",
 }
 
 
 def is_gm_role(role: str) -> bool:
     return _is_member(role, _gm_roles)
 
+
 # Player roles which are allowed player to bot commands
 _player_roles: set[str] = {
     "player",
 }
+
 
 def is_player_role(role: str) -> bool:
     return _is_member(role, _player_roles)
