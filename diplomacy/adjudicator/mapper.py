@@ -603,7 +603,7 @@ class Mapper:
 
             s += f"{f(p[-2])}, {f(p[-1])}"
             stroke_color = "red" if hasFailed else "black"
-            marker_color = "redarrow" if hasFailed else "blackarrow"
+            marker_color = "redarrow" if hasFailed else "arrow"
             return self._draw_path(s, marker_end = marker_color, stroke_color = stroke_color)
 
     def _draw_support(self, unit: Unit, coordinate: tuple[float, float], hasFailed: bool) -> None:
