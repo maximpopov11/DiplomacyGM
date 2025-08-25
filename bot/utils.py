@@ -80,13 +80,13 @@ def is_gm_channel(channel: commands.Context.channel) -> bool:
 def get_player_by_role(author: commands.Context.author, manager: Manager, server_id: int) -> Player | None:
     for role in author.roles:
         for player in manager.get_board(server_id).players:
-            if player.name == role.name:
+            if simple_player_name(player.name) == simple_player_name(role.name):
                 return player
     return None
 
 def get_role_by_player(player: Player, roles: Guild.roles) -> discord.Role | None:
     for role in roles:
-        if role.name == player.name:
+        if simple_player_name(role.name) == simple_player_name(player.name):
             return role
     return None
 
@@ -117,7 +117,7 @@ async def get_channel_by_player(player: Player, ctx: commands.Context, manager: 
     guild_id = guild.id
     board = manager.get_board(guild_id)
 
-    channel_name = player.name.lower().replace(" ", "-").replace("\'", "").replace(".", "") + config.player_channel_suffix
+    channel_name = simple_player_name(player.name) + config.player_channel_suffix
 
     for category in guild.categories:
         if not config.is_player_category(category.name) and not board.is_chaos():
@@ -129,10 +129,13 @@ async def get_channel_by_player(player: Player, ctx: commands.Context, manager: 
 
     return None
 
+# I'm sorry this is a bad function name. I couldn't think of anything better and I'm in a rush
+def simple_player_name(name: str):
+    return name.lower().replace("-", " ").replace("\'", "").replace(".", "")
 
 def get_player_by_name(name: str, manager: Manager, server_id: int) -> Player | None:
     for player in manager.get_board(server_id).players:
-        if player.name.lower().replace("-", " ").replace("\'", "").replace(".", "") == name.strip().lower().replace("-", " ").replace("\'", "").replace(".", ""):
+        if simple_player_name(player.name) == simple_player_name(name):
             return player
     return None
 
@@ -146,9 +149,10 @@ def get_orders_log(guild: Guild) -> GuildChannel | None:
             return channel
     return None
 
+
 def is_player_channel(player_role: str, channel: commands.Context.channel) -> bool:
-    player_channel = player_role.lower() + config.player_channel_suffix
-    return player_channel == channel.name and config.is_player_category(channel.category.name)
+    player_channel = player_role + config.player_channel_suffix
+    return simple_player_name(player_channel) == simple_player_name(channel.name) and config.is_player_category(channel.category.name)
 
 
 def get_keywords(command: str) -> list[str]:
