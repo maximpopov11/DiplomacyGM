@@ -603,7 +603,8 @@ class Mapper:
 
             s += f"{f(p[-2])}, {f(p[-1])}"
             stroke_color = "red" if hasFailed else "black"
-            return self._draw_path(s, stroke_color = stroke_color)
+            marker_color = "redarrow" if hasFailed else "blackarrow"
+            return self._draw_path(s, marker_end = marker_color, stroke_color = stroke_color)
 
     def _draw_support(self, unit: Unit, coordinate: tuple[float, float], hasFailed: bool) -> None:
         order: Support = unit.order
@@ -614,6 +615,8 @@ class Mapper:
         v3 = self.loc_to_point(order.destination, v2)
         x3, y3 = v3
         marker_start = ""
+        ball_type = "redball" if hasFailed else "ball"
+        arrow_type = "redarrow" if hasFailed else "arrow"
         if order.destination.get_unit():
             if order.source == order.destination:
                 (x3, y3) = self.pull_coordinate((x1, y1), (x3, y3), self.board.data["svg config"]["unit_radius"])
@@ -639,7 +642,7 @@ class Mapper:
                 # This check is so we only do it once, so it doesn't overlay
                 # it doesn't matter which one is the origin & which is the dest
                 if id(order.destination.get_unit()) > id(unit):
-                    marker_start = "url(#ball)"
+                    marker_start = f"url(#{ball_type})"
                     # doesn't matter that v3 has been pulled, as it's still collinear
                     (x1, y1) = (x2, y2) = self.pull_coordinate(
                         (x3, y3), (x1, y1), self.board.data["svg config"]["unit_radius"]
@@ -658,7 +661,7 @@ class Mapper:
                 "stroke-width": self.board.data["svg config"]["order_stroke_width"],
                 "stroke-linecap": "round",
                 "marker-start": marker_start,
-                "marker-end": f"url(#{'ball' if order.source == order.destination else 'arrow'})",
+                "marker-end": f"url(#{ball_type if order.source == order.destination else arrow_type})",
             },
         )
         return drawn_order
@@ -1020,6 +1023,27 @@ class Mapper:
         )
         ball_marker.append(ball_def)
         defs.append(ball_marker)
+        
+        red_ball_marker: Element = self.create_element(
+            "marker",
+            {
+                "id": "redball",
+                "viewbox": "0 0 3 3",
+                # "refX": "1.5",
+                # "refY": "1.5",
+                "markerWidth": "3",
+                "markerHeight": "3",
+                "orient": "auto-start-reverse",
+                "shape-rendering": "geometricPrecision", # Needed bc firefox is wierd
+                "overflow": "visible"
+            },
+        )
+        red_ball_def: Element = self.create_element(
+            "circle",
+            {"r": "2", "fill": "red"},
+        )
+        red_ball_marker.append(red_ball_def)
+        defs.append(red_ball_marker)
 
         if not "no coring" in self.board.data.get("adju flags", []):
             created_defs = set()
