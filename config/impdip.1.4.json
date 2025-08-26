@@ -232,8 +232,12 @@
                 "retreat_unit_loc": [[4227.260, 1522.000]]
             },
             "Chukchi Sea": {
-                "unit_loc": [[28.000, 241.000]],
+                "unit_loc": [[26.000, 268.000]],
                 "retreat_unit_loc": [[72.908, 186.392]]
+            },
+            "Gulf of Anadyr": {
+                "unit_loc": [[29.000, 421.000]],
+                "retreat_unit_loc": [[14.500, 391.000]]
             }
 
         }
