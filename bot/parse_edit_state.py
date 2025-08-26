@@ -22,6 +22,7 @@ _dislodge_unit_str = "dislodge unit"
 _make_units_claim_provinces_str = "make units claim provinces"
 _set_player_vassal_str = "set vassal"
 _remove_vassal_str = "remove relationship"
+_set_game_name_str = "set game name"
 
 # chaos
 _set_player_points_str = "set player points"
@@ -66,10 +67,10 @@ def parse_edit_state(message: str, board: Board) -> dict[str, ...]:
 
 
 def _parse_command(command: str, board: Board) -> None:
-    command = command.lower()
-    keywords: list[str] = get_keywords(command)
-    command_type = keywords[0]
-    keywords = keywords[1:]
+    command_list: list[str] = get_keywords(command)
+    command_type = command_list[0].lower()
+    parameter_str = " ".join(command_list[1:])
+    keywords = [s.lower() for s in command_list[1:]]
 
     if command_type == _set_phase_str:
         _set_phase(keywords, board)
@@ -101,6 +102,8 @@ def _parse_command(command: str, board: Board) -> None:
         _set_player_vassal(keywords, board)
     elif command_type == _remove_vassal_str:
         _remove_player_vassal(keywords, board)
+    elif command_type == _set_game_name_str:
+        _set_game_name(parameter_str, board)
     else:
         raise RuntimeError(f"No command key phrases found")
 
@@ -336,3 +339,11 @@ def _remove_player_vassal(keywords: list[str], board: Board) -> None:
                 "UPDATE players SET liege=? WHERE board_id=? and player_name=?",
                 (None, board.board_id, vassal.name)
             )
+
+def _set_game_name(parameter_str: str, board: Board) -> None:
+    newname = None if parameter_str == "None" else parameter_str
+    board.name = newname
+    get_connection().execute_arbitrary_sql(
+        "UPDATE boards SET name=? WHERE board_id=?",
+        (newname, board.board_id)
+    )

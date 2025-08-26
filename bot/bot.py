@@ -710,6 +710,7 @@ async def scoreboard(ctx: commands.Context) -> None:
     * set_player_points <player_name> <integer>
     * set_player_vassal <liege> <vassal>
     * remove_relationship <player1> <player2>
+    * set_game_name <game_name>
     """,
 )
 @gm_only("edit")

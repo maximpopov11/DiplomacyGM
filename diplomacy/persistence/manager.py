@@ -91,7 +91,7 @@ class Manager:
             season = board.phase
         else:
             board = self._database.get_board(
-                cur_board.board_id, turn[1], int(turn[0]) - cur_board.year_offset, cur_board.fish, cur_board.datafile
+                cur_board.board_id, turn[1], int(turn[0]) - cur_board.year_offset, cur_board.fish, cur_board.name, cur_board.datafile
             )
             if board is None:
                 raise RuntimeError(
@@ -157,7 +157,7 @@ class Manager:
             season = board.phase
         else:
             board = self._database.get_board(
-                cur_board.board_id, turn[1], int(turn[0]) - 1642, cur_board.fish, cur_board.datafile
+                cur_board.board_id, turn[1], int(turn[0]) - 1642, cur_board.fish, cur_board.name, cur_board.datafile
             )
             if board is None:
                 raise RuntimeError(
@@ -248,7 +248,7 @@ class Manager:
             last_phase_year -= 1
 
         old_board = self._database.get_board(
-            board.board_id, last_phase, last_phase_year, board.fish, board.datafile, clear_status=True
+            board.board_id, last_phase, last_phase_year, board.fish, board.name, board.datafile, clear_status=True
         )
         if old_board is None:
             raise ValueError(
@@ -271,7 +271,7 @@ class Manager:
         if board.phase.name == "Spring Moves":
             last_phase_year -= 1
         old_board = self._database.get_board(
-            board.board_id, last_phase, last_phase_year, board.fish, board.datafile
+            board.board_id, last_phase, last_phase_year, board.fish, board.name, board.datafile
         )
         return old_board
 
@@ -280,7 +280,7 @@ class Manager:
         board = self._boards[server_id]
 
         loaded_board = self._database.get_board(
-            server_id, board.phase, board.year, board.fish, board.datafile
+            server_id, board.phase, board.year, board.fish, board.name, board.datafile
         )
         if loaded_board is None:
             raise ValueError(

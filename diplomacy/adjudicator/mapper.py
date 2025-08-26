@@ -130,7 +130,8 @@ class Mapper:
         t = self._moves_svg.getroot()
         arrow_layer = get_svg_element(t, self.board.data["svg config"]["arrow_output"])
         if not phase.is_builds(current_phase):
-            for unit in self.board.units:
+            units = sorted(self.board.units, key=lambda unit: 0 if unit.order is None else unit.order.display_priority)
+            for unit in units:
                 if not self.is_moveable(unit):
                     continue
                 if phase.is_retreats(current_phase):
@@ -409,8 +410,10 @@ class Mapper:
 
     def _draw_side_panel_date(self, svg: ElementTree) -> None:
         date = get_svg_element(svg.getroot(), self.board.data["svg config"]["season"])
+        game_name = self.board.name
+        name_text = "" if game_name is None else f"{game_name} — "
         # TODO: this is hacky; I don't know a better way
-        date[0][0].text = self.get_pretty_date()
+        date[0][0].text = name_text + self.get_pretty_date()
 
     def _reset_moves_map(self):
         self._moves_svg = copy.deepcopy(self.board_svg)

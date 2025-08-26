@@ -64,7 +64,7 @@ class _DatabaseConnection:
         logger.info(f"Loading {len(board_data)} boards from DB")
         boards = dict()
         for board_row in board_data:
-            board_id, phase_string, data_file, fish = board_row
+            board_id, phase_string, data_file, fish, name = board_row
 
             split_index = phase_string.index(" ")
             year = int(phase_string[:split_index])
@@ -81,7 +81,7 @@ class _DatabaseConnection:
                 fish = 0
 
             board = self._get_board(
-                board_id, current_phase, year, fish, data_file, cursor
+                board_id, current_phase, year, fish, name, data_file, cursor
             )
 
             boards[board_id] = board
@@ -96,6 +96,7 @@ class _DatabaseConnection:
         board_phase: phase.Phase,
         year: int,
         fish: int,
+        name: str | None,
         data_file: str,
         clear_status: bool = False,
     ) -> Board | None:
@@ -109,7 +110,7 @@ class _DatabaseConnection:
             cursor.close()
             return None
 
-        board = self._get_board(board_id, board_phase, year, fish, data_file, cursor, clear_status)
+        board = self._get_board(board_id, board_phase, year, fish, name, data_file, cursor, clear_status)
         cursor.close()
         return board
 
@@ -119,6 +120,7 @@ class _DatabaseConnection:
         board_phase: phase.Phase,
         year: int,
         fish: int,
+        name: str | None,
         data_file: str,
         cursor,
         clear_status: bool = False,
@@ -130,6 +132,7 @@ class _DatabaseConnection:
         board.phase = board_phase
         board.year = year
         board.fish = fish
+        board.name = name
         board.board_id = board_id
 
         player_data = cursor.execute(
@@ -373,8 +376,8 @@ class _DatabaseConnection:
         # TODO: Check if board already exists
         cursor = self._connection.cursor()
         cursor.execute(
-            "INSERT INTO boards (board_id, phase, data_file, fish) VALUES (?, ?, ?, ?)",
-            (board_id, board.get_phase_and_year_string(), board.datafile, board.fish),
+            "INSERT INTO boards (board_id, phase, data_file, fish, name) VALUES (?, ?, ?, ?, ?)",
+            (board_id, board.get_phase_and_year_string(), board.datafile, board.fish, board.name),
         )
         cursor.executemany(
             "INSERT INTO players (board_id, player_name, color, liege, points) VALUES (?, ?, ?, ?, ?) ON CONFLICT "

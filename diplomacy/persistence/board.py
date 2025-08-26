@@ -30,6 +30,7 @@ class Board:
         self.orders_enabled: bool = True
         self.data: dict = data
         self.datafile = datafile
+        self.name = None
         self.fow = fow
 
         # store as lower case for user input purposes
@@ -221,6 +222,15 @@ class Board:
             unit.province.dislodged_unit = None
             unit.player.units.remove(unit)
             self.units.remove(unit)
+
+    def clear_failed_orders(self) -> None:
+        for unit in self.units:
+            unit.province.unit = None
+
+        for player in self.players:
+            player.units = set()
+
+        self.units = set()
 
     def get_year_str(self) -> str:
         # No 0 AD / BC
