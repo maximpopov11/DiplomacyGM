@@ -875,7 +875,7 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> None:
         ctx,
         message=f"Adjudication Sucessful for {board.phase.name} {board.get_year_str()}",
     )
-    file, file_name = manager.draw_moves_map(ctx.guild.id, color_mode, turn=old_turn)
+    file, file_name = manager.draw_moves_map(ctx.guild.id, None, color_mode, old_turn)
     await send_message_and_file(
         channel=ctx.channel,
         title=f"{old_turn[1].name} {old_turn[0]}",
