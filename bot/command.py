@@ -351,6 +351,7 @@ async def announce(ctx: commands.Context, manager: Manager) -> None:
         )
         if admin_chat_channel is None:
             message += f"\n- ~~{server.name}~~ Couldn't find admin channel"
+            continue
 
         message += f"\n- {server.name}"
         if server.id in guilds_with_games:
