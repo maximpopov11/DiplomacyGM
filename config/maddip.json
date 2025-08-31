@@ -399,16 +399,13 @@
         "adjacencies": ["Baltic Sea"]
       },
       "Cop.": {
-        "adjacencies": ["Malmo", "Midt"],
-        "remove_adjacent_coasts": ["Malmo coast", "Midt coast"]
+        "adjacencies": ["Malmo", "Midt"]
       },
       "Malmo": {
-        "adjacencies": ["Cop."],
-        "remove_adjacent_coasts": ["Cop. coast"]
+        "adjacencies": ["Cop."]
       },
       "Midt": {
-        "adjacencies": ["Cop."],
-        "remove_adjacent_coasts": ["Cop. coast"]
+        "adjacencies": ["Cop."]
       },
       "Davao": {
         "remove_adjacent_coasts": ["Manila coast"]
