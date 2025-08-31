@@ -174,7 +174,7 @@ def _set_province_owner(keywords: list[str], board: Board) -> None:
 def _create_unit(keywords: list[str], board: Board) -> None:
     unit_type = get_unit_type(keywords[0])
     player = board.get_player(keywords[1])
-    province, coast = board.get_province_and_coast(keywords[2])
+    province, coast = board.get_province_and_coast(" ".join(keywords[2:]))
     unit = board.create_unit(unit_type, player, province, coast, None)
     get_connection().execute_arbitrary_sql(
         "INSERT INTO units (board_id, phase, location, is_dislodged, owner, is_army) "
