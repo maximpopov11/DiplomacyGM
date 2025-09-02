@@ -1995,7 +1995,7 @@ async def substitute(
     board = manager.get_board(guild.id)
 
     # HACK: Need to create an approved server list for commands
-    override = True
+    override = False
     if not guild.name.startswith("Imperial Diplomacy") and not override:
         await send_message_and_file(
             channel=ctx.channel,
