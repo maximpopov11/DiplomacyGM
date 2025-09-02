@@ -474,10 +474,67 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
     )
 
 
+@bot.command(
+    help="""Places a substitute advertisement for a power
+
+Usage:
+.advertise <power> # Advertise permanent position, no extra message
+.advertise <power> <message> # Advertise permanent position, extra message
+.advertise <power> <timestamp> # Advertise temporary position, no extra message
+.advertise <power> <timestamp> <message> # Advertise temporary position, extra message
+"""
+)
+@gm_only("advertise for a substitute")
+async def advertise(
+    ctx: commands.Context,
+    power_role: discord.Role,
+    timestamp: str | None = None,
+    *,
+    message: str = "No message.",
+):
+    """
+    Parameters
+    ----------
+    power_role : discord.Role
+        Role of a player power
+    timestamp : str | None
+        Optional timestamp, if not present the value is prepended to message
+    message : str
+        Additional context to provide for the advertisement
+
+    """
+    await command.advertise(ctx, manager, power_role, timestamp, message)
+
+
+@bot.command(help="Handles the in/out substitution of two users")
+@gm_only("substitute a player")
+async def substitute(
+    ctx: commands.Context,
+    out_user: discord.User,
+    in_user: discord.User,
+    power_role: discord.Role,
+    *,
+    reason: str = "No reason given.",
+):
+    """
+    Parameters
+    ----------
+    out_user : discord.User
+        (UserID, username, or mention)
+    in_user : discord.User
+        (UserID, username, or mention)
+    power_role : discord.Role
+        Role to swap players for
+    reason : str [Optional]
+        Why the substitution is occuring
+    """
+    await command.substitute(ctx, manager, out_user, in_user, power_role, reason)
+
+
 @bot.command(help="Returns all shared guilds between DiploGM and user.")
 @mod_only("find mutuals with user")
-async def membership(ctx: commands.Context) -> None:
-    await command.membership(ctx, manager)
+async def membership(ctx: commands.Context, user: discord.User) -> None:
+    await command.membership(ctx, manager, user)
 
 
 @bot.command(help="Checks bot listens and responds.")

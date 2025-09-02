@@ -68,7 +68,9 @@ def require_player_by_context(
         if player_channel is not None:
             player = player_channel
         elif not is_gm_channel(ctx.channel):
-            raise CommandPermissionError(f"You cannot {description} as a GM in non-player and non-GM channels.")
+            raise CommandPermissionError(
+                f"You cannot {description} as a GM in non-player and non-GM channels."
+            )
     return player
 
 
@@ -93,8 +95,8 @@ async def assert_mod_only(
 ) -> bool:
     _hub = ctx.bot.get_guild(IMPDIP_SERVER_ID)
     if not _hub:
-        raise RuntimeError(
-            "Cannot fetch the Imperial Diplomacy Hub server when checking moderator permissions."
+        raise CommandPermissionError(
+            "Cannot fetch the Imperial Diplomacy Hub server to check moderator permissions."
         )
 
     _member = _hub.get_member(ctx.author.id)

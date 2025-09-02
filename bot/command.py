@@ -3,7 +3,6 @@ import copy
 import logging
 import os
 import random
-import time
 from random import randrange
 from typing import Callable
 from scipy.integrate import odeint
@@ -11,6 +10,7 @@ from scipy.integrate import odeint
 from black.trans import defaultdict
 from discord import (
     CategoryChannel,
+    User,
     Member,
     Role,
     HTTPException,
@@ -24,7 +24,7 @@ from discord.utils import find as discord_find
 
 from bot import config
 import bot.perms as perms
-from bot.config import is_bumble, temporary_bumbles, ERROR_COLOUR
+from bot.config import IMPDIP_SERVER_ID, IMPDIP_SERVER_SUBSTITUTE_ADVERTISE_CHANNEL_ID, IMPDIP_SERVER_SUBSTITUTE_TICKET_CHANNEL_ID, is_bumble, temporary_bumbles, ERROR_COLOUR, IMPDIP_SERVER_SUBSTITUTE_LOG_CHANNEL_ID
 from bot.parse_edit_state import parse_edit_state
 from bot.parse_order import parse_order, parse_remove_order
 from bot.utils import (
@@ -1133,7 +1133,11 @@ async def province_info(ctx: commands.Context, manager: Manager) -> None:
 
 
 async def player_info(ctx: commands.Context, manager: Manager) -> None:
-    board = manager.get_board(ctx.guild.id)
+    guild = ctx.guild
+    if not guild:
+        return
+
+    board = manager.get_board(guild.id)
 
     if not board.orders_enabled:
         perms.assert_gm_only(
@@ -1155,9 +1159,28 @@ async def player_info(ctx: commands.Context, manager: Manager) -> None:
         )
         return
 
-    # HACK: chaos has same name of players as provinces so we exploit that
-    province, _ = board.get_province_and_coast(player_name)
-    player: Player = board.get_player(province.name.lower())
+    variant = "standard"
+    player: Player | None = None
+    if board.is_chaos():
+        # HACK: chaos has same name of players as provinces so we exploit that
+        province, _ = board.get_province_and_coast(player_name)
+        player = board.get_player(province.name.lower())
+        variant = "chaos"
+            
+    elif board.fow:
+        await send_message_and_file(
+            channel=ctx.channel, title=f"Gametype Error!", message="This command does not work with FoW", embed_colour=ERROR_COLOUR
+        )
+        return
+
+    else:
+        try:
+            player = board.get_player(player_name)
+        except ValueError:
+            player = None
+
+    # f"Initial/Current/Victory SC Count [Score]: {player.iscc}/{len(player.centers)}/{player.vscc} [{player.score()}%]\n" + \
+
     if player is None:
         log_command(logger, ctx, message=f"Player `{player}` not found")
         await send_message_and_file(
@@ -1165,24 +1188,7 @@ async def player_info(ctx: commands.Context, manager: Manager) -> None:
         )
         return
 
-    # FOW permissions
-    if not board.is_chaos():
-        await send_message_and_file(
-            channel=ctx.channel, title=f"This command only works for chaos"
-        )
-        return
-
-    # f"Initial/Current/Victory SC Count [Score]: {player.iscc}/{len(player.centers)}/{player.vscc} [{player.score()}%]\n" + \
-
-    # fmt: off
-    bullet = "\n- "
-    out = f"Color: #{player.render_color}\n" + \
-        f"Points: {player.points}\n" + \
-        f"Vassals: {', '.join(map(str, player.vassals))}\n" + \
-        f"Liege: {player.liege if player.liege else 'None'}\n" + \
-        f"Units: {(bullet + bullet.join([unit.location().name for unit in player.units])) if len(player.units) > 0 else 'None'}\n" + \
-        f"Centers ({len(player.centers)}): {(bullet + bullet.join([center.name for center in player.centers])) if len(player.centers) > 0 else 'None'}\n"
-    # fmt: on
+    out = player.info(variant)
     log_command(logger, ctx, message=f"Got info for player {player}")
 
     # FIXME title should probably include what coast it is.
@@ -1866,29 +1872,276 @@ async def backlog_specs(ctx: commands.Context, manager: Manager) -> None:
     )
 
 
-async def membership(ctx: commands.Context, _: Manager) -> None:
+async def membership(ctx: commands.Context, _: Manager, user: User) -> None:
     guild = ctx.guild
     if not guild:
         return
 
-    if len(ctx.message.mentions) == 0:
+    out = f"""
+User: {user.mention} [{user.name}]
+Number of Mutual Servers: {len(user.mutual_guilds)}
+----
+"""
+
+    for shared in user.mutual_guilds:
+        out += f"{shared.name}\n"
+
+    await send_message_and_file(
+        channel=ctx.channel, title=f"User Membership Results", message=out
+    )
+
+async def advertise(ctx: commands.Context, manager: Manager, power_role: Role, timestamp: str | None = None, message: str = "No message given."):
+    guild = ctx.guild
+    if not guild:
+        return
+
+    _hub = ctx.bot.get_guild(IMPDIP_SERVER_ID)
+    if not _hub:
+        raise perms.CommandPermissionError("Can't advertise as can't access the Imperial Diplomacy Hub Server.")
+    
+    interested_sub_ping = ""
+    interested_sub_role = discord_find(lambda r: r.name == "Interested Substitute", _hub.roles)
+    if interested_sub_role:
+        interested_sub_ping = f"{interested_sub_role.mention}\n"
+        
+
+    board = manager.get_board(guild.id)
+    try:
+        power: Player = board.get_player(power_role.name)
+    except ValueError:
         await send_message_and_file(
             channel=ctx.channel,
             title="Error",
-            message="Did not mention a user.",
+            message="Did not mention a Player role.",
             embed_colour=ERROR_COLOUR,
         )
         return
 
-    member = ctx.message.mentions[0]
+    # GET TIMESTAMP FOR TEMP SUB SPECIFICATION
+    if timestamp is not None:
+        timestamp_re = r"<t:(\d+):[a-zA-Z]>"
+        match = re.match(
+            timestamp_re,
+            timestamp,
+        )
 
-    out = f"Number of servers: {len(member.mutual_guilds)}\n---\n"
-    for shared in member.mutual_guilds:
-        out += f"{shared.name}\n"
+        if match:
+            timestamp = f"<t:{match.group(1)}:D>"
+        else:
+            message = timestamp + " " + message
+            timestamp = None
 
+    sub_period = "Permanent" if timestamp is None else f"Temporary until {timestamp}"
+
+    # GET CHANNELS FOR POST / REDIRECTS
+    ticket_channel = ctx.bot.get_channel(IMPDIP_SERVER_SUBSTITUTE_TICKET_CHANNEL_ID)
+    if not ticket_channel:
+        await send_message_and_file(
+            channel=ctx.channel,
+            title="Error",
+            message="Could not find the channel where substitute tickets can be created",
+            embed_colour=ERROR_COLOUR,
+        )
+        return
+    
+    advertise_channel = ctx.bot.get_channel(IMPDIP_SERVER_SUBSTITUTE_ADVERTISE_CHANNEL_ID)
+    if not advertise_channel:
+        await send_message_and_file(
+            channel=ctx.channel,
+            title="Error",
+            message="Could not find the channel meant for advertisements",
+            embed_colour=ERROR_COLOUR,
+        )
+        return
+
+    title= f"Substitute Advertisement"
+    out = f"""
+{interested_sub_ping}
+Period: {sub_period}
+Game: {guild.name}
+Phase: {board.phase.name} {board.get_year_str()}
+Power: {power.name}
+SC Count: {len(power.centers)}
+
+Message: {message}
+
+If you are interested, please go to {ticket_channel.mention} to create a ticket, and remember to ping {ctx.author.mention} so they know you're asking.
+        """
+
+    file, file_name = manager.draw_current_map(guild.id, "standard")
     await send_message_and_file(
-        channel=ctx.channel, title=f"Mutual servers with {member.name}\n{member.mention}", message=out, embed_colour="green" 
+        channel=advertise_channel,
+        title=title,
+        message=out,
+        file=file,
+        file_name=file_name,
+        convert_svg=True,
+        file_in_embed=True,
     )
+
+
+async def substitute(
+    ctx: commands.Context,
+    manager: Manager,
+    out_user: User,
+    in_user: User,
+    power_role: Role,
+    reason: str = "No reason given.",
+):
+    guild = ctx.guild
+    if not guild:
+        return
+
+    board = manager.get_board(guild.id)
+
+    # HACK: Need to create an approved server list for commands
+    override = False
+    if not guild.name.startswith("Imperial Diplomacy") and not override:
+        await send_message_and_file(
+            channel=ctx.channel,
+            title="Error",
+            message="You're not allowed to do that in this server.",
+            embed_colour=ERROR_COLOUR,
+        )
+        return
+
+    in_member = guild.get_member(in_user.id)
+    if not in_member:
+        await send_message_and_file(
+            channel=ctx.channel,
+            title="Error",
+            message="Can't substitute a player that is not in the server!",
+            embed_colour=ERROR_COLOUR,
+        )
+        return
+
+    if not get_player_by_name(power_role.name, manager, guild.id):
+        await send_message_and_file(
+            channel=ctx.channel,
+            title="Error",
+            message="Did not supply a Player role.",
+            embed_colour=ERROR_COLOUR,
+        )
+        return
+
+
+    # log a substitution is occurring in the gm space
+    # TODO: Update Substitution Logging to include Reputation after Bot Integration
+    logc = ctx.bot.get_channel(IMPDIP_SERVER_SUBSTITUTE_LOG_CHANNEL_ID)
+    out = (
+        f"Game: {guild.name}\n" 
+        + f"- Guild ID: {guild.id}\n"
+        + f"In: {in_user.mention}[{in_user.id}]\n"
+        + f"Out: {out_user.mention}[{out_user.id}]\n"
+        + f"Phase: {board.phase.name} {board.get_year_str()}\n"
+        + f"Reason: {reason}"
+    )
+    await send_message_and_file(channel=logc, message=out)
+
+
+    # fetch relevant roles to swap around on the users
+    player_role = discord_find(lambda r: r.name == "Player", guild.roles)
+    if not player_role:
+        await send_message_and_file(
+            channel=ctx.channel,
+            title="Error",
+            message="Can't proceed with automatic substitution processing: Couldn't find 'Player' role.",
+            embed_colour=ERROR_COLOUR,
+        )
+        return
+    
+    orders_role = discord_find(lambda r: r.name == f"orders-{power_role.name.lower()}", guild.roles)
+    if not orders_role:
+        await send_message_and_file(
+            channel=ctx.channel,
+            title="Error",
+            message=f"Can't proceed with automatic substitution processing: Couldn't find 'orders-{power_role.name.lower()}' role.",
+            embed_colour=ERROR_COLOUR,
+        )
+        return
+
+    cspec_role = discord_find(lambda r: r.name == "Country Spectator", guild.roles)
+    if not cspec_role:
+        await send_message_and_file(
+            channel=ctx.channel,
+            title="Error",
+            message="Can't proceed with automatic substitution processing: Couldn't find 'Country Spectator' role.",
+            embed_colour=ERROR_COLOUR,
+        )
+        return
+    
+
+    # if incoming is currently a player
+    if player_role in in_member.roles:
+        await send_message_and_file(
+            channel=ctx.channel,
+            title="Error",
+            message="Can't substitute in an existing player!",
+            embed_colour=ERROR_COLOUR,
+        )
+        return
+
+    # if incoming is a country spec but not of current player
+    if cspec_role in in_member.roles and power_role not in in_member.roles:
+        await send_message_and_file(
+            channel=ctx.channel,
+            title="Error",
+            message="Incoming player is a country spectator for another power!",
+            embed_colour=ERROR_COLOUR,
+        )
+        return
+
+
+    # has incoming player spectated before
+    prev_spec = manager.get_spec_request(guild.id, in_user.id)
+    if prev_spec:
+        prev_spec_role = ctx.bot.get_role(prev_spec.role_id)
+
+        # previous spec of another power
+        if prev_spec.role_id != power_role.id:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title="Error",
+                message=f"Incoming player has previously spectated for power {prev_spec_role.mention}",
+                embed_colour=ERROR_COLOUR,
+            )
+            return
+
+
+    # PROCESS ROLE ASSIGNMENTS
+    out = f"Outgoing Player: {out_user.name}\n"
+    out_member = guild.get_member(out_user.id)
+    if out_member:
+        prev_roles = list(filter(lambda r: r in out_member.roles, [player_role, orders_role])) # roles to remove if they exist
+        prev_role_names = ", ".join(map(lambda r: r.mention, prev_roles))
+        out += f"- Previous Roles: {prev_role_names}\n"
+        
+        new_roles = [cspec_role] # roles to add
+        new_role_names = ", ".join(map(lambda r: r.mention, new_roles)) 
+        out += f"- New Roles: {new_role_names}\n"
+
+        try:
+            await out_member.remove_roles(*prev_roles, reason="Substitution")
+            await out_member.add_roles(*new_roles)
+        except HTTPException:
+            out += f"[ERROR] Failed to swap roles for outgoing player: {out_user.name}\n"
+
+    out += f"Incoming Player: {in_user.name}\n"
+    prev_roles = list(filter(lambda r: r in in_member.roles, [cspec_role])) # roles to remove if they exist
+    prev_role_names = ", ".join(map(lambda r: r.mention, prev_roles))
+    out += f"- Previous Roles: {prev_role_names}\n"
+
+    new_roles = [player_role, power_role, orders_role] # roles to add
+    new_role_names = ", ".join(map(lambda r: r.mention, new_roles))
+    out += f"- New Roles: {new_role_names}\n"
+    
+    try:
+        await in_member.remove_roles(*prev_roles, reason="Substitution")
+        await in_member.add_roles(*new_roles)
+    except HTTPException:
+        out += f"[ERROR] Failed to swap roles for outgoing player: {out_user.name}"
+
+    await send_message_and_file(channel=ctx.channel, title="Substitution results", message=out)
 
 
 class ContainedPrinter:
