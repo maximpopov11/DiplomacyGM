@@ -532,7 +532,6 @@ class PronounView(discord.ui.View):
 @bot.tree.command(
     name="pronouns",
     description="Specatate a Player",
-    guild=discord.Object(id=1262215477237645314),
 )
 async def pronouns(interaction: discord.Interaction):
     guild = interaction.guild
@@ -642,7 +641,6 @@ class TimezoneView(discord.ui.View):
 @bot.tree.command(
     name="timezone",
     description="Set your timezone",
-    guild=discord.Object(id=1262215477237645314),
 )
 async def timezone(interaction: discord.Interaction):
     guild = interaction.guild
