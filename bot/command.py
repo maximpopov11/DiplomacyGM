@@ -313,7 +313,8 @@ async def advice(ctx: commands.Context, _: Manager) -> None:
             ]
         )
     elif chance == 1:
-        message = random.choice(WOC_ADVICE)
+        index = random.randrange(0, len(WOC_ADVICE))
+        message = f"{index}. {WOC_ADVICE[index]}"
 
     await send_message_and_file(channel=ctx.channel, title=message)
 
