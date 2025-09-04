@@ -3,7 +3,6 @@ import copy
 import logging
 import os
 import random
-from random import randrange
 from typing import Callable
 from scipy.integrate import odeint
 
@@ -59,6 +58,14 @@ ping_text_choices = [
 ]
 color_options = {"standard", "dark", "pink", "blue", "kingdoms", "empires"}
 
+# Fetch the 115 philosophical advice points created by Hobbit for the World of Chaos event
+# Intended use: to extend the possibilities within .advice
+WOC_ADVICE = ["Maybe the real friends were the dots we claimed along the way."]
+try:
+    with open("bot/assets/advice.txt", "r") as f:
+        WOC_ADVICE.extend(f.readlines())
+except FileNotFoundError:
+    pass
 
 async def ping(ctx: commands.Context, _: Manager) -> None:
     response = "Beep Boop"
@@ -193,14 +200,14 @@ async def fish(ctx: commands.Context, manager: Manager) -> None:
         fish_num = (21 - fish_num) // 2
 
         if is_bumble(ctx.author.name):
-            if randrange(0, 20) == 0:
+            if random.randrange(0, 20) == 0:
                 # Sometimes Bumbles are so bad at fishing they debumblify
                 debumblify = True
-                fish_num = randrange(10, 20)
+                fish_num = random.randrange(10, 20)
                 return
             else:
                 # Bumbles that lose fish lose a lot of them
-                fish_num *= randrange(3, 10)
+                fish_num *= random.randrange(3, 10)
 
         board.fish -= fish_num
         board.fish_pop["fish_pop"] += fish_num
@@ -287,9 +294,11 @@ async def cheat(ctx: commands.Context, manager: Manager) -> None:
 
 async def advice(ctx: commands.Context, _: Manager) -> None:
     message = "You are not worthy of advice."
+    chance = random.randrange(0, 5)
+
     if is_bumble(ctx.author.name):
         message = "Bumble suggests that you go fishing, although typically blasphemous, today is your lucky day!"
-    elif randrange(0, 5) == 0:
+    elif chance == 0:
         message = random.choice(
             [
                 "Bumble was surprised you asked him for advice and wasn't ready to give you any, maybe if you were a true follower...",
@@ -303,6 +312,9 @@ async def advice(ctx: commands.Context, _: Manager) -> None:
                 "The GMs suggest you input your orders so they don't need to hound you for them at the deadline.",
             ]
         )
+    elif chance == 1:
+        message = random.choice(WOC_ADVICE)
+
     await send_message_and_file(channel=ctx.channel, title=message)
 
 
