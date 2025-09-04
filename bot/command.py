@@ -1992,6 +1992,12 @@ If you are interested, please go to {ticket_channel.mention} to create a ticket,
         file_in_embed=True,
     )
 
+    # create a ghost ping of "@Interested Substitute" since embeds don't notify
+    try:
+        msg = await advertise_channel.send(interested_sub_ping)
+        await msg.delete(delay=5)
+    except HTTPException as e:
+        logger.warning(f"failed to ping interested substitutes: {e}")
 
 async def substitute(
     ctx: commands.Context,
