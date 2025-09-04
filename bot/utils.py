@@ -57,6 +57,7 @@ def is_admin(author: commands.Context.author) -> bool:
         450636420558618625,     # Flare
         490633966974533640,     # Elle
         1352388421003251833,    # Chloe
+        285108244714881024,     # aahoughton (elle-approved)
     ]
 
 def is_moderator(author: commands.Context.author) -> bool:
