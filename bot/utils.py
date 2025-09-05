@@ -270,12 +270,12 @@ async def send_message_and_file(
     if fields:
         for i, field in reversed(list(enumerate(fields))):
             if len(field[0]) > 256 or len(field[1]) > 1024:
-                title, body = fields.pop(i)
+                field_title, field_body = fields.pop(i)
                 if not message:
                     message = ""
                 message += (f"\n" 
-                            f"### {title}\n" if title.strip() else f"{title}\n" 
-                            f"{body}")
+                            f"### {field_title}\n" if field_title.strip() else f"{field_title}\n" 
+                            f"{field_body}")
 
     if message and messages:
         messages = [message] + messages
