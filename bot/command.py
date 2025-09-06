@@ -1156,7 +1156,7 @@ async def player_info(ctx: commands.Context, manager: Manager) -> None:
     if not board.orders_enabled:
         perms.assert_gm_only(
             ctx,
-            "You cannot use .province_info in a non-GM channel while orders are locked.",
+            "You cannot use .player_info in a non-GM channel while orders are locked.",
             non_gm_alt="Orders locked! If you think this is an error, contact a GM.",
         )
         return
@@ -1165,11 +1165,11 @@ async def player_info(ctx: commands.Context, manager: Manager) -> None:
         ctx.prefix + ctx.invoked_with
     ).strip()
     if not player_name:
-        log_command(logger, ctx, message=f"No province given")
+        log_command(logger, ctx, message=f"No player given")
         await send_message_and_file(
             channel=ctx.channel,
-            title="No province given",
-            message="Usage: .province_info <player>",
+            title="No player given",
+            message="Usage: .player_info <player>",
         )
         return
 
