@@ -1897,7 +1897,7 @@ Number of Mutual Servers: {len(user.mutual_guilds)}
 ----
 """
 
-    for shared in user.mutual_guilds:
+    for shared in sorted(user.mutual_guilds, key=lambda g: g.name):
         out += f"{shared.name}\n"
 
     await send_message_and_file(
@@ -1976,6 +1976,7 @@ Game: {guild.name}
 Phase: {board.phase.name} {board.get_year_str()}
 Power: {power.name}
 SC Count: {len(power.centers)}
+VSCC: {round(power.score() * 100, 2)}%
 
 Message: {message}
 
@@ -2051,8 +2052,8 @@ async def substitute(
     out = (
         f"Game: {guild.name}\n" 
         + f"- Guild ID: {guild.id}\n"
-        + f"In: {in_user.mention}[{in_user.id}]\n"
-        + f"Out: {out_user.mention}[{out_user.id}]\n"
+        + f"In: {in_user.mention}[{in_user.name}]\n"
+        + f"Out: {out_user.mention}[{out_user.name}]\n"
         + f"Phase: {board.phase.name} {board.get_year_str()}\n"
         + f"Reason: {reason}"
     )
