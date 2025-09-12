@@ -70,14 +70,17 @@ class Player:
     def info(self, variant: str = "standard") -> str:
         bullet = "\n- "
 
+        units = list(sorted(self.units, key=lambda u: u.location().name))
+        centers = list(sorted(self.centers, key=lambda c: c.name))
+        
         if variant == "chaos":
             out = (
                 f"Color: #{self.render_color}\n"
                 + f"Points: {self.points}\n"
                 + f"Vassals: {', '.join(map(str,self.vassals))}\n"
                 + f"Liege: {self.liege if self.liege else 'None'}\n"
-                + f"Units: {(bullet + bullet.join([unit.location().name for unit in self.units])) if len(self.units) > 0 else 'None'}\n"
-                + f"Centers ({len(self.centers)}): {(bullet + bullet.join([center.name for center in self.centers])) if len(self.centers) > 0 else 'None'}\n"
+                + f"Units ({len(units)}): {(bullet + bullet.join([unit.location().name for unit in units])) if len(units) > 0 else 'None'}\n"
+                + f"Centers ({len(centers)}): {(bullet + bullet.join([center.name for center in centers])) if len(centers) > 0 else 'None'}\n"
             )
             return out
 
@@ -85,8 +88,8 @@ class Player:
             ""
             + f"Color: {(bullet + bullet.join([k + ': ' + v for k, v in self.color_dict.items()]) if self.color_dict is not None else self.render_color)}\n"
             + f"Score: [{len(self.centers)}/{self.vscc}] {round(self.score() * 100, 2)}%\n"
-            + f"Centers: {(bullet + bullet.join([center.name for center in self.centers])) if len(self.centers) > 0 else 'None'}\n"
-            + f"Units: {(bullet + bullet.join([unit.location().name for unit in self.units])) if len(self.units) > 0 else 'None'}\n"
+            + f"Centers: {(bullet + bullet.join([center.name for center in centers])) if len(centers) > 0 else 'None'}\n"
+            + f"Units: {(bullet + bullet.join([unit.location().name for unit in units])) if len(units) > 0 else 'None'}\n"
         )
         return out
 
