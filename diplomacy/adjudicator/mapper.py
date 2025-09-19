@@ -381,6 +381,8 @@ class Mapper:
         else:
             players = self.board.get_players_by_score()
 
+        sc_index = self.board.data["svg config"]["power_sc_index"] if "power_sc_index" in self.board.data["svg config"] else 5
+
         if not "no coring" in self.board.data.get("adju flags", []):
             for power_element in all_power_banners_element:
                 for i, player in enumerate(players):
@@ -389,9 +391,9 @@ class Mapper:
                         self.color_element(power_element[0], self.player_colors[player.name])
                         power_element.set("transform", self.scoreboard_power_locations[i])
                         if player == self.restriction or self.restriction == None:
-                            power_element[5][0].text = str(len(player.centers))
+                            power_element[sc_index][0].text = str(len(player.centers))
                         else:
-                            power_element[5][0].text = "???"
+                            power_element[sc_index][0].text = "???"
                         break
         else:
             #FIXME only sorts by points right now
@@ -960,7 +962,7 @@ class Mapper:
         # each power is placed in the right spot based on the transform field which has value of "tranlate($x,$y)" where x,y
         # are floating point numbers; we parse these via regex and sort by y-value
         self.scoreboard_power_locations.sort(
-            key=lambda loc: float(re.match(r"translate\((-?\d+(?:\.\d+)?(?:e-?\d+)?),\s*(-?\d+(?:\.\d+)?(?:e-?\d+)?)\)", loc).groups()[1])
+            key=lambda loc: float(re.match(r".*translate\((-?\d+(?:\.\d+)?(?:e-?\d+)?),\s*(-?\d+(?:\.\d+)?(?:e-?\d+)?)\)", loc).groups()[1])
         )
 
     def add_arrow_definition_to_svg(self, svg: ElementTree) -> None:
