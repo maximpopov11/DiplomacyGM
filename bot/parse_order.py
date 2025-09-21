@@ -329,8 +329,9 @@ def parse_order(message: str, player_restriction: Player | None, board: Board) -
             try:
                 logger.debug(order)
                 cmd = parser.parse(order.strip().lower() + " ")
-                movement.append(generator.transform(cmd))
-                orderoutput.append(f"\u001b[0;32m{order}")
+                ordered_unit = generator.transform(cmd)
+                movement.append(ordered_unit)
+                orderoutput.append(f"\u001b[0;32m{ordered_unit} {ordered_unit.order}")
             except VisitError as e:
                 orderoutput.append(f"\u001b[0;31m{order}")
                 errors.append(f"`{order}`: {str(e).splitlines()[-1]}")
