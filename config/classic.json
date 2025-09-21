@@ -1,0 +1,121 @@
+{
+    "name": "Classic",
+    "file": "assets/classic.svg",
+    "svg config": {
+		"year": 1901,
+		
+        "land_layer": "layer2",
+        "sea_borders": "layer4",
+        "province_names": "layer7",
+        "supply_center_icons": "g260",
+        "starting_units": "layer11",
+        "unit_output": "layer12",
+        "arrow_output": "layer13",
+		"background": "MapLayer",
+
+        "army": "layer8",
+        "retreat_army": "g914",
+        "fleet": "layer9",
+        "retreat_fleet": "g690",
+		
+		"island_borders": "layer15",
+		"island_fill_layer": "layer15",
+		"island_ring_layer": "layer15",
+		"season": "layer4-1",
+		
+		"power_banners": "layer16",
+		"power_sc_index": 2,
+
+        "detect_starting_units": true,
+        "unit_type_labeled": false,
+
+        "unit_labels": true,
+        "province_labels": true,
+        "center_labels": true,
+
+        "default_sea_color": "add8e6",
+        "border_margin_hint": 1,
+
+        "map_width": 1920,
+        "unit_radius": 20,
+        "order_stroke_width": 4,
+        "neutral": "f5deb3",
+        "neutral_sc": "ffffff",
+        "loc_x_offset": 7.7655,
+        "loc_y_offset": 7.033,
+        "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
+    },
+    "overrides": {
+        "provinces": {
+            "Spain": {
+                "coasts": {
+                   "nc": [
+                        "Mid-Atlantic Ocean"
+                   ],
+                   "sc": [
+                        "Mid-Atlantic Ocean",
+						"Western Mediterranean Sea",
+						"Gulf of Lyon"
+                   ]
+                }
+            },
+            "Bulgaria": {
+                "coasts": {
+                    "ec": [
+                        "Black Sea"
+                    ],
+                    "sc": [
+                        "Aegean Sea"
+                    ]
+                }
+            },
+            "St. Petersburg": {
+                "coasts": {
+                    "nc": [
+                        "Barents Sea"
+                    ],
+                    "sc": [
+                        "Gulf of Bothnia"
+                    ]
+                }
+            }
+        }
+    },
+    "players": {
+        "Austria": {
+            "color": "cd5c5c",
+            "vscc": 18,
+            "iscc": 0
+        },
+        "England": {
+            "color": "7b68ee",
+            "vscc": 18,
+            "iscc": 0
+        },
+        "France": {
+            "color": "87ceeb",
+            "vscc": 18,
+            "iscc": 0
+        },
+        "Germany": {
+            "color": "696969",
+            "vscc": 18,
+            "iscc": 0
+        },
+        "Italy": {
+            "color": "6b8e23",
+            "vscc": 18,
+            "iscc": 0
+        },
+        "Russia": {
+            "color": "d3d3d3",
+            "vscc": 18,
+            "iscc": 0
+        },
+        "Turkey": {
+            "color": "daa520",
+            "vscc": 18,
+            "iscc": 0
+        }
+    }
+}
