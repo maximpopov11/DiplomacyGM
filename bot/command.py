@@ -449,6 +449,18 @@ async def bulk_allocate_role(ctx: commands.Context, manager: Manager) -> None:
     # .bulk_allocate_role <@B1.4 Player> <@B1.4 GM Team> ...
     roles = ctx.message.role_mentions
     role_names = list(map(lambda r: r.name, roles))
+
+    for role in roles.copy():
+        name = role.name.lower()
+        if config.is_gm_role(name) or config.is_mod_role(name):
+            await send_message_and_file(
+                channel=ctx.channel,
+                title="Error!",
+                embed_color=ERROR_COLOUR,
+                message=f"Not allowed to allocate this role using DiploGM: {role.mention}"
+            )
+            roles.remove(role)
+    
     if len(roles) == 0:
         await send_message_and_file(
             channel=ctx.channel,
