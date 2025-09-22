@@ -1,0 +1,316 @@
+{
+    "name": "Imperial Diplomacy B1.6",
+    "file": "assets/impdip.1.6.svg",
+    "svg config": {
+        "land_layer": "layer6",
+        "island_ring_layer": "layer9",
+        "island_fill_layer": "layer11",
+        "island_borders": "layer5",
+        "sea_borders": "layer2",
+        "province_names": "layer1",
+        "supply_center_icons": "layer3",
+        "season": "layer4",
+        "power_banners": "layer13",
+        "starting_units": "layer10",
+        "unit_output": "layer16",
+        "arrow_output": "layer17",
+		"other_fills": "layer14",
+        "coast_markers": "layer18",
+		"background": "g407997",
+        "sidebar": "layer7",
+
+        "army": "g652",
+        "retreat_army": "g2176",
+        "fleet": "layer15",
+        "retreat_fleet": "g3300",
+
+        "detect_starting_units": true,
+        "unit_type_labeled": false,
+
+        "unit_labels": true,
+        "province_labels": true,
+        "center_labels": true,
+
+        "default_sea_color": "d4dae1",
+
+		"color replacements": {
+			"c6b7ab": {"dark": "B7AB80", "blue": "FFF3F3"},
+			"b2bdd1": {"dark": "325B68", "blue": "D2BDAE"},
+			"b99a82": {"dark": "8a836b", "blue": "EFDFDF"},
+			"333333": {"dark": "0A3542"},
+			"d4dae1": {"dark": "396B70", "blue": "E4D1C5"}
+		},
+
+        "border_margin_hint": 1,
+
+        "map_width": 4375,
+        "unit_radius": 10,
+        "order_stroke_width": 2,
+        "neutral": {"standard": "c6b7ab", "dark": "B7AB80", "pink": "c6b7ab", "blue": "FFF3F3"},
+        "neutral_sc": "ffffff",
+        "loc_x_offset": 7.7655,
+        "loc_y_offset": 7.033,
+        "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
+    },
+    "overrides": {
+        "provinces": {
+            "Panama": {
+                "coasts": {
+                   "nc": [
+                        "Bay of Panama"
+                   ],
+                   "sc": [
+                        "Colon Ridge"
+                   ]
+                }
+            },
+            "Honduras": {
+                "coasts": {
+                    "nc": [
+                        "Gulf of Honduras",
+                        "Bay of Panama"
+                    ],
+                    "sc": [
+                        "Guatemala Basin",
+                        "Colon Ridge"
+                    ]
+                }
+            },
+            "Yucatan": {
+                "coasts": {
+                    "nc": [
+                        "Gulf of Mexico",
+                        "Yucatan Channel"
+                    ],
+                    "sc": [
+                        "Guatemala Basin"
+                    ]
+                }
+            },
+            "Mexico City": {
+                "coasts": {
+                    "ec": [
+                        "Gulf of Mexico"
+                    ],
+                    "wc": [
+                        "Guatemala Basin",
+                        "Berlanga Ridge",
+                        "Sea of Cortez"
+                    ]
+                }
+            },
+            "Nakhon Si": {
+                "coasts": {
+                    "ec": [
+                        "Gulf of Siam",
+                        "Natuna Sea"
+                    ],
+                    "wc": [
+                        "Malacca Strait"
+                    ]
+                }
+            },
+            "Pyeongyang": {
+                "coasts": {
+                    "ec": [
+                        "Oriental Sea",
+                        "Oki Sea"
+                    ],
+                    "wc": [
+                        "Beizhili Sea",
+                        "Yellow Sea"
+                    ]
+                }
+            },
+            "Kereks": {
+                "coasts": {
+                    "ec": [
+                        "Karaginskiy Gulf"
+                    ],
+                    "wc": [
+                        "Sea of Okhotsk"
+                    ]
+                }
+            },
+            "Rome": {
+                "coasts": {
+                    "ec": [
+                        "Adriatic Sea"
+                    ],
+                    "wc": [
+                        "Ligurian Sea",
+                        "Tyrrhenian Sea"
+                    ]
+                }
+            },
+            "NPO1": {
+                "unit_loc": [[3982.726, 874.217]],
+                "retreat_unit_loc": [[3994.726, 886.217]]
+            },
+            "NPO2": {
+                "unit_loc": [[4059.726, 874.217]],
+                "retreat_unit_loc": [[4071.726, 886.217]]
+            },
+            "NPO3": {
+                "unit_loc": [[4136.726, 874.217]],
+                "retreat_unit_loc": [[4148.726, 886.217]]
+            },
+            "NPO4": {
+                "unit_loc": [[4021.226, 942.459]],
+                "retreat_unit_loc": [[4033.226, 954.459]]
+            },
+            "NPO5": {
+                "unit_loc": [[4098.226, 942.401]],
+                "retreat_unit_loc": [[4110.226, 954.401]]
+            },
+            "SPO1": {
+                "unit_loc": [[4061.260, 1509.495]],
+                "retreat_unit_loc": [[4073.260, 1521.495]]
+            },
+            "SPO2": {
+                "unit_loc": [[4138.259, 1509.495]],
+                "retreat_unit_loc": [[4150.259, 1521.495]]
+            },
+            "SPO3": {
+                "unit_loc": [[4215.260, 1510.000]],
+                "retreat_unit_loc": [[4227.260, 1522.000]]
+            },
+            "Chukchi Sea": {
+                "unit_loc": [[26.000, 268.000]],
+                "retreat_unit_loc": [[72.908, 186.392]]
+            },
+            "Gulf of Anadyr": {
+                "unit_loc": [[29.000, 421.000]],
+                "retreat_unit_loc": [[14.500, 391.000]]
+            }
+
+        }
+    },
+    "players": {
+        "Abyssinia": {
+            "color": {"standard": "a88080", "dark": "9D6767", "pink": "FFC0CB", "blue": "4AB5A9"},
+            "vscc": 32,
+            "iscc": 4
+        },
+        "Ajuuraan": {
+            "color": {"standard": "587ba7", "dark": "4A688D", "pink": "FF6AB9", "blue": "924EEF"},
+            "vscc": 36,
+            "iscc": 5
+        },
+        "Athapasca": {
+            "color": {"standard": "e95a94", "dark": "BB4C79", "pink": "FF69B4", "blue": "63E8DD"},
+            "vscc": 32,
+            "iscc": 4
+        },
+        "Austria": {
+            "color": {"standard": "a17555", "dark": "82644D", "pink": "FF1493", "blue": "8768E2"},
+            "vscc": 32,
+            "iscc": 4
+        },
+        "Aymara": {
+            "color": {"standard": "9a2f56", "dark": "AD295D", "pink": "DB7093", "blue": "A0DCD9"},
+            "vscc": 32,
+            "iscc": 4
+        },
+        "Ayutthaya": {
+            "color": {"standard": "9d84ae", "dark": "B875CE", "pink": "FF007F", "blue": "5782EC"},
+            "vscc": 32,
+            "iscc": 4
+        },
+        "England": {
+            "color": {"standard": "f94455", "dark": "E33544", "pink": "E75480", "blue": "467A70"},
+            "vscc": 56,
+            "iscc": 14
+        },
+        "France": {
+            "color": {"standard": "66a2e3", "dark": "24A57B", "pink": "FF6FFF", "blue": "9F79CF"},
+            "vscc": 56,
+            "iscc": 14
+        },
+        "Guarani": {
+            "color": {"standard": "078690", "dark": "078690", "pink": "FFB3C6", "blue": "078690"},
+            "vscc": 32,
+            "iscc": 4
+        },
+        "Inuit": {
+            "color": {"standard": "afc5d8", "dark": "95ADC2", "pink": "F22952", "blue": "2C837F"},
+            "vscc": 42,
+            "iscc": 7
+        },
+        "Kongo": {
+            "color": {"standard": "924cb3", "dark": "944FA5", "pink": "FF91A4", "blue": "C7A9E7"},
+            "vscc": 32,
+            "iscc": 4
+        },
+        "Mapuche": {
+            "color": {"standard": "81889d", "dark": "696E7F", "pink": "FF85A1", "blue": "5A72C2"},
+            "vscc": 32,
+            "iscc": 4
+        },
+        "Ming": {
+            "color": {"standard": "cadd7e", "dark": "B8DC5C", "pink": "D98A96", "blue": "74D2EF"},
+            "vscc": 36,
+            "iscc": 5
+        },
+        "Mughal": {
+            "color": {"standard": "ab9f26", "dark": "999941", "pink": "FDD7E4", "blue": "8779AB"},
+            "vscc": 36,
+            "iscc": 5
+        },
+        "Netherlands": {
+            "color": {"standard": "fc9c23", "dark": "DB7745", "pink": "C44263", "blue": "58AEC4"},
+            "vscc": 56,
+            "iscc": 14
+        },
+        "Ottoman": {
+            "color": {"standard": "a03838", "dark": "AB2136", "pink": "F4A7B9", "blue": "649AE8"},
+            "vscc": 48,
+            "iscc": 10
+        },
+        "Poland-Lithuania": {
+            "color": {"standard": "e390b3", "dark": "E57BA8", "pink": "F9A7B0", "blue": "43859F"},
+            "vscc": 42,
+            "iscc": 7
+        },
+        "Portugal": {
+            "color": {"standard": "3c9553", "dark": "23763F", "pink": "F5B7C6", "blue": "A9B6E3"},
+            "vscc": 64,
+            "iscc": 16
+        },
+        "Qing": {
+            "color": {"standard": "f36678", "dark": "E04A5D", "pink": "F5A9BC", "blue": "15729C"},
+            "vscc": 32,
+            "iscc": 4
+        },
+        "Russia": {
+            "color": {"standard": "547352", "dark": "547352", "pink": "E672A3", "blue": "4BAADB"},
+            "vscc": 44,
+            "iscc": 8
+        },
+        "Safavid": {
+            "color": {"standard": "5a887f", "dark": "407167", "pink": "FFAEB9", "blue": "5E6C9B"},
+            "vscc": 36,
+            "iscc": 5
+        },
+        "Spain": {
+            "color": {"standard": "f0ce48", "dark": "DBB045", "pink": "65000B", "blue": "3585B0"},
+            "vscc": 64,
+            "iscc": 16
+        },
+        "Sweden": {
+            "color": {"standard": "4e51ba", "dark": "534884", "pink": "F497BF", "blue": "367BBB"},
+            "vscc": 32,
+            "iscc": 4
+        },
+        "Tokugawa": {
+            "color": {"standard": "7cdbc3", "dark": "4AB79B", "pink": "FFAACC", "blue": "687F9F"},
+            "vscc": 32,
+            "iscc": 4
+        },
+        "Ute-Shoshone": {
+            "color": {"standard": "ca7a59", "dark": "B87052", "pink": "EDBFC3", "blue": "658DBE"},
+            "vscc": 36,
+            "iscc": 5
+        }
+    }
+}
