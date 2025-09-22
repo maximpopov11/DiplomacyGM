@@ -402,6 +402,9 @@ async def announce(ctx: commands.Context, manager: Manager) -> None:
 async def servers(ctx: commands.Context, manager: Manager) -> None:
     servers_with_games = manager.list_servers()
     message = ""
+    args = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).split(" ")
+    send_id = "id" in args
+    send_invite = "invite" in args
     for server in ctx.bot.guilds:
         if server is None:
             continue
@@ -421,14 +424,19 @@ async def servers(ctx: commands.Context, manager: Manager) -> None:
         else:
             board_state = f" - no active game"
 
-        try:
-            invite = await channel.create_invite(max_age=300)
-        except (HTTPException, NotFound):
-            message += f"\n- {server.name} - Could not create invite"
+        if send_invite:
+            try:
+                invite = await channel.create_invite(max_age=300)
+            except (HTTPException, NotFound):
+                message += f"\n- {server.name} - Could not create invite"
+            else:
+                message += f"\n- [{server.name}](<{invite.url}>)"
         else:
-            message += f"\n- [{server.name}](<{invite.url}>)"
+            message += f"\n- {server.name}"
 
         message += board_state
+        if send_id:
+            message+= f" - {server.id}"
 
     # Servers with games the bot is not in
     if servers_with_games:
@@ -438,6 +446,44 @@ async def servers(ctx: commands.Context, manager: Manager) -> None:
     await send_message_and_file(
         channel=ctx.channel, title=f"{len(ctx.bot.guilds)} Servers", message=message
     )
+
+
+async def leave_server(ctx: commands.Context, manager: Manager) -> None:
+    leave_id = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+    try:
+        leave_id = int(leave_id)
+    except ValueError:
+        await send_message_and_file(
+            channel=ctx.channel,
+            title=f"Failed to parse server ID",
+            embed_colour=ERROR_COLOUR
+        )
+        return
+
+    for server in ctx.bot.guilds:
+        if server.id == leave_id:
+            name = server.name
+            # icon = server.icon.url
+            try:
+                await server.leave()
+            except HTTPException:
+                await send_message_and_file(
+                    channel=ctx.channel,
+                    title=f"Failed to leave: {name}",
+                    embed_colour=ERROR_COLOUR
+                )
+            else:
+                await send_message_and_file(
+                    channel=ctx.channel,
+                    title=f"Left Server {name}"
+                )
+            return
+    else:
+        await send_message_and_file(
+            channel=ctx.channel,
+            title=f"Failed to find server",
+            embed_colour=ERROR_COLOUR
+        )
 
 
 async def bulk_allocate_role(ctx: commands.Context, manager: Manager) -> None:

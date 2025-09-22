@@ -593,6 +593,12 @@ async def servers(ctx: commands.Context) -> None:
 
 
 @bot.command(hidden=True)
+@admin_only("leave server")
+async def leave_server(ctx: commands.Context) -> None:
+    await command.leave_server(ctx, manager)
+
+
+@bot.command(hidden=True)
 @admin_only("allocate roles to user(s)")
 async def bulk_allocate_role(ctx: commands.Context) -> None:
     await command.bulk_allocate_role(ctx, manager)
