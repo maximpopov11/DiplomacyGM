@@ -1154,8 +1154,9 @@ async def province_info(ctx: commands.Context, manager: Manager) -> None:
             message="Usage: .province_info <province>",
         )
         return
-    province, coast = board.get_province_and_coast(province_name)
-    if province is None:
+    try:
+        province, coast = board.get_province_and_coast(province_name)
+    except:
         log_command(logger, ctx, message=f"Province `{province_name}` not found")
         await send_message_and_file(
             channel=ctx.channel, title=f"Could not find province {province_name}"

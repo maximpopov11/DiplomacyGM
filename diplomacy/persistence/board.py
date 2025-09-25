@@ -45,9 +45,17 @@ class Board:
                 self.name_to_coast[coast.name.lower()] = coast
 
     def get_player(self, name: str) -> Player:
+        if name.lower() == "none":
+            return None
+        if name.lower() not in self.name_to_player:
+            raise ValueError(f"Player {name} not found")
         return self.name_to_player.get(name.lower())
 
     def get_cleaned_player(self, name: str) -> Player:
+        if name.lower() == "none":
+            return None
+        if name.lower not in self.cleaned_name_to_player:
+            raise ValueError(f"Player {name} not found")
         return self.cleaned_name_to_player.get(sanitize_name(name.lower()))
 
 
