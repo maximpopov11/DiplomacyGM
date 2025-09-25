@@ -36,7 +36,7 @@ class Manager:
             return f"Game {gametype} does not exist."
 
         logger.info(f"Creating new game in server {server_id}")
-        self._boards[server_id] = get_parser(gametype).parse()
+        self._boards[server_id] = get_parser(gametype + ".json").parse()
         self._boards[server_id].board_id = server_id
         self._database.save_board(server_id, self._boards[server_id])
 

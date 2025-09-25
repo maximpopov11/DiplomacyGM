@@ -30,9 +30,9 @@ logger = logging.getLogger(__name__)
 
 class Parser:
     def __init__(self, data: str):
-        self.datafile = data + ".json"
+        self.datafile = data
 
-        with open(f"config/{data}.json", "r") as f:
+        with open(f"config/{data}", "r") as f:
             self.data = json.load(f)
 
         svg_root = etree.parse(self.data["file"])
