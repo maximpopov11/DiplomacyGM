@@ -53,6 +53,9 @@
         "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
     },
 	"victory_conditions": "vscc",
+	"abbreviations": {
+		"nec": "North Equatorial Current"
+	},
     "overrides": {
         "provinces": {
             "Panama": {

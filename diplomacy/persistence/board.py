@@ -70,6 +70,8 @@ class Board:
         # People input apostrophes that don't match what the province names are
         name = re.sub(r"[‘’`´′‛]", "'", name)
         name = name.lower()
+        if "abbreviations" in self.data and name in self.data["abbreviations"]:
+            name = self.data["abbreviations"][name].lower()
         coast = self.name_to_coast.get(name)
         if coast:
             return coast.province, coast

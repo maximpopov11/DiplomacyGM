@@ -50,6 +50,25 @@
     ],
 	"victory_conditions": "classic",
 	"victory_count": 18,
+	"abbreviations": {
+		"bot": "Gulf of Bothnia",
+		"ems": "Eastern Mediterranean Sea",
+		"gob": "Gulf of Bothnia",
+		"gol": "Gulf of Lyon",
+		"liv": "Livonia",
+		"lvp": "Liverpool",
+		"lyo": "Gulf of Lyon",
+		"mao": "Mid-Atlantic Ocean",
+		"naf": "North Africa",
+		"nao": "North Atlantic Ocean",
+		"nor": "Norway",
+		"nth": "North Sea",
+		"nwg": "Norwegian Sea",
+		"nwy": "Norway",
+		"tyr": "Tyrolia",
+		"tys": "Tyrrhenian Sea",
+		"wms": "Western Mediterranean Sea"
+	},
     "overrides": {
         "provinces": {
             "Spain": {
