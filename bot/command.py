@@ -1066,9 +1066,9 @@ async def edit(ctx: commands.Context, manager: Manager) -> None:
 async def create_game(ctx: commands.Context, manager: Manager) -> None:
     gametype = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
     if gametype == "":
-        gametype = "impdip.json"
+        gametype = "impdip"
     else:
-        gametype = gametype.removeprefix(" ") + ".json"
+        gametype = gametype.removeprefix(" ")
 
     message = manager.create_game(ctx.guild.id, gametype)
     log_command(logger, ctx, message=message)

@@ -1,5 +1,6 @@
 import logging
 import time
+import os
 
 from diplomacy.adjudicator.adjudicator import make_adjudicator
 from diplomacy.adjudicator.mapper import Mapper
@@ -28,9 +29,11 @@ class Manager:
     def list_servers(self) -> set[int]:
         return set(self._boards.keys())
 
-    def create_game(self, server_id: int, gametype: str = "impdip.json") -> str:
+    def create_game(self, server_id: int, gametype: str = "impdip") -> str:
         if self._boards.get(server_id):
-            raise RuntimeError("A game already exists in this server.")
+            return "A game already exists in this server."
+        if not os.path.isfile(f"config/{gametype}.json"):
+            return f"Game {gametype} does not exist."
 
         logger.info(f"Creating new game in server {server_id}")
         self._boards[server_id] = get_parser(gametype).parse()
