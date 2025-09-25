@@ -86,9 +86,14 @@ class Parser:
         if not self.autodetect_players:
             for name, data in self.data["players"].items():
                 color = data["color"]
-                vscc = data["vscc"]
-                iscc = data["iscc"]
-                player = Player(name, color, vscc, iscc, set(), set())
+                win_type = self.data["victory_conditions"]
+                if win_type == "classic":
+                    sc_goal = self.data["victory_count"]
+                    starting_scs = data["starting_scs"]
+                else:
+                    sc_goal = data["vscc"]
+                    starting_scs = data["iscc"]
+                player = Player(name, color, win_type, sc_goal, starting_scs, set(), set())
                 self.players.add(player)
                 if isinstance(color, dict):
                     color = color["standard"]

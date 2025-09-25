@@ -50,6 +50,7 @@
 
         "fow": true
     },
+	"victory_conditions": "vscc",
     "overrides": {
         "high provinces": {
             "NAO": {

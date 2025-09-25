@@ -45,6 +45,11 @@
         "loc_y_offset": 7.033,
         "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
     },
+    "adju flags": [
+        "no coring"
+    ],
+	"victory_conditions": "classic",
+	"victory_count": 18,
     "overrides": {
         "provinces": {
             "Spain": {
@@ -84,38 +89,31 @@
     "players": {
         "Austria": {
             "color": "cd5c5c",
-            "vscc": 18,
-            "iscc": 0
+			"starting_scs": 3
         },
         "England": {
             "color": "7b68ee",
-            "vscc": 18,
-            "iscc": 0
+			"starting_scs": 3
         },
         "France": {
             "color": "87ceeb",
-            "vscc": 18,
-            "iscc": 0
+			"starting_scs": 3
         },
         "Germany": {
             "color": "696969",
-            "vscc": 18,
-            "iscc": 0
+			"starting_scs": 3
         },
         "Italy": {
             "color": "6b8e23",
-            "vscc": 18,
-            "iscc": 0
+			"starting_scs": 3
         },
         "Russia": {
             "color": "d3d3d3",
-            "vscc": 18,
-            "iscc": 0
+			"starting_scs": 4
         },
         "Turkey": {
             "color": "daa520",
-            "vscc": 18,
-            "iscc": 0
+			"starting_scs": 3
         }
     }
 }

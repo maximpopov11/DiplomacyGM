@@ -383,7 +383,7 @@ class Mapper:
 
         sc_index = self.board.data["svg config"]["power_sc_index"] if "power_sc_index" in self.board.data["svg config"] else 5
 
-        if not "no coring" in self.board.data.get("adju flags", []):
+        if not "vassal system" in self.board.data.get("adju flags", []):
             for power_element in all_power_banners_element:
                 for i, player in enumerate(players):
                     # match the correct svg element based on the color of the rectangle

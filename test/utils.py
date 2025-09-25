@@ -313,6 +313,7 @@ class BoardBuilder():
         player = Player(
             name=name,
             color="",
+            win_type =  "classic"
             vscc = 0,
             iscc = 0,
             centers = set(),

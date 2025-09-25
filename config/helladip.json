@@ -39,6 +39,7 @@
         "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
 
     },
+	"victory_conditions": "vscc",
     "overrides": {
         "provinces": {
             "CONT": {

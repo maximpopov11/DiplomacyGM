@@ -42,6 +42,7 @@
         "loc_y_offset": 7.033,
         "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
     },
+	"victory_conditions": "vscc",
     "overrides": {
         "high provinces": {
             "NAO": {

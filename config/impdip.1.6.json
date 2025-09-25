@@ -10,7 +10,6 @@
         "province_names": "layer1",
         "supply_center_icons": "layer3",
         "season": "layer4",
-        "power_banners": "layer13",
         "starting_units": "layer10",
         "unit_output": "layer16",
         "arrow_output": "layer17",
@@ -19,6 +18,9 @@
 		"background": "g407997",
         "sidebar": "layer7",
 
+        "power_banners": "layer13",
+		"power_sc_index": 5,
+		
         "army": "g652",
         "retreat_army": "g2176",
         "fleet": "layer15",
@@ -52,6 +54,7 @@
         "loc_y_offset": 7.033,
         "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
     },
+	"victory_conditions": "vscc",
     "overrides": {
         "provinces": {
             "Panama": {

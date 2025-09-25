@@ -29,6 +29,7 @@ class Player:
         self,
         name: str,
         color: str,
+        win_type: str,
         vscc: int,
         iscc: int,
         centers: set[province.Province],
@@ -46,7 +47,8 @@ class Player:
             self.default_color = color
             self.render_color = color
 
-        # victory supply center count (we assume VSCC scoring)
+        self.win_type = win_type
+        # victory supply center count
         self.vscc: int = vscc
         # initial supply center count
         self.iscc: int = iscc
@@ -94,6 +96,8 @@ class Player:
         return out
 
     def score(self):
+        if self.win_type == "classic":
+            return (len(self.centers) / self.vscc)
         if len(self.centers) > self.iscc:
             return (len(self.centers) - self.iscc) / (self.vscc - self.iscc)
         else:
