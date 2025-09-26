@@ -24,16 +24,6 @@ from discord.ext import commands
 from bot import command
 from diplomacy.persistence.manager import Manager
 
-intents = discord.Intents.default()
-intents.message_content = True
-intents.members = True
-bot = commands.Bot(
-    command_prefix=os.getenv("command_prefix", default="."), intents=intents
-)
-logger = logging.getLogger(__name__)
-
-manager = Manager()
-
 # List of funny, sarcastic messages
 MESSAGES = [
     "Oh joy, I'm back online. Can't wait for the next betrayal. Really, I'm thrilled. 👏",
@@ -52,139 +42,187 @@ MESSAGES = [
 ]
 
 
-@bot.event
-async def on_ready():
-    try:
-        await bot.tree.sync()
-    except discord.app_commands.CommandAlreadyRegistered:
-        pass
+class DiploGM(commands.Bot):
+    def __init__(self, command_prefix, intents):
+        super().__init__(command_prefix=command_prefix, intents=intents)
 
-    guild = bot.get_guild(
-        IMPDIP_SERVER_ID
-    )  # Ensure bot is connected to the correct server
-    if guild:
-        channel = bot.get_channel(
-            IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID
-        )  # Get the specific channel
-        if channel:
-            message = random.choice(MESSAGES)  # Select a random message
-            await channel.send(message)
+        self.before_invoke(self.before_any_command)
+        self.after_invoke(self.after_any_command)
+
+        self.manager = Manager()
+
+    async def setup_hook(self) -> None:
+        await self.load_all_cogs()
+
+    async def load_all_cogs(self):
+        COG_DIR = "./bot/cogs/"
+
+        for filename in os.listdir(COG_DIR):
+            if not filename.endswith(".py") or filename.startswith("_"):
+                continue
+
+            cog_name = f"bot.cogs.{filename[:-3]}"
+            try:
+                await self.load_extension(cog_name)
+                logger.info(f"Loaded Cog: {cog_name}")
+            except Exception as e:
+                logger.info(f"Failed to load Cog {cog_name}: {e}")
+
+    async def on_ready(self):
+        try:
+            await bot.tree.sync()
+        except discord.app_commands.CommandAlreadyRegistered:
+            pass
+
+        logger.info(f"Logged in as {self.user}")
+        guild = bot.get_guild(
+            IMPDIP_SERVER_ID
+        )  # Ensure bot is connected to the correct server
+        if guild:
+            channel = bot.get_channel(
+                IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID
+            )  # Get the specific channel
+            if channel:
+                message = random.choice(MESSAGES)  # Select a random message
+                await channel.send(message)
+            else:
+                print(
+                    f"Channel with ID {IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID} not found."
+                )
         else:
-            print(f"Channel with ID {IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID} not found.")
-    else:
-        print(f"Guild with ID {IMPDIP_SERVER_ID} not found.")
+            print(f"Guild with ID {IMPDIP_SERVER_ID} not found.")
 
-    # Set bot's presence (optional)
-    await bot.change_presence(activity=discord.Game(name="Impdip 🔪"))
+        # Set bot's presence (optional)
+        await bot.change_presence(activity=discord.Game(name="Impdip 🔪"))
 
-
-@bot.before_invoke
-async def before_any_command(ctx):
-    if isinstance(ctx.channel, discord.DMChannel):
-        return
-
-    logger.debug(
-        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}'"
-    )
-
-    # People input apostrophes that don't match what the province names are, we can catch all of that here
-    # ctx.message.content = re.sub(r"[‘’`´′‛]", "'", ctx.message.content)
-
-    # mark the message as seen
-    await ctx.message.add_reaction("👍")
-
-
-@bot.after_invoke
-async def after_any_command(ctx: discord.ext.commands.Context):
-    time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
-
-    if time_spent.total_seconds() < 10:
-        level = logging.DEBUG
-    else:
-        level = logging.WARN
-
-    logger.log(
-        level,
-        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
-        f"complete in {time_spent}s",
-    )
-
-
-@bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, commands.CommandNotFound):
-        # we shouldn't do anything if the user says something like "..."
-        return
-
-    if isinstance(
-        error,
-        (
-            commands.CommandInvokeError,
-            commands.ConversionError,
-            commands.HybridCommandError,
-        ),
-    ):
-        original = error.original
-    else:
-        original = error
-
-    try:
-        # mark the message as failed
-        await ctx.message.add_reaction("❌")
-        await ctx.message.remove_reaction("👍", bot.user)
-    except Exception:
-        # if reactions fail, ignore and continue handling existing exception
+    async def close(self):
         pass
 
-    if isinstance(original, CommandPermissionError):
-        await send_message_and_file(
-            channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR
-        )
-        return
+    async def before_any_command(self, ctx: commands.Context):
+        if isinstance(ctx.channel, discord.DMChannel):
+            return
 
-    time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
-    logger.log(
-        logging.ERROR,
-        f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
-        f"errored in {time_spent}s\n"
-        f"{''.join(traceback.format_exception(type(error), error, error.__traceback__))}",
-    )
+        guild = ctx.guild
+        if not guild:
+            return
 
-    if isinstance(original, Forbidden):
-        await send_message_and_file(
-            channel=ctx.channel,
-            message=f"I do not have the correct permissions to do this.\n"
-            f"I might not be setup correctly.\n"
-            f"If this is unexpected please contact a GM or reach out in: "
-            f"https://discord.com/channels/1201167737163104376/1286027175048253573"
-            f" or "
-            f"https://discord.com/channels/1201167737163104376/1280587781638459528",
-            embed_colour=ERROR_COLOUR,
+        logger.debug(
+            f"[{guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}'"
         )
-    else:
-        time_spent = datetime.datetime.now(datetime.UTC) - ctx.message.created_at
+
+        # People input apostrophes that don't match what the province names are, we can catch all of that here
+        # ctx.message.content = re.sub(r"[‘’`´′‛]", "'", ctx.message.content)
+
+        # mark the message as seen
+        await ctx.message.add_reaction("👍")
+
+    async def after_any_command(self, ctx: commands.Context):
+        time_spent = (
+            datetime.datetime.now(datetime.timezone.utc) - ctx.message.created_at
+        )
+
+        if time_spent.total_seconds() < 10:
+            level = logging.DEBUG
+        else:
+            level = logging.WARN
+
+        logger.log(
+            level,
+            f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
+            f"complete in {time_spent}s",
+        )
+
+    async def on_command_error(self, ctx, error):
+        if isinstance(error, commands.CommandNotFound):
+            # we shouldn't do anything if the user says something like "..."
+            return
+
+        if isinstance(
+            error,
+            (
+                commands.CommandInvokeError,
+                commands.ConversionError,
+                commands.HybridCommandError,
+            ),
+        ):
+            original = error.original
+        else:
+            original = error
 
         try:
             # mark the message as failed
             await ctx.message.add_reaction("❌")
             await ctx.message.remove_reaction("👍", bot.user)
         except Exception:
-            # if reactions fail continue handling error
+            # if reactions fail, ignore and continue handling existing exception
             pass
 
         if isinstance(original, CommandPermissionError):
             await send_message_and_file(
                 channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR
             )
-        else:
-            logger.error(
-                f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
-                f"errored in {time_spent}s\n"
-            )
-            logger.error(original)
+            return
+
+        time_spent = (
+            datetime.datetime.now(datetime.timezone.utc) - ctx.message.created_at
+        )
+        logger.log(
+            logging.ERROR,
+            f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
+            f"errored in {time_spent}s\n"
+            f"{''.join(traceback.format_exception(type(error), error, error.__traceback__))}",
+        )
+
+        if isinstance(original, Forbidden):
             await send_message_and_file(
-                channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR
+                channel=ctx.channel,
+                message=f"I do not have the correct permissions to do this.\n"
+                f"I might not be setup correctly.\n"
+                f"If this is unexpected please contact a GM or reach out in: "
+                f"https://discord.com/channels/1201167737163104376/1286027175048253573"
+                f" or "
+                f"https://discord.com/channels/1201167737163104376/1280587781638459528",
+                embed_colour=ERROR_COLOUR,
             )
+        else:
+            time_spent = (
+                datetime.datetime.now(datetime.timezone.utc) - ctx.message.created_at
+            )
+
+            try:
+                # mark the message as failed
+                await ctx.message.add_reaction("❌")
+                await ctx.message.remove_reaction("👍", bot.user)
+            except Exception:
+                # if reactions fail continue handling error
+                pass
+
+            if isinstance(original, CommandPermissionError):
+                await send_message_and_file(
+                    channel=ctx.channel,
+                    message=str(original),
+                    embed_colour=ERROR_COLOUR,
+                )
+            else:
+                logger.error(
+                    f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
+                    f"errored in {time_spent}s\n"
+                )
+                logger.error(original)
+                await send_message_and_file(
+                    channel=ctx.channel,
+                    message=str(original),
+                    embed_colour=ERROR_COLOUR,
+                )
+
+
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
+bot = DiploGM(command_prefix=os.getenv("command_prefix", default="."), intents=intents)
+logger = logging.getLogger(__name__)
+
+manager = Manager()
 
 
 class SpecView(discord.ui.View):
@@ -537,43 +575,6 @@ async def membership(ctx: commands.Context, user: discord.User) -> None:
     await command.membership(ctx, manager, user)
 
 
-@bot.command(help="Checks bot listens and responds.")
-async def ping(ctx: commands.Context) -> None:
-    await command.ping(ctx, manager)
-
-
-@bot.command(hidden=True)
-async def pelican(ctx: commands.Context) -> None:
-    await command.pelican(ctx, manager)
-
-
-@bot.command(hidden=True)
-async def bumble(ctx: commands.Context) -> None:
-    await command.bumble(ctx, manager)
-
-
-@bot.command(hidden=True)
-async def fish(ctx: commands.Context) -> None:
-    await ctx.message.add_reaction("🐟")
-    await command.fish(ctx, manager)
-
-
-@bot.command(hidden=True)
-async def phish(ctx: commands.Context) -> None:
-    await ctx.message.add_reaction("🐟")
-    await command.phish(ctx, manager)
-
-
-@bot.command(hidden=True)
-async def cheat(ctx: commands.Context) -> None:
-    await command.cheat(ctx, manager)
-
-
-@bot.command(hidden=True)
-async def advice(ctx: commands.Context) -> None:
-    await command.advice(ctx, manager)
-
-
 @bot.command(hidden=True)
 @gm_only("botsay")
 async def botsay(ctx: commands.Context) -> None:
@@ -602,11 +603,6 @@ async def leave_server(ctx: commands.Context) -> None:
 @admin_only("allocate roles to user(s)")
 async def bulk_allocate_role(ctx: commands.Context) -> None:
     await command.bulk_allocate_role(ctx, manager)
-
-
-@bot.command(brief="Shows global fish leaderboard")
-async def global_leaderboard(ctx: commands.Context) -> None:
-    await command.global_leaderboard(ctx, manager)
 
 
 @bot.command(
@@ -923,11 +919,3 @@ async def backlog_specs(ctx: commands.Context) -> None:
 @admin_only("Execute arbitrary code")
 async def exec_py(ctx: commands.Context) -> None:
     await command.exec_py(ctx, manager)
-
-
-def run():
-    token = os.getenv("DISCORD_TOKEN")
-    if token:
-        bot.run(token)
-    else:
-        raise RuntimeError("The DISCORD_TOKEN environment variable is not set")

@@ -1,4 +1,5 @@
 import logging
+from threading import Lock
 import time
 import os
 
@@ -14,7 +15,22 @@ from diplomacy.persistence.spec_request import SpecRequest
 logger = logging.getLogger(__name__)
 
 
-class Manager:
+class ManagerMeta(type):
+    """Metaclass to provide Singleton creational logic to Manager"""
+
+    _instances = {}
+    _lock = Lock()
+
+    def __call__(cls):
+        with cls._lock:
+            if cls not in cls._instances:
+                instance = super().__call__()
+                cls._instances[cls] = instance
+
+        return cls._instances[cls]
+
+
+class Manager(metaclass=ManagerMeta):
     """Manager acts as an intermediary between Bot (the Discord API), Board (the board state), the database."""
 
     def __init__(self):
@@ -84,7 +100,7 @@ class Manager:
         server_id: int,
         player_restriction: Player | None,
         color_mode: str | None = None,
-        turn: tuple[str, phase] | None = None
+        turn: tuple[str, phase] | None = None,
     ) -> tuple[str, str]:
         start = time.time()
 
@@ -94,19 +110,27 @@ class Manager:
             season = board.phase
         else:
             board = self._database.get_board(
-                cur_board.board_id, turn[1], int(turn[0]) - cur_board.year_offset, cur_board.fish, cur_board.name, cur_board.datafile
+                cur_board.board_id,
+                turn[1],
+                int(turn[0]) - cur_board.year_offset,
+                cur_board.fish,
+                cur_board.name,
+                cur_board.datafile,
             )
             if board is None:
                 raise RuntimeError(
                     f"There is no {turn[1].name} {turn[0]} board for this server"
                 )
             season = turn[1]
-            if (board.year < cur_board.year
-                or board.year == cur_board.year and season.index < cur_board.phase.index):
+            if (
+                board.year < cur_board.year
+                or board.year == cur_board.year
+                and season.index < cur_board.phase.index
+            ):
                 player_restriction = None
-        svg, file_name = Mapper(
-            board, color_mode=color_mode
-        ).draw_moves_map(season, player_restriction=player_restriction)
+        svg, file_name = Mapper(board, color_mode=color_mode).draw_moves_map(
+            season, player_restriction=player_restriction
+        )
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_moves_map.{server_id}.{elapsed}s")
@@ -150,26 +174,29 @@ class Manager:
         self,
         server_id: int,
         color_mode: str | None = None,
-        turn: tuple[str, phase] | None = None
+        turn: tuple[str, phase] | None = None,
     ) -> tuple[str, str]:
         start = time.time()
-        
+
         cur_board = self._boards[server_id]
         if turn is None:
             board = cur_board
             season = board.phase
         else:
             board = self._database.get_board(
-                cur_board.board_id, turn[1], int(turn[0]) - 1642, cur_board.fish, cur_board.name, cur_board.datafile
+                cur_board.board_id,
+                turn[1],
+                int(turn[0]) - 1642,
+                cur_board.fish,
+                cur_board.name,
+                cur_board.datafile,
             )
             if board is None:
                 raise RuntimeError(
                     f"There is no {turn[1].name} {turn[0]} board for this server"
                 )
             season = turn[1]
-        svg, file_name = Mapper(
-            board, color_mode=color_mode
-        ).draw_current_map()
+        svg, file_name = Mapper(board, color_mode=color_mode).draw_current_map()
 
         elapsed = time.time() - start
         logger.info(f"manager.draw_current_map.{server_id}.{elapsed}s")
@@ -251,7 +278,13 @@ class Manager:
             last_phase_year -= 1
 
         old_board = self._database.get_board(
-            board.board_id, last_phase, last_phase_year, board.fish, board.name, board.datafile, clear_status=True
+            board.board_id,
+            last_phase,
+            last_phase_year,
+            board.fish,
+            board.name,
+            board.datafile,
+            clear_status=True,
         )
         if old_board is None:
             raise ValueError(
@@ -274,7 +307,12 @@ class Manager:
         if board.phase.name == "Spring Moves":
             last_phase_year -= 1
         old_board = self._database.get_board(
-            board.board_id, last_phase, last_phase_year, board.fish, board.name, board.datafile
+            board.board_id,
+            last_phase,
+            last_phase_year,
+            board.fish,
+            board.name,
+            board.datafile,
         )
         return old_board
 
