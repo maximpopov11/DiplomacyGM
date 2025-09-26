@@ -1207,6 +1207,7 @@ async def province_info(ctx: commands.Context, manager: Manager) -> None:
 
 
 async def player_info(ctx: commands.Context, manager: Manager) -> None:
+    10 / 0
     guild = ctx.guild
     if not guild:
         return
