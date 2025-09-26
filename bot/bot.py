@@ -575,43 +575,6 @@ async def membership(ctx: commands.Context, user: discord.User) -> None:
     await command.membership(ctx, manager, user)
 
 
-@bot.command(help="Checks bot listens and responds.")
-async def ping(ctx: commands.Context) -> None:
-    await command.ping(ctx, manager)
-
-
-@bot.command(hidden=True)
-async def pelican(ctx: commands.Context) -> None:
-    await command.pelican(ctx, manager)
-
-
-@bot.command(hidden=True)
-async def bumble(ctx: commands.Context) -> None:
-    await command.bumble(ctx, manager)
-
-
-@bot.command(hidden=True)
-async def fish(ctx: commands.Context) -> None:
-    await ctx.message.add_reaction("🐟")
-    await command.fish(ctx, manager)
-
-
-@bot.command(hidden=True)
-async def phish(ctx: commands.Context) -> None:
-    await ctx.message.add_reaction("🐟")
-    await command.phish(ctx, manager)
-
-
-@bot.command(hidden=True)
-async def cheat(ctx: commands.Context) -> None:
-    await command.cheat(ctx, manager)
-
-
-@bot.command(hidden=True)
-async def advice(ctx: commands.Context) -> None:
-    await command.advice(ctx, manager)
-
-
 @bot.command(hidden=True)
 @gm_only("botsay")
 async def botsay(ctx: commands.Context) -> None:
@@ -640,11 +603,6 @@ async def leave_server(ctx: commands.Context) -> None:
 @admin_only("allocate roles to user(s)")
 async def bulk_allocate_role(ctx: commands.Context) -> None:
     await command.bulk_allocate_role(ctx, manager)
-
-
-@bot.command(brief="Shows global fish leaderboard")
-async def global_leaderboard(ctx: commands.Context) -> None:
-    await command.global_leaderboard(ctx, manager)
 
 
 @bot.command(
