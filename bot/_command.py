@@ -50,6 +50,8 @@ from diplomacy.persistence.player import Player
 
 import re
 
+from main import bot
+
 logger = logging.getLogger(__name__)
 
 ping_text_choices = [
@@ -58,6 +60,7 @@ ping_text_choices = [
     "is being mind controlled by",
 ]
 color_options = {"standard", "dark", "pink", "blue", "kingdoms", "empires"}
+
 
 async def botsay(ctx: commands.Context, _: Manager) -> None:
     # noinspection PyTypeChecker

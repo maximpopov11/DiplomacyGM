@@ -1,13 +1,19 @@
+import logging
 import random
 import time
+from diplomacy.persistence.manager import Manager
 from scipy.integrate import odeint
 
 from discord.ext import commands
 
-from bot.config import is_bumble, temporary_bumbles
-from bot.utils import fish_pop_model, send_message_and_file
+from bot import perms
+from bot.config import ERROR_COLOUR, is_bumble, temporary_bumbles
+from bot.utils import fish_pop_model, log_command, send_message_and_file
 
 from diplomacy.persistence.db.database import get_connection
+
+logger = logging.getLogger(__name__)
+manager = Manager()
 
 ping_text_choices = [
     "proudly states",
@@ -28,7 +34,38 @@ except FileNotFoundError:
 class PartyCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.manager = bot.manager
+
+    @commands.command(hidden=True)
+    @perms.gm_only("botsay")
+    async def botsay(self, ctx: commands.Context) -> None:
+        # noinspection PyTypeChecker
+        if len(ctx.message.channel_mentions) == 0:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title="Error",
+                message="No Channel Given",
+                embed_colour=ERROR_COLOUR,
+            )
+            return
+        channel = ctx.message.channel_mentions[0]
+        content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+        content = content.replace(channel.mention, "").strip()
+        if len(content) == 0:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title="Error",
+                message="No Message Given",
+                embed_colour=ERROR_COLOUR,
+            )
+            return
+
+        message = await send_message_and_file(channel=channel, message=content)
+        log_command(logger, ctx, f"Sent Message into #{channel.name}")
+        await send_message_and_file(
+            channel=ctx.channel,
+            title=f"Sent Message",
+            message=message.jump_url,
+        )
 
     @commands.command(help="Checks bot listens and responds.")
     async def ping(self, ctx: commands.Context):
@@ -62,7 +99,7 @@ class PartyCog(commands.Cog):
         if word_of_bumble == "elbmub":
             word_of_bumble = "elbmub nesohc eht era uoY"
 
-        board = self.manager.get_board(ctx.guild.id)
+        board = manager.get_board(ctx.guild.id)
         board.fish -= 1
         await send_message_and_file(channel=ctx.channel, title=word_of_bumble)
 
@@ -95,7 +132,7 @@ class PartyCog(commands.Cog):
     async def cheat(self, ctx: commands.Context) -> None:
         message = "Cheating is disabled for this user."
         author = ctx.message.author.name
-        board = self.manager.get_board(ctx.guild.id)
+        board = manager.get_board(ctx.guild.id)
         if is_bumble(author):
             sample = random.choice(
                 [
@@ -154,7 +191,7 @@ class PartyCog(commands.Cog):
     async def fish(self, ctx: commands.Context) -> None:
         await ctx.message.add_reaction("🐟")
 
-        board = self.manager.get_board(ctx.guild.id)
+        board = manager.get_board(ctx.guild.id)
         fish_num = random.randrange(0, 20)
 
         # overfishing model
@@ -256,11 +293,11 @@ class PartyCog(commands.Cog):
     @commands.command(brief="Show global fishing leaderboard")
     async def global_leaderboard(self, ctx: commands.Context) -> None:
         sorted_boards = sorted(
-            self.manager._boards.items(), key=lambda board: board[1].fish, reverse=True
+            manager._boards.items(), key=lambda board: board[1].fish, reverse=True
         )
         raw_boards = tuple(map(lambda b: b[1], sorted_boards))
         try:
-            this_board = self.manager.get_board(ctx.guild.id)
+            this_board = manager.get_board(ctx.guild.id)
         except Exception:
             this_board = None
         sorted_boards = sorted_boards[:9]
