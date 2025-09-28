@@ -12,16 +12,14 @@ from discord.ext import commands
 from discord.ext.commands import Context
 
 from bot import config
-
 from diplomacy.adjudicator.utils import svg_to_png, png_to_jpg
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType
-from logging import getLogger
 
-logger = getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 whitespace_dict = {
     "_",
@@ -114,20 +112,28 @@ def get_player_by_channel(
     if isinstance(channel, Thread):
         channel = channel.parent
 
+    board = manager.get_board(server_id)
     name = channel.name
     if (not ignore_catagory) and not config.is_player_category(channel.category.name):
         return None
 
     # TODO hacky, allow for renaming to void for chaos
-    if manager.get_board(server_id).is_chaos() and name.endswith("-void"):
+    if board.is_chaos() and name.endswith("-void"):
         name = name[:-5]
-    else:
-        if not name.endswith(config.player_channel_suffix):
-            return
+        return board.get_cleaned_player(name)
 
-        name = name[: -(len(config.player_channel_suffix))]
+    if not name.endswith(config.player_channel_suffix):
+        return None
 
-    return manager.get_board(server_id).get_cleaned_player(name)
+    name = name[: -(len(config.player_channel_suffix))]
+
+    for p in board.players:
+        if p.name.lower() == name:
+            return p
+        elif p.name.lower() == simple_player_name(name):
+            return p
+
+    return None
 
 
 # FIXME this is done pretty poorly

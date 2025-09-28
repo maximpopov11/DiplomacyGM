@@ -1,14 +1,31 @@
 import logging
 import re
 
-from discord import CategoryChannel, HTTPException, Member, PermissionOverwrite, Role, Thread, User
+from discord import (
+    CategoryChannel,
+    HTTPException,
+    Member,
+    PermissionOverwrite,
+    Role,
+    Thread,
+    User,
+)
 from discord.ext import commands
 from discord.utils import find as discord_find
 
 from bot import config
 from bot.parse_edit_state import parse_edit_state
 from bot import perms
-from bot.utils import get_orders, get_orders_log, get_player_by_channel, get_player_by_name, is_gm, log_command, send_message_and_file
+from bot.utils import (
+    get_orders,
+    get_orders_log,
+    get_player_by_channel,
+    get_player_by_name,
+    get_role_by_player,
+    is_gm,
+    log_command,
+    send_message_and_file,
+)
 from diplomacy.persistence import phase
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.order import Disband, Build
@@ -76,10 +93,9 @@ class GameManagementCog(commands.Cog):
         log_command(logger, ctx, message=f"Archived {len(categories)} Channels")
         await send_message_and_file(channel=ctx.channel, message=message)
 
-
     @commands.command(
         brief="pings players who don't have the expected number of orders.",
-        description="""Pings all players in their orders channl that satisfy the following constraints:
+        description="""Pngs all players in their orders channl that satisfy the following constraints:
         1. They have too many build orders, or too little or too many disband orders. As of now, waiving builds doesn't lead to a ping.
         2. They are missing move orders or retreat orders.
         You may also specify a timestamp to send a deadline to the players.
@@ -88,8 +104,10 @@ class GameManagementCog(commands.Cog):
     )
     @perms.gm_only("ping players")
     async def ping_players(self, ctx: commands.Context) -> None:
-        player_categories: list[CategoryChannel] = []
+        guild = ctx.guild
+        board = manager.get_board(guild.id)
 
+        # extract deadline argument
         timestamp = re.match(
             r"<t:(\d+):[a-zA-Z]>",
             ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with).strip(),
@@ -97,16 +115,25 @@ class GameManagementCog(commands.Cog):
         if timestamp:
             timestamp = f"<t:{timestamp.group(1)}:R>"
 
-        guild = ctx.guild
-        guild_id = guild.id
-        board = manager.get_board(guild_id)
+        # get abstract player information
+        player_roles: set[Role] = set()
+        for r in guild.roles:
+            if config.is_player_role(r.name):
+                player_roles.add(r)
 
-        for category in guild.categories:
-            # TODO hacky
-            if config.is_player_category(category.name) or (
-                board.is_chaos() and "Order" in category.name
-            ):
-                player_categories.append(category)
+        if len(player_roles) == 0:
+            log_command(logger, ctx, message=f"No player role found")
+            await send_message_and_file(
+                channel=ctx.channel,
+                message="No player category found",
+                embed_colour=config.ERROR_COLOUR,
+            )
+            return
+
+        player_categories: list[CategoryChannel] = []
+        for c in guild.categories:
+            if config.is_player_category(c.name):
+                player_categories.append(c)
 
         if len(player_categories) == 0:
             log_command(logger, ctx, message=f"No player category found")
@@ -117,60 +144,23 @@ class GameManagementCog(commands.Cog):
             )
             return
 
-        # find player roles
-        player_roles: set[Role] = set()
-        if not board.is_chaos():
-            name_to_player: dict[str, Player] = dict()
-            player_to_role: dict[Player | None, Role] = dict()
-            for player in board.players:
-                name_to_player[player.name.lower()] = player
-
-            player_roles: set[Role] = set()
-
-            for role in guild.roles:
-                if config.is_player_role(role.name):
-                    player_roles.add(role)
-
-                player = name_to_player.get(role.name.lower())
-                if player:
-                    player_to_role[player] = role
-
-            if len(player_roles) == 0:
-                log_command(logger, ctx, message=f"No player role found")
-                await send_message_and_file(
-                    channel=ctx.channel,
-                    message="No player role found",
-                    embed_colour=config.ERROR_COLOUR,
-                )
-                return
-
-        response = None
+        # ping required players
         pinged_players = 0
         failed_players = []
+        response = ""
+        for category in player_categories:
+            for channel in category.text_channels:
+                player = get_player_by_channel(channel, manager, guild.id)
+                if player is None:
+                    await ctx.send(f"No Player for {channel.name}")
+                    continue
 
-        for player_category in player_categories:
-            for channel in player_category.channels:
-                player = get_player_by_channel(
-                    channel, manager, guild.id, ignore_catagory=board.is_chaos()
-                )
-
-                if not player:
-                    await send_message_and_file(
-                        channel=ctx.channel, title=f"Couldn't find player for {channel}"
-                    )
+                role = get_role_by_player(player, guild.roles)
+                if role is None:
+                    await ctx.send(f"No Role for {player.name}")
                     continue
 
                 if not board.is_chaos():
-                    role = player_to_role.get(player)
-                    if not role:
-                        log_command(
-                            logger,
-                            ctx,
-                            message=f"Missing player role for player {player.name} in guild {guild_id}",
-                            level=logging.WARN,
-                        )
-                        continue
-
                     # Find users which have a player role to not ping spectators
                     users = set(
                         filter(
@@ -188,7 +178,9 @@ class GameManagementCog(commands.Cog):
 
                 if len(users) == 0:
                     failed_players.append(player)
-                    continue
+
+                    # HACK: ping role in case of no players
+                    users.add(role)
 
                 if phase.is_builds(board.phase):
                     count = len(player.centers) - len(player.units)
@@ -270,9 +262,10 @@ class GameManagementCog(commands.Cog):
         )
 
         if len(failed_players) > 0:
+            failed_players_str = "\n- ".join([player.name for player in failed_players])
             await send_message_and_file(
                 channel=ctx.channel,
-                title=f"Failed to find the following players: {','.join([player.name for player in failed_players])}",
+                title=f"Failed to find a player for the following:\n- {failed_players_str}",
             )
 
     @commands.command(
@@ -542,7 +535,9 @@ class GameManagementCog(commands.Cog):
         )
 
         # GET CHANNELS FOR POST / REDIRECTS
-        ticket_channel = ctx.bot.get_channel(config.IMPDIP_SERVER_SUBSTITUTE_TICKET_CHANNEL_ID)
+        ticket_channel = ctx.bot.get_channel(
+            config.IMPDIP_SERVER_SUBSTITUTE_TICKET_CHANNEL_ID
+        )
         if not ticket_channel:
             await send_message_and_file(
                 channel=ctx.channel,
