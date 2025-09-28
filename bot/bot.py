@@ -183,7 +183,18 @@ async def on_command_error(ctx, error):
             )
             logger.error(original)
             await send_message_and_file(
-                channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR
+                channel=ctx.channel,
+                title=f"ERROR: >.< How did we get here...",
+
+                message=f"Please report this to a bot dev in using a feedback channel: "
+                        f"https://discord.com/channels/1201167737163104376/1286027175048253573"
+                        f" or "
+                        f"https://discord.com/channels/1201167737163104376/1280587781638459528"
+                        f"\n"
+                        f"```python\n"
+                        + '\n'.join(traceback.format_tb(original.__traceback__, limit=4))
+                        + f"```",
+                embed_colour=ERROR_COLOUR
             )
 
 
