@@ -386,7 +386,7 @@ async def spec(interaction: discord.Interaction, power_role: discord.Role):
             )
 
             await interaction.response.send_message(
-                "You have already been approved as a spectator in this server.",
+                f"You have already been approved as a spectator for {prev_role.mention} in this server.",
                 ephemeral=True,
             )
         return
