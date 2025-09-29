@@ -192,7 +192,7 @@ async def on_command_error(ctx, error):
                         f"https://discord.com/channels/1201167737163104376/1280587781638459528"
                         f"\n"
                         f"```python\n"
-                        + '\n'.join(traceback.format_tb(original.__traceback__, limit=4))
+                        + '\n'.join(traceback.format_exception(original, limit=3))
                         + f"```",
                 embed_colour=ERROR_COLOUR
             )
