@@ -2227,7 +2227,7 @@ async def substitute(
         await in_member.remove_roles(*prev_roles, reason="Substitution")
         await in_member.add_roles(*new_roles)
     except HTTPException:
-        out += f"[ERROR] Failed to swap roles for outgoing player: {out_user.name}"
+        out += f"[ERROR] Failed to swap roles for incoming player: {in_user.name}"
 
     await send_message_and_file(channel=ctx.channel, title="Substitution results", message=out)
 
