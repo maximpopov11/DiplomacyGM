@@ -2138,11 +2138,11 @@ async def substitute(
     
 
     # if incoming is currently a player
-    if player_role in in_member.roles:
+    if player_role in in_member.roles and power_role not in in_member.roles:
         await send_message_and_file(
             channel=ctx.channel,
             title="Error",
-            message="Can't substitute in an existing player!",
+            message="Can't substitute in a current player for another power!",
             embed_colour=ERROR_COLOUR,
         )
         return
