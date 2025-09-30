@@ -54,7 +54,7 @@ class Board:
     def get_cleaned_player(self, name: str) -> Player:
         if name.lower() == "none":
             return None
-        if name.lower not in self.cleaned_name_to_player:
+        if name.lower() not in self.cleaned_name_to_player:
             raise ValueError(f"Player {name} not found")
         return self.cleaned_name_to_player.get(sanitize_name(name.lower()))
 

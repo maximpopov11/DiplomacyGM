@@ -93,6 +93,7 @@ class DiploGM(commands.Bot):
             message = random.choice(WELCOME_MESSAGES)
             await channel.send(message)
 
+
         # Set bot's presence (optional)
         await self.change_presence(activity=discord.Game(name="Impdip 🔪"))
 
@@ -207,12 +208,21 @@ class DiploGM(commands.Bot):
                 )
             else:
                 logger.error(
-                    f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
-                    f"errored in {time_spent}s\n"
-                )
+                f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
+                f"errored in {time_spent}s\n"
+            )
                 logger.error(original)
                 await send_message_and_file(
                     channel=ctx.channel,
-                    message=str(original),
-                    embed_colour=ERROR_COLOUR,
+                    title=f"ERROR: >.< How did we get here...",
+
+                    message=f"Please report this to a bot dev in using a feedback channel: "
+                            f"https://discord.com/channels/1201167737163104376/1286027175048253573"
+                            f" or "
+                            f"https://discord.com/channels/1201167737163104376/1280587781638459528"
+                            f"\n"
+                            f"```python\n"
+                            + '\n'.join(traceback.format_exception(original, limit=3))
+                            + f"```",
+                    embed_colour=ERROR_COLOUR
                 )

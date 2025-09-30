@@ -117,21 +117,22 @@ def get_player_by_channel(
     if (not ignore_catagory) and not config.is_player_category(channel.category.name):
         return None
 
-    # TODO hacky, allow for renaming to void for chaos
     if board.is_chaos() and name.endswith("-void"):
-        name = name[:-5]
+        name = name[: -5]
+    else:
+        if not name.endswith(config.player_channel_suffix):
+            return None
+        
+        name = name[: -(len(config.player_channel_suffix))]
+
+    try:
         return board.get_cleaned_player(name)
-
-    if not name.endswith(config.player_channel_suffix):
+    except ValueError:
+        pass
+    try:
+        return board.get_cleaned_player(simple_player_name(name))
+    except ValueError:
         return None
-
-    name = name[: -(len(config.player_channel_suffix))]
-
-    for p in board.players:
-        if p.name.lower() == name:
-            return p
-        elif p.name.lower() == simple_player_name(name):
-            return p
 
     return None
 
