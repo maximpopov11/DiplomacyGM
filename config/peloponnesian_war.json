@@ -1,0 +1,243 @@
+{
+  "name": "Peloponnesian War",
+  "file": "assets/Peloponnesian War_m.svg",
+  "svg config": {
+    "year": -430,
+
+    "background": "layer3",
+    "sidebar": "layer8",
+    "season": "layer25",
+    "power_banners": "layer24",
+
+    "land_layer": "layer9",
+    "sea_borders": "layer15",
+    "island_borders": "layer16",
+    "island_ring_layer": "layer12",
+    "island_fill_layer": "layer11",
+
+    "province_names": "layer5",
+    "supply_center_icons": "layer1",
+    "coast_markers": "layer18",
+
+    "unit_output": "layer23",
+    "arrow_output": "layer10",
+    "other_fills": "layer13",
+
+    "starting_units": "layer6",
+    "army": "layer19",
+    "retreat_army": "layer21",
+    "fleet": "layer20",
+    "retreat_fleet": "layer22",
+
+    "detect_starting_units": true,
+    "unit_type_labeled": false,
+
+    "unit_labels": true,
+    "province_labels": true,
+    "center_labels": true,
+
+    "default_sea_color": "d5ebfd",
+    "border_margin_hint": 0.5,
+
+    "map_width": 858,
+    "unit_radius": 1,
+    "order_stroke_width": 0.2,
+    "neutral": { "standard": "c2bdbd" },
+    "neutral_sc": "ffffff",
+    "loc_x_offset": 7.7655,
+    "loc_y_offset": 7.033,
+    "delete_layer": ["army", "retreat_army", "fleet", "retreat_fleet"]
+  },
+  "victory_conditions": "vscc",
+  "overrides": {
+    "provinces": {
+      "Abdera": {
+        "adjacencies": ["Akanthos", "Bosphorous"]
+      },
+      "Abydos": {
+        "adjacencies": ["Bosphorous"],
+        "remove_adjacencies": ["Thrakike Chersonesos"]
+      },
+      "Aegean Sea": {
+        "remove_adjacencies": ["Phrygia"]
+      },
+      "Aetolia": {
+        "remove_adjacencies": ["Gulf of Korinthos"]
+      },
+      "Akanthos": {
+        "remove_adjacent_coasts": ["Chalkidike", "Pella", "Thrakike"]
+      },
+      "Astakos": {
+        "remove_adjacencies": [
+          "Kephallenia",
+          "Ionian Sea",
+          "Dodona",
+          "Gulf of Kyparissia"
+        ]
+      },
+      "Athenai": {
+        "remove_adjacencies": ["Bosphorous", "Chalkis", "Gulf of Korinthos"]
+      },
+      "Boiotia": {
+        "remove_adjacencies": ["Bosphorous", "Chalkis", "Gulf of Korinthos"],
+        "remove_adjacent_coasts": ["Delphoi sc", "Korinthos"]
+      },
+      "Bosphorous": {
+        "adjacencies": [
+          "Abdera",
+          "Abydos",
+          "Phrygia",
+          "Thrakike",
+          "Thrakike Chersonesos",
+          "Thracian Sea"
+        ],
+        "remove_adjacencies": [
+          "Athenai",
+          "Boiotia",
+          "Cyclades",
+          "Delphoi",
+          "Dodona",
+          "Doris",
+          "Eastern Mediterranean",
+          "Elimea",
+          "Epeiros",
+          "Gulf of Euboea",
+          "Ionian Sea",
+          "Pella",
+          "Pharsalos",
+          "Saronic Gulf",
+          "Sea of Crete",
+          "Trikala"
+        ]
+      },
+      "Chalkis": {
+        "remove_adjacencies": ["Athenai", "Boiotia", "Pharsalos"]
+      },
+      "Chalkidike": {
+        "remove_adjacencies": ["Thracian Sea"],
+        "remove_adjacent_coasts": ["Akanthos"]
+      },
+      "Cyclades": {
+        "remove_adjacencies": ["Bosphorous", "Ephesos"]
+      },
+      "Delphoi": {
+        "coasts": {
+          "nc": ["Doris", "Gulf of Euboea", "Boiotia"],
+          "sc": ["Naupaktos", "Gulf of Korinthos", "Korinthos"]
+        },
+        "remove_adjacencies": ["Bosphorous"]
+      },
+      "Dodona": {
+        "remove_adjacencies": ["Astakos", "Bosphorous"]
+      },
+      "Doris": {
+        "remove_adjacencies": ["Bosphorous", "Gulf of Korinthos"]
+      },
+      "Eastern Mediterranean": {
+        "remove_adjacencies": ["Bosphorous", "Ephesos"]
+      },
+      "Elimea": {
+        "remove_adjacencies": ["Bosphorous"]
+      },
+      "Epeiros": {
+        "remove_adjacencies": ["Bosphorous"]
+      },
+      "Ephesos": {
+        "remove_adjacencies": [
+          "Sea of Crete",
+          "Eastern Mediterranean",
+          "Cyclades"
+        ]
+      },
+      "Gulf of Euboea": {
+        "remove_adjacencies": ["Bosphorous"],
+        "remove_adjacent_coasts": ["Delphoi sc"]
+      },
+      "Gulf of Korinthos": {
+        "remove_adjacencies": [
+          "Aetolia",
+          "Athenai",
+          "Boiotia",
+          "Doris",
+          "Saronic Gulf"
+        ],
+        "remove_adjacent_coasts": ["Delphoi nc"]
+      },
+      "Gulf of Kyparissia": {
+        "remove_adjacencies": ["Astakos"]
+      },
+      "Ionian Sea": {
+        "remove_adjacencies": ["Astakos"]
+      },
+      "Kephallenia": {
+        "remove_adjacencies": ["Astakos"]
+      },
+      "Korinthos": {
+        "adjacencies": ["Gulf of Korinthos", "Saronic Gulf"],
+        "remove_adjacent_coasts": ["Boiotia", "Delphoi nc"]
+      },
+      "Mytilene": {
+        "remove_adjacencies": ["Phrygia"]
+      },
+      "Naupaktos": {
+        "remove_adjacencies": ["Patras"]
+      },
+      "Patras": {
+        "remove_adjacencies": ["Naupaktos"]
+      },
+      "Pella": {
+        "remove_adjacencies": ["Bosphorous"]
+      },
+      "Pharsalos": {
+        "remove_adjacencies": ["Thracian Sea", "Chalkis", "Bosphorous"]
+      },
+      "Phrygia": {
+        "adjacencies": ["Bosphorous"],
+        "remove_adjacencies": ["Abydos", "Mytilene", "Thrakike Chersonesos"]
+      },
+      "Saronic Gulf": {
+        "remove_adjacencies": ["Bosphorous", "Gulf of Korinthos"]
+      },
+      "Sea of Crete": {
+        "remove_adjacencies": ["Bosphorous", "Ephesos"]
+      },
+      "Thermatic Gulf": {
+        "remove_adjacencies": ["Akanthos"]
+      },
+      "Thracian Sea": {
+        "adjacencies": ["Bosphorous"],
+        "remove_adjacencies": [
+          "Chalkidike",
+          "Pharsalos",
+          "Pella",
+          "Thrakike",
+          "Thrakike Chersonesos"
+        ]
+      },
+      "Thrakike": {
+        "adjacencies": ["Bosphorous"],
+        "remove_adjacencies": ["Thracian Sea"],
+        "remove_adjacent_coasts": ["Abdera", "Pella"]
+      },
+      "Thrakike Chersonesos": {
+        "adjacencies": ["Bosphorous"],
+        "remove_adjacencies": ["Abydos", "Phrygia", "Thracian Sea"]
+      },
+      "Trikala": {
+        "remove_adjacencies": ["Bosphorous"]
+      }
+    }
+  },
+  "players": {
+    "Delian League": {
+      "color": { "standard": "6977c9" },
+      "vscc": 13,
+      "iscc": 6
+    },
+    "Peloponnesian League": {
+      "color": { "standard": "c85d5e" },
+      "vscc": 13,
+      "iscc": 6
+    }
+  }
+}

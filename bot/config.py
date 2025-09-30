@@ -1,5 +1,3 @@
-from diplomacy.persistence.board import Board
-
 IMPDIP_SERVER_ID = 1201167737163104376
 IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID = 1284336328657600572
 IMPDIP_SERVER_SUBSTITUTE_TICKET_CHANNEL_ID = 1294689571103309944
@@ -10,6 +8,8 @@ IMPDIP_SERVER_SUBSTITUTE_LOG_CHANNEL_ID = (
 
 ERROR_COLOUR = "#FF0000"
 PARTIAL_ERROR_COLOUR = "#FF7700"
+
+color_options = {"standard", "dark", "pink", "blue", "kingdoms", "empires"}
 
 
 # Capitalization is ignored in all definitions.
