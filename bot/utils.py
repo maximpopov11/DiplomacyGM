@@ -107,11 +107,14 @@ def get_player_by_channel(channel: commands.Context.channel, manager: Manager, s
         name = name[: -5]
     else:
         if not name.endswith(config.player_channel_suffix):
-            return
+            return None
         
         name = name[: -(len(config.player_channel_suffix))]
 
-    return manager.get_board(server_id).get_cleaned_player(name)
+    try:
+        return manager.get_board(server_id).get_cleaned_player(name)
+    except ValueError:
+        return None
 
 #FIXME this is done pretty poorly
 async def get_channel_by_player(player: Player, ctx: commands.Context, manager: Manager) -> GuildChannel:
