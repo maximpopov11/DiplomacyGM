@@ -114,6 +114,10 @@ def get_player_by_channel(channel: commands.Context.channel, manager: Manager, s
     try:
         return manager.get_board(server_id).get_cleaned_player(name)
     except ValueError:
+        pass
+    try:
+        return manager.get_board(server_id).get_cleaned_player(simple_player_name(name))
+    except ValueError:
         return None
 
 #FIXME this is done pretty poorly
