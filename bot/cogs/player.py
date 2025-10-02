@@ -180,8 +180,12 @@ class PlayerCog(commands.Cog):
 
         try:
             if not board.fow:
-                file, file_name = manager.draw_moves_map(
-                    ctx.guild.id, player, color_mode, season
+                file, file_name = manager.draw_map(
+                    ctx.guild.id,
+                    draw_moves = True,
+                    player_restriction = player,
+                    color_mode = color_mode,
+                    turn = season
                 )
             else:
                 file, file_name = manager.draw_fow_players_moves_map(
@@ -255,8 +259,10 @@ class PlayerCog(commands.Cog):
 
         try:
             if not board.fow:
-                file, file_name = manager.draw_current_map(
-                    ctx.guild.id, color_mode, season
+                file, file_name = manager.draw_map(
+                    ctx.guild.id,
+                    color_mode = color_mode,
+                    turn = season
                 )
             else:
                 file, file_name = manager.draw_fow_current_map(
