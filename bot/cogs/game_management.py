@@ -169,8 +169,6 @@ class GameManagementCog(commands.Cog):
 
                 if has_builds and has_disbands:
                     response = f"you have both build and disband orders. Please get this looked at."
-                elif count == 0:
-                    continue
                 elif count >= 0:
                     available_centers = [
                         center
@@ -189,11 +187,15 @@ class GameManagementCog(commands.Cog):
                         response = f"you have {difference} more build {order_text} than possible. Please get this looked at."
                     elif current < available:
                         response = f"you have {difference} less build {order_text} than necessary. Make sure that you want to waive."
+                    else:
+                        continue
                 else:
                     if current < count:
                         response = f"you have {difference} more disband {order_text} than necessary. Please get this looked at."
                     elif current > count:
                         response = f"you have {difference} less disband {order_text} than required. Please get this looked at."
+                    else:
+                        continue
             else:
                 if phase.is_retreats(board.phase):
                     in_moves = lambda u: u == u.province.dislodged_unit
