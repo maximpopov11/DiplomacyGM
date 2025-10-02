@@ -157,6 +157,8 @@ async def get_channel_by_player(
 
     return None
 
+def discord_formatted_name(name: str):
+    return name.lower().replace(" ", "-").replace("'", "").replace(".", "")
 
 # I'm sorry this is a bad function name. I couldn't think of anything better and I'm in a rush
 def simple_player_name(name: str):
