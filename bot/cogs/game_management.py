@@ -403,10 +403,8 @@ class GameManagementCog(commands.Cog):
             )
             full_adjudicate = False
         
-        channels_to_send = [ctx.channel]
         if full_adjudicate:
             await self.lock_orders(ctx)
-            channels_to_send.append(get_maps_channel(ctx.guild))
 
         old_turn = (board.get_year_str(), board.phase)
         # await send_message_and_file(channel=ctx.channel, **await view_map(ctx, manager))
@@ -428,7 +426,7 @@ class GameManagementCog(commands.Cog):
         title = f"{board.name} — " if board.name else ""
         title += f"{old_turn[1].name} {old_turn[0]}"
         await send_message_and_file(
-            channel=channels_to_send,
+            channel=ctx.channel,
             title=f"{title} Moves Map",
             message="Test adjudication" if test_adjudicate else "",
             file=file,
@@ -437,9 +435,21 @@ class GameManagementCog(commands.Cog):
             file_in_embed=False,
             message_in_embed=False,
         )
+        if full_adjudicate:
+            map_message = await send_message_and_file(
+                channel=get_maps_channel(ctx.guild),
+                title=f"{title} Moves Map",
+                file=file,
+                file_name=file_name,
+                convert_svg=return_svg,
+                file_in_embed=False,
+                message_in_embed=False,
+            )
+ #           await map_message.publish()
+            
         file, file_name = manager.draw_map_for_board(new_board, color_mode = color_mode)
         await send_message_and_file(
-            channel=channels_to_send,
+            channel=ctx.channel,
             title=f"{title} Results Map",
             message="Test adjudication results" if test_adjudicate else "",
             file=file,
@@ -450,6 +460,16 @@ class GameManagementCog(commands.Cog):
         )
         
         if full_adjudicate:
+            map_message = await send_message_and_file(
+                channel=get_maps_channel(ctx.guild),
+                title=f"{title} Results Map",
+                file=file,
+                file_name=file_name,
+                convert_svg=return_svg,
+                file_in_embed=False,
+                message_in_embed=False,
+            )
+#            await map_message.publish()
             await self.publish_orders(ctx)
             await self.unlock_orders(ctx)
 

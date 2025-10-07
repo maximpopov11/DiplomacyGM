@@ -289,7 +289,7 @@ def _log_command(
 
 async def send_message_and_file(
     *,
-    channel: List[commands.Context.channel] | commands.Context.channel,
+    channel: commands.Context.channel,
     title: str | None = None,
     message: str | None = None,
     messages: list[str] | None = None,
@@ -308,9 +308,6 @@ async def send_message_and_file(
     if not embed_colour:
         embed_colour = "#fc71c4"
     max_cutoff = discord_embed_description_limit if message_in_embed else discord_message_limit
-
-    if not isinstance(channel, list):
-        channel = [channel]
 
     if convert_svg and file and file_name:
         file, file_name = await svg_to_png(file, file_name)
@@ -370,8 +367,7 @@ async def send_message_and_file(
                         sum(map(len, embeds)) + len(embed) > discord_embed_total_limit
                         or len(embeds) == 10
                     ):
-                        for c in channel:
-                            await c.send(embeds=embeds)
+                        await channel.send(embeds=embeds)
                         embeds = []
                     embeds.append(embed)
                     message = message[cutoff:].strip()
@@ -379,8 +375,7 @@ async def send_message_and_file(
                     last_message = message[:cutoff]
                     message = message[cutoff:].strip()
                     if message:
-                        for c in channel:
-                            await c.send(content=message)
+                        await channel.send(content=message)
 
     if message_in_embed and not embeds:
         embeds = [Embed(title=title, colour=Colour.from_str(embed_colour))]
@@ -394,8 +389,7 @@ async def send_message_and_file(
                 > discord_embed_total_limit
                 or len(embeds) == 10
             ):
-                for c in channel:
-                    await c.send(embeds=embeds)
+                await channel.send(embeds=embeds)
                 embeds = [
                     Embed(
                         title=title,
@@ -412,8 +406,8 @@ async def send_message_and_file(
             _log_command(
                 logger,
                 "?",
-                channel[0].guild.name,
-                channel[0].name,
+                channel.guild.name,
+                channel.name,
                 "?",
                 f"png is too big ({len(file)}); converting to jpg",
             )
@@ -423,8 +417,8 @@ async def send_message_and_file(
                 _log_command(
                     logger,
                     "?",
-                    channel[0].guild.name,
-                    channel[0].name,
+                    channel.guild.name,
+                    channel.name,
                     "?",
                     f"png to jpeg conversion errors: {error}",
                 )
@@ -432,17 +426,17 @@ async def send_message_and_file(
                 _log_command(
                     logger,
                     "?",
-                    channel[0].guild.name,
-                    channel[0].name,
+                    channel.guild.name,
+                    channel.name,
                     "?",
                     f"jpg is too big ({len(file)})",
                 )
-                if is_gm_channel(channel[0]):
+                if is_gm_channel(channel):
                     message = "Try `.vm true` to get an svg"
                 else:
                     message = "Please contact your GM"
                 await send_message_and_file(
-                    channel=channel[0], title="File too large", message=message
+                    channel=channel, title="File too large", message=message
                 )
                 file = None
                 file_name = None
@@ -479,11 +473,9 @@ async def send_message_and_file(
         embeds[-1].timestamp = footer_datetime
 
     if message_in_embed:
-        for c in channel:
-            return await c.send(embeds=embeds, file=discord_file)
+        return await channel.send(embeds=embeds, file=discord_file)
     else:
-        for c in channel:
-            return await c.send(content=last_message, file=discord_file)
+        return await channel.send(content=last_message, file=discord_file)
 
 
 def get_orders(
@@ -526,7 +518,7 @@ def get_orders(
                 if player.waived_orders > 0:
                     body += f"\nWaive {player.waived_orders}"
 
-                if isinstance(fields, list):
+                if fields:
                     response.append((f"", f"{title}{body}"))
                 else:
                     response += f"\n{title}{body}"
@@ -568,7 +560,7 @@ def get_orders(
                 for unit in sorted(ordered, key=lambda _unit: _unit.province.name):
                     body += f"{unit} {unit.order}\n"
 
-            if isinstance(fields, list):
+            if fields:
                 response.append((f"", f"{title}\n{body}"))
             else:
                 response += f"{title}\n{body}"
