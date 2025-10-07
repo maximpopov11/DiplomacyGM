@@ -390,7 +390,7 @@ class GameManagementCog(commands.Cog):
         return_svg = not ({"true", "t", "svg", "s"} & set(arguments))
         color_arguments = list(config.color_options & set(arguments))
         color_mode = color_arguments[0] if color_arguments else None
-        old_turn = (board.get_year_str(), board.phase)
+        old_turn = (board.get_year_int(), board.phase)
         # await send_message_and_file(channel=ctx.channel, **await view_map(ctx, manager))
         # await send_message_and_file(channel=ctx.channel, **await view_orders(ctx, manager))
         manager.adjudicate(ctx.guild.id)
@@ -405,7 +405,7 @@ class GameManagementCog(commands.Cog):
         )
         await send_message_and_file(
             channel=ctx.channel,
-            title=f"{old_turn[1].name} {old_turn[0]}",
+            title=f"{old_turn[1].name} {board.convert_year_int_to_str(old_turn[0])}",
             message="Moves Map",
             file=file,
             file_name=file_name,
