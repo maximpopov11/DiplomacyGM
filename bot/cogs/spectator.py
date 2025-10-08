@@ -306,7 +306,7 @@ class SpectatorCog(commands.Cog):
         )
 
     @commands.command(
-        brief="Records the approval of a spec reqeust",
+        brief="Records the approval of a spec request",
         description="""[Only to be used by GMs]
         Used to record an approved spectator request if /spec fails.
         Usage: .record_spec @User @Nation""",

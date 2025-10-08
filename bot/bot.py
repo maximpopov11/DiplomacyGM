@@ -69,7 +69,7 @@ class DiploGM(commands.Bot):
             extension = f"bot.cogs.{filename[:-3]}"
             try:
                 await self.load_extension(extension)
-                logger.info(f"Succesfully loaded Cog: {extension}")
+                logger.info(f"Successfully loaded Cog: {extension}")
             except Exception as e:
                 logger.info(f"Failed to load Cog {extension}: {e}")
 

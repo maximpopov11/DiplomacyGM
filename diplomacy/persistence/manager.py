@@ -40,7 +40,7 @@ class Manager(metaclass=ManagerMeta):
             self._database.get_spec_requests()
         )
         # TODO: have multiple for each variant?
-        # do it like this so that the parser can cache data between board initilizations
+        # do it like this so that the parser can cache data between board initializations
 
     def list_servers(self) -> set[int]:
         return set(self._boards.keys())
