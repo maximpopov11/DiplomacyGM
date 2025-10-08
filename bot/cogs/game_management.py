@@ -407,8 +407,6 @@ class GameManagementCog(commands.Cog):
             await self.lock_orders(ctx)
 
         old_turn = (board.get_year_str(), board.phase)
-        # await send_message_and_file(channel=ctx.channel, **await view_map(ctx, manager))
-        # await send_message_and_file(channel=ctx.channel, **await view_orders(ctx, manager))
         new_board = manager.adjudicate(ctx.guild.id, test=test_adjudicate)
 
         log_command(
@@ -427,23 +425,19 @@ class GameManagementCog(commands.Cog):
         title += f"{old_turn[1].name} {old_turn[0]}"
         await send_message_and_file(
             channel=ctx.channel,
-            title=f"{title} Moves Map",
+            title=f"{title} Orders Map",
             message="Test adjudication" if test_adjudicate else "",
             file=file,
             file_name=file_name,
             convert_svg=return_svg,
-            file_in_embed=False,
-            message_in_embed=False,
         )
         if full_adjudicate:
             map_message = await send_message_and_file(
                 channel=get_maps_channel(ctx.guild),
-                title=f"{title} Moves Map",
+                title=f"{title} Orders Map",
                 file=file,
                 file_name=file_name,
                 convert_svg=return_svg,
-                file_in_embed=False,
-                message_in_embed=False,
             )
  #           await map_message.publish()
             
@@ -455,8 +449,6 @@ class GameManagementCog(commands.Cog):
             file=file,
             file_name=file_name,
             convert_svg=return_svg,
-            file_in_embed=False,
-            message_in_embed=False,
         )
         
         if full_adjudicate:
@@ -466,8 +458,6 @@ class GameManagementCog(commands.Cog):
                 file=file,
                 file_name=file_name,
                 convert_svg=return_svg,
-                file_in_embed=False,
-                message_in_embed=False,
             )
 #            await map_message.publish()
             await self.publish_orders(ctx)
