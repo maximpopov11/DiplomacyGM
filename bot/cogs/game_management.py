@@ -265,7 +265,8 @@ class GameManagementCog(commands.Cog):
             failed_players_str = "\n- ".join([player.name for player in failed_players])
             await send_message_and_file(
                 channel=ctx.channel,
-                title=f"Failed to find a player for the following:\n- {failed_players_str}",
+                title=f"Failed to find a player for the following:",
+                message=f"- {failed_players_str}"
             )
 
     @commands.command(
@@ -597,7 +598,6 @@ class GameManagementCog(commands.Cog):
     async def substitute(
         self,
         ctx: commands.Context,
-        manager: Manager,
         out_user: User,
         in_user: User,
         power_role: Role,

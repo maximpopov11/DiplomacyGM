@@ -533,7 +533,7 @@ def get_orders(
                 for unit in sorted(ordered, key=lambda _unit: _unit.province.name):
                     body += f"{unit} {unit.order}\n"
 
-            if isinstance(fields, list):
+            if fields:
                 response.append((f"", f"{title}\n{body}"))
             else:
                 response += f"{title}\n{body}"
