@@ -106,7 +106,7 @@ def get_player_by_channel(
     channel: commands.Context.channel,
     manager: Manager,
     server_id: int,
-    ignore_catagory=False,
+    ignore_category=False,
 ) -> Player | None:
     # thread -> main channel
     if isinstance(channel, Thread):
@@ -114,7 +114,7 @@ def get_player_by_channel(
 
     board = manager.get_board(server_id)
     name = channel.name
-    if (not ignore_catagory) and not config.is_player_category(channel.category.name):
+    if (not ignore_category) and not config.is_player_category(channel.category.name):
         return None
 
     if board.is_chaos() and name.endswith("-void"):

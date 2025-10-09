@@ -430,7 +430,7 @@ class Mapper:
             # moves are just convoyed moves that have no convoys
             return self._draw_convoyed_move(unit, coordinate, order.hasFailed)
         elif isinstance(order, ConvoyMove):
-            logger.warning("Convoy move is depricated; use move instead")
+            logger.warning("Convoy move is deprecated; use move instead")
             return self._draw_convoyed_move(unit, coordinate, order.hasFailed)
         elif isinstance(order, Support):
             return self._draw_support(unit, coordinate, order.hasFailed)
@@ -600,7 +600,7 @@ class Mapper:
                 vec = norm(centered[0]) - norm(centered[1])
                 return norm(vec) * 30 + point[1]
 
-            # this is a bit wierd, because the loop is in-between two values
+            # this is a bit weird, because the loop is in-between two values
             # (S LO)(OP LO)(OP E)
             s = f"M {f(p[0])} C {f(p[1])}, "
             for x in range(1, len(p) - 1):
@@ -959,7 +959,7 @@ class Mapper:
         for power_element in all_power_banners_element:
             self.scoreboard_power_locations.append(power_element.get("transform"))
 
-        # each power is placed in the right spot based on the transform field which has value of "tranlate($x,$y)" where x,y
+        # each power is placed in the right spot based on the transform field which has value of "translate($x,$y)" where x,y
         # are floating point numbers; we parse these via regex and sort by y-value
         self.scoreboard_power_locations.sort(
             key=lambda loc: float(re.match(r".*translate\((-?\d+(?:\.\d+)?(?:e-?\d+)?),\s*(-?\d+(?:\.\d+)?(?:e-?\d+)?)\)", loc).groups()[1])
@@ -1018,7 +1018,7 @@ class Mapper:
                 "markerWidth": "3",
                 "markerHeight": "3",
                 "orient": "auto-start-reverse",
-                "shape-rendering": "geometricPrecision", # Needed bc firefox is wierd
+                "shape-rendering": "geometricPrecision", # Needed bc firefox is weird
                 "overflow": "visible"
             },
         )
@@ -1039,7 +1039,7 @@ class Mapper:
                 "markerWidth": "3",
                 "markerHeight": "3",
                 "orient": "auto-start-reverse",
-                "shape-rendering": "geometricPrecision", # Needed bc firefox is wierd
+                "shape-rendering": "geometricPrecision", # Needed bc firefox is weird
                 "overflow": "visible"
             },
         )
@@ -1089,17 +1089,17 @@ class Mapper:
         attributes_str = {key: str(val) for key, val in attributes.items()}
         return etree.Element(tag, attributes_str)
 
-    # returns equivelent point within the map
+    # returns equivalent point within the map
     def normalize(self, point: tuple[float, float]):
         return (point[0] % self.board.data["svg config"]["map_width"], point[1])
 
     # returns closest point in a set
     # will wrap horizontally
-    def get_closest_loc(self, possiblities: tuple[tuple[float, float]], coord: tuple[float, float]):
-        possiblities = list(possiblities)
+    def get_closest_loc(self, possibilities: tuple[tuple[float, float]], coord: tuple[float, float]):
+        possibilities = list(possibilities)
         crossed_pos = []
         crossed = []
-        for p in possiblities:
+        for p in possibilities:
             x = p[0]
             cx = coord[0]
             if abs(x - cx) > self.board.data["svg config"]["map_width"] / 2:
