@@ -688,7 +688,7 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> None:
     log_command(
         logger,
         ctx,
-        message=f"Adjudication Sucessful for {board.phase.name} {board.get_year_str()}",
+        message=f"Adjudication Successful for {board.phase.name} {board.get_year_str()}",
     )
     file, file_name = manager.draw_moves_map(ctx.guild.id, None, color_mode, old_turn)
     await send_message_and_file(
@@ -1050,7 +1050,7 @@ async def publicize(ctx: commands.Context, manager: Manager) -> None:
             embed_colour=ERROR_COLOUR,
         )
 
-    player = get_player_by_channel(channel, manager, ctx.guild.id, ignore_catagory=True)
+    player = get_player_by_channel(channel, manager, ctx.guild.id, ignore_category=True)
 
     # TODO hacky
     users = []
@@ -1344,7 +1344,7 @@ async def ping_players(ctx: commands.Context, manager: Manager) -> None:
     for player_category in player_categories:
         for channel in player_category.channels:
             player = get_player_by_channel(
-                channel, manager, guild.id, ignore_catagory=board.is_chaos()
+                channel, manager, guild.id, ignore_category=board.is_chaos()
             )
 
             if not player:
@@ -1488,7 +1488,7 @@ async def archive(ctx: commands.Context, _: Manager) -> None:
             # Apply the updated overwrites
             await channel.edit(overwrites=overwrites)
 
-    message = f"The following catagories have been archived: {' '.join([catagory.name for catagory in categories])}"
+    message = f"The following categories have been archived: {' '.join([category.name for category in categories])}"
     log_command(logger, ctx, message=f"Archived {len(categories)} Channels")
     await send_message_and_file(channel=ctx.channel, message=message)
 

@@ -89,13 +89,13 @@ class GameManagementCog(commands.Cog):
                 # Apply the updated overwrites
                 await channel.edit(overwrites=overwrites)
 
-        message = f"The following catagories have been archived: {' '.join([catagory.name for catagory in categories])}"
+        message = f"The following categories have been archived: {' '.join([category.name for category in categories])}"
         log_command(logger, ctx, message=f"Archived {len(categories)} Channels")
         await send_message_and_file(channel=ctx.channel, message=message)
 
     @commands.command(
         brief="pings players who don't have the expected number of orders.",
-        description="""Pngs all players in their orders channl that satisfy the following constraints:
+        description="""Pings all players in their orders channel that satisfy the following constraints:
         1. They have too many build orders, or too little or too many disband orders. As of now, waiving builds doesn't lead to a ping.
         2. They are missing move orders or retreat orders.
         You may also specify a timestamp to send a deadline to the players.
@@ -398,7 +398,7 @@ class GameManagementCog(commands.Cog):
         log_command(
             logger,
             ctx,
-            message=f"Adjudication Sucessful for {board.phase.name} {board.get_year_str()}",
+            message=f"Adjudication Successful for {board.phase.name} {board.get_year_str()}",
         )
         file, file_name = manager.draw_moves_map(
             ctx.guild.id, None, color_mode, old_turn
@@ -861,7 +861,7 @@ class GameManagementCog(commands.Cog):
             )
 
         player = get_player_by_channel(
-            channel, manager, ctx.guild.id, ignore_catagory=True
+            channel, manager, ctx.guild.id, ignore_category=True
         )
 
         # TODO hacky

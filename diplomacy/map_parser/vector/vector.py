@@ -241,7 +241,7 @@ class Parser:
         if "provinces" in self.data["overrides"]:
             for name, data in self.data["overrides"]["provinces"].items():
                 province = self.name_to_province[name]
-                # TODO: Some way to specifiy whether or not to clear other adjacencies?
+                # TODO: Some way to specify whether or not to clear other adjacencies?
                 if "adjacencies" in data:
                     province.adjacent.update(self.names_to_provinces(data["adjacencies"]))
                 if "remove_adjacencies" in data:
