@@ -598,7 +598,6 @@ class GameManagementCog(commands.Cog):
     async def substitute(
         self,
         ctx: commands.Context,
-        manager: Manager,
         out_user: User,
         in_user: User,
         power_role: Role,
