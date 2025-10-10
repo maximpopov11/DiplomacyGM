@@ -1,3 +1,4 @@
+import inspect
 import logging
 
 from discord.ext import commands
@@ -18,6 +19,8 @@ manager = Manager()
 
 
 class CommandCog(commands.Cog):
+    """This is a Cog for general-purpose commands!"""
+
     def __init__(self, bot) -> None:
         self.bot = bot
 
@@ -116,6 +119,62 @@ class CommandCog(commands.Cog):
                 f"Chaos: {':white_check_mark:' if board.is_chaos() else ':x:'}\n"
                 f"Fog of War: {':white_check_mark:' if board.fow else ':x:'}"
             ),
+        )
+
+    @commands.command(
+        brief="Returns developer information",
+        help="""
+        Provide the name of a command to obtain the Python docstrings for the method.
+
+        Usage:
+            .dev <cmd>
+            .dev dev
+            .dev create_game
+            .dev view_orders
+        """,
+    )
+    async def dev(self, ctx: commands.Context, cmd_name: str) -> None:
+        """
+        Return docstring information to the user, give a high-level insight into how the bot might work.
+
+        Process:
+            1. Fetch Command (error on NotFound)
+            2. Collect Command information
+                a. Method definition
+                b. Method docstrings
+
+        Parameters
+        ----------
+        ctx (commands.Context): Invoking message context
+        cmd_name (str | None): Name of the command to obtain docstring information from
+
+        Returns
+        -------
+        None
+        """
+        cmd = self.bot.get_command(cmd_name)
+        if not cmd:
+            await send_message_and_file(
+                channel=ctx.channel,
+                message=f"No command found for name: {cmd_name}",
+                embed_colour=ERROR_COLOUR,
+            )
+            return
+
+        funcdef = f"async def {cmd.callback.__name__}{inspect.signature(cmd.callback)}:"
+        docs = inspect.getdoc(cmd.callback) or "No docstring available..."
+
+        out = (
+            "**Command Definition:**\n"
+            "```python\n"
+            f"{funcdef}```"
+            f"**Developer Documentation:**\n"
+            f"```{docs}```"
+        )
+        out = (out[:1021] + "...") if len(out) >= 1024 else out
+
+        await send_message_and_file(
+            channel=ctx.channel, title=f"Developer Info for {cmd_name}", message=out
         )
 
     @commands.command(
