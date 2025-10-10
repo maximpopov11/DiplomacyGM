@@ -375,6 +375,7 @@ class GameManagementCog(commands.Cog):
         Arguments: 
         * pass true|t|svg|s to return an svg
         * pass standard, dark, blue, or pink for different color modes if present
+        * pass test to view maps without doing an actual adjudication
         """,
     )
     @perms.gm_only("adjudicate")
@@ -390,33 +391,38 @@ class GameManagementCog(commands.Cog):
         return_svg = not ({"true", "t", "svg", "s"} & set(arguments))
         color_arguments = list(config.color_options & set(arguments))
         color_mode = color_arguments[0] if color_arguments else None
+        test_adjudicate = "test" in arguments
         old_turn = (board.get_year_str(), board.phase)
         # await send_message_and_file(channel=ctx.channel, **await view_map(ctx, manager))
         # await send_message_and_file(channel=ctx.channel, **await view_orders(ctx, manager))
-        manager.adjudicate(ctx.guild.id)
+        new_board = manager.adjudicate(ctx.guild.id, test=test_adjudicate)
 
         log_command(
             logger,
             ctx,
             message=f"Adjudication Successful for {board.phase.name} {board.get_year_str()}",
         )
-        file, file_name = manager.draw_moves_map(
-            ctx.guild.id, None, color_mode, old_turn
+        file, file_name = manager.draw_map(
+            ctx.guild.id,
+            draw_moves = True,
+            player_restriction = None,
+            color_mode = color_mode,
+            turn = old_turn
         )
         await send_message_and_file(
             channel=ctx.channel,
             title=f"{old_turn[1].name} {old_turn[0]}",
-            message="Moves Map",
+            message="Test adjudication" if test_adjudicate else "Moves Map",
             file=file,
             file_name=file_name,
             convert_svg=return_svg,
             file_in_embed=False,
         )
-        file, file_name = manager.draw_current_map(ctx.guild.id, color_mode)
+        file, file_name = manager.draw_map_for_board(new_board, color_mode = color_mode)
         await send_message_and_file(
             channel=ctx.channel,
-            title=f"{board.phase.name} {board.get_year_str()}",
-            message="Results Map",
+            title=f"{new_board.phase.name} {new_board.get_year_str()}",
+            message="Test adjudication results" if test_adjudicate else "Results Map",
             file=file,
             file_name=file_name,
             convert_svg=return_svg,
@@ -575,7 +581,7 @@ class GameManagementCog(commands.Cog):
     If you are interested, please go to {ticket_channel.mention} to create a ticket, and remember to ping {ctx.author.mention} so they know you're asking.
             """
 
-        file, file_name = manager.draw_current_map(guild.id, "standard")
+        file, file_name = manager.draw_map(guild.id, color_mode = "standard")
         await send_message_and_file(
             channel=advertise_channel,
             title=title,
