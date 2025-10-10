@@ -169,6 +169,15 @@ def get_player_by_name(name: str, manager: Manager, server_id: int) -> Player | 
             return player
     return None
 
+def get_maps_channel(guild: Guild) -> GuildChannel | None:
+    for channel in guild.channels:
+        if (
+            channel.name.lower() == "maps"
+            and channel.category is not None
+            and channel.category.name.lower() == "gm channels"
+        ):
+            return channel
+    return None
 
 def get_orders_log(guild: Guild) -> GuildChannel | None:
     for channel in guild.channels:
@@ -288,6 +297,7 @@ async def send_message_and_file(
     file: str | None = None,
     file_name: str | None = None,
     file_in_embed: bool | None = None,
+    message_in_embed: bool = True,
     footer_content: str | None = None,
     footer_datetime: datetime.datetime | None = None,
     fields: List[Tuple[str, str]] | None = None,
@@ -297,6 +307,7 @@ async def send_message_and_file(
 
     if not embed_colour:
         embed_colour = "#fc71c4"
+    max_cutoff = discord_embed_description_limit if message_in_embed else discord_message_limit
 
     if convert_svg and file and file_name:
         file, file_name = await svg_to_png(file, file_name)
@@ -318,42 +329,55 @@ async def send_message_and_file(
         messages = [message] + messages
     elif message:
         messages = [message]
+    
+    if not message_in_embed and title:
+        if messages:
+            messages[0] = f"## {title}\n{messages[0]}"
+        else:
+            messages = [f"## {title}"]
 
     embeds = []
+    last_message = ""
     if messages:
         while messages:
             message = messages.pop()
             while message:
-                cutoff = discord_embed_description_limit
+                cutoff = -1
+                if len(message) <= max_cutoff:
+                    cutoff = len(message)
                 # Try to find an even line break to split the long messages on
-                if len(message) > discord_embed_description_limit:
-                    cutoff = message.rfind("\n", 0, discord_embed_description_limit)
-                    # otherwise split at limit
-                    if cutoff == -1:
-                        cutoff = message.rfind(" ", 0, discord_embed_description_limit)
-                        if cutoff == -1:
-                            cutoff = discord_embed_description_limit
-                embed = Embed(
-                    title=title,
-                    description=message[:cutoff],
-                    colour=Colour.from_str(embed_colour),
-                )
-                # ensure only first embed has title
-                title = None
+                if cutoff == -1:
+                    cutoff = message.rfind("\n", 0, max_cutoff)
+                if cutoff == -1:
+                    cutoff = message.rfind(" ", 0, max_cutoff)
+                # otherwise split at limit
+                if cutoff == -1:
+                    cutoff = max_cutoff
+                
+                if message_in_embed:
+                    embed = Embed(
+                        title=title,
+                        description=message[:cutoff],
+                        colour=Colour.from_str(embed_colour),
+                    )
+                    # ensure only first embed has title
+                    title = None
+                    # check that embed totals aren't over the total message embed character limit.
+                    if (
+                        sum(map(len, embeds)) + len(embed) > discord_embed_total_limit
+                        or len(embeds) == 10
+                    ):
+                        await channel.send(embeds=embeds)
+                        embeds = []
+                    embeds.append(embed)
+                    message = message[cutoff:].strip()
+                else:
+                    last_message = message[:cutoff]
+                    message = message[cutoff:].strip()
+                    if message:
+                        await channel.send(content=message)
 
-                # check that embed totals aren't over the total message embed character limit.
-                if (
-                    sum(map(len, embeds)) + len(embed) > discord_embed_total_limit
-                    or len(embeds) == 10
-                ):
-                    await channel.send(embeds=embeds)
-                    embeds = []
-
-                embeds.append(embed)
-
-                message = message[cutoff:].strip()
-
-    if not embeds:
+    if message_in_embed and not embeds:
         embeds = [Embed(title=title, colour=Colour.from_str(embed_colour))]
         title = ""
 
@@ -412,7 +436,7 @@ async def send_message_and_file(
                 else:
                     message = "Please contact your GM"
                 await send_message_and_file(
-                    channel=channel, title="File too larger", message=message
+                    channel=channel, title="File too large", message=message
                 )
                 file = None
                 file_name = None
@@ -448,7 +472,10 @@ async def send_message_and_file(
 
         embeds[-1].timestamp = footer_datetime
 
-    return await channel.send(embeds=embeds, file=discord_file)
+    if message_in_embed:
+        return await channel.send(embeds=embeds, file=discord_file)
+    else:
+        return await channel.send(content=last_message, file=discord_file)
 
 
 def get_orders(
@@ -491,7 +518,7 @@ def get_orders(
                 if player.waived_orders > 0:
                     body += f"\nWaive {player.waived_orders}"
 
-                if isinstance(fields, list):
+                if fields:
                     response.append((f"", f"{title}{body}"))
                 else:
                     response += f"\n{title}{body}"
