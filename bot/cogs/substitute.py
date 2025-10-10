@@ -125,7 +125,7 @@ class SubstituteCog(commands.Cog):
     If you are interested, please go to {ticket_channel.mention} to create a ticket, and remember to ping {ctx.author.mention} so they know you're asking.
         """
 
-        file, file_name = manager.draw_current_map(guild.id, "standard")
+        file, file_name = manager.draw_map(guild.id, color_mode="standard")
         await send_message_and_file(
             channel=advertise_channel,
             title=title,
