@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Any
 
 from discord.ext import commands
@@ -111,6 +112,19 @@ class PlayerCog(commands.Cog):
         try:
             board = manager.get_board(ctx.guild.id)
             order_text = get_orders(board, player, ctx, subset=subset)
+
+            # NOTE: only intended for Carnage FtF
+            # does not account for build orders
+            if "blind" in arguments and isinstance(order_text, str):
+                out = []
+                for line in order_text.splitlines():
+                    if re.match(r"\*\*<@&\d+>\*\* \(\d+\/\d+\)", line):
+                        out.append(line)
+                    elif re.match(r"(.*) \(\d+\/\d+\)", line):
+                        out.append(line)
+
+                order_text = "\n".join(out)
+
         except RuntimeError as err:
             logger.error(err, exc_info=True)
             log_command(

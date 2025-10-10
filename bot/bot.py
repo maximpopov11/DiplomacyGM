@@ -8,6 +8,7 @@ import discord
 from discord.ext import commands
 
 from bot.config import (
+    BOT_DEV_UNHANDLED_ERRORS_CHANNEL_ID,
     ERROR_COLOUR,
     IMPDIP_SERVER_ID,
     IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID,
@@ -94,7 +95,6 @@ class DiploGM(commands.Bot):
             message = random.choice(WELCOME_MESSAGES)
             await channel.send(message)
 
-
         # Set bot's presence (optional)
         await self.change_presence(activity=discord.Game(name="Impdip 🔪"))
 
@@ -141,6 +141,18 @@ class DiploGM(commands.Bot):
             # we shouldn't do anything if the user says something like "..."
             return
 
+        try:
+            # mark the message as failed
+            await ctx.message.add_reaction("❌")
+            await ctx.message.remove_reaction("👍", self.user)
+        except Exception:
+            # if reactions fail, ignore and continue handling existing exception
+            pass
+
+        time_spent = (
+            datetime.datetime.now(datetime.timezone.utc) - ctx.message.created_at
+        )
+
         if isinstance(
             error,
             (
@@ -153,23 +165,6 @@ class DiploGM(commands.Bot):
         else:
             original = error
 
-        try:
-            # mark the message as failed
-            await ctx.message.add_reaction("❌")
-            await ctx.message.remove_reaction("👍", self.user)
-        except Exception:
-            # if reactions fail, ignore and continue handling existing exception
-            pass
-
-        if isinstance(original, CommandPermissionError):
-            await send_message_and_file(
-                channel=ctx.channel, message=str(original), embed_colour=ERROR_COLOUR
-            )
-            return
-
-        time_spent = (
-            datetime.datetime.now(datetime.timezone.utc) - ctx.message.created_at
-        )
         logger.log(
             logging.ERROR,
             f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
@@ -188,42 +183,62 @@ class DiploGM(commands.Bot):
                 f"https://discord.com/channels/1201167737163104376/1280587781638459528",
                 embed_colour=ERROR_COLOUR,
             )
-        else:
-            time_spent = (
-                datetime.datetime.now(datetime.timezone.utc) - ctx.message.created_at
+            return
+
+        if isinstance(original, CommandPermissionError):
+            await send_message_and_file(
+                channel=ctx.channel,
+                message=str(original),
+                embed_colour=ERROR_COLOUR,
+            )
+            return
+
+        if isinstance(original, commands.errors.MissingRequiredArgument):
+            out = (
+                f"`{original}`\n\n"
+                f"If you need some help on how to use this command, consider running this command instead: `.help {ctx.command}`"
+            )
+            await send_message_and_file(
+                channel=ctx.channel,
+                title="You are missing a required argument.",
+                message=out,
+            )
+            return
+
+        # Final Case: Not handled cleanly
+        unhandled_out = (
+            f"```python\n"
+            + "\n".join(traceback.format_exception(original, limit=3))
+            + f"```"
+        )
+
+        # Out to Bot Dev Server
+        bot_error_channel = self.get_channel(BOT_DEV_UNHANDLED_ERRORS_CHANNEL_ID)
+        if bot_error_channel:
+            unhandled_out_dev = (
+                f"Type: {type(original)}\n"
+                f"Location: {ctx.guild.name} [{ctx.channel.category or ''}]-[{ctx.channel.name}]\n"
+                f"Time: {str(datetime.datetime.now(datetime.timezone.utc))[:-13]} UTC\n"
+                f"Invoking User: {ctx.author.mention}[{ctx.author.name}]\n"
+                f"Command Invocation Message: `{ctx.message.content}`\n"
+            ) + unhandled_out
+            await send_message_and_file(
+                channel=bot_error_channel,
+                title=f"UNHANDLED ERROR",
+                message=unhandled_out_dev,
             )
 
-            try:
-                # mark the message as failed
-                await ctx.message.add_reaction("❌")
-                await ctx.message.remove_reaction("👍", self.user)
-            except Exception:
-                # if reactions fail continue handling error
-                pass
-
-            if isinstance(original, CommandPermissionError):
-                await send_message_and_file(
-                    channel=ctx.channel,
-                    message=str(original),
-                    embed_colour=ERROR_COLOUR,
-                )
-            else:
-                logger.error(
-                f"[{ctx.guild.name}][#{ctx.channel.name}]({ctx.message.author.name}) - '{ctx.message.content}' - "
-                f"errored in {time_spent}s\n"
-            )
-                logger.error(original)
-                await send_message_and_file(
-                    channel=ctx.channel,
-                    title=f"ERROR: >.< How did we get here...",
-
-                    message=f"Please report this to a bot dev in using a feedback channel: "
-                            f"https://discord.com/channels/1201167737163104376/1286027175048253573"
-                            f" or "
-                            f"https://discord.com/channels/1201167737163104376/1280587781638459528"
-                            f"\n"
-                            f"```python\n"
-                            + '\n'.join(traceback.format_exception(original, limit=3))
-                            + f"```",
-                    embed_colour=ERROR_COLOUR
-                )
+        # Out to Invoking Channel
+        unhandled_out = (
+            f"Please report this to a bot dev in using a feedback channel: "
+            f"https://discord.com/channels/1201167737163104376/1286027175048253573"
+            f" or "
+            f"https://discord.com/channels/1201167737163104376/1280587781638459528"
+            f"\n"
+        ) + unhandled_out
+        await send_message_and_file(
+            channel=ctx.channel,
+            title=f"ERROR: >.< How did we get here...",
+            message=unhandled_out,
+            embed_colour=ERROR_COLOUR,
+        )
