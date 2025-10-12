@@ -161,6 +161,7 @@ class SubstituteCog(commands.Cog):
         out_user: User,
         in_user: User,
         power_role: Role,
+        *,
         reason: str = "No reason given.",
     ):
         guild = ctx.guild

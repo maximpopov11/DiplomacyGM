@@ -1,3 +1,4 @@
+from black.trans import defaultdict
 import inspect
 import logging
 
@@ -185,7 +186,7 @@ class CommandCog(commands.Cog):
         board = manager.get_board(ctx.guild.id)
 
         if not board.orders_enabled:
-            perms.assert_perms.gm_only(
+            perms.assert_gm_only(
                 ctx,
                 "You cannot use .province_info in a non-GM channel while orders are locked.",
                 non_gm_alt="Orders locked! If you think this is an error, contact a GM.",
@@ -268,7 +269,7 @@ class CommandCog(commands.Cog):
         board = manager.get_board(guild.id)
 
         if not board.orders_enabled:
-            perms.assert_perms.gm_only(
+            perms.assert_gm_only(
                 ctx,
                 "You cannot use .player_info in a non-GM channel while orders are locked.",
                 non_gm_alt="Orders locked! If you think this is an error, contact a GM.",

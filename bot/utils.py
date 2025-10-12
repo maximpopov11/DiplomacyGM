@@ -491,7 +491,7 @@ def get_orders(
                 if player.waived_orders > 0:
                     body += f"\nWaive {player.waived_orders}"
 
-                if isinstance(fields, list):
+                if fields:
                     response.append((f"", f"{title}{body}"))
                 else:
                     response += f"\n{title}{body}"
