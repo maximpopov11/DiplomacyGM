@@ -36,12 +36,17 @@ class SubstituteCog(commands.Cog):
         ctx: commands.Context,
         power_role: Role,
         timestamp: str | None = None,
-        message: str = "No message given.",
+        *message,
     ):
         guild = ctx.guild
         if not guild:
             return
 
+        if len(message) == 0:
+            message = "No message given."
+        else:
+            message = " ".join(message)
+        
         _hub = ctx.bot.get_guild(config.IMPDIP_SERVER_ID)
         if not _hub:
             raise perms.CommandPermissionError(
@@ -161,8 +166,7 @@ class SubstituteCog(commands.Cog):
         out_user: User,
         in_user: User,
         power_role: Role,
-        *,
-        reason: str = "No reason given.",
+        *reason,
     ):
         guild = ctx.guild
         if not guild:
@@ -170,6 +174,11 @@ class SubstituteCog(commands.Cog):
 
         board = manager.get_board(guild.id)
 
+        if len(reason) == 0:
+            reason = "No reason provided."
+        else:
+            reason = " ".join(reason)
+        
         # HACK: Need to create an approved server list for commands
         override = False
         if not guild.name.startswith("Imperial Diplomacy") and not override:
