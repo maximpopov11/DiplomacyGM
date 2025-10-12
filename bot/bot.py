@@ -242,3 +242,25 @@ class DiploGM(commands.Bot):
             message=unhandled_out,
             embed_colour=ERROR_COLOUR,
         )
+        
+    async def on_reaction_add(self, reaction, user):
+        if user.bot:
+            return
+
+        channel = reaction.message.channel
+
+        # limit scope, no reason to track
+        if channel.id != BOT_DEV_UNHANDLED_ERRORS_CHANNEL_ID:
+            return
+
+        # delete handled tickets
+        if reaction.emoji == "🫡" and any(
+            map(
+                lambda r: r.name in ["Server Access", "Github Access", "Contributor"],
+                user.roles,
+            )
+        ):
+            try:
+                await reaction.message.delete()
+            except Exception as e:
+                await channel.send(e)
