@@ -38,6 +38,32 @@ class SubstituteCog(commands.Cog):
         timestamp: str | None = None,
         *message,
     ):
+        """
+        Create an advertisement for substitutes automatically, to enforce a standard of information that should be contained within.
+
+        Process:
+            1. If nothing is given for *message, set to string "No message given.", else join with space delimiter
+            2. Find the Hub Server and Get Interested Substitute Role
+            3. Get the Player object from the Boardstate using the supplied power_role
+            4. Check that timestamp arg is a valid timestamp, else prepend to message.
+            5. Get channel to create tickets and channel to post advertisement
+            6. Format Player data (period, game_name, game_phase, power, sc count, vscc)
+            7. Post advertisement in correct channel
+            8. Ghost Ping "Interested Substitute" to function as embed ping
+                a. TODO: look into text as well as embed to remove this
+
+
+        Parameters
+        ----------
+        power_role (discord.Role): Role of the power that has requested a substitution
+        timestamp (str | None): Optional timestamp for declaring temporary substitute period
+        *message (tuple): Analagous to *args, for purpose of collecting a string to inform advert
+
+        Returns
+        -------
+        None
+
+        """
         guild = ctx.guild
         if not guild:
             return
@@ -46,7 +72,7 @@ class SubstituteCog(commands.Cog):
             message = "No message given."
         else:
             message = " ".join(message)
-        
+
         _hub = ctx.bot.get_guild(config.IMPDIP_SERVER_ID)
         if not _hub:
             raise perms.CommandPermissionError(
@@ -168,6 +194,38 @@ class SubstituteCog(commands.Cog):
         power_role: Role,
         *reason,
     ):
+        """
+        Easily handle automatic processing of substitutes, both role switching and documentation.
+        Primarily created to enforce correct outputs for the Reputation Tracker...
+
+
+        Process:
+            1. If nothing is given for *reason, set to string "No reason provided.", else join with space delimiter
+            2. Validate server is within the Reputation system (for output to Reputation-Tracker)
+                a. guild.name.startswith("Imperial Diplomacy")
+            3. Check that incoming player is within the server for processing
+                a. Check that the role to provide the incoming player is an actual Power role for gametype
+            4. Log incoming and outgoing users to #Reputation-Tracker
+            5. Obtain relevant roles for auto-switching (Player, <power>-orders, Country Spectator)
+            6. Check substitution is correct
+                a. Incoming is not a current player
+                b. Incoming player is/has not spectating another power
+            7. Remove any Player roles on outgoing player, add new position roles
+            7. Remove any Spectator roles on incoming player, add new position roles
+
+        Parameters
+        ----------
+        out_user (discord.User): Prefers mention, can use a username if accurate
+        in_user (discord.User): Prefers mention, can use a username if accurate
+        power_role (discord.Role): Prefers mention, can use a name if accurate
+        *reason (tuple): Analagous to *args, for purpose of collecting a string to inform advert
+
+        Returns
+        -------
+        None
+
+        """
+
         guild = ctx.guild
         if not guild:
             return
@@ -178,7 +236,7 @@ class SubstituteCog(commands.Cog):
             reason = "No reason provided."
         else:
             reason = " ".join(reason)
-        
+
         # HACK: Need to create an approved server list for commands
         override = False
         if not guild.name.startswith("Imperial Diplomacy") and not override:
