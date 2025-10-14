@@ -336,10 +336,16 @@ class SubstituteCog(commands.Cog):
         # has incoming player spectated before
         prev_spec = manager.get_spec_request(guild.id, in_user.id)
         if prev_spec:
-            prev_spec_role = ctx.bot.get_role(prev_spec.role_id)
-
+            prev_spec_role = guild.get_role(prev_spec.role_id)
             # previous spec of another power
-            if prev_spec.role_id != power_role.id:
+            if not prev_spec_role:
+                await send_message_and_file(
+                    channel=ctx.channel,
+                    title="Error",
+                    message=f"Incoming player has previously spectated a power that cannot be found...",
+                    embed_colour=config.ERROR_COLOUR,
+                )  
+            elif prev_spec.role_id != power_role.id:
                 await send_message_and_file(
                     channel=ctx.channel,
                     title="Error",
