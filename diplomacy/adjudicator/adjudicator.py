@@ -12,6 +12,7 @@ from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.order import (
     Order,
+    NMR,
     Hold,
     Move,
     Core,
@@ -118,7 +119,7 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
     if unit is None:
         return False, f"There is no unit in {location.name}"
 
-    if isinstance(order, Hold) or isinstance(order, RetreatDisband):
+    if isinstance(order, Hold) or isinstance(order, RetreatDisband) or isinstance(order, NMR):
         return True, None
     elif isinstance(order, Core):
         if not location.as_province().has_supply_center:
@@ -226,7 +227,7 @@ def order_is_valid(location: Location, order: Order, strict_convoys_supports=Fal
             corresponding_order_is_move = isinstance(order.source.get_unit().order, Move) or isinstance(
                 order.source.get_unit().order, ConvoyMove
             )
-            # if move is invalid then it goes through anyways
+            # if move is invalid then it doesn't go through
             if (
                 is_support_hold and corresponding_order_is_move
             ) or (
@@ -399,6 +400,9 @@ class RetreatsAdjudicator(Adjudicator):
             if unit != unit.province.dislodged_unit:
                 continue
 
+            if unit.order is None:
+                unit.order = NMR()
+                
             if not isinstance(unit.order, RetreatMove):
                 units_to_delete.add(unit)
                 continue
@@ -478,7 +482,7 @@ class MovesAdjudicator(Adjudicator):
             # Same for convoys
             
             if unit.order is None:
-                unit.order = Hold()
+                unit.order = NMR()
 
             failed: bool = False
             # indicates that an illegal move / core can't be support held
@@ -601,7 +605,9 @@ class MovesAdjudicator(Adjudicator):
                 order.destination_province.unit = order.base_unit
                 if not order.destination_province.has_supply_center or self._board.phase.name.startswith("Fall"):
                     self._board.change_owner(order.destination_province, order.country)
-            if order.type == OrderType.HOLD and order.resolution == Resolution.SUCCEEDS:
+            if (order.type == OrderType.HOLD
+                and order.resolution == Resolution.SUCCEEDS
+                and order.source_province.dislodged_unit != order.base_unit):
                 if not order.destination_province.has_supply_center or self._board.phase.name.startswith("Fall"):
                     self._board.change_owner(order.destination_province, order.country)
 
