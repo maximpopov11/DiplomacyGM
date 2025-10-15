@@ -169,6 +169,15 @@ def get_player_by_name(name: str, manager: Manager, server_id: int) -> Player | 
             return player
     return None
 
+def get_maps_channel(guild: Guild) -> GuildChannel | None:
+    for channel in guild.channels:
+        if (
+            channel.name.lower() == "maps"
+            and channel.category is not None
+            and channel.category.name.lower() == "gm channels"
+        ):
+            return channel
+    return None
 
 def get_orders_log(guild: Guild) -> GuildChannel | None:
     for channel in guild.channels:
@@ -324,15 +333,18 @@ async def send_message_and_file(
         while messages:
             message = messages.pop()
             while message:
-                cutoff = discord_embed_description_limit
+                cutoff = -1
+                if len(message) <= discord_embed_description_limit:
+                    cutoff = len(message)
                 # Try to find an even line break to split the long messages on
-                if len(message) > discord_embed_description_limit:
-                    cutoff = message.rfind("\n", 0, discord_embed_description_limit)
-                    # otherwise split at limit
-                    if cutoff == -1:
-                        cutoff = message.rfind(" ", 0, discord_embed_description_limit)
-                        if cutoff == -1:
-                            cutoff = discord_embed_description_limit
+                if cutoff == -1:
+                    cutoff = message.rfind("\n", 0, max_cutoff)
+                if cutoff == -1:
+                    cutoff = message.rfind(" ", 0, max_cutoff)
+                # otherwise split at limit
+                if cutoff == -1:
+                    cutoff = discord_embed_description_limit
+                
                 embed = Embed(
                     title=title,
                     description=message[:cutoff],
@@ -412,7 +424,7 @@ async def send_message_and_file(
                 else:
                     message = "Please contact your GM"
                 await send_message_and_file(
-                    channel=channel, title="File too larger", message=message
+                    channel=channel, title="File too large", message=message
                 )
                 file = None
                 file_name = None

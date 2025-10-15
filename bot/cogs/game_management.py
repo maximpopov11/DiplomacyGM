@@ -14,6 +14,7 @@ from bot import config
 from bot.parse_edit_state import parse_edit_state
 from bot import perms
 from bot.utils import (
+    get_maps_channel,
     get_orders,
     get_orders_log,
     get_player_by_channel,
@@ -372,6 +373,7 @@ class GameManagementCog(commands.Cog):
         * pass true|t|svg|s to return an svg
         * pass standard, dark, blue, or pink for different color modes if present
         * pass test to view maps without doing an actual adjudication
+        * pass full to automatically publish orders and maps
         """,
     )
     @perms.gm_only("adjudicate")
@@ -388,9 +390,20 @@ class GameManagementCog(commands.Cog):
         color_arguments = list(config.color_options & set(arguments))
         color_mode = color_arguments[0] if color_arguments else None
         test_adjudicate = "test" in arguments
+        full_adjudicate = "full" in arguments
+        
+        if test_adjudicate and full_adjudicate:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title="Test and full adjudications are incompatable. Defaulting to test adjudication.",
+                embed_colour=config.PARTIAL_ERROR_COLOUR,
+            )
+            full_adjudicate = False
+        
+        if full_adjudicate:
+            await self.lock_orders(ctx)
+
         old_turn = (board.get_year_str(), board.phase)
-        # await send_message_and_file(channel=ctx.channel, **await view_map(ctx, manager))
-        # await send_message_and_file(channel=ctx.channel, **await view_orders(ctx, manager))
         new_board = manager.adjudicate(ctx.guild.id, test=test_adjudicate)
 
         log_command(
@@ -405,25 +418,47 @@ class GameManagementCog(commands.Cog):
             color_mode = color_mode,
             turn = old_turn
         )
+        title = f"{board.name} — " if board.name else ""
+        title += f"{old_turn[1].name} {old_turn[0]}"
         await send_message_and_file(
             channel=ctx.channel,
-            title=f"{old_turn[1].name} {old_turn[0]}",
-            message="Test adjudication" if test_adjudicate else "Moves Map",
+            title=f"{title} Orders Map",
+            message="Test adjudication" if test_adjudicate else "",
             file=file,
             file_name=file_name,
             convert_svg=return_svg,
-            file_in_embed=False,
         )
+        if full_adjudicate:
+            map_message = await send_message_and_file(
+                channel=get_maps_channel(ctx.guild),
+                title=f"{title} Orders Map",
+                file=file,
+                file_name=file_name,
+                convert_svg=return_svg,
+            )
+ #           await map_message.publish()
+            
         file, file_name = manager.draw_map_for_board(new_board, color_mode = color_mode)
         await send_message_and_file(
             channel=ctx.channel,
-            title=f"{new_board.phase.name} {new_board.get_year_str()}",
-            message="Test adjudication results" if test_adjudicate else "Results Map",
+            title=f"{title} Results Map",
+            message="Test adjudication results" if test_adjudicate else "",
             file=file,
             file_name=file_name,
             convert_svg=return_svg,
-            file_in_embed=False,
         )
+        
+        if full_adjudicate:
+            map_message = await send_message_and_file(
+                channel=get_maps_channel(ctx.guild),
+                title=f"{title} Results Map",
+                file=file,
+                file_name=file_name,
+                convert_svg=return_svg,
+            )
+#            await map_message.publish()
+            await self.publish_orders(ctx)
+            await self.unlock_orders(ctx)
 
     @commands.command(brief="Rolls back to the previous game state.")
     @perms.gm_only("rollback")

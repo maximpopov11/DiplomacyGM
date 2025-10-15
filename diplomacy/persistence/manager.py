@@ -167,7 +167,6 @@ class Manager(metaclass=ManagerMeta):
             board.name,
             board.datafile
         )
-        print(old_board)
         # mapper = Mapper(self._boards[server_id])
         # mapper.draw_moves_map(None)
         adjudicator = make_adjudicator(old_board)
