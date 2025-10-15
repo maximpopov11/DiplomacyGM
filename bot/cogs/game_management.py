@@ -434,7 +434,6 @@ class GameManagementCog(commands.Cog):
                 title=f"{title} Orders Map",
                 file=file,
                 file_name=file_name,
-                convert_svg=return_svg,
             )
  #           await map_message.publish()
             
@@ -454,7 +453,6 @@ class GameManagementCog(commands.Cog):
                 title=f"{title} Results Map",
                 file=file,
                 file_name=file_name,
-                convert_svg=return_svg,
             )
 #            await map_message.publish()
             await self.publish_orders(ctx)
