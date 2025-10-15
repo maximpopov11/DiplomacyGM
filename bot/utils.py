@@ -327,9 +327,8 @@ async def send_message_and_file(
         messages = [message] + messages
     elif message:
         messages = [message]
-    
+
     embeds = []
-    last_message = ""
     if messages:
         while messages:
             message = messages.pop()
@@ -353,6 +352,7 @@ async def send_message_and_file(
                 )
                 # ensure only first embed has title
                 title = None
+
                 # check that embed totals aren't over the total message embed character limit.
                 if (
                     sum(map(len, embeds)) + len(embed) > discord_embed_total_limit
@@ -360,7 +360,9 @@ async def send_message_and_file(
                 ):
                     await channel.send(embeds=embeds)
                     embeds = []
+
                 embeds.append(embed)
+
                 message = message[cutoff:].strip()
 
     if not embeds:
