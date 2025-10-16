@@ -320,7 +320,7 @@ class SlashSubstituteCog(commands.Cog):
         roles = {
             "power": power_role,
             "power-orders": discord_find(
-                lambda r: r.name == f"{power_role.name.lower()}-orders", guild.roles
+                lambda r: r.name == f"orders-{power_role.name.lower()}", guild.roles
             ),
             "player": discord_find(lambda r: r.name == f"Player", guild.roles),
             "cspec": discord_find(
