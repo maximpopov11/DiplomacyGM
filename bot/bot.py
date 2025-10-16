@@ -53,11 +53,15 @@ class DiploGM(commands.Bot):
 
         # sync app_commands (slash) commands with all servers
         try:
-            await self.tree.sync()
-            logger.info("Successfully synched slash commands.")
+            synced = await self.tree.sync()
+            logger.info(f"Successfully synched {len(synced)} slash commands.")
+            logger.info(
+                f"Loaded app commands: {[cmd.name for cmd in self.tree.get_commands()]}"
+            )
         except discord.app_commands.CommandAlreadyRegistered as e:
-            logger.warning("Failed to sync slash commands.")
-            logger.warning(e)
+            logger.warning(f"Command already registered: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to sync commands: {e}", exc_info=True)
 
     async def load_all_cogs(self):
         COG_DIR = "./bot/cogs/"
@@ -242,7 +246,7 @@ class DiploGM(commands.Bot):
             message=unhandled_out,
             embed_colour=ERROR_COLOUR,
         )
-        
+
     async def on_reaction_add(self, reaction, user):
         if user.bot:
             return
