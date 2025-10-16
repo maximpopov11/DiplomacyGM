@@ -149,9 +149,9 @@ class SlashSubstituteCog(commands.Cog):
         if timestamp is None:
             timestamp_msg = "Permanent"
         else:
-            match = re.match(r"<t:\d{10}:(f|F|d|D|t|T|R)>", timestamp)
+            match = re.match(r"<t:(\d{10}):?(f|F|d|D|t|T|R)>", timestamp)
             if match:
-                timestamp_msg = timestamp
+                timestamp_msg = f"until <t:{match.group(1)}:F>"
             else:
                 out = f"Improper value for argument 'timestamp'"
                 await send_message_and_file(
