@@ -146,8 +146,26 @@ class SlashSubstituteCog(commands.Cog):
 
         await interaction.response.defer()
 
+        if timestamp is None:
+            timestamp_msg = "Permanent"
+        else:
+            match = re.match(r"<t:\d{10}:(f|F|d|D|t|T|R)>", timestamp)
+            if match:
+                timestamp_msg = timestamp
+            else:
+                out = f"Improper value for argument 'timestamp'"
+                await send_message_and_file(
+                    channel=interaction.channel,
+                    title="/advertise output",
+                    message=f"{out}",
+                    embed_colour=config.ERROR_COLOUR,
+                )
+                await interaction.followup.send("Failure!", ephemeral=True)
+                return
+
+        
         out = (
-            f"Period: {timestamp}\n"
+            f"Period: {timestamp_msg}\n"
             f"Game: {guild.name}\n"
             f"Phase: {board.phase.name} {board.get_year_str()}\n"
             f"Power: {power_role.name}\n"
