@@ -342,9 +342,9 @@ async def send_message_and_file(
                     cutoff = len(message)
                 # Try to find an even line break to split the long messages on
                 if cutoff == -1:
-                    cutoff = message.rfind("\n", 0, max_cutoff)
+                    cutoff = message.rfind("\n", 0, discord_embed_description_limit)
                 if cutoff == -1:
-                    cutoff = message.rfind(" ", 0, max_cutoff)
+                    cutoff = message.rfind(" ", 0, discord_embed_description_limit)
                 # otherwise split at limit
                 if cutoff == -1:
                     cutoff = discord_embed_description_limit
