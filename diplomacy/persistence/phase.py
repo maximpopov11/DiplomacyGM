@@ -16,7 +16,7 @@ class Phase:
 _winter_builds = Phase("Winter Builds", "wa", 4, None, None)
 _fall_retreats = Phase("Fall Retreats", "fr", 3, _winter_builds, None)
 _fall_moves = Phase("Fall Moves", "fm", 2, _fall_retreats, None)
-_spring_retreats = Phase("Spring Retreats", 1, "sr", _fall_moves, None)
+_spring_retreats = Phase("Spring Retreats", "sr", 1, _fall_moves, None)
 _spring_moves = Phase("Spring Moves", "sm", 0, _spring_retreats, None)
 
 _winter_builds.next = _spring_moves
