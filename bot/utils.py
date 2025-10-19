@@ -1,7 +1,10 @@
+import asyncio
 import datetime
 import io
+import os
 import re
 import logging
+from subprocess import PIPE
 from typing import List, Tuple
 
 
@@ -16,6 +19,7 @@ from diplomacy.adjudicator.utils import svg_to_png, png_to_jpg
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.manager import Manager
+from diplomacy.persistence.phase import Phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType
 
@@ -631,3 +635,17 @@ def parse_season(
     else:
         parsed_phase = phase.get(season + " " + ("Retreats" if retreat else "Moves"))
     return (year, parsed_phase)
+
+def get_map_url(server_id: str, year: int, phase: Phase) -> str:
+    with open("gamelist.tsv", 'r') as file:
+        for server in file:
+            server_info = server.split("\t")
+            if server_id == server_info[0]:
+                return f"{os.environ['maps_url']}/{server_info[1]}/{server_info[2]}/{year % 100}{phase.shortname}m.png{os.environ['maps_sas_token']}"
+        return None
+    
+async def upload_maps(file: str, url: str):
+    png_map, _ = await svg_to_png(file, url)
+    p = await asyncio.create_subprocess_shell(f"azcopy copy \"{url}\" --from-to PipeBlob", stdout=PIPE, stdin=PIPE, stderr=PIPE)
+    data, error = await p.communicate(input=png_map)
+    return data, error

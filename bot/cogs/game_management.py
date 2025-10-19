@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 
 from discord import (
@@ -14,6 +15,7 @@ from bot import config
 from bot.parse_edit_state import parse_edit_state
 from bot import perms
 from bot.utils import (
+    get_map_url,
     get_maps_channel,
     get_orders,
     get_orders_log,
@@ -22,6 +24,7 @@ from bot.utils import (
     is_gm,
     log_command,
     send_message_and_file,
+    upload_maps,
 )
 from diplomacy.persistence import phase
 from diplomacy.persistence.db.database import get_connection
@@ -363,6 +366,17 @@ class GameManagementCog(commands.Cog):
                 channel=ctx.channel,
                 title=f"Sent Orders to {orders_log_channel.mention}",
             )
+        
+        if "maps_sas_token" in os.environ:
+            file, _ = manager.draw_map_for_board(board, draw_moves = True)
+            url = get_map_url(str(ctx.guild.id), board.year + board.year_offset, board.phase)
+            if url:
+                _, error = await upload_maps(file, url)
+                await send_message_and_file(
+                    channel=ctx.channel,
+                    title=f"Uploaded map to archive",
+                )
+                log_command(logger, ctx, message=(error if error else "Uploaded map to archive"))
 
     @commands.command(
         brief="Adjudicates the game and outputs the moves and results maps.",
