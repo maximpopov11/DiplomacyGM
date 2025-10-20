@@ -251,6 +251,7 @@ class Adjudicator:
 
     def __init__(self, board: Board):
         self._board = board
+        self.save_orders = True
         self.flags = board.data.get("adju flags", [])
         self.failed_or_invalid_units: set[MapperInformation] = set()
 
@@ -570,7 +571,8 @@ class MovesAdjudicator(Adjudicator):
         for order in self.orders:
             self._resolve_order(order)
             order.base_unit.order.hasFailed = (order.resolution == Resolution.FAILS)
-        database.get_connection().save_order_for_units(self._board, set(o.base_unit for o in self.orders))
+        if self.save_orders:
+            database.get_connection().save_order_for_units(self._board, set(o.base_unit for o in self.orders))
         self._update_board()
         return self._board
 

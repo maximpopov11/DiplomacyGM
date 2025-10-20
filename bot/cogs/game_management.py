@@ -376,7 +376,7 @@ class GameManagementCog(commands.Cog):
                     channel=ctx.channel,
                     title=f"Uploaded map to archive",
                 )
-                log_command(logger, ctx, message=(error if error else "Uploaded map to archive"))
+                log_command(logger, ctx, message=(f"Map uploading failed: {error}" if len(error) > 0 else "Uploaded map to archive"))
 
     @commands.command(
         brief="Adjudicates the game and outputs the moves and results maps.",

@@ -170,6 +170,7 @@ class Manager(metaclass=ManagerMeta):
         # mapper = Mapper(self._boards[server_id])
         # mapper.draw_moves_map(None)
         adjudicator = make_adjudicator(old_board)
+        adjudicator.save_orders = not test
         # TODO - use adjudicator.orders() (tells you which ones succeeded and failed) to draw a better moves map
         new_board = adjudicator.run()
         new_board.phase = new_board.phase.next
