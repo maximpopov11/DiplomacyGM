@@ -143,7 +143,8 @@ class ScheduleCog(commands.Cog):
     @commands.command(name="unschedule")
     @perms.gm_only("unschedule a command")
     async def unschedule(self, ctx: commands.Context, task_id: str):
-        task_id = task_id.lower().strip()
+        task_id = task_id.strip()
+
         try:
             task = self.scheduled_tasks[task_id]
             del self.scheduled_tasks[task_id]
@@ -174,10 +175,12 @@ class ScheduleCog(commands.Cog):
             sorted(guild_tasks.items(), key=lambda pair: pair[1]["execute_at"])
         )
 
-        out = []
+        out = ["(sorted by soonest)"]
         for id, task in guild_tasks.items():
             user = self.bot.get_user(task["invoking_user_id"])
-            s = f"Task ID = `{id}`:\n- [{user.mention if user else task['invoking_user_name']}] -> {task['command']} at {task['execute_at']}\n  - Arguments: {task['args']}"
+            s = f"Task ID = `{id}`:\n- [{user.mention if user else task['invoking_user_name']}] -> `{task['command']}` at {task['execute_at']}"
+            if len(task["args"]) != 0:
+                s += f"\n  - Arguments: {task['args']}"
 
             out.append(s)
 
