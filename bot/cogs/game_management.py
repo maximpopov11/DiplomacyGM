@@ -405,6 +405,7 @@ class GameManagementCog(commands.Cog):
         color_mode = color_arguments[0] if color_arguments else None
         test_adjudicate = "test" in arguments
         full_adjudicate = "full" in arguments
+        movement_adjudicate = "movement" in arguments
         
         if test_adjudicate and full_adjudicate:
             await send_message_and_file(
@@ -451,6 +452,26 @@ class GameManagementCog(commands.Cog):
                 convert_svg=True,
             )
  #           await map_message.publish()
+ 
+        if movement_adjudicate:
+            file, file_name = manager.draw_map(
+                ctx.guild.id,
+                draw_moves = True,
+                player_restriction = None,
+                color_mode = color_mode,
+                turn = old_turn,
+                movement_only = True,
+            )
+            title = f"{board.name} — " if board.name else ""
+            title += f"{old_turn[1].name} {old_turn[0]}"
+            await send_message_and_file(
+                channel=ctx.channel,
+                title=f"{title} Movement Map",
+                message="Test adjudication" if test_adjudicate else "",
+                file=file,
+                file_name=file_name,
+                convert_svg=return_svg,
+            )
             
         file, file_name = manager.draw_map_for_board(new_board, color_mode = color_mode)
         await send_message_and_file(

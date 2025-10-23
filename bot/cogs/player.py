@@ -176,6 +176,7 @@ class PlayerCog(commands.Cog):
         )
         color_arguments = list(config.color_options & set(arguments))
         color_mode = color_arguments[0] if color_arguments else None
+        movement_only = "movement" in arguments
         board = manager.get_board(ctx.guild.id)
         season = parse_season(arguments, board.get_year_str())
 
@@ -199,7 +200,8 @@ class PlayerCog(commands.Cog):
                     draw_moves = True,
                     player_restriction = player,
                     color_mode = color_mode,
-                    turn = season
+                    turn = season,
+                    movement_only =  movement_only
                 )
             else:
                 file, file_name = manager.draw_fow_players_moves_map(

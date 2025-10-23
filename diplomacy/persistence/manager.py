@@ -102,6 +102,7 @@ class Manager(metaclass=ManagerMeta):
         player_restriction: Player | None = None,
         color_mode: str | None = None,
         turn: tuple[str, phase] | None = None,
+        movement_only: bool = False,
     ) -> tuple[str, str]:
         cur_board = self._boards[server_id]
         if turn is None:
@@ -131,7 +132,8 @@ class Manager(metaclass=ManagerMeta):
             board,
             player_restriction = player_restriction,
             draw_moves = draw_moves,
-            color_mode = color_mode
+            color_mode = color_mode,
+            movement_only=movement_only
         )
         return svg, file_name
 
@@ -140,13 +142,16 @@ class Manager(metaclass=ManagerMeta):
         board: Board,
         player_restriction: Player | None = None,
         draw_moves: bool = False,
-        color_mode: str | None = None
+        color_mode: str | None = None,
+        movement_only: bool = False,
     ) -> tuple[str, str]:
         start = time.time()
         
         if draw_moves:
             svg, file_name = Mapper(board, color_mode=color_mode).draw_moves_map(
-                board.phase, player_restriction=player_restriction
+                board.phase,
+                player_restriction=player_restriction,
+                movement_only=movement_only
             )
         else:
             svg, file_name = Mapper(board, color_mode=color_mode).draw_current_map()
