@@ -120,7 +120,7 @@ class Mapper:
             return False
         return True
 
-    def draw_moves_map(self, current_phase: phase.Phase, player_restriction: Player | None) -> tuple[str, str]:
+    def draw_moves_map(self, current_phase: phase.Phase, player_restriction: Player | None, movement_only: bool = False) -> tuple[str, str]:
         logger.info("mapper.draw_moves_map")
 
         self._reset_moves_map()
@@ -134,6 +134,12 @@ class Mapper:
             for unit in units:
                 if not self.is_moveable(unit):
                     continue
+                
+                # Only show moves that succeed if requested
+                if movement_only and not (
+                    isinstance(unit.order, (RetreatMove, Move)) and not unit.order.hasFailed):
+                    continue
+                    
                 if phase.is_retreats(current_phase):
                     unit_locs = unit.location().all_rets
                 else:

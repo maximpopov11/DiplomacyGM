@@ -1,7 +1,10 @@
+import asyncio
 import datetime
 import io
+import os
 import re
 import logging
+from subprocess import PIPE
 from typing import List, Tuple
 
 
@@ -16,6 +19,7 @@ from diplomacy.adjudicator.utils import svg_to_png, png_to_jpg
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.manager import Manager
+from diplomacy.persistence.phase import Phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType
 
@@ -169,6 +173,15 @@ def get_player_by_name(name: str, manager: Manager, server_id: int) -> Player | 
             return player
     return None
 
+def get_maps_channel(guild: Guild) -> GuildChannel | None:
+    for channel in guild.channels:
+        if (
+            channel.name.lower() == "maps"
+            and channel.category is not None
+            and channel.category.name.lower() == "gm channels"
+        ):
+            return channel
+    return None
 
 def get_orders_log(guild: Guild) -> GuildChannel | None:
     for channel in guild.channels:
@@ -324,15 +337,18 @@ async def send_message_and_file(
         while messages:
             message = messages.pop()
             while message:
-                cutoff = discord_embed_description_limit
+                cutoff = -1
+                if len(message) <= discord_embed_description_limit:
+                    cutoff = len(message)
                 # Try to find an even line break to split the long messages on
-                if len(message) > discord_embed_description_limit:
+                if cutoff == -1:
                     cutoff = message.rfind("\n", 0, discord_embed_description_limit)
-                    # otherwise split at limit
-                    if cutoff == -1:
-                        cutoff = message.rfind(" ", 0, discord_embed_description_limit)
-                        if cutoff == -1:
-                            cutoff = discord_embed_description_limit
+                if cutoff == -1:
+                    cutoff = message.rfind(" ", 0, discord_embed_description_limit)
+                # otherwise split at limit
+                if cutoff == -1:
+                    cutoff = discord_embed_description_limit
+                
                 embed = Embed(
                     title=title,
                     description=message[:cutoff],
@@ -412,7 +428,7 @@ async def send_message_and_file(
                 else:
                     message = "Please contact your GM"
                 await send_message_and_file(
-                    channel=channel, title="File too larger", message=message
+                    channel=channel, title="File too large", message=message
                 )
                 file = None
                 file_name = None
@@ -619,3 +635,17 @@ def parse_season(
     else:
         parsed_phase = phase.get(season + " " + ("Retreats" if retreat else "Moves"))
     return (year, parsed_phase)
+
+def get_map_url(server_id: str, year: int, phase: Phase) -> str:
+    with open("gamelist.tsv", 'r') as file:
+        for server in file:
+            server_info = server.strip().split("\t")
+            if server_id == server_info[0]:
+                return f"{os.environ['maps_url']}/{server_info[1]}/{server_info[2]}/{year % 100}{phase.shortname}m.png{os.environ['maps_sas_token']}"
+        return None
+    
+async def upload_maps(file: str, url: str):
+    png_map, _ = await svg_to_png(file, url)
+    p = await asyncio.create_subprocess_shell(f"azcopy copy \"{url}\" --from-to PipeBlob --content-type image/png", stdout=PIPE, stdin=PIPE, stderr=PIPE)
+    data, error = await p.communicate(input=png_map)
+    return data.decode(), error.decode()
