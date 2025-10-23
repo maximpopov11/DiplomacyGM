@@ -4,6 +4,7 @@ import logging
 
 from discord.ext import commands, tasks
 
+from bot import perms
 from bot.config import ERROR_COLOUR
 from bot.utils import get_value_from_timestamp, log_command, send_message_and_file
 from diplomacy.persistence.manager import Manager
@@ -55,6 +56,7 @@ class ScheduleCog(commands.Cog):
             json.dump(self.scheduled_tasks, f)
 
     @commands.command(name="schedule")
+    @perms.gm_only("schedule a command")
     async def schedule(
         self,
         ctx: commands.Context,
@@ -139,6 +141,7 @@ class ScheduleCog(commands.Cog):
         self.scheduled_tasks[ctx.message.id] = scheduled_task
 
     @commands.command(name="unschedule")
+    @perms.gm_only("unschedule a command")
     async def unschedule(self, ctx: commands.Context, task_id: str):
         task_id = task_id.lower().strip()
         try:
@@ -156,6 +159,7 @@ class ScheduleCog(commands.Cog):
             )
 
     @commands.command(name="view_schedule")
+    @perms.gm_only("view command schedule")
     async def view_schedule(self, ctx: commands.Context):
         guild = ctx.guild
         if not guild:
