@@ -639,13 +639,13 @@ def parse_season(
 def get_map_url(server_id: str, year: int, phase: Phase) -> str:
     with open("gamelist.tsv", 'r') as file:
         for server in file:
-            server_info = server.split("\t")
+            server_info = server.strip().split("\t")
             if server_id == server_info[0]:
                 return f"{os.environ['maps_url']}/{server_info[1]}/{server_info[2]}/{year % 100}{phase.shortname}m.png{os.environ['maps_sas_token']}"
         return None
     
 async def upload_maps(file: str, url: str):
     png_map, _ = await svg_to_png(file, url)
-    p = await asyncio.create_subprocess_shell(f"azcopy copy \"{url}\" --from-to PipeBlob", stdout=PIPE, stdin=PIPE, stderr=PIPE)
+    p = await asyncio.create_subprocess_shell(f"azcopy copy \"{url}\" --from-to PipeBlob --content-type image/png", stdout=PIPE, stdin=PIPE, stderr=PIPE)
     data, error = await p.communicate(input=png_map)
-    return data, error
+    return data.decode(), error.decode()
