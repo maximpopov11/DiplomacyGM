@@ -122,11 +122,11 @@ def get_player_by_channel(
         return None
 
     if board.is_chaos() and name.endswith("-void"):
-        name = name[: -5]
+        name = name[:-5]
     else:
         if not name.endswith(config.player_channel_suffix):
             return None
-        
+
         name = name[: -(len(config.player_channel_suffix))]
 
     try:
@@ -173,6 +173,7 @@ def get_player_by_name(name: str, manager: Manager, server_id: int) -> Player | 
             return player
     return None
 
+
 def get_maps_channel(guild: Guild) -> GuildChannel | None:
     for channel in guild.channels:
         if (
@@ -182,6 +183,7 @@ def get_maps_channel(guild: Guild) -> GuildChannel | None:
         ):
             return channel
     return None
+
 
 def get_orders_log(guild: Guild) -> GuildChannel | None:
     for channel in guild.channels:
@@ -348,7 +350,7 @@ async def send_message_and_file(
                 # otherwise split at limit
                 if cutoff == -1:
                     cutoff = discord_embed_description_limit
-                
+
                 embed = Embed(
                     title=title,
                     description=message[:cutoff],
@@ -636,16 +638,34 @@ def parse_season(
         parsed_phase = phase.get(season + " " + ("Retreats" if retreat else "Moves"))
     return (year, parsed_phase)
 
+
 def get_map_url(server_id: str, year: int, phase: Phase) -> str:
-    with open("gamelist.tsv", 'r') as file:
+    with open("gamelist.tsv", "r") as file:
         for server in file:
             server_info = server.strip().split("\t")
             if server_id == server_info[0]:
                 return f"{os.environ['maps_url']}/{server_info[1]}/{server_info[2]}/{year % 100}{phase.shortname}m.png{os.environ['maps_sas_token']}"
         return None
-    
+
+
 async def upload_maps(file: str, url: str):
     png_map, _ = await svg_to_png(file, url)
-    p = await asyncio.create_subprocess_shell(f"azcopy copy \"{url}\" --from-to PipeBlob --content-type image/png", stdout=PIPE, stdin=PIPE, stderr=PIPE)
+    p = await asyncio.create_subprocess_shell(
+        f'azcopy copy "{url}" --from-to PipeBlob --content-type image/png',
+        stdout=PIPE,
+        stdin=PIPE,
+        stderr=PIPE,
+    )
     data, error = await p.communicate(input=png_map)
     return data.decode(), error.decode()
+
+
+def get_value_from_timestamp(timestamp: str) -> int | None:
+    if len(timestamp) == 10 and timestamp.isnumeric():
+        return int(timestamp)
+
+    match = re.match(r"<t:(\d{10}):\w>", timestamp)
+    if match:
+        return int(match.group(1))
+
+    return None

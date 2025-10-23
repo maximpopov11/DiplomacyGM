@@ -1,4 +1,5 @@
 import datetime
+import inspect
 import logging
 import os
 import random
@@ -104,7 +105,23 @@ class DiploGM(commands.Bot):
 
     async def close(self):
         logger.info("Shutting down gracefully.")
-        pass
+
+        # safely handle any runtime cog state that needs storing/ending
+        for name, cog in self.cogs.items():
+            close_method = getattr(cog, "close", None)
+            if not callable(close_method):
+                continue
+
+            try:
+                result = close_method()
+                if inspect.isawaitable(result):
+                    await result
+
+                logger.info(f"Closed Cog: {name}")
+            except Exception as e:
+                logger.warning(f"Failed to close Cog '{name}' safely: {e}")
+
+        await super().close()
 
     async def before_any_command(self, ctx: commands.Context):
         if isinstance(ctx.channel, discord.DMChannel):

@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 manager = Manager()
 
 
-# HACK: Should be Slash Commands
 class SubstituteCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -67,6 +66,14 @@ class SubstituteCog(commands.Cog):
         guild = ctx.guild
         if not guild:
             return
+
+        await send_message_and_file(
+            channel=ctx.channel,
+            title="Advertise command unavailable.",
+            message="Please use the the new `/advertise` command instead!",
+            embed_colour=config.ERROR_COLOUR,
+        )
+        return
 
         if len(message) == 0:
             message = "No message given."
@@ -230,6 +237,14 @@ class SubstituteCog(commands.Cog):
         if not guild:
             return
 
+        await send_message_and_file(
+            channel=ctx.channel,
+            title="Substitute command unavailable.",
+            message="Please use the the new `/substitute` command instead!",
+            embed_colour=config.ERROR_COLOUR,
+        )
+        return
+
         board = manager.get_board(guild.id)
 
         if len(reason) == 0:
@@ -344,7 +359,7 @@ class SubstituteCog(commands.Cog):
                     title="Error",
                     message=f"Incoming player has previously spectated a power that cannot be found...",
                     embed_colour=config.ERROR_COLOUR,
-                )  
+                )
             elif prev_spec.role_id != power_role.id:
                 await send_message_and_file(
                     channel=ctx.channel,

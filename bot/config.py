@@ -39,6 +39,7 @@ _gm_roles: set[str] = {
     "moderators",
     "gm",
     "heavenly angel",
+    "gm team",
     "emergency gm",
     "bot manager",
 }
