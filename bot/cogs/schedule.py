@@ -12,7 +12,8 @@ from diplomacy.persistence.manager import Manager
 logger = logging.getLogger(__name__)
 manager = Manager()
 
-MAX_DELAY_MINUTES = 5
+LOOP_FREQUENCY_SECONDS = 30
+MAX_DELAY = datetime.timedelta(minutes=5)
 IMPOSSIBLE_COMMANDS = ["schedule", "create_game", "delete_game"]
 
 
@@ -190,7 +191,7 @@ class ScheduleCog(commands.Cog):
             channel=ctx.channel, title=f"Scheduled tasks for {guild.name}", message=out
         )
 
-    @tasks.loop(seconds=10)
+    @tasks.loop(seconds=LOOP_FREQUENCY_SECONDS)
     async def process_scheduled_tasks(self):
         now = datetime.datetime.now(datetime.timezone.utc)
         due = {
@@ -224,8 +225,10 @@ class ScheduleCog(commands.Cog):
             # skip over stale tasks, suspected change of state not worthy of continuing automatic behaviour
             # guard in case bot goes down for extended periods
             delta = now - task["execute_at"]
-            if delta.total_seconds() > MAX_DELAY_MINUTES * 60:
-                logger.warning(f"Skipping stale task {id}: Could not handle on time.")
+            if delta > MAX_DELAY:
+                logger.warning(
+                    f"Skipping stale task {id}: Could not handle on time. (missed by '{now-task['execute_at']}') which is greater than maximum allowed time '{MAX_DELAY}'"
+                )
                 await send_message_and_file(
                     channel=channel,
                     message=f"Skipping stale task {id}: Could not handle on time (Expected: {task['execute_at']})\nTask: {full_command}",
