@@ -475,6 +475,7 @@ def get_orders(
     ctx: Context,
     fields: bool = False,
     subset: str | None = None,
+    blind: bool = False,
 ) -> str | List[Tuple[str, str]]:
     if fields:
         response = []
@@ -482,6 +483,11 @@ def get_orders(
         response = ""
     if phase.is_builds(board.phase):
         for player in sorted(board.players, key=lambda sort_player: sort_player.name):
+            if not player_restriction and (
+                len(player.centers) + len(player.units) == 0
+            ):
+                continue
+
             if not player_restriction or player == player_restriction:
 
                 if (
@@ -504,10 +510,15 @@ def get_orders(
 
                 title = f"**{player_name}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
                 body = ""
-                for unit in player.build_orders | set(player.vassal_orders.values()):
-                    body += f"\n{unit}"
-                if player.waived_orders > 0:
-                    body += f"\nWaive {player.waived_orders}"
+                if blind:
+                    body = f" ({len(player.build_orders) + player.waived_orders})"
+                else:
+                    for unit in player.build_orders | set(
+                        player.vassal_orders.values()
+                    ):
+                        body += f"\n{unit}"
+                    if player.waived_orders > 0:
+                        body += f"\nWaive {player.waived_orders}"
 
                 if fields:
                     response.append((f"", f"{title}{body}"))
@@ -522,6 +533,11 @@ def get_orders(
             players = {player_restriction}
 
         for player in sorted(players, key=lambda p: p.name):
+            if not player_restriction and (
+                len(player.centers) + len(player.units) == 0
+            ):
+                continue
+
             if phase.is_retreats(board.phase):
                 in_moves = lambda u: u == u.province.dislodged_unit
             else:
@@ -542,14 +558,17 @@ def get_orders(
 
             title = f"**{player_name}** ({len(ordered)}/{len(moving_units)})"
             body = ""
-            if missing and subset != "submitted":
-                body += f"__Missing Orders:__\n"
-                for unit in sorted(missing, key=lambda _unit: _unit.province.name):
-                    body += f"{unit}\n"
-            if ordered and subset != "missing":
-                body += f"__Submitted Orders:__\n"
-                for unit in sorted(ordered, key=lambda _unit: _unit.province.name):
-                    body += f"{unit} {unit.order}\n"
+            if blind:
+                body = ""
+            else:
+                if missing and subset != "submitted":
+                    body += f"__Missing Orders:__\n"
+                    for unit in sorted(missing, key=lambda _unit: _unit.province.name):
+                        body += f"{unit}\n"
+                if ordered and subset != "missing":
+                    body += f"__Submitted Orders:__\n"
+                    for unit in sorted(ordered, key=lambda _unit: _unit.province.name):
+                        body += f"{unit} {unit.order}\n"
 
             if fields:
                 response.append((f"", f"{title}\n{body}"))

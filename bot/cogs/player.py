@@ -111,19 +111,9 @@ class PlayerCog(commands.Cog):
 
         try:
             board = manager.get_board(ctx.guild.id)
-            order_text = get_orders(board, player, ctx, subset=subset)
 
-            # NOTE: only intended for Carnage FtF
-            # does not account for build orders
-            if "blind" in arguments and isinstance(order_text, str):
-                out = []
-                for line in order_text.splitlines():
-                    if re.match(r"\*\*<@&\d+>\*\* \(\d+\/\d+\)", line):
-                        out.append(line)
-                    elif re.match(r"(.*) \(\d+\/\d+\)", line):
-                        out.append(line)
-
-                order_text = "\n".join(out)
+            blind = "blind" in arguments
+            order_text = get_orders(board, player, ctx, subset=subset, blind=blind)
 
         except RuntimeError as err:
             logger.error(err, exc_info=True)
@@ -197,11 +187,11 @@ class PlayerCog(commands.Cog):
             if not board.fow:
                 file, file_name = manager.draw_map(
                     ctx.guild.id,
-                    draw_moves = True,
-                    player_restriction = player,
-                    color_mode = color_mode,
-                    turn = season,
-                    movement_only =  movement_only
+                    draw_moves=True,
+                    player_restriction=player,
+                    color_mode=color_mode,
+                    turn=season,
+                    movement_only=movement_only,
                 )
             else:
                 file, file_name = manager.draw_fow_players_moves_map(
@@ -276,9 +266,7 @@ class PlayerCog(commands.Cog):
         try:
             if not board.fow:
                 file, file_name = manager.draw_map(
-                    ctx.guild.id,
-                    color_mode = color_mode,
-                    turn = season
+                    ctx.guild.id, color_mode=color_mode, turn=season
                 )
             else:
                 file, file_name = manager.draw_fow_current_map(
