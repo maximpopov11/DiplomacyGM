@@ -91,7 +91,8 @@ class PlayerCog(commands.Cog):
         brief="Outputs your current submitted orders.",
         description="Outputs your current submitted orders. "
         "Use .view_map to view a sample moves map of your orders. "
-        "Use the 'missing' or 'submitted' argument to view only units without orders or only submitted orders.",
+        "Use the 'missing' or 'submitted' argument to view only units without orders or only submitted orders. "
+        "Use the 'blind' argument to view only the number of orders submitted.",
         aliases=["v", "view", "vieworders", "view-orders"],
     )
     @perms.player("view orders")
