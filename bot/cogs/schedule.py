@@ -56,7 +56,16 @@ class ScheduleCog(commands.Cog):
 
             json.dump(self.scheduled_tasks, f)
 
-    @commands.command(name="schedule")
+    @commands.command(
+        name="schedule",
+        brief="Schedule a time for command execution",
+        help="""
+    Usage:
+    .schedule <timestamp> <command> <args>
+    .schedule <timestamp> view_map dark
+    .schedule <timestamp> ping_players <timestamp>
+        """,
+    )
     @perms.gm_only("schedule a command")
     async def schedule(
         self,
@@ -141,7 +150,15 @@ class ScheduleCog(commands.Cog):
 
         self.scheduled_tasks[ctx.message.id] = scheduled_task
 
-    @commands.command(name="unschedule")
+    @commands.command(
+        name="unschedule",
+        brief="Unschedule a scheduled command",
+        description="Task IDs can be found from calling .view_schedule",
+        help="""
+    Usage:
+    .unschedule <task_id>
+        """,
+    )
     @perms.gm_only("unschedule a command")
     async def unschedule(self, ctx: commands.Context, task_id: str):
         task_id = task_id.strip()
@@ -160,7 +177,10 @@ class ScheduleCog(commands.Cog):
                 message=f"No scheduled task correlates with the ID: {task_id}",
             )
 
-    @commands.command(name="view_schedule")
+    @commands.command(
+        name="view_schedule",
+        brief="View scheduled commands.",
+    )
     @perms.gm_only("view command schedule")
     async def view_schedule(self, ctx: commands.Context):
         guild = ctx.guild
