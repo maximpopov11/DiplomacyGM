@@ -122,11 +122,11 @@ def get_player_by_channel(
         return None
 
     if board.is_chaos() and name.endswith("-void"):
-        name = name[: -5]
+        name = name[:-5]
     else:
         if not name.endswith(config.player_channel_suffix):
             return None
-        
+
         name = name[: -(len(config.player_channel_suffix))]
 
     try:
@@ -173,6 +173,7 @@ def get_player_by_name(name: str, manager: Manager, server_id: int) -> Player | 
             return player
     return None
 
+
 def get_maps_channel(guild: Guild) -> GuildChannel | None:
     for channel in guild.channels:
         if (
@@ -182,6 +183,7 @@ def get_maps_channel(guild: Guild) -> GuildChannel | None:
         ):
             return channel
     return None
+
 
 def get_orders_log(guild: Guild) -> GuildChannel | None:
     for channel in guild.channels:
@@ -348,7 +350,7 @@ async def send_message_and_file(
                 # otherwise split at limit
                 if cutoff == -1:
                     cutoff = discord_embed_description_limit
-                
+
                 embed = Embed(
                     title=title,
                     description=message[:cutoff],
@@ -473,6 +475,7 @@ def get_orders(
     ctx: Context,
     fields: bool = False,
     subset: str | None = None,
+    blind: bool = False,
 ) -> str | List[Tuple[str, str]]:
     if fields:
         response = []
@@ -480,6 +483,11 @@ def get_orders(
         response = ""
     if phase.is_builds(board.phase):
         for player in sorted(board.players, key=lambda sort_player: sort_player.name):
+            if not player_restriction and (
+                len(player.centers) + len(player.units) == 0
+            ):
+                continue
+
             if not player_restriction or player == player_restriction:
 
                 if (
@@ -502,10 +510,15 @@ def get_orders(
 
                 title = f"**{player_name}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
                 body = ""
-                for unit in player.build_orders | set(player.vassal_orders.values()):
-                    body += f"\n{unit}"
-                if player.waived_orders > 0:
-                    body += f"\nWaive {player.waived_orders}"
+                if blind:
+                    body = f" ({len(player.build_orders) + player.waived_orders})"
+                else:
+                    for unit in player.build_orders | set(
+                        player.vassal_orders.values()
+                    ):
+                        body += f"\n{unit}"
+                    if player.waived_orders > 0:
+                        body += f"\nWaive {player.waived_orders}"
 
                 if fields:
                     response.append((f"", f"{title}{body}"))
@@ -520,6 +533,11 @@ def get_orders(
             players = {player_restriction}
 
         for player in sorted(players, key=lambda p: p.name):
+            if not player_restriction and (
+                len(player.centers) + len(player.units) == 0
+            ):
+                continue
+
             if phase.is_retreats(board.phase):
                 in_moves = lambda u: u == u.province.dislodged_unit
             else:
@@ -540,14 +558,17 @@ def get_orders(
 
             title = f"**{player_name}** ({len(ordered)}/{len(moving_units)})"
             body = ""
-            if missing and subset != "submitted":
-                body += f"__Missing Orders:__\n"
-                for unit in sorted(missing, key=lambda _unit: _unit.province.name):
-                    body += f"{unit}\n"
-            if ordered and subset != "missing":
-                body += f"__Submitted Orders:__\n"
-                for unit in sorted(ordered, key=lambda _unit: _unit.province.name):
-                    body += f"{unit} {unit.order}\n"
+            if blind:
+                body = ""
+            else:
+                if missing and subset != "submitted":
+                    body += f"__Missing Orders:__\n"
+                    for unit in sorted(missing, key=lambda _unit: _unit.province.name):
+                        body += f"{unit}\n"
+                if ordered and subset != "missing":
+                    body += f"__Submitted Orders:__\n"
+                    for unit in sorted(ordered, key=lambda _unit: _unit.province.name):
+                        body += f"{unit} {unit.order}\n"
 
             if fields:
                 response.append((f"", f"{title}\n{body}"))
@@ -636,16 +657,34 @@ def parse_season(
         parsed_phase = phase.get(season + " " + ("Retreats" if retreat else "Moves"))
     return (year, parsed_phase)
 
+
 def get_map_url(server_id: str, year: int, phase: Phase) -> str:
-    with open("gamelist.tsv", 'r') as file:
+    with open("gamelist.tsv", "r") as file:
         for server in file:
             server_info = server.strip().split("\t")
             if server_id == server_info[0]:
                 return f"{os.environ['maps_url']}/{server_info[1]}/{server_info[2]}/{year % 100}{phase.shortname}m.png{os.environ['maps_sas_token']}"
         return None
-    
+
+
 async def upload_maps(file: str, url: str):
     png_map, _ = await svg_to_png(file, url)
-    p = await asyncio.create_subprocess_shell(f"azcopy copy \"{url}\" --from-to PipeBlob --content-type image/png", stdout=PIPE, stdin=PIPE, stderr=PIPE)
+    p = await asyncio.create_subprocess_shell(
+        f'azcopy copy "{url}" --from-to PipeBlob --content-type image/png',
+        stdout=PIPE,
+        stdin=PIPE,
+        stderr=PIPE,
+    )
     data, error = await p.communicate(input=png_map)
     return data.decode(), error.decode()
+
+
+def get_value_from_timestamp(timestamp: str) -> int | None:
+    if len(timestamp) == 10 and timestamp.isnumeric():
+        return int(timestamp)
+
+    match = re.match(r"<t:(\d{10}):\w>", timestamp)
+    if match:
+        return int(match.group(1))
+
+    return None

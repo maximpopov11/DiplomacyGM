@@ -1,6 +1,7 @@
 
 /assets
 bot/_token.py
+bot/assets/schedule.json
 /config/*.txt
 *.pyc
 *.iml
