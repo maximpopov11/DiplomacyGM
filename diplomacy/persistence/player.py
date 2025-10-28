@@ -72,7 +72,7 @@ class Player:
     def info(self, variant: str = "standard") -> str:
         bullet = "\n- "
 
-        units = list(sorted(self.units, key=lambda u: (u.location().name, u.unit_type.value)))
+        units = list(sorted(self.units, key=lambda u: (u.unit_type.value, u.location().name)))
         centers = list(sorted(self.centers, key=lambda c: c.name))
         
         if variant == "chaos":
