@@ -164,7 +164,7 @@ class ScheduleCog(commands.Cog):
 
         if task_id == "all":
             gid = ctx.guild.id
-            ids = [id for id, task in self.scheduled_tasks.items() if task["guild_id]" == gid]
+            ids = [id for id, task in self.scheduled_tasks.items() if task["guild_id"] == gid]
             for id in ids:
                 del self.scheduled_tasks[id]
 
