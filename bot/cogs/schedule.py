@@ -314,7 +314,7 @@ class ScheduleCog(commands.Cog):
         await self.bot.wait_until_ready()
 
     @tasks.loop(seconds=SAVE_FREQUENCY_SECONDS)
-    def save_scheduled_tasks(self):
+    async def save_scheduled_tasks(self):
         with open(self.scheduled_storage, "w") as f:
             curr_tasks = deepcopy(self.scheduled_tasks)
             for _, task in curr_tasks.items():
