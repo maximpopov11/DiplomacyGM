@@ -127,7 +127,7 @@ class ScheduleCog(commands.Cog):
         scheduled_task = {
             "invoking_user_id": ctx.author.id,
             "invoking_user_name": ctx.author.name,
-            "invoking_msg_id": str(ctx.message.id),
+            "invoking_msg_id": ctx.message.id,
             "guild_id": guild.id,
             "channel_id": channel.id,
             "created_at": now,
@@ -146,7 +146,7 @@ class ScheduleCog(commands.Cog):
             channel=ctx.channel, title="Schedule successful!", message=out
         )
 
-        self.scheduled_tasks[ctx.message.id] = scheduled_task
+        self.scheduled_tasks[str(ctx.message.id)] = scheduled_task
 
     @commands.command(
         name="unschedule",
@@ -168,6 +168,10 @@ class ScheduleCog(commands.Cog):
             for id in ids:
                 del self.scheduled_tasks[id]
 
+            await send_message_and_file(
+                channel=ctx.channel,
+                message=f"Deleted all {len(ids)} scheduled tasks for this guild.",
+            )
             return
         
         try:
@@ -182,6 +186,7 @@ class ScheduleCog(commands.Cog):
                 channel=ctx.channel,
                 title="Error!",
                 message=f"No scheduled task correlates with the ID: {task_id}",
+                embed_colour=ERROR_COLOUR
             )
 
     @commands.command(
