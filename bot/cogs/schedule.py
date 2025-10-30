@@ -1,3 +1,4 @@
+from copy import deepcopy
 import datetime
 import json
 import logging
@@ -13,6 +14,7 @@ logger = logging.getLogger(__name__)
 manager = Manager()
 
 LOOP_FREQUENCY_SECONDS = 30
+SAVE_FREQUENCY_SECONDS = 300
 MAX_DELAY = datetime.timedelta(minutes=5)
 IMPOSSIBLE_COMMANDS = ["schedule", "create_game", "delete_game"]
 
@@ -45,16 +47,12 @@ class ScheduleCog(commands.Cog):
             raise e
 
         self.process_scheduled_tasks.start()
+        self.save_scheduled_tasks.start()
 
     async def close(self):
         self.process_scheduled_tasks.cancel()
+        self.save_scheduled_tasks.cancel()
 
-        with open(self.scheduled_storage, "w") as f:
-            for _, task in self.scheduled_tasks.items():
-                task["created_at"] = task["created_at"].isoformat()
-                task["execute_at"] = task["execute_at"].isoformat()
-
-            json.dump(self.scheduled_tasks, f)
 
     @commands.command(
         name="schedule",
@@ -129,7 +127,7 @@ class ScheduleCog(commands.Cog):
         scheduled_task = {
             "invoking_user_id": ctx.author.id,
             "invoking_user_name": ctx.author.name,
-            "invoking_msg_id": ctx.message.id,
+            "invoking_msg_id": str(ctx.message.id),
             "guild_id": guild.id,
             "channel_id": channel.id,
             "created_at": now,
@@ -157,12 +155,21 @@ class ScheduleCog(commands.Cog):
         help="""
     Usage:
     .unschedule <task_id>
+    .unschedule all - remove all scheduled tasks
         """,
     )
     @perms.gm_only("unschedule a command")
     async def unschedule(self, ctx: commands.Context, task_id: str):
         task_id = task_id.strip()
 
+        if task_id == "all":
+            gid = ctx.guild.id
+            ids = [id for id, task in self.scheduled_tasks.items() if task["guild_id]" == gid]
+            for id in ids:
+                del self.scheduled_tasks[id]
+
+            return
+        
         try:
             task = self.scheduled_tasks[task_id]
             del self.scheduled_tasks[task_id]
@@ -306,6 +313,19 @@ class ScheduleCog(commands.Cog):
     async def before_process_scheduled_tasks(self):
         await self.bot.wait_until_ready()
 
+    @tasks.loop(seconds=SAVE_FREQUENCY_SECONDS)
+    def save_scheduled_tasks(self):
+        with open(self.scheduled_storage, "w") as f:
+            curr_tasks = deepcopy(self.scheduled_tasks)
+            for _, task in curr_tasks.items():
+                task["created_at"] = task["created_at"].isoformat()
+                task["execute_at"] = task["execute_at"].isoformat()
+
+            json.dump(self.scheduled_tasks, f)
+            
+    @save_scheduled_tasks.before_loop
+    async def before_save_scheduled_tasks(self):
+        await self.bot.wait_until_ready()
 
 async def setup(bot):
     cog = ScheduleCog(bot)
