@@ -26,6 +26,7 @@ class ScheduleCog(commands.Cog):
         self.scheduled_tasks = {}
 
         try:
+            logger.info("Reading stored scheduled tasks")
             with open(self.scheduled_storage) as f:
                 read_tasks = json.load(f)
                 for _, task in read_tasks.items():
@@ -37,6 +38,7 @@ class ScheduleCog(commands.Cog):
                     )
 
                 self.scheduled_tasks = read_tasks
+            logger.info(f"Obtained {len(self.scheduled_tasks)} stored scheduled tasks")
 
         except FileNotFoundError:
             logger.warning(
@@ -52,7 +54,12 @@ class ScheduleCog(commands.Cog):
     async def close(self):
         self.process_scheduled_tasks.cancel()
         self.save_scheduled_tasks.cancel()
+        with open(self.scheduled_storage, "w") as f:
+            for _, task in self.scheduled_tasks.items():
+                task["created_at"] = task["created_at"].isoformat()
+                task["execute_at"] = task["execute_at"].isoformat()
 
+            json.dump(self.scheduled_tasks, f)
 
     @commands.command(
         name="schedule",
@@ -320,13 +327,14 @@ class ScheduleCog(commands.Cog):
 
     @tasks.loop(seconds=SAVE_FREQUENCY_SECONDS)
     async def save_scheduled_tasks(self):
+        logger.info(f"Saving {len(self.scheduled_tasks)} stored scheduled tasks")
         with open(self.scheduled_storage, "w") as f:
             curr_tasks = deepcopy(self.scheduled_tasks)
             for _, task in curr_tasks.items():
                 task["created_at"] = task["created_at"].isoformat()
                 task["execute_at"] = task["execute_at"].isoformat()
 
-            json.dump(self.scheduled_tasks, f)
+            json.dump(curr_tasks, f)
             
     @save_scheduled_tasks.before_loop
     async def before_save_scheduled_tasks(self):
