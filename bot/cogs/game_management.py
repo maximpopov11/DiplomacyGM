@@ -316,11 +316,23 @@ class GameManagementCog(commands.Cog):
     )
     @perms.gm_only("publish orders")
     async def publish_orders(self, ctx: commands.Context) -> None:
+        guild = ctx.guild
+        if not guild:
+            return
+
         board = manager.get_previous_board(ctx.guild.id)
+        curr_board = manager.get_board(guild.id)
         if not board:
             await send_message_and_file(
                 channel=ctx.channel,
                 title="Failed to get previous phase",
+                embed_colour=config.ERROR_COLOUR,
+            )
+            return
+        elif not curr_board:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title="Failed to get current phase",
                 embed_colour=config.ERROR_COLOUR,
             )
             return
@@ -355,28 +367,66 @@ class GameManagementCog(commands.Cog):
                 embed_colour=config.ERROR_COLOUR,
             )
             return
-        else:
-            await send_message_and_file(
-                channel=orders_log_channel,
-                title=f"{board.phase.name} {board.get_year_str()}",
-                fields=order_text,
-            )
-            log_command(logger, ctx, message=f"Successfully published orders")
-            await send_message_and_file(
-                channel=ctx.channel,
-                title=f"Sent Orders to {orders_log_channel.mention}",
-            )
-        
+
+        log = await send_message_and_file(
+            channel=orders_log_channel,
+            title=f"{board.phase.name} {board.get_year_str()}",
+            fields=order_text,
+        )
+        log_command(logger, ctx, message=f"Successfully published orders")
+        await send_message_and_file(
+            channel=ctx.channel,
+            title=f"Sent Orders to {orders_log_channel.mention} -> {log.jump_url}",
+        )
+
+        # HACK: Lifted from .ping_players
+        # Should really work its way into a util function
+        player_categories: list[CategoryChannel] = []
+        for c in guild.categories:
+            if config.is_player_category(c.name):
+                player_categories.append(c)
+
+        for c in player_categories:
+            for ch in c.text_channels:
+                player = get_player_by_channel(ch, manager, guild.id)
+                if not player:
+                    continue
+
+                for r in guild.roles:
+                    if r.name.lower() != player.name.lower():
+                        continue
+
+                    out = f"Hey {r.mention}, the Game has adjudicated!\n"
+                    await ch.send(out)
+                    await send_message_and_file(
+                        channel=ch,
+                        title="Adjudication Information",
+                        message=(
+                            f"**Order Log:** {log.jump_url}\n"
+                            f"**From:** {board.phase.name} {board.year + board.year_offset}\n"
+                            f"**To:** {curr_board.phase.name} {curr_board.year + board.year_offset}"
+                        ),
+                    )
         if "maps_sas_token" in os.environ:
-            file, _ = manager.draw_map_for_board(board, draw_moves = True)
-            url = get_map_url(str(ctx.guild.id), board.year + board.year_offset, board.phase)
+            file, _ = manager.draw_map_for_board(board, draw_moves=True)
+            url = get_map_url(
+                str(ctx.guild.id), board.year + board.year_offset, board.phase
+            )
             if url:
                 _, error = await upload_maps(file, url)
                 await send_message_and_file(
                     channel=ctx.channel,
                     title=f"Uploaded map to archive",
                 )
-                log_command(logger, ctx, message=(f"Map uploading failed: {error}" if len(error) > 0 else "Uploaded map to archive"))
+                log_command(
+                    logger,
+                    ctx,
+                    message=(
+                        f"Map uploading failed: {error}"
+                        if len(error) > 0
+                        else "Uploaded map to archive"
+                    ),
+                )
 
     @commands.command(
         brief="Adjudicates the game and outputs the moves and results maps.",
@@ -392,6 +442,10 @@ class GameManagementCog(commands.Cog):
     )
     @perms.gm_only("adjudicate")
     async def adjudicate(self, ctx: commands.Context) -> None:
+        guild = ctx.guild
+        if not guild:
+            return
+
         board = manager.get_board(ctx.guild.id)
 
         arguments = (
@@ -406,7 +460,7 @@ class GameManagementCog(commands.Cog):
         test_adjudicate = "test" in arguments
         full_adjudicate = "full" in arguments
         movement_adjudicate = "movement" in arguments
-        
+
         if test_adjudicate and full_adjudicate:
             await send_message_and_file(
                 channel=ctx.channel,
@@ -414,7 +468,7 @@ class GameManagementCog(commands.Cog):
                 embed_colour=config.PARTIAL_ERROR_COLOUR,
             )
             full_adjudicate = False
-        
+
         if full_adjudicate:
             await self.lock_orders(ctx)
 
@@ -428,10 +482,10 @@ class GameManagementCog(commands.Cog):
         )
         file, file_name = manager.draw_map(
             ctx.guild.id,
-            draw_moves = True,
-            player_restriction = None,
-            color_mode = color_mode,
-            turn = old_turn
+            draw_moves=True,
+            player_restriction=None,
+            color_mode=color_mode,
+            turn=old_turn,
         )
         title = f"{board.name} — " if board.name else ""
         title += f"{old_turn[1].name} {old_turn[0]}"
@@ -451,16 +505,16 @@ class GameManagementCog(commands.Cog):
                 file_name=file_name,
                 convert_svg=True,
             )
- #           await map_message.publish()
- 
+        #           await map_message.publish()
+
         if movement_adjudicate:
             file, file_name = manager.draw_map(
                 ctx.guild.id,
-                draw_moves = True,
-                player_restriction = None,
-                color_mode = color_mode,
-                turn = old_turn,
-                movement_only = True,
+                draw_moves=True,
+                player_restriction=None,
+                color_mode=color_mode,
+                turn=old_turn,
+                movement_only=True,
             )
             title = f"{board.name} — " if board.name else ""
             title += f"{old_turn[1].name} {old_turn[0]}"
@@ -472,8 +526,8 @@ class GameManagementCog(commands.Cog):
                 file_name=file_name,
                 convert_svg=return_svg,
             )
-            
-        file, file_name = manager.draw_map_for_board(new_board, color_mode = color_mode)
+
+        file, file_name = manager.draw_map_for_board(new_board, color_mode=color_mode)
         await send_message_and_file(
             channel=ctx.channel,
             title=f"{title} Results Map",
@@ -482,7 +536,7 @@ class GameManagementCog(commands.Cog):
             file_name=file_name,
             convert_svg=return_svg,
         )
-        
+
         if full_adjudicate:
             map_message = await send_message_and_file(
                 channel=get_maps_channel(ctx.guild),
@@ -491,7 +545,7 @@ class GameManagementCog(commands.Cog):
                 file_name=file_name,
                 convert_svg=True,
             )
-#            await map_message.publish()
+            #            await map_message.publish()
             await self.publish_orders(ctx)
             await self.unlock_orders(ctx)
 
