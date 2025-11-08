@@ -174,7 +174,7 @@ class SlashSubstituteCog(commands.Cog):
             "\n"
             f"Message: {message}\n"
             "\n"
-            f"If you are interested, please go to {locations['tickets_channel'].mention} and create a ticket. Don't forget to ping {interaction.user.mention} so that they know you want to join the game!"
+            f"If you are interested, please go to {locations['tickets_channel'].mention} and create a ticket. Don't forget to ping {interaction.user.mention}[{interaction.user.name}] so that they know you want to join the game!"
         )
         file, file_name = manager.draw_map_for_board(
             board, player_restriction=None, draw_moves=False, color_mode="standard"
