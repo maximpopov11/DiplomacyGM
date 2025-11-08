@@ -586,6 +586,7 @@ class GameManagementCog(commands.Cog):
         * set_player_vassal <liege> <vassal>
         * remove_relationship <player1> <player2>
         * set_game_name <game_name>
+        * apocalypse {NO WARNING, clears entire map, no units no cores no province owners}
         """,
     )
     @perms.gm_only("edit")
