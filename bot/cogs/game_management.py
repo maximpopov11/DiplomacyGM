@@ -10,6 +10,7 @@ from discord import (
     Thread,
 )
 from discord.ext import commands
+from discord.message import convert_emoji_reaction
 
 from bot import config
 from bot.parse_edit_state import parse_edit_state
@@ -389,7 +390,7 @@ class GameManagementCog(commands.Cog):
         for c in player_categories:
             for ch in c.text_channels:
                 player = get_player_by_channel(ch, manager, guild.id)
-                if not player:
+                if not player or (len(player.units) + len(player.centers) == 0):
                     continue
 
                 for r in guild.roles:

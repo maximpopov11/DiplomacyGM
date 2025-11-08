@@ -24,6 +24,9 @@ _set_player_vassal_str = "set vassal"
 _remove_vassal_str = "remove relationship"
 _set_game_name_str = "set game name"
 
+# apocalypse (empty map state)
+_apocalypse_str = "apocalypse"
+
 # chaos
 _set_player_points_str = "set player points"
 
@@ -62,7 +65,7 @@ def parse_edit_state(message: str, board: Board) -> dict[str, ...]:
         "message": response_body,
         "file": file,
         "file_name": file_name,
-        "embed_colour": embed_colour
+        "embed_colour": embed_colour,
     }
 
 
@@ -104,6 +107,8 @@ def _parse_command(command: str, board: Board) -> None:
         _remove_player_vassal(keywords, board)
     elif command_type == _set_game_name_str:
         _set_game_name(parameter_str, board)
+    elif command_type == _apocalypse_str:
+        _apocalypse(board)
     else:
         raise RuntimeError(f"No command key phrases found")
 
@@ -134,7 +139,12 @@ def _set_province_core(keywords: list[str], board: Board) -> None:
     province.core = player
     get_connection().execute_arbitrary_sql(
         "UPDATE provinces SET core=? WHERE board_id=? and phase=? and province_name=?",
-        (player.name if player is not None else None, board.board_id, board.get_phase_and_year_string(), province.name),
+        (
+            player.name if player is not None else None,
+            board.board_id,
+            board.get_phase_and_year_string(),
+            province.name,
+        ),
     )
 
 
@@ -144,7 +154,12 @@ def _set_province_half_core(keywords: list[str], board: Board) -> None:
     province.half_core = player
     get_connection().execute_arbitrary_sql(
         "UPDATE provinces SET half_core=? WHERE board_id=? and phase=? and province_name=?",
-        (player.name if player is not None else None, board.board_id, board.get_phase_and_year_string(), province.name),
+        (
+            player.name if player is not None else None,
+            board.board_id,
+            board.get_phase_and_year_string(),
+            province.name,
+        ),
     )
 
 
@@ -167,7 +182,12 @@ def _set_province_owner(keywords: list[str], board: Board) -> None:
     board.change_owner(province, player)
     get_connection().execute_arbitrary_sql(
         "UPDATE provinces SET owner=? WHERE board_id=? and phase=? and province_name=?",
-        (player.name if player is not None else None, board.board_id, board.get_phase_and_year_string(), province.name),
+        (
+            player.name if player is not None else None,
+            board.board_id,
+            board.get_phase_and_year_string(),
+            province.name,
+        ),
     )
 
 
@@ -198,9 +218,13 @@ def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
         unit_type = get_unit_type(keywords[0])
         player = board.get_player(keywords[1])
         province, coast = board.get_province_and_coast(keywords[2])
-        retreat_options = set([board.get_province(province_name) for province_name in keywords[3:]])
+        retreat_options = set(
+            [board.get_province(province_name) for province_name in keywords[3:]]
+        )
         if not all(retreat_options):
-                raise ValueError(f"Could not find at least one province in retreat options.")
+            raise ValueError(
+                f"Could not find at least one province in retreat options."
+            )
         unit = board.create_unit(unit_type, player, province, coast, retreat_options)
         get_connection().execute_arbitrary_sql(
             "INSERT INTO units (board_id, phase, location, is_dislodged, owner, is_army) "
@@ -220,7 +244,12 @@ def _create_dislodged_unit(keywords: list[str], board: Board) -> None:
         get_connection().executemany_arbitrary_sql(
             "INSERT INTO retreat_options (board_id, phase, origin, retreat_loc) VALUES (?, ?, ?, ?)",
             [
-                (board.board_id, board.get_phase_and_year_string(), unit.location().name, option.name)
+                (
+                    board.board_id,
+                    board.get_phase_and_year_string(),
+                    unit.location().name,
+                    option.name,
+                )
                 for option in retreat_options
             ],
         )
@@ -233,7 +262,12 @@ def _delete_unit(keywords: list[str], board: Board) -> None:
     unit = board.delete_unit(province)
     get_connection().execute_arbitrary_sql(
         "DELETE FROM units WHERE board_id=? and phase=? and location=? and is_dislodged=?",
-        (board.board_id, board.get_phase_and_year_string(), unit.location().name, False),
+        (
+            board.board_id,
+            board.get_phase_and_year_string(),
+            unit.location().name,
+            False,
+        ),
     )
 
 
@@ -281,10 +315,16 @@ def _dislodge_unit(keywords: list[str], board: Board) -> None:
         unit = province.unit
         if unit == None:
             raise RuntimeError("No unit to dislodge in province")
-        retreat_options = set([board.get_province(province_name) for province_name in keywords[1:]])
+        retreat_options = set(
+            [board.get_province(province_name) for province_name in keywords[1:]]
+        )
         if not all(retreat_options):
-                raise ValueError(f"Could not find at least one province in retreat options.")
-        dislodged_unit = board.create_unit(unit.unit_type, unit.player, unit.province, unit.coast, retreat_options)
+            raise ValueError(
+                f"Could not find at least one province in retreat options."
+            )
+        dislodged_unit = board.create_unit(
+            unit.unit_type, unit.player, unit.province, unit.coast, retreat_options
+        )
         unit = board.delete_unit(province)
         get_connection().execute_arbitrary_sql(
             "UPDATE units SET is_dislodged = True where board_id=? and phase=? and location=?",
@@ -303,8 +343,14 @@ def _make_units_claim_provinces(keywords: list[str], board: Board) -> None:
             board.change_owner(unit.province, unit.player)
             get_connection().execute_arbitrary_sql(
                 "UPDATE provinces SET owner=? WHERE board_id=? and phase=? and province_name=?",
-                (unit.player.name, board.board_id, board.get_phase_and_year_string(), unit.province.name),
+                (
+                    unit.player.name,
+                    board.board_id,
+                    board.get_phase_and_year_string(),
+                    unit.province.name,
+                ),
             )
+
 
 def _set_player_points(keywords: list[str], board: Board) -> None:
     player = board.get_player(keywords[0])
@@ -318,6 +364,7 @@ def _set_player_points(keywords: list[str], board: Board) -> None:
         (points, board.board_id, player.name),
     )
 
+
 def _set_player_vassal(keywords: list[str], board: Board) -> None:
     liege = board.get_player(keywords[0])
     vassal = board.get_player(keywords[1])
@@ -325,8 +372,9 @@ def _set_player_vassal(keywords: list[str], board: Board) -> None:
     liege.vassals.append(vassal)
     get_connection().execute_arbitrary_sql(
         "UPDATE players SET liege=? WHERE board_id=? and player_name=?",
-        (liege.name, board.board_id, vassal.name)
+        (liege.name, board.board_id, vassal.name),
     )
+
 
 def _remove_player_vassal(keywords: list[str], board: Board) -> None:
     player1 = board.get_player(keywords[0])
@@ -337,13 +385,31 @@ def _remove_player_vassal(keywords: list[str], board: Board) -> None:
             liege.vassals.remove(vassal)
             get_connection().execute_arbitrary_sql(
                 "UPDATE players SET liege=? WHERE board_id=? and player_name=?",
-                (None, board.board_id, vassal.name)
+                (None, board.board_id, vassal.name),
             )
+
 
 def _set_game_name(parameter_str: str, board: Board) -> None:
     newname = None if parameter_str == "None" else parameter_str
     board.name = newname
     get_connection().execute_arbitrary_sql(
-        "UPDATE boards SET name=? WHERE board_id=?",
-        (newname, board.board_id)
+        "UPDATE boards SET name=? WHERE board_id=?", (newname, board.board_id)
     )
+
+
+def _apocalypse(board: Board) -> None:
+    board.units = set()
+    get_connection().execute_arbitrary_sql(
+        "DELETE FROM units WHERE board_id=?",
+        (board.board_id,),
+    )
+
+    for province in board.provinces:
+        province.owner = None
+        province.core = None
+        province.half_core = None
+    get_connection().execute_arbitrary_sql(
+        "UPDATE provinces SET owner=?, core=?, half_core=? WHERE board_id=?",
+        (None, None, None, board.board_id),
+    )
+
