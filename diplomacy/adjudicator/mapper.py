@@ -392,6 +392,9 @@ class Mapper:
         if not "vassal system" in self.board.data.get("adju flags", []):
             for power_element in all_power_banners_element:
                 for i, player in enumerate(players):
+                    if i >= len(self.scoreboard_power_locations):
+                        break
+
                     # match the correct svg element based on the color of the rectangle
                     if get_element_color(power_element[0]) == player.default_color:
                         self.color_element(power_element[0], self.player_colors[player.name])

@@ -6,7 +6,9 @@ from diplomacy.adjudicator.mapper import Mapper
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.db.database import get_connection
-from diplomacy.persistence.unit import UnitType
+from diplomacy.persistence.player import Player
+from diplomacy.persistence.province import Province
+from diplomacy.persistence.unit import Unit, UnitType
 
 _set_phase_str = "set phase"
 _set_core_str = "set core"
@@ -23,6 +25,8 @@ _make_units_claim_provinces_str = "make units claim provinces"
 _set_player_vassal_str = "set vassal"
 _remove_vassal_str = "remove relationship"
 _set_game_name_str = "set game name"
+_create_player_str = "create player"
+_delete_player_str = "delete player"
 
 # apocalypse (empty map state)
 _apocalypse_str = "apocalypse"
@@ -107,6 +111,10 @@ def _parse_command(command: str, board: Board) -> None:
         _remove_player_vassal(keywords, board)
     elif command_type == _set_game_name_str:
         _set_game_name(parameter_str, board)
+    elif command_type == _create_player_str:
+        _create_player(keywords, board)
+    elif command_type == _delete_player_str:
+        _delete_player(keywords, board)
     elif command_type == _apocalypse_str:
         _apocalypse(board)
     else:
@@ -399,6 +407,8 @@ def _set_game_name(parameter_str: str, board: Board) -> None:
 
 def _apocalypse(board: Board) -> None:
     board.units = set()
+    for player in board.players:
+        player.units = set()
     get_connection().execute_arbitrary_sql(
         "DELETE FROM units WHERE board_id=?",
         (board.board_id,),
@@ -408,8 +418,113 @@ def _apocalypse(board: Board) -> None:
         province.owner = None
         province.core = None
         province.half_core = None
+    for player in board.players:
+        player.centers = set()
     get_connection().execute_arbitrary_sql(
         "UPDATE provinces SET owner=?, core=?, half_core=? WHERE board_id=?",
         (None, None, None, board.board_id),
     )
 
+
+# FIXME: Works but inconsistent with DB Storage NOT PERSISTENT
+def _create_player(keywords: list[str], board: Board) -> None:
+    raise NotImplementedError(
+        "This feature is planned, but not currently implemented due to technical limitations."
+    )
+
+    name = keywords[0]
+    color = keywords[1].replace("#", "")
+
+    try:
+        if len(color) != 6 or not color.isalnum():
+            raise ValueError
+        elif int(color, 16) and not color.startswith("0x"):
+            pass
+    except ValueError:
+        raise ValueError("Invalid Hex color code provided.")
+
+    SUPPORTED_WIN_TYPES = ["classic", "vscc"]
+    win_type = keywords[2].lower()
+    if win_type not in SUPPORTED_WIN_TYPES:
+        raise ValueError(
+            f"Invalid win type provided: {win_type} not in {SUPPORTED_WIN_TYPES}"
+        )
+
+    vscc = keywords[3]
+    iscc = keywords[4]
+    if not vscc.isnumeric() or int(vscc) <= 0:
+        raise ValueError(
+            f"Invalid VSCC value given {vscc}: Please provide a number greater than 0"
+        )
+    if not iscc.isnumeric() or int(iscc) <= 0:
+        raise ValueError(
+            f"Invalid ISCC value given {iscc}: Please provide a number greater than 0"
+        )
+
+    new_player = Player(
+        name=name,
+        color=color,
+        win_type=win_type,
+        vscc=int(vscc),
+        iscc=int(iscc),
+        centers=set(),
+        units=set(),
+    )
+    board.players.add(new_player)
+    board.name_to_player[name.lower()] = new_player
+
+    get_connection().execute_arbitrary_sql(
+        "INSERT INTO players VALUES (?, ?, ?, ?, ?, ?)",
+        (
+            board.board_id,
+            name,
+            new_player.default_color,
+            None,
+            None,
+            None,
+        ),
+    )
+
+
+def _delete_player(keywords: list[str], board: Board) -> None:
+    name = keywords[0]
+    player = board.get_player(name)
+    if not player:
+        raise ValueError(f"There is no player named: {name}")
+
+    units: set[Unit] = set(filter(lambda u: u.player == player, board.units))
+    player.units = set()
+    board.units -= units
+    get_connection().execute_arbitrary_sql(
+        "DELETE FROM units WHERE board_id=? AND phase=? AND owner=?",
+        (board.board_id, board.get_phase_and_year_string(), player.name),
+    )
+
+    provinces: set[Province] = set(filter(lambda u: u.owner == player, board.provinces))
+    player.centers = set()
+    for p in provinces:
+        p.owner = None
+        if p.core == player:
+            p.core = None
+        if p.half_core == player:
+            p.half_core = None
+    get_connection().execute_arbitrary_sql(
+        "UPDATE provinces SET owner=? WHERE board_id=? and phase=?",
+        (None, board.board_id, board.get_phase_and_year_string()),
+    )
+    get_connection().execute_arbitrary_sql(
+        "UPDATE provinces SET core=? WHERE board_id=? and phase=? AND core=?",
+        (None, board.board_id, board.get_phase_and_year_string(), player.name),
+    )
+    get_connection().execute_arbitrary_sql(
+        "UPDATE provinces SET half_core=? WHERE board_id=? and phase=? AND half_core=?",
+        (None, board.board_id, board.get_phase_and_year_string(), player.name),
+    )
+
+    # NOTE: Players are not tied to individual Phase boards, but the server as a whole
+
+    # board.players.remove(player)
+    # get_connection().execute_arbitrary_sql(
+    #     "DELETE FROM units WHERE board_id=? AND phase=? AND owner=?",
+    #     (board.board_id, board.get_phase_and_year_string(), player.name),
+    # )

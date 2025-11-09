@@ -1,3 +1,4 @@
+import aiohttp.client_exceptions
 import datetime
 import inspect
 import logging
@@ -222,6 +223,31 @@ class DiploGM(commands.Bot):
             await send_message_and_file(
                 channel=ctx.channel,
                 title="You are missing a required argument.",
+                message=out,
+            )
+            return
+
+        # HACK: Seems really wrong to catch this here
+        # Just in the moment it seems like a lot of work to fix the RuntimeError raises throughout the project
+        if isinstance(original, RuntimeError):
+            out = f"`{original}`\n"
+            await send_message_and_file(
+                channel=ctx.channel,
+                title="DiploGM ran into a Runtime Error",
+                message=out,
+            )
+            return
+
+        # NOTE: Unknown as to why this started cropping up, first seen 2025/11/03
+        # https://discord.com/channels/1201167737163104376/1280587781638459528/1434742866453860412
+        if isinstance(original, aiohttp.client_exceptions.ClientOSError):
+            out = (
+                f"Please wait a few (10 to 30) seconds and try again.\n"
+                "Sorry for the inconvenience. :D\n\n"
+            )
+            await send_message_and_file(
+                channel=ctx.channel,
+                title="The Command didn't work this time.",
                 message=out,
             )
             return

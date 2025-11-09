@@ -8,6 +8,7 @@ from discord.utils import find as discord_find
 from bot import config
 from bot import perms
 from bot.utils import log_command, send_message_and_file
+from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.manager import Manager
 
 logger = logging.getLogger(__name__)
@@ -254,8 +255,17 @@ class AdminCog(commands.Cog):
             channel=ctx.channel, title="Wave Allocation Info", message=out
         )
 
-    @commands.command(hidden=True)
-    @perms.admin_only("Execute arbitrary code")
+    @commands.command(
+        brief="Execute Arbitrary Python",
+        description="Execute a python snippet on the current board state.\nWARNING: Changes made to the board state are saved to the database.",
+        help="""Example:
+        ```python
+        for player in board.players:
+            print(player.name)
+        ```
+    """,
+    )
+    @perms.admin_only("Execute arbitrary python code")
     async def exec_py(self, ctx: commands.Context) -> None:
         class ContainedPrinter:
             def __init__(self):
@@ -283,6 +293,19 @@ class AdminCog(commands.Cog):
         manager._database.delete_board(board)
 
         manager._database.save_board(ctx.guild.id, board)
+
+    # @commands.command(
+    #     brief="Execute Arbitrary SQL",
+    #     description="Perform an SQL query on the production database.\n\nONLY TO BE USED IN THE MOST EXTREME CASES\nONLY USE IF YOU ARE ABSOLUTELY SURE OF WHAT YOU ARE DOING.",
+    #     help="""Example:
+    # `.exec_sql "DELETE FROM units WHERE board_id=? AND phase=? AND owner=?" <server_id> "0 Fall Moves" England`
+    # `.exec_sql "UPDATE provinces SET owner=? WHERE board_id=? AND phase=?" Aymara <server_id> "2 Spring Moves"`
+    # """,
+    # )
+    # @perms.admin_only("Execute arbitrary SQL code")
+    # async def exec_sql(self, ctx: commands.Context, query: str, *args) -> None:
+    #     conn = get_connection()
+    #     conn.execute_arbitrary_sql(query, args)
 
 
 async def setup(bot):

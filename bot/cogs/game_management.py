@@ -393,21 +393,18 @@ class GameManagementCog(commands.Cog):
                 if not player or (len(player.units) + len(player.centers) == 0):
                     continue
 
-                for r in guild.roles:
-                    if r.name.lower() != player.name.lower():
-                        continue
+                out = f"Hey {player.name}, the Game has adjudicated!\n"
+                await ch.send(out)  # , silent=True)
+                await send_message_and_file(
+                    channel=ch,
+                    title="Adjudication Information",
+                    message=(
+                        f"**Order Log:** {log.jump_url}\n"
+                        f"**From:** {board.phase.name} {board.year + board.year_offset}\n"
+                        f"**To:** {curr_board.phase.name} {curr_board.year + board.year_offset}"
+                    ),
+                )
 
-                    out = f"Hey {r.mention}, the Game has adjudicated!\n"
-                    await ch.send(out)
-                    await send_message_and_file(
-                        channel=ch,
-                        title="Adjudication Information",
-                        message=(
-                            f"**Order Log:** {log.jump_url}\n"
-                            f"**From:** {board.phase.name} {board.year + board.year_offset}\n"
-                            f"**To:** {curr_board.phase.name} {curr_board.year + board.year_offset}"
-                        ),
-                    )
         if "maps_sas_token" in os.environ:
             file, _ = manager.draw_map_for_board(board, draw_moves=True)
             url = get_map_url(
@@ -582,6 +579,8 @@ class GameManagementCog(commands.Cog):
         * move_unit <province_name> <province_name>
         * dislodge_unit <province_name> <retreat_option1> <retreat_option2>...
         * make_units_claim_provinces {True|(False) - whether or not to claim SCs}
+        * .create_player <player_name> <color_code> <win_type> <vscc> <iscc> {extends into the game's history, no starting centres/units}
+        * .delete_player <player_name>
         * set_player_points <player_name> <integer>
         * set_player_vassal <liege> <vassal>
         * remove_relationship <player1> <player2>
