@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 
 from discord import HTTPException, NotFound, TextChannel
@@ -7,7 +8,7 @@ from discord.utils import find as discord_find
 
 from bot import config
 from bot import perms
-from bot.utils import log_command, send_message_and_file
+from bot.utils import log_command, parse_season, send_message_and_file, upload_map_to_archive
 from diplomacy.persistence.db.database import get_connection
 from diplomacy.persistence.manager import Manager
 
@@ -254,6 +255,32 @@ class AdminCog(commands.Cog):
         await send_message_and_file(
             channel=ctx.channel, title="Wave Allocation Info", message=out
         )
+    
+    @commands.command(hidden=True)
+    @perms.admin_only("Uploads map to archive")
+    async def archive_upload(self, ctx: commands.Context) -> None:
+        if "maps_sas_token" not in os.environ:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title=f"maps_sas_token is not defined in environment variables",
+                embed_colour=config.ERROR_COLOUR,
+            )
+            return
+        arguments = (
+            ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+            .strip()
+            .lower()
+            .split()
+        )
+        server_id = int(arguments[0])
+        board = manager.get_board(server_id)
+        season = parse_season(arguments[1:], board.get_year_str())
+        file, _ = manager.draw_map(
+            ctx.guild.id,
+            draw_moves=True,
+            turn=season,
+        )
+        await upload_map_to_archive(ctx, server_id, board, file, season)
 
     @commands.command(
         brief="Execute Arbitrary Python",
