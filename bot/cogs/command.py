@@ -32,6 +32,14 @@ class CommandCog(commands.Cog):
         aliases=["leaderboard"],
     )
     async def scoreboard(self, ctx: commands.Context) -> None:
+        arguments = (
+            ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+            .strip()
+            .lower()
+            .split()
+        )
+        alphabetical = ({"a", "alpha", "alphabetical"} & set(arguments))
+        
         board = manager.get_board(ctx.guild.id)
 
         if board.fow:
@@ -72,7 +80,8 @@ class CommandCog(commands.Cog):
                 )
         else:
             response = ""
-            for player in board.get_players_by_score():
+            player_list = sorted(board.players, key=lambda p: p.name) if alphabetical else board.get_players_by_score()
+            for player in player_list:
                 if (
                     player_role := get_role_by_player(player, ctx.guild.roles)
                 ) is not None:
