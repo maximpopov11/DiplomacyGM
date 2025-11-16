@@ -62,7 +62,7 @@ class DevelopmentCog(commands.Cog):
 
     @commands.command(hidden=True)
     @perms.superuser_only("unloaded extension")
-    async def su_extension_unload(self, ctx: commands.Context, extension: str):
+    async def extension_unload(self, ctx: commands.Context, extension: str):
         try:
             await self.bot.unload_extension(extension)
         except ExtensionNotFound:
@@ -86,7 +86,7 @@ class DevelopmentCog(commands.Cog):
 
     @commands.command(hidden=True)
     @perms.superuser_only("load extension")
-    async def su_extension_load(self, ctx: commands.Context, extension: str):
+    async def extension_load(self, ctx: commands.Context, extension: str):
         try:
             await self.bot.load_extension(extension)
         except ExtensionNotFound:
@@ -124,7 +124,7 @@ class DevelopmentCog(commands.Cog):
 
     @commands.command(hidden=True)
     @perms.superuser_only("reload extension")
-    async def su_extension_reload(self, ctx: commands.Context, extension: str):
+    async def extension_reload(self, ctx: commands.Context, extension: str):
         try:
             await self.bot.unload_extension(extension)
         except ExtensionNotFound:
@@ -178,7 +178,7 @@ class DevelopmentCog(commands.Cog):
 
     @commands.command(hidden=True)
     @perms.superuser_only("shutdown the bot")
-    async def su_shutdown_the_bot_yes_i_want_to_do_this(self, ctx: commands.Context):
+    async def shutdown_the_bot_yes_i_want_to_do_this(self, ctx: commands.Context):
         await send_message_and_file(
             channel=ctx.channel,
             title=f"Why?",
