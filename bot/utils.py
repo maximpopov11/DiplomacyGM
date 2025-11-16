@@ -65,6 +65,7 @@ def is_superuser(author: commands.Context.author) -> bool:
         200279271380353025,  # KingOfPrussia
         1352388421003251833,  # Chloe
         285108244714881024,  # aahoughton (elle-approved)
+        134870832651567104, # Golden Kumquat (elle-approved)
     ]
 
 
