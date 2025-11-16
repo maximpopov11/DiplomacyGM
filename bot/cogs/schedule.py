@@ -9,7 +9,12 @@ from discord import Message, User
 from bot.bot import DiploGM
 from bot import perms
 from bot.config import ERROR_COLOUR
-from bot.utils import get_value_from_timestamp, log_command, send_message_and_file, log_command_no_ctx
+from bot.utils import (
+    get_value_from_timestamp,
+    log_command,
+    send_message_and_file,
+    log_command_no_ctx,
+)
 from diplomacy.persistence.manager import Manager
 
 logger = logging.getLogger(__name__)
@@ -23,6 +28,7 @@ IMPOSSIBLE_COMMANDS = ["schedule", "create_game", "delete_game"]
 
 class ScheduleCog(commands.Cog):
     bot: DiploGM
+
     def __init__(self, bot):
         self.bot = bot
         self.scheduled_storage = "bot/assets/schedule.json"
@@ -145,7 +151,7 @@ class ScheduleCog(commands.Cog):
             "args": content,
             "full_command": f"{self.bot.command_prefix}{command_name} {content}",
             "mentions": [mention.id for mention in ctx.message.mentions],
-            "role_mentions":  [mention.id for mention in ctx.message.role_mentions],
+            "role_mentions": [mention.id for mention in ctx.message.role_mentions],
         }
 
         out = (
@@ -176,7 +182,11 @@ class ScheduleCog(commands.Cog):
 
         if task_id == "all":
             gid = ctx.guild.id
-            ids = [id for id, task in self.scheduled_tasks.items() if task["guild_id"] == gid]
+            ids = [
+                id
+                for id, task in self.scheduled_tasks.items()
+                if task["guild_id"] == gid
+            ]
             for id in ids:
                 del self.scheduled_tasks[id]
                 await self.save_scheduled_tasks()
@@ -186,7 +196,7 @@ class ScheduleCog(commands.Cog):
                 message=f"Deleted all {len(ids)} scheduled tasks for this guild.",
             )
             return
-        
+
         try:
             task = self.scheduled_tasks[task_id]
             del self.scheduled_tasks[task_id]
@@ -200,7 +210,7 @@ class ScheduleCog(commands.Cog):
                 channel=ctx.channel,
                 title="Error!",
                 message=f"No scheduled task correlates with the ID: {task_id}",
-                embed_colour=ERROR_COLOUR
+                embed_colour=ERROR_COLOUR,
             )
 
     @commands.command(
@@ -248,13 +258,14 @@ class ScheduleCog(commands.Cog):
         }
 
         for id, task in due.items():
-            self.bot
             channel_id = task["channel_id"]
             channel = self.bot.get_channel(channel_id)
             if not channel:
                 del self.scheduled_tasks[id]
                 await self.save_scheduled_tasks()
                 continue
+
+            full_command = task["full_command"]
 
             # skip over stale tasks, suspected change of state not worthy of continuing automatic behaviour
             # guard in case bot goes down for extended periods
@@ -272,7 +283,7 @@ class ScheduleCog(commands.Cog):
                 await self.save_scheduled_tasks()
                 continue
 
-            user = self.bot.get_user(task['invoking_user_id'])
+            user = self.bot.get_user(task["invoking_user_id"])
             if user is None:
                 await send_message_and_file(
                     channel=channel,
@@ -296,15 +307,17 @@ class ScheduleCog(commands.Cog):
             mentions_users = []
             for user_id in task["mentions"]:
                 if mentioned_user := self.bot.get_user(user_id):
-                    mentions_users.append(self.get_payload_user_from_user(mentioned_user))
+                    mentions_users.append(
+                        self.get_payload_user_from_user(mentioned_user)
+                    )
 
             message = Message(
                 state=self.bot._connection,
                 channel=channel,
-                data = {
+                data={
                     "id": task["invoking_msg_id"],
                     "author": self.get_payload_user_from_user(user),
-                    "content": task['full_command'],
+                    "content": task["full_command"],
                     "timestamp": task["execute_at"],
                     "edited_timestamp": None,
                     "tts": False,
@@ -316,8 +329,7 @@ class ScheduleCog(commands.Cog):
                     "pinned": False,
                     "type": 1,
                     "channel_id": channel.id,
-
-                }
+                },
             )
 
             # delete task immediately to prevent long tasks carrying over to new loops
@@ -326,7 +338,7 @@ class ScheduleCog(commands.Cog):
             try:
                 log_command_no_ctx(
                     logger,
-                    task['full_command'],
+                    task["full_command"],
                     channel.guild.name,
                     channel.name,
                     user.name,
@@ -345,6 +357,20 @@ class ScheduleCog(commands.Cog):
 
                 raise e
 
+    @process_scheduled_tasks.before_loop
+    async def before_process_scheduled_tasks(self):
+        await self.bot.wait_until_ready()
+
+    async def save_scheduled_tasks(self):
+        logger.info(f"Saving {len(self.scheduled_tasks)} stored scheduled tasks")
+        with open(self.scheduled_storage, "w") as f:
+            curr_tasks = deepcopy(self.scheduled_tasks)
+            for _, task in curr_tasks.items():
+                task["created_at"] = task["created_at"].isoformat()
+                task["execute_at"] = task["execute_at"].isoformat()
+
+            json.dump(curr_tasks, f)
+
     @staticmethod
     def get_payload_user_from_user(user: User):
         return {
@@ -361,22 +387,9 @@ class ScheduleCog(commands.Cog):
             "email": None,
             "flags": 0,
             "premium_type": 0,
-            "public_flags": user.public_flags
+            "public_flags": user.public_flags,
         }
 
-    @process_scheduled_tasks.before_loop
-    async def before_process_scheduled_tasks(self):
-        await self.bot.wait_until_ready()
-
-    async def save_scheduled_tasks(self):
-        logger.info(f"Saving {len(self.scheduled_tasks)} stored scheduled tasks")
-        with open(self.scheduled_storage, "w") as f:
-            curr_tasks = deepcopy(self.scheduled_tasks)
-            for _, task in curr_tasks.items():
-                task["created_at"] = task["created_at"].isoformat()
-                task["execute_at"] = task["execute_at"].isoformat()
-
-            json.dump(curr_tasks, f)
 
 async def setup(bot):
     cog = ScheduleCog(bot)

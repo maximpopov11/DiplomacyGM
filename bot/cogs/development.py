@@ -1,19 +1,25 @@
 import logging
 
-import discord
 from discord.ext import commands
 import random
 
-from discord.ext.commands import ExtensionNotFound, ExtensionNotLoaded, ExtensionAlreadyLoaded, NoEntryPointError, \
-    ExtensionFailed
+from discord.ext.commands import (
+    ExtensionNotFound,
+    ExtensionNotLoaded,
+    ExtensionAlreadyLoaded,
+    NoEntryPointError,
+    ExtensionFailed,
+)
 
 from bot.config import (
     IMPDIP_SERVER_ID,
-    IMPDIP_BOT_WIZARD_ROLE, ERROR_COLOUR, PARTIAL_ERROR_COLOUR, IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID
+    IMPDIP_BOT_WIZARD_ROLE,
+    ERROR_COLOUR,
+    PARTIAL_ERROR_COLOUR,
+    IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID,
 )
 from bot.bot import DiploGM
 from bot import perms
-from bot.config import IMPDIP_SERVER_ID
 from bot.utils import send_message_and_file
 from diplomacy.persistence.manager import Manager
 
@@ -25,6 +31,7 @@ class DevelopmentCog(commands.Cog):
     """
     Superuser features primarily used for Development of the bot
     """
+
     bot: DiploGM
 
     def __init__(self, bot: DiploGM):
@@ -46,11 +53,17 @@ class DevelopmentCog(commands.Cog):
         for cog in self.bot.cogs.keys():
             cogs_body += f"- {cog}\n"
 
-        bot_wizards = self.bot.get_guild(IMPDIP_SERVER_ID).get_role(IMPDIP_BOT_WIZARD_ROLE).members
+        bot_wizards = (
+            self.bot.get_guild(IMPDIP_SERVER_ID)
+            .get_role(IMPDIP_BOT_WIZARD_ROLE)
+            .members
+        )
         footer = random.choice(
             [f"Rather upset at {bot_wizard.nick} >:(" for bot_wizard in bot_wizards]
-            + [f"eolhc keeps {random.choice(['murdering', 'stabbing'])} me",
-               f"aahoughton, I don't recognise your union!"]
+            + [
+                f"eolhc keeps {random.choice(['murdering', 'stabbing'])} me",
+                f"aahoughton, I don't recognise your union!",
+            ]
         )
 
         await send_message_and_file(
@@ -69,19 +82,18 @@ class DevelopmentCog(commands.Cog):
             await send_message_and_file(
                 channel=ctx.channel,
                 title=f"Extension was not found: {extension}",
-                embed_colour=ERROR_COLOUR
+                embed_colour=ERROR_COLOUR,
             )
             return
         except ExtensionNotLoaded:
             await send_message_and_file(
                 channel=ctx.channel,
                 title=f"Extension was not loaded: {extension}",
-                embed_colour=PARTIAL_ERROR_COLOUR
+                embed_colour=PARTIAL_ERROR_COLOUR,
             )
             return
         await send_message_and_file(
-            channel=ctx.channel,
-            title=f"Unloaded Extension {extension}"
+            channel=ctx.channel, title=f"Unloaded Extension {extension}"
         )
 
     @commands.command(hidden=True)
@@ -93,33 +105,32 @@ class DevelopmentCog(commands.Cog):
             await send_message_and_file(
                 channel=ctx.channel,
                 title=f"Extension was not found: {extension}",
-                embed_colour=ERROR_COLOUR
+                embed_colour=ERROR_COLOUR,
             )
             return
         except ExtensionAlreadyLoaded:
             await send_message_and_file(
                 channel=ctx.channel,
                 title=f"Extension was already loaded: {extension}",
-                embed_colour=PARTIAL_ERROR_COLOUR
+                embed_colour=PARTIAL_ERROR_COLOUR,
             )
             return
         except NoEntryPointError:
             await send_message_and_file(
                 channel=ctx.channel,
                 title=f"Extension has no setup function: {extension}",
-                embed_colour=ERROR_COLOUR
+                embed_colour=ERROR_COLOUR,
             )
             return
         except ExtensionFailed:
             await send_message_and_file(
                 channel=ctx.channel,
                 title=f"Extension failed to load: {extension}",
-                embed_colour=ERROR_COLOUR
+                embed_colour=ERROR_COLOUR,
             )
             return
         await send_message_and_file(
-            channel=ctx.channel,
-            title=f"Loaded Extension {extension}"
+            channel=ctx.channel, title=f"Loaded Extension {extension}"
         )
 
     @commands.command(hidden=True)
@@ -131,14 +142,14 @@ class DevelopmentCog(commands.Cog):
             await send_message_and_file(
                 channel=ctx.channel,
                 title=f"Extension was not found: {extension}",
-                embed_colour=ERROR_COLOUR
+                embed_colour=ERROR_COLOUR,
             )
             return
         except ExtensionNotLoaded:
             await send_message_and_file(
                 channel=ctx.channel,
                 title=f"Extension was not loaded: {extension}",
-                embed_colour=PARTIAL_ERROR_COLOUR
+                embed_colour=PARTIAL_ERROR_COLOUR,
             )
             return
         try:
@@ -147,42 +158,39 @@ class DevelopmentCog(commands.Cog):
             await send_message_and_file(
                 channel=ctx.channel,
                 title=f"Extension was not found: {extension}",
-                embed_colour=ERROR_COLOUR
+                embed_colour=ERROR_COLOUR,
             )
             return
         except ExtensionAlreadyLoaded:
             await send_message_and_file(
                 channel=ctx.channel,
                 title=f"Extension was already loaded: {extension}",
-                embed_colour=PARTIAL_ERROR_COLOUR
+                embed_colour=PARTIAL_ERROR_COLOUR,
             )
             return
         except NoEntryPointError:
             await send_message_and_file(
                 channel=ctx.channel,
                 title=f"Extension has no setup function: {extension}",
-                embed_colour=ERROR_COLOUR
+                embed_colour=ERROR_COLOUR,
             )
             return
         except ExtensionFailed:
             await send_message_and_file(
                 channel=ctx.channel,
                 title=f"Extension failed to load: {extension}",
-                embed_colour=ERROR_COLOUR
+                embed_colour=ERROR_COLOUR,
             )
             return
         await send_message_and_file(
-            channel=ctx.channel,
-            title=f"Reloaded Extension {extension}"
+            channel=ctx.channel, title=f"Reloaded Extension {extension}"
         )
 
     @commands.command(hidden=True)
     @perms.superuser_only("shutdown the bot")
     async def shutdown_the_bot_yes_i_want_to_do_this(self, ctx: commands.Context):
         await send_message_and_file(
-            channel=ctx.channel,
-            title=f"Why?",
-            message=f"Shutting down"
+            channel=ctx.channel, title=f"Why?", message=f"Shutting down"
         )
         channel = self.bot.get_channel(IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID)
         if channel:
@@ -193,6 +201,7 @@ class DevelopmentCog(commands.Cog):
 async def setup(bot: DiploGM):
     cog = DevelopmentCog(bot)
     await bot.add_cog(cog)
+
 
 async def teardown(bot: DiploGM):
     pass
