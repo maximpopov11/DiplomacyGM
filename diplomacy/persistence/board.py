@@ -247,13 +247,13 @@ class Board:
 
     @staticmethod
     def convert_year_int_to_str(year: int) -> str:
+        # No 0 AD / BC
         if year <= 0:
             return f"{str(1-year)} BC"
         else:
             return str(year)
 
     def get_year_str(self) -> str:
-        # No 0 AD / BC
         return self.convert_year_int_to_str(self.get_year_int())
         
     def is_chaos(self) -> bool:
