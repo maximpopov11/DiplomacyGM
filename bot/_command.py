@@ -131,7 +131,7 @@ async def announce(ctx: commands.Context, manager: Manager) -> None:
             )
         await send_message_and_file(
             channel=admin_chat_channel,
-            title="Admin Announcement",
+            title="DiploGM Announcement",
             message=content.format(*server_roles),
         )
     log_command(logger, ctx, f"Sent Announcement into {len(ctx.bot.guilds)} servers")

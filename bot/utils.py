@@ -55,7 +55,7 @@ discord_embed_description_limit = 4096
 discord_embed_total_limit = 6000
 
 
-def is_admin(author: commands.Context.author) -> bool:
+def is_superuser(author: commands.Context.author) -> bool:
     return author.id in [
         1217203346511761428,  # eebop
         332252245259190274,  # Icecream Guy

@@ -20,7 +20,7 @@ manager = Manager()
 
 class DevelopmentCog(commands.Cog):
     """
-    Administration Features primarily used for Development of the bot
+    Superuser features primarily used for Development of the bot
     """
     bot: DiploGM
 
@@ -28,7 +28,7 @@ class DevelopmentCog(commands.Cog):
         self.bot = bot
 
     @commands.command(hidden=True)
-    @perms.admin_only("show the superuser dashboard")
+    @perms.superuser_only("show the superuser dashboard")
     async def su_dashboard(self, ctx: commands.Context):
 
         extensions_body = ""

@@ -21,7 +21,7 @@ class AdminCog(commands.Cog):
         self.bot = bot
 
     @commands.command(hidden=True)
-    @perms.admin_only("send a GM announcement")
+    @perms.superuser_only("send a GM announcement")
     async def announce(self, ctx: commands.Context) -> None:
         guilds_with_games = manager.list_servers()
         content = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
@@ -60,7 +60,7 @@ class AdminCog(commands.Cog):
                 )
             await send_message_and_file(
                 channel=admin_chat_channel,
-                title="Admin Announcement",
+                title="DiploGM Announcement",
                 message=content.format(*server_roles),
             )
         log_command(
@@ -73,7 +73,7 @@ class AdminCog(commands.Cog):
         )
 
     @commands.command(hidden=True)
-    @perms.admin_only("list servers")
+    @perms.superuser_only("list servers")
     async def servers(self, ctx: commands.Context) -> None:
         servers_with_games = manager.list_servers()
         message = ""
@@ -125,7 +125,7 @@ class AdminCog(commands.Cog):
         )
 
     @commands.command(hidden=True)
-    @perms.admin_only("leave server")
+    @perms.superuser_only("leave server")
     async def leave_server(self, ctx: commands.Context) -> None:
         leave_id = ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
         try:
@@ -163,7 +163,7 @@ class AdminCog(commands.Cog):
             )
 
     @commands.command(hidden=True)
-    @perms.admin_only("allocate roles to user(s)")
+    @perms.superuser_only("allocate roles to user(s)")
     async def bulk_allocate_role(self, ctx: commands.Context) -> None:
         guild = ctx.guild
         if guild is None:
@@ -257,7 +257,7 @@ class AdminCog(commands.Cog):
         )
     
     @commands.command(hidden=True)
-    @perms.admin_only("Uploads map to archive")
+    @perms.superuser_only("Uploads map to archive")
     async def archive_upload(self, ctx: commands.Context) -> None:
         if "maps_sas_token" not in os.environ:
             await send_message_and_file(
@@ -292,7 +292,7 @@ class AdminCog(commands.Cog):
         ```
     """,
     )
-    @perms.admin_only("Execute arbitrary python code")
+    @perms.superuser_only("Execute arbitrary python code")
     async def exec_py(self, ctx: commands.Context) -> None:
         class ContainedPrinter:
             def __init__(self):
@@ -329,7 +329,7 @@ class AdminCog(commands.Cog):
     # `.exec_sql "UPDATE provinces SET owner=? WHERE board_id=? AND phase=?" Aymara <server_id> "2 Spring Moves"`
     # """,
     # )
-    # @perms.admin_only("Execute arbitrary SQL code")
+    # @perms.superuser_only("Execute arbitrary SQL code")
     # async def exec_sql(self, ctx: commands.Context, query: str, *args) -> None:
     #     conn = get_connection()
     #     conn.execute_arbitrary_sql(query, args)
