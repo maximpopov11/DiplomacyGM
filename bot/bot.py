@@ -92,11 +92,13 @@ class DiploGM(commands.Bot):
             )
         except Exception as e:
             logger.info(f"Failed to load Cog {name}: {e}")
+            raise e
 
     async def unload_extension(self, name: str, *, package: Optional[str] = None) -> None:
         await super().unload_extension(f"bot.cogs.{name}", package=package)
 
     async def reload_extension(self, name: str, *, package: Optional[str] = None) -> None:
+        # TODO this doesn't work because reload piggy backs load_extension but not unload_extension
         await super().reload_extension(f"bot.cogs.{name}", package=package)
 
     async def on_ready(self):

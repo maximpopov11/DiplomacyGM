@@ -4,9 +4,12 @@ import discord
 from discord.ext import commands
 import random
 
+from discord.ext.commands import ExtensionNotFound, ExtensionNotLoaded, ExtensionAlreadyLoaded, NoEntryPointError, \
+    ExtensionFailed
+
 from bot.config import (
-IMPDIP_SERVER_ID,
-IMPDIP_BOT_WIZARD_ROLE
+    IMPDIP_SERVER_ID,
+    IMPDIP_BOT_WIZARD_ROLE, ERROR_COLOUR, PARTIAL_ERROR_COLOUR
 )
 from bot.bot import DiploGM
 from bot import perms
@@ -55,6 +58,122 @@ class DevelopmentCog(commands.Cog):
             title=f"DiplomacyGM Dashboard",
             fields=[("Extensions", extensions_body), ("Loaded Cogs", cogs_body)],
             footer_content=footer,
+        )
+
+    @commands.command(hidden=True)
+    @perms.superuser_only("unloaded extension")
+    async def su_extension_unload(self, ctx: commands.Context, extension: str):
+        try:
+            await self.bot.unload_extension(extension)
+        except ExtensionNotFound:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title=f"Extension was not found: {extension}",
+                embed_colour=ERROR_COLOUR
+            )
+            return
+        except ExtensionNotLoaded:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title=f"Extension was not loaded: {extension}",
+                embed_colour=PARTIAL_ERROR_COLOUR
+            )
+            return
+        await send_message_and_file(
+            channel=ctx.channel,
+            title=f"Unloaded Extension {extension}"
+        )
+
+    @commands.command(hidden=True)
+    @perms.superuser_only("load extension")
+    async def su_extension_load(self, ctx: commands.Context, extension: str):
+        try:
+            await self.bot.load_extension(extension)
+        except ExtensionNotFound:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title=f"Extension was not found: {extension}",
+                embed_colour=ERROR_COLOUR
+            )
+            return
+        except ExtensionAlreadyLoaded:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title=f"Extension was already loaded: {extension}",
+                embed_colour=PARTIAL_ERROR_COLOUR
+            )
+            return
+        except NoEntryPointError:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title=f"Extension has no setup function: {extension}",
+                embed_colour=ERROR_COLOUR
+            )
+            return
+        except ExtensionFailed:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title=f"Extension failed to load: {extension}",
+                embed_colour=ERROR_COLOUR
+            )
+            return
+        await send_message_and_file(
+            channel=ctx.channel,
+            title=f"Loaded Extension {extension}"
+        )
+
+    @commands.command(hidden=True)
+    @perms.superuser_only("reload extension")
+    async def su_extension_reload(self, ctx: commands.Context, extension: str):
+        try:
+            await self.bot.unload_extension(extension)
+        except ExtensionNotFound:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title=f"Extension was not found: {extension}",
+                embed_colour=ERROR_COLOUR
+            )
+            return
+        except ExtensionNotLoaded:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title=f"Extension was not loaded: {extension}",
+                embed_colour=PARTIAL_ERROR_COLOUR
+            )
+            return
+        try:
+            await self.bot.load_extension(extension)
+        except ExtensionNotFound:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title=f"Extension was not found: {extension}",
+                embed_colour=ERROR_COLOUR
+            )
+            return
+        except ExtensionAlreadyLoaded:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title=f"Extension was already loaded: {extension}",
+                embed_colour=PARTIAL_ERROR_COLOUR
+            )
+            return
+        except NoEntryPointError:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title=f"Extension has no setup function: {extension}",
+                embed_colour=ERROR_COLOUR
+            )
+            return
+        except ExtensionFailed:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title=f"Extension failed to load: {extension}",
+                embed_colour=ERROR_COLOUR
+            )
+            return
+        await send_message_and_file(
+            channel=ctx.channel,
+            title=f"Reloaded Extension {extension}"
         )
 
 
