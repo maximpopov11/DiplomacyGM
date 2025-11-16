@@ -249,7 +249,7 @@ def log_command(
     level=logging.INFO,
 ) -> None:
     # FIXME Should probably delete this function and use a logging formatter instead
-    _log_command(
+    log_command_no_ctx(
         remote_logger,
         ctx.message.content,
         ctx.guild.name,
@@ -260,7 +260,7 @@ def log_command(
     )
 
 
-def _log_command(
+def log_command_no_ctx(
     remote_logger: logging.Logger,
     invoke_message: str,
     guild: str,
@@ -397,7 +397,7 @@ async def send_message_and_file(
     discord_file = None
     if file is not None:
         if file_name[-4:].lower() == ".png" and len(file) > discord_file_limit:
-            _log_command(
+            log_command_no_ctx(
                 logger,
                 "?",
                 channel.guild.name,
@@ -408,7 +408,7 @@ async def send_message_and_file(
             file, file_name, error = await png_to_jpg(file, file_name)
             error = re.sub("\\s+", " ", str(error)[2:-1])
             if len(error) > 0:
-                _log_command(
+                log_command_no_ctx(
                     logger,
                     "?",
                     channel.guild.name,
@@ -417,7 +417,7 @@ async def send_message_and_file(
                     f"png to jpeg conversion errors: {error}",
                 )
             if len(file) > discord_file_limit or len(file) == 0:
-                _log_command(
+                log_command_no_ctx(
                     logger,
                     "?",
                     channel.guild.name,

@@ -32,8 +32,8 @@ winter_scoreboard_output_channels = [
 bot_wizard = 1424487941857611837
 
 [dev_hub]
-id = 1356041233444896768
-unhandled_errors_channel = 1439632126239834305
+id = 1262215477237645314
+unhandled_errors_channel = 1423396664483381258
 
 
 [extensions]
