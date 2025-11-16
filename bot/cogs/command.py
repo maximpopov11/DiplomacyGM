@@ -81,7 +81,9 @@ class CommandCog(commands.Cog):
         if csv and not board.is_chaos():
             players = sorted(board.players, key=lambda p: p.name)
             counts = map(lambda p: str(len(p.centers)), players)
+            counts = "\n".join(counts)
             await ctx.send(counts)
+            return
 
         the_player = perms.get_player_by_context(ctx)
 
