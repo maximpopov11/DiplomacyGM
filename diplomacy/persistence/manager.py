@@ -130,10 +130,10 @@ class Manager(metaclass=ManagerMeta):
                 player_restriction = None
         svg, file_name = self.draw_map_for_board(
             board,
-            player_restriction = player_restriction,
-            draw_moves = draw_moves,
-            color_mode = color_mode,
-            movement_only=movement_only
+            player_restriction=player_restriction,
+            draw_moves=draw_moves,
+            color_mode=color_mode,
+            movement_only=movement_only,
         )
         return svg, file_name
 
@@ -146,31 +146,26 @@ class Manager(metaclass=ManagerMeta):
         movement_only: bool = False,
     ) -> tuple[str, str]:
         start = time.time()
-        
+
         if draw_moves:
             svg, file_name = Mapper(board, color_mode=color_mode).draw_moves_map(
                 board.phase,
                 player_restriction=player_restriction,
-                movement_only=movement_only
+                movement_only=movement_only,
             )
         else:
             svg, file_name = Mapper(board, color_mode=color_mode).draw_current_map()
 
         elapsed = time.time() - start
-        logger.info(f"manager.draw_map_for_board.{elapsed}s")
+        logger.info(f"manager.draw_map_for_board took {elapsed}s")
         return svg, file_name
 
     def adjudicate(self, server_id: int, test: bool = False) -> Board:
         start = time.time()
-        
+
         board = self._boards[server_id]
         old_board = self._database.get_board(
-            server_id,
-            board.phase,
-            board.year,
-            board.fish,
-            board.name,
-            board.datafile
+            server_id, board.phase, board.year, board.fish, board.name, board.datafile
         )
         # mapper = Mapper(self._boards[server_id])
         # mapper.draw_moves_map(None)
@@ -205,7 +200,6 @@ class Manager(metaclass=ManagerMeta):
         elapsed = time.time() - start
         logger.info(f"manager.draw_fow_current_map.{server_id}.{elapsed}s")
         return svg, file_name
-
 
     def draw_fow_players_moves_map(
         self,

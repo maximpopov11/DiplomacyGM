@@ -25,10 +25,42 @@ class CommandCog(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot = bot
 
+    @commands.command(brief="How long has the bot been online?")
+    async def uptime(self, ctx: commands.Context) -> None:
+        uptime = ctx.message.created_at - self.bot.creation_time
+
+        hours = int(uptime.total_seconds() // 3600)
+        minutes = int((uptime.total_seconds() % 3600) // 60)
+        seconds = int((uptime.total_seconds() % 3600) % 60)
+        awake_since = f"{hours} hours {minutes} minutes {seconds} seconds"
+
+        since_last = (
+            ctx.message.created_at - self.bot.last_command_time
+            if self.bot.last_command_time
+            else -1
+        )
+        if since_last == -1:
+            since_last = "None so far in this uptime."
+        else:
+            hours = int(since_last.total_seconds() // 3600)
+            minutes = int((since_last.total_seconds() % 3600) // 60)
+            seconds = int((since_last.total_seconds() % 3600) % 60)
+            since_last = f"{hours} hours {minutes} minutes {seconds} seconds ago"
+
+        await send_message_and_file(
+            channel=ctx.channel,
+            title="Uptime",
+            message=(
+                f"DiploGM has been awake for: {awake_since}\n"
+                f"Last processed command was: {since_last}"
+            ),
+        )
+
     @commands.command(
         brief="Outputs the scoreboard.",
         description="""Outputs the scoreboard.
-        In Chaos, is shortened and sorted by points, unless "standard" is an argument""",
+        In Chaos, is shortened and sorted by points, unless "standard" is an argument
+        * Use `csv` to obtain a raw list of sc counts (in alphabetical order)""",
         aliases=["leaderboard"],
     )
     async def scoreboard(self, ctx: commands.Context) -> None:
@@ -38,12 +70,18 @@ class CommandCog(commands.Cog):
             .lower()
             .split()
         )
-        alphabetical = ({"a", "alpha", "alphabetical"} & set(arguments))
-        
+        csv = "csv" in arguments
+        alphabetical = {"a", "alpha", "alphabetical"} & set(arguments)
+
         board = manager.get_board(ctx.guild.id)
 
         if board.fow:
             perms.assert_perms.gm_only(ctx, "get scoreboard")
+
+        if csv and not board.is_chaos():
+            players = sorted(board.players, key=lambda p: p.name)
+            counts = map(lambda p: str(len(p.centers)), players)
+            await ctx.send(counts)
 
         the_player = perms.get_player_by_context(ctx)
 
@@ -80,7 +118,11 @@ class CommandCog(commands.Cog):
                 )
         else:
             response = ""
-            player_list = sorted(board.players, key=lambda p: p.name) if alphabetical else board.get_players_by_score()
+            player_list = (
+                sorted(board.players, key=lambda p: p.name)
+                if alphabetical
+                else board.get_players_by_score()
+            )
             for player in player_list:
                 if (
                     player_role := get_role_by_player(player, ctx.guild.roles)

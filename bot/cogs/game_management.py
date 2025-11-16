@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import logging
 import os
 import re
@@ -376,11 +377,23 @@ class GameManagementCog(commands.Cog):
         log_command(logger, ctx, message=f"Successfully published orders")
         await send_message_and_file(
             channel=ctx.channel,
-            title=f"Sent Orders to {orders_log_channel.mention} -> {log.jump_url}",
+            title=f"Sent Orders to {log.jump_url}",
         )
 
         # HACK: Lifted from .ping_players
         # Should really work its way into a util function
+        roles = {}
+        sc_changes = {}
+        for player in curr_board.players:
+            roles[player.name] = get_role_by_player(player, guild.roles)
+            sc_changes[player.name] = len(player.centers)
+
+        for player in board.players:
+            sc_changes[player.name] -= len(player.centers)
+
+        sc_changes = [f"  **{role.mention if (role := roles[k]) else k}**: ({'+' if v > 0 else ''}{sc_changes[k]})" for k, v in sorted(sc_changes.items()) if v != 0]
+        sc_changes = '\n'.join(sc_changes)
+
         player_categories: list[CategoryChannel] = []
         for c in guild.categories:
             if config.is_player_category(c.name):
@@ -392,15 +405,17 @@ class GameManagementCog(commands.Cog):
                 if not player or (len(player.units) + len(player.centers) == 0):
                     continue
 
-                out = f"Hey {player.name}, the Game has adjudicated!\n"
-                await ch.send(out)  # , silent=True)
+                role = get_role_by_player(player, guild.roles)
+                out = f"Hey **{role.mention if role else player.name}**, the Game has adjudicated!\n"
+                await ch.send(out, silent=True)
                 await send_message_and_file(
                     channel=ch,
                     title="Adjudication Information",
                     message=(
                         f"**Order Log:** {log.jump_url}\n"
                         f"**From:** {board.phase.name} {board.year + board.year_offset}\n"
-                        f"**To:** {curr_board.phase.name} {curr_board.year + board.year_offset}"
+                        f"**To:** {curr_board.phase.name} {curr_board.year + board.year_offset}\n"
+                        f"**SC Changes:**\n{sc_changes}\n"
                     ),
                 )
 
@@ -529,6 +544,20 @@ class GameManagementCog(commands.Cog):
             await self.publish_orders(ctx)
             await self.unlock_orders(ctx)
 
+        # AUTOMATIC SCOREBOARD OUTPUT FOR DATA SPREADSHEET
+        if phase.is_builds(new_board.phase):
+            channel = self.bot.get_channel(config.IMPDIP_SERVER_WINTER_SCOREBOARD_OUTPUT_CHANNEL_ID)
+            if not channel:
+                await send_message_and_file(channel=ctx.channel, message="Couldn't automatically send off the Winter Scoreboard data", embed_colour=config.ERROR_COLOUR)
+                return
+            title = f"### {guild.name} Centre Counts (alphabetical order) | {new_board.phase.name} {new_board.get_year_str()}"
+
+            players = sorted(new_board.players, key=lambda p: p.name)
+            counts = "\n".join(map(lambda p: str(len(p.centers)), players))
+
+            await channel.send(title)
+            await ctx.send(counts)
+
     @commands.command(brief="Rolls back to the previous game state.")
     @perms.gm_only("rollback")
     async def rollback(self, ctx: commands.Context) -> None:
@@ -567,9 +596,10 @@ class GameManagementCog(commands.Cog):
         * set_player_vassal <liege> <vassal>
         * remove_relationship <player1> <player2>
         * set_game_name <game_name>
-        * apocalypse {NO WARNING, clears entire map, no units no cores no province owners}
+        * load_state <server_id> <spring, fall, winter}_{moves, retreats, builds> <year>
+        * apocalypse {all OR army, fleet, core, province} !!! deletes everything specified !!!
         """,
-    )
+    )   
     @perms.gm_only("edit")
     async def edit(self, ctx: commands.Context) -> None:
         edit_commands = ctx.message.content.removeprefix(

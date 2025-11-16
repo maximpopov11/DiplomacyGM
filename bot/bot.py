@@ -43,6 +43,9 @@ WELCOME_MESSAGES = [
 class DiploGM(commands.Bot):
     def __init__(self, command_prefix, intents):
         super().__init__(command_prefix=command_prefix, intents=intents)
+        self.creation_time = datetime.datetime.now(datetime.timezone.utc)
+        self.last_command_time = None
+
         self.manager = Manager()
 
     async def setup_hook(self) -> None:
@@ -76,12 +79,18 @@ class DiploGM(commands.Bot):
 
             extension = f"bot.cogs.{filename[:-3]}"
             try:
+                start = datetime.datetime.now()
                 await self.load_extension(extension)
-                logger.info(f"Successfully loaded Cog: {extension}")
+                logger.info(
+                    f"Successfully loaded Cog: {extension} in {datetime.datetime.now() - start}"
+                )
             except Exception as e:
                 logger.info(f"Failed to load Cog {extension}: {e}")
 
     async def on_ready(self):
+        now = datetime.datetime.now(datetime.timezone.utc)
+        logger.info(f"Setup took {now - self.creation_time}")
+
         logger.info(f"Logged in as {self.user}")
 
         # Ensure bot is connected to the correct server
@@ -143,12 +152,17 @@ class DiploGM(commands.Bot):
         await ctx.message.add_reaction("👍")
 
     async def after_any_command(self, ctx: commands.Context):
+        self.last_command_time = ctx.message.created_at
         time_spent = (
             datetime.datetime.now(datetime.timezone.utc) - ctx.message.created_at
         )
+        if time_spent.total_seconds() < 0:
+            time_spent = datetime.timedelta(seconds=0)
 
-        if time_spent.total_seconds() < 10:
+        if time_spent.total_seconds() < 1:
             level = logging.DEBUG
+        elif time_spent.total_seconds() < 10:
+            level = logging.INFO
         else:
             level = logging.WARN
 
@@ -230,7 +244,7 @@ class DiploGM(commands.Bot):
         # HACK: Seems really wrong to catch this here
         # Just in the moment it seems like a lot of work to fix the RuntimeError raises throughout the project
         if isinstance(original, RuntimeError):
-            out = f"`{original}`\n"
+            out = f"`{original}`\n{original.__traceback__}"
             await send_message_and_file(
                 channel=ctx.channel,
                 title="DiploGM ran into a Runtime Error",
@@ -238,12 +252,19 @@ class DiploGM(commands.Bot):
             )
             return
 
-        # NOTE: Unknown as to why this started cropping up, first seen 2025/11/03
+        # NOTE: Unknown as to why ClientOSError started cropping up, first seen 2025/11/03
         # https://discord.com/channels/1201167737163104376/1280587781638459528/1434742866453860412
-        if isinstance(original, aiohttp.client_exceptions.ClientOSError):
+        if isinstance(
+            original,
+            (
+                aiohttp.client_exceptions.ClientOSError,
+                discord.errors.DiscordServerError,
+            ),
+        ):
             out = (
                 f"Please wait a few (10 to 30) seconds and try again.\n"
                 "Sorry for the inconvenience. :D\n\n"
+                "-# If after repeated attempts it still breaks, please report this to a bot dev using a feedback channel"
             )
             await send_message_and_file(
                 channel=ctx.channel,
@@ -294,20 +315,10 @@ class DiploGM(commands.Bot):
         if user.bot:
             return
 
-        channel = reaction.message.channel
+        message: discord.Message = reaction.message
+        chance = random.randint(0, 10000)
 
-        # limit scope, no reason to track
-        if channel.id != BOT_DEV_UNHANDLED_ERRORS_CHANNEL_ID:
-            return
-
-        # delete handled tickets
-        if reaction.emoji == "🫡" and any(
-            map(
-                lambda r: r.name in ["Server Access", "Github Access", "Contributor"],
-                user.roles,
+        if chance == 0:
+            await message.reply(
+                f"Why did you reply with {reaction.emoji} {user.mention}?"
             )
-        ):
-            try:
-                await reaction.message.delete()
-            except Exception as e:
-                await channel.send(e)
