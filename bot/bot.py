@@ -1,3 +1,5 @@
+from typing import Optional
+
 import aiohttp.client_exceptions
 import datetime
 import inspect
@@ -14,6 +16,7 @@ from bot.config import (
     ERROR_COLOUR,
     IMPDIP_SERVER_ID,
     IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID,
+    EXTENSIONS_TO_LOAD_ON_STARTUP,
 )
 from bot.perms import CommandPermissionError
 from bot.utils import send_message_and_file
@@ -54,7 +57,9 @@ class DiploGM(commands.Bot):
         self.after_invoke(self.after_any_command)
 
         # modularly load command modules
-        await self.load_all_cogs()
+        for extension in EXTENSIONS_TO_LOAD_ON_STARTUP:
+            await self.load_extension(extension)
+
 
         # sync app_commands (slash) commands with all servers
         try:
@@ -68,24 +73,31 @@ class DiploGM(commands.Bot):
         except Exception as e:
             logger.warning(f"Failed to sync commands: {e}", exc_info=True)
 
-    async def load_all_cogs(self):
-        COG_DIR = "./bot/cogs/"
-
-        for filename in os.listdir(COG_DIR):
+    @staticmethod
+    def get_all_extensions():
+        for filename in os.listdir("./bot/cogs/"):
             # ignore non py files
             # ignore private files e.g. '_private.py'
             if not filename.endswith(".py") or filename.startswith("_"):
                 continue
 
-            extension = f"bot.cogs.{filename[:-3]}"
-            try:
-                start = datetime.datetime.now()
-                await self.load_extension(extension)
-                logger.info(
-                    f"Successfully loaded Cog: {extension} in {datetime.datetime.now() - start}"
-                )
-            except Exception as e:
-                logger.info(f"Failed to load Cog {extension}: {e}")
+            yield f"bot.cogs.{filename[:-3]}"
+
+    async def load_extension(self, name: str, *, package: Optional[str] = None):
+        try:
+            start = datetime.datetime.now()
+            await super().load_extension(f"bot.cogs.{name}", package=package)
+            logger.info(
+                f"Successfully loaded Cog: {name} in {datetime.datetime.now() - start}"
+            )
+        except Exception as e:
+            logger.info(f"Failed to load Cog {name}: {e}")
+
+    async def unload_extension(self, name: str, *, package: Optional[str] = None) -> None:
+        await super().unload_extension(f"bot.cogs.{name}", package=package)
+
+    async def reload_extension(self, name: str, *, package: Optional[str] = None) -> None:
+        await super().reload_extension(f"bot.cogs.{name}", package=package)
 
     async def on_ready(self):
         now = datetime.datetime.now(datetime.timezone.utc)

@@ -35,6 +35,8 @@ DISCORD_TOKEN = all_config["bot"]["discord_token"]
 LOGGING_LEVEL = all_config["bot"]["log_level"]
 COMMAND_PREFIX = all_config["bot"]["command_prefix"]
 
+# EXTENSIONS
+EXTENSIONS_TO_LOAD_ON_STARTUP = all_config["extensions"]["load_on_startup"]
 
 # DEVELOPMENT SERVER HUB
 BOT_DEV_SERVER_ID = all_config["dev_hub"]["id"]

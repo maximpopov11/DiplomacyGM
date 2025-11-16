@@ -34,7 +34,7 @@ unhandled_errors_channel = 1423396664483381258
 
 
 [extensions]
-startup = [
+load_on_startup = [
     "administration",
     "command",
     "development",
@@ -42,7 +42,6 @@ startup = [
     "game_management",
     "moderation",
     "party",
-    "sample",
     "schedule",
     "slash_substitute",
     "spectator",
