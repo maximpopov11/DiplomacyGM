@@ -315,7 +315,7 @@ class ScheduleCog(commands.Cog):
                     f"Failure to invoke scheduled command.\nCommand: `{full_command}`\nScheduled at: {task['created_at']}"
                 )
 
-                user = self.bot.get_user(task["invoking_user"])
+                user = self.bot.get_user(task["invoking_user_id"])
                 if user:
                     await channel.send(f"Alert: {user.mention}")
 
