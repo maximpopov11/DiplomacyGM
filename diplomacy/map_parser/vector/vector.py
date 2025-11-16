@@ -603,6 +603,17 @@ class Parser:
                 return UnitType.ARMY
             else:
                 raise RuntimeError(f"Unit types are labeled, but {name} doesn't start with F or A")
+
+        if "unit_type_from_names" in self.data["svg config"] and self.data["svg config"]["unit_type_from_names"]:
+            # unit_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
+            name = unit_data[1].get(f"{NAMESPACE.get('inkscape')}label")
+            if name.lower().startswith("sail"):
+                return UnitType.FLEET
+            if name.lower().startswith("shield"):
+                return UnitType.ARMY
+            else:
+                raise RuntimeError(f"Unit types are labeled, but {name} wasn't sail or shield")
+
         unit_data = unit_data.findall(".//svg:path", namespaces=NAMESPACE)[0]
         num_sides = unit_data.get("{http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd}sides")
         if num_sides == "3":

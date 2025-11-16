@@ -46,7 +46,8 @@ class DevelopmentCog(commands.Cog):
         bot_wizards = self.bot.get_guild(IMPDIP_SERVER_ID).get_role(IMPDIP_BOT_WIZARD_ROLE).members
         footer = random.choice(
             [f"Rather upset at {bot_wizard.nick} >:(" for bot_wizard in bot_wizards]
-            + [f"eolhc keeps stabbing me", f"aahoughton, I don't recognise your union!"]
+            + [f"eolhc keeps {random.choice(['murdering', 'stabbing'])} me",
+               f"aahoughton, I don't recognise your union!"]
         )
 
         await send_message_and_file(
