@@ -123,7 +123,8 @@
             "CRIM": {
                 "coasts": {
                     "wc": [
-                        "GODE"
+                        "GODE",
+                        "CBLA"
                     ],
                     "nc": [
                         "AZOV"
@@ -132,6 +133,42 @@
                         "CRIS"
                     ]
                 }
+            },
+            "DNIE": {
+                "coasts": {
+                    "wc": [
+                        "GODE"
+                    ],
+                    "ec": [
+                        "AZOV"
+                    ]
+                }
+            },
+            "ELYS": {
+                "adjacencies": [
+                    "MATR",
+                    "UEGY",
+                    "ALEX",
+                    "ROSA",
+                    "CREP",
+                    "ITAN",
+                    "KYDO",
+                    "WLIS"
+            ]
+            },
+                "GANT": {
+                    "adjacencies": [
+                        "DODE",
+                        "HALI",
+                        "TELM",
+                        "TARH",
+                        "TARS",
+                        "GALX",
+                        "KARP",
+                        "KYRE",
+                        "EMED",
+                        "RHO"
+            ]
             }
         }
     },

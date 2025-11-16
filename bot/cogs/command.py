@@ -1,3 +1,5 @@
+from black.trans import defaultdict
+import inspect
 import logging
 
 from discord.ext import commands
@@ -18,20 +20,70 @@ manager = Manager()
 
 
 class CommandCog(commands.Cog):
+    """This is a Cog for general-purpose commands!"""
+
     def __init__(self, bot) -> None:
         self.bot = bot
+
+    @commands.command(brief="How long has the bot been online?")
+    async def uptime(self, ctx: commands.Context) -> None:
+        uptime = ctx.message.created_at - self.bot.creation_time
+
+        hours = int(uptime.total_seconds() // 3600)
+        minutes = int((uptime.total_seconds() % 3600) // 60)
+        seconds = int((uptime.total_seconds() % 3600) % 60)
+        awake_since = f"{hours} hours {minutes} minutes {seconds} seconds"
+
+        since_last = (
+            ctx.message.created_at - self.bot.last_command_time
+            if self.bot.last_command_time
+            else -1
+        )
+        if since_last == -1:
+            since_last = "None so far in this uptime."
+        else:
+            hours = int(since_last.total_seconds() // 3600)
+            minutes = int((since_last.total_seconds() % 3600) // 60)
+            seconds = int((since_last.total_seconds() % 3600) % 60)
+            since_last = f"{hours} hours {minutes} minutes {seconds} seconds ago"
+
+        await send_message_and_file(
+            channel=ctx.channel,
+            title="Uptime",
+            message=(
+                f"DiploGM has been awake for: {awake_since}\n"
+                f"Last processed command was: {since_last}"
+            ),
+        )
 
     @commands.command(
         brief="Outputs the scoreboard.",
         description="""Outputs the scoreboard.
-        In Chaos, is shortened and sorted by points, unless "standard" is an argument""",
+        In Chaos, is shortened and sorted by points, unless "standard" is an argument
+        * Use `csv` to obtain a raw list of sc counts (in alphabetical order)""",
         aliases=["leaderboard"],
     )
     async def scoreboard(self, ctx: commands.Context) -> None:
+        arguments = (
+            ctx.message.content.removeprefix(ctx.prefix + ctx.invoked_with)
+            .strip()
+            .lower()
+            .split()
+        )
+        csv = "csv" in arguments
+        alphabetical = {"a", "alpha", "alphabetical"} & set(arguments)
+
         board = manager.get_board(ctx.guild.id)
 
         if board.fow:
             perms.assert_perms.gm_only(ctx, "get scoreboard")
+
+        if csv and not board.is_chaos():
+            players = sorted(board.players, key=lambda p: p.name)
+            counts = map(lambda p: str(len(p.centers)), players)
+            counts = "\n".join(counts)
+            await ctx.send(counts)
+            return
 
         the_player = perms.get_player_by_context(ctx)
 
@@ -68,7 +120,12 @@ class CommandCog(commands.Cog):
                 )
         else:
             response = ""
-            for player in board.get_players_by_score():
+            player_list = (
+                sorted(board.players, key=lambda p: p.name)
+                if alphabetical
+                else board.get_players_by_score()
+            )
+            for player in player_list:
                 if (
                     player_role := get_role_by_player(player, ctx.guild.roles)
                 ) is not None:
@@ -119,6 +176,62 @@ class CommandCog(commands.Cog):
         )
 
     @commands.command(
+        brief="Returns developer information",
+        help="""
+        Provide the name of a command to obtain the Python docstrings for the method.
+
+        Usage:
+            .dev <cmd>
+            .dev dev
+            .dev create_game
+            .dev view_orders
+        """,
+    )
+    async def dev(self, ctx: commands.Context, cmd_name: str) -> None:
+        """
+        Return docstring information to the user, give a high-level insight into how the bot might work.
+
+        Process:
+            1. Fetch Command (error on NotFound)
+            2. Collect Command information
+                a. Method definition
+                b. Method docstrings
+
+        Parameters
+        ----------
+        ctx (commands.Context): Invoking message context
+        cmd_name (str | None): Name of the command to obtain docstring information from
+
+        Returns
+        -------
+        None
+        """
+        cmd = self.bot.get_command(cmd_name)
+        if not cmd:
+            await send_message_and_file(
+                channel=ctx.channel,
+                message=f"No command found for name: {cmd_name}",
+                embed_colour=ERROR_COLOUR,
+            )
+            return
+
+        funcdef = f"async def {cmd.callback.__name__}{inspect.signature(cmd.callback)}:"
+        docs = inspect.getdoc(cmd.callback) or "No docstring available..."
+
+        out = (
+            "**Command Definition:**\n"
+            "```python\n"
+            f"{funcdef}```"
+            f"**Developer Documentation:**\n"
+            f"```{docs}```"
+        )
+        out = (out[:1021] + "...") if len(out) >= 1024 else out
+
+        await send_message_and_file(
+            channel=ctx.channel, title=f"Developer Info for {cmd_name}", message=out
+        )
+
+    @commands.command(
         brief="outputs information about a specific province",
         aliases=["province"],
     )
@@ -126,7 +239,7 @@ class CommandCog(commands.Cog):
         board = manager.get_board(ctx.guild.id)
 
         if not board.orders_enabled:
-            perms.assert_perms.gm_only(
+            perms.assert_gm_only(
                 ctx,
                 "You cannot use .province_info in a non-GM channel while orders are locked.",
                 non_gm_alt="Orders locked! If you think this is an error, contact a GM.",
@@ -209,7 +322,7 @@ class CommandCog(commands.Cog):
         board = manager.get_board(guild.id)
 
         if not board.orders_enabled:
-            perms.assert_perms.gm_only(
+            perms.assert_gm_only(
                 ctx,
                 "You cannot use .player_info in a non-GM channel while orders are locked.",
                 non_gm_alt="Orders locked! If you think this is an error, contact a GM.",

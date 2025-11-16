@@ -131,10 +131,10 @@ class Parser:
             province.all_locs -= {None}
             province.all_rets -= {None}
             if province.primary_unit_coordinate == None:
-                logger.warning(f"Province {province.name} has no unit coord. Setting to 0,0 ...")
+                logger.warning(f"{self.datafile}: Province {province.name} has no unit coord. Setting to 0,0 ...")
                 province.primary_unit_coordinate = (0, 0)
             if province.retreat_unit_coordinate == None:
-                logger.warning(f"Province {province.name} has no retreat coord. Setting to 0,0 ...")
+                logger.warning(f"{self.datafile}: Province {province.name} has no retreat coord. Setting to 0,0 ...")
                 province.retreat_unit_coordinate = (0, 0)
 
         for province in provinces:
@@ -142,10 +142,10 @@ class Parser:
                 coast.all_locs -= {None}
                 coast.all_rets -= {None}
                 if coast.primary_unit_coordinate == None:
-                    logger.warning(f"Province {coast.name} has no unit coord. Setting to 0,0 ...")
+                    logger.warning(f"{self.datafile}: Province {coast.name} has no unit coord. Setting to 0,0 ...")
                     coast.primary_unit_coordinate = (0, 0)
                 if coast.retreat_unit_coordinate == None:
-                    logger.warning(f"Province {coast.name} has no retreat coord. Setting to 0,0 ...")
+                    logger.warning(f"{self.datafile}: Province {coast.name} has no retreat coord. Setting to 0,0 ...")
                     coast.retreat_unit_coordinate = (0, 0)
         
         initial_phase = phase.initial()
@@ -162,7 +162,7 @@ class Parser:
             self.cache_provinces = set()
             for province in raw_provinces:
                 if province.name in cache:
-                    logger.warning(f"{province.name} repeats in map, ignoring...")
+                    logger.warning(f"{self.datafile}: {province.name} repeats in map, ignoring...")
                     continue
                 cache.append(province.name)
                 self.cache_provinces.add(province)
@@ -241,7 +241,7 @@ class Parser:
         if "provinces" in self.data["overrides"]:
             for name, data in self.data["overrides"]["provinces"].items():
                 province = self.name_to_province[name]
-                # TODO: Some way to specifiy whether or not to clear other adjacencies?
+                # TODO: Some way to specify whether or not to clear other adjacencies?
                 if "adjacencies" in data:
                     province.adjacent.update(self.names_to_provinces(data["adjacencies"]))
                 if "remove_adjacencies" in data:

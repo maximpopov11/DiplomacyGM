@@ -50,7 +50,7 @@ class TransGL3:
         elif transform_string != "":
             raise Exception(f"Unknown transformation: {transform_string}")
         
-        # the matrix represents the tranformation from (x, y, const) to (x, y const)
+        # the matrix represents the transformation from (x, y, const) to (x, y const)
         # we preserve the const via a 1 so that convolutions work correctly
         self.matrix = np.array([
             [x_dx, y_dx, 0],

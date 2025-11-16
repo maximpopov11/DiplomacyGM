@@ -33,7 +33,7 @@ def get_player_by_context(ctx: commands.Context):
     weak_channel_checking = "weak channel checking" in board.data.get("flags", [])
     if board.fow or weak_channel_checking:
         player = get_player_by_channel(
-            ctx.channel, manager, ctx.guild.id, ignore_catagory=weak_channel_checking
+            ctx.channel, manager, ctx.guild.id, ignore_category=weak_channel_checking
         )
     else:
         player = get_player_by_role(ctx.message.author, manager, ctx.guild.id)
@@ -48,7 +48,7 @@ def require_player_by_context(ctx: commands.Context, description: str):
     weak_channel_checking = "weak channel checking" in board.data.get("flags", [])
     if board.fow or weak_channel_checking:
         player = get_player_by_channel(
-            ctx.channel, manager, ctx.guild.id, ignore_catagory=weak_channel_checking
+            ctx.channel, manager, ctx.guild.id, ignore_category=weak_channel_checking
         )
         if player:
             return player

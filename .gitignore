@@ -1,6 +1,7 @@
 
 /assets
 bot/_token.py
+bot/assets/schedule.json
 /config/*.txt
 *.pyc
 *.iml
@@ -16,6 +17,7 @@ __pycache__
 *.zip
 
 test.py
+gamelist.tsv
 
 .env
 venv

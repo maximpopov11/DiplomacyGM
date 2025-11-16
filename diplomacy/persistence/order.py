@@ -32,6 +32,14 @@ class ComplexOrder(UnitOrder):
         super().__init__()
         self.source: Location = source
 
+class NMR(UnitOrder):
+    display_priority: int = 20
+
+    def __init__(self):
+        super().__init__()
+
+    def __str__(self):
+        return "NMRs"
 
 class Hold(UnitOrder):
     display_priority: int = 20

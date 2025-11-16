@@ -10,6 +10,7 @@ from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.order import (
     Core,
+    NMR,
     Hold,
     ConvoyMove,
     Move,
@@ -322,6 +323,7 @@ class _DatabaseConnection:
                 ) = unit_info
                 if order_type is not None:
                     order_classes = [
+                        NMR,
                         Hold,
                         Core,
                         Move,
@@ -349,7 +351,9 @@ class _DatabaseConnection:
                         )
                         if source_coast is not None:
                             source_province = source_coast
-                    if order_class in [Hold, Core, RetreatDisband]:
+                    if order_class == NMR:
+                        continue
+                    elif order_class in [Hold, Core, RetreatDisband]:
                         order = order_class()
                     elif order_class in [Move, ConvoyMove, RetreatMove]:
                         order = order_class(destination=destination_province)

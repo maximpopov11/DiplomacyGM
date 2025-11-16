@@ -688,7 +688,7 @@ async def adjudicate(ctx: commands.Context, manager: Manager) -> None:
     log_command(
         logger,
         ctx,
-        message=f"Adjudication Sucessful for {board.phase.name} {board.get_year_str()}",
+        message=f"Adjudication Successful for {board.phase.name} {board.get_year_str()}",
     )
     file, file_name = manager.draw_moves_map(ctx.guild.id, None, color_mode, old_turn)
     await send_message_and_file(
@@ -1050,7 +1050,7 @@ async def publicize(ctx: commands.Context, manager: Manager) -> None:
             embed_colour=ERROR_COLOUR,
         )
 
-    player = get_player_by_channel(channel, manager, ctx.guild.id, ignore_catagory=True)
+    player = get_player_by_channel(channel, manager, ctx.guild.id, ignore_category=True)
 
     # TODO hacky
     users = []
@@ -1344,7 +1344,7 @@ async def ping_players(ctx: commands.Context, manager: Manager) -> None:
     for player_category in player_categories:
         for channel in player_category.channels:
             player = get_player_by_channel(
-                channel, manager, guild.id, ignore_catagory=board.is_chaos()
+                channel, manager, guild.id, ignore_category=board.is_chaos()
             )
 
             if not player:
@@ -1488,7 +1488,7 @@ async def archive(ctx: commands.Context, _: Manager) -> None:
             # Apply the updated overwrites
             await channel.edit(overwrites=overwrites)
 
-    message = f"The following catagories have been archived: {' '.join([catagory.name for catagory in categories])}"
+    message = f"The following categories have been archived: {' '.join([category.name for category in categories])}"
     log_command(logger, ctx, message=f"Archived {len(categories)} Channels")
     await send_message_and_file(channel=ctx.channel, message=message)
 
@@ -1847,21 +1847,6 @@ async def substitute(
         )
         return
 
-
-    # log a substitution is occurring in the gm space
-    # TODO: Update Substitution Logging to include Reputation after Bot Integration
-    logc = ctx.bot.get_channel(IMPDIP_SERVER_SUBSTITUTE_LOG_CHANNEL_ID)
-    out = (
-        f"Game: {guild.name}\n" 
-        + f"- Guild ID: {guild.id}\n"
-        + f"In: {in_user.mention}[{in_user.name}]\n"
-        + f"Out: {out_user.mention}[{out_user.name}]\n"
-        + f"Phase: {board.phase.name} {board.get_year_str()}\n"
-        + f"Reason: {reason}"
-    )
-    await send_message_and_file(channel=logc, message=out)
-
-
     # fetch relevant roles to swap around on the users
     player_role = discord_find(lambda r: r.name == "Player", guild.roles)
     if not player_role:
@@ -1895,11 +1880,11 @@ async def substitute(
     
 
     # if incoming is currently a player
-    if player_role in in_member.roles:
+    if player_role in in_member.roles and power_role not in in_member.roles:
         await send_message_and_file(
             channel=ctx.channel,
             title="Error",
-            message="Can't substitute in an existing player!",
+            message="Can't substitute in a current player for another power!",
             embed_colour=ERROR_COLOUR,
         )
         return
@@ -1930,6 +1915,28 @@ async def substitute(
             )
             return
 
+
+    # log a substitution is occurring in the gm space
+    # TODO: Update Substitution Logging to include Reputation after Bot Integration
+    logc = ctx.bot.get_channel(IMPDIP_SERVER_SUBSTITUTE_LOG_CHANNEL_ID)
+    out = (
+        f"Game: {guild.name}\n" 
+        + f"- Guild ID: {guild.id}\n"
+        + f"In: {in_user.mention}[{in_user.name}]\n"
+        + f"Out: {out_user.mention}[{out_user.name}]\n"
+        + f"Phase: {board.phase.name} {board.get_year_str()}\n"
+        + f"Reason: {reason}"
+    )
+    await send_message_and_file(channel=logc, message=out)
+    await send_message_and_file(channel=ctx.channel, message="Recorded substitution in #reputation-tracker.")
+
+    # log to server specific sub-tracking channel
+    sub_tracker_channel = discord_find(lambda c: c.name == "player-sub-tracking", guild.text_channels)
+    if sub_tracker_channel:
+        await send_message_and_file(channel=sub_tracker_channel, message=out)
+    else:
+        await ctx.send("Could not find #player-sub-tracking channel, logging message here instead")
+        await send_message_and_file(channel=ctx.channel, message=out)
 
     # PROCESS ROLE ASSIGNMENTS
     out = f"Outgoing Player: {out_user.name}\n"
@@ -1962,7 +1969,7 @@ async def substitute(
         await in_member.remove_roles(*prev_roles, reason="Substitution")
         await in_member.add_roles(*new_roles)
     except HTTPException:
-        out += f"[ERROR] Failed to swap roles for outgoing player: {out_user.name}"
+        out += f"[ERROR] Failed to swap roles for incoming player: {in_user.name}"
 
     await send_message_and_file(channel=ctx.channel, title="Substitution results", message=out)
 

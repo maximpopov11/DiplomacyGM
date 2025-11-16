@@ -2,8 +2,9 @@ from __future__ import annotations
 
 
 class Phase:
-    def __init__(self, name: str, index: int, next_phase: Phase, previous_phase: Phase):
+    def __init__(self, name: str, shortname: str, index: int, next_phase: Phase, previous_phase: Phase):
         self.name: str = name
+        self.shortname: shortname = shortname
         self.index = index
         self.next: Phase = next_phase
         self.previous: Phase = previous_phase
@@ -12,11 +13,11 @@ class Phase:
         return self.name
 
 
-_winter_builds = Phase("Winter Builds", 4, None, None)
-_fall_retreats = Phase("Fall Retreats", 3, _winter_builds, None)
-_fall_moves = Phase("Fall Moves", 2, _fall_retreats, None)
-_spring_retreats = Phase("Spring Retreats", 1, _fall_moves, None)
-_spring_moves = Phase("Spring Moves", 0, _spring_retreats, None)
+_winter_builds = Phase("Winter Builds", "wa", 4, None, None)
+_fall_retreats = Phase("Fall Retreats", "fr", 3, _winter_builds, None)
+_fall_moves = Phase("Fall Moves", "fm", 2, _fall_retreats, None)
+_spring_retreats = Phase("Spring Retreats", "sr", 1, _fall_moves, None)
+_spring_moves = Phase("Spring Moves", "sm", 0, _spring_retreats, None)
 
 _winter_builds.next = _spring_moves
 _winter_builds.previous = _fall_retreats

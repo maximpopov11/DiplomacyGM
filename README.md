@@ -40,7 +40,7 @@ virtualenv venv -p=3.12
 #Start virtual environment
 source venv/bin/activate
 
-#This installs all the python dependancies the bot needs, only needed once.
+#This installs all the python dependencies the bot needs, only needed once.
 pip install -r requirements.txt
 
 #Copies 

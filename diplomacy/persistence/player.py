@@ -72,7 +72,7 @@ class Player:
     def info(self, variant: str = "standard") -> str:
         bullet = "\n- "
 
-        units = list(sorted(self.units, key=lambda u: u.location().name))
+        units = list(sorted(self.units, key=lambda u: (u.unit_type.value, u.location().name)))
         centers = list(sorted(self.centers, key=lambda c: c.name))
         
         if variant == "chaos":
@@ -86,13 +86,30 @@ class Player:
             )
             return out
 
+        center_str = "Centers:"
+        for center in centers:
+            center_str += bullet
+            if center.core == self:
+                center_str += f"{center.name} (core)"
+            elif center.half_core == self:
+                center_str += f"{center.name} (half-core)"
+            else:
+                center_str += f"{center.name}"
+
+        unit_str = "Units:"
+        for unit in units:
+            unit_str += f"{bullet}({unit.unit_type.value}) {unit.location().name}"
+            
         out = (
             ""
             + f"Color: {(bullet + bullet.join([k + ': ' + v for k, v in self.color_dict.items()]) if self.color_dict is not None else self.render_color)}\n"
             + f"Score: [{len(self.centers)}/{self.vscc}] {round(self.score() * 100, 2)}%\n"
-            + f"Centers: {(bullet + bullet.join([center.name for center in centers])) if len(centers) > 0 else 'None'}\n"
-            + f"Units: {(bullet + bullet.join([unit.location().name for unit in units])) if len(units) > 0 else 'None'}\n"
+            + f"{center_str}\n"
+            + f"{unit_str}\n"
         )
+
+
+        
         return out
 
     def score(self):

@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Any
 
 from discord.ext import commands
@@ -90,7 +91,8 @@ class PlayerCog(commands.Cog):
         brief="Outputs your current submitted orders.",
         description="Outputs your current submitted orders. "
         "Use .view_map to view a sample moves map of your orders. "
-        "Use the 'missing' or 'submitted' argument to view only units without orders or only submitted orders.",
+        "Use the 'missing' or 'submitted' argument to view only units without orders or only submitted orders. "
+        "Use the 'blind' argument to view only the number of orders submitted.",
         aliases=["v", "view", "vieworders", "view-orders"],
     )
     @perms.player("view orders")
@@ -110,7 +112,10 @@ class PlayerCog(commands.Cog):
 
         try:
             board = manager.get_board(ctx.guild.id)
-            order_text = get_orders(board, player, ctx, subset=subset)
+
+            blind = "blind" in arguments
+            order_text = get_orders(board, player, ctx, subset=subset, blind=blind)
+
         except RuntimeError as err:
             logger.error(err, exc_info=True)
             log_command(
@@ -162,6 +167,7 @@ class PlayerCog(commands.Cog):
         )
         color_arguments = list(config.color_options & set(arguments))
         color_mode = color_arguments[0] if color_arguments else None
+        movement_only = "movement" in arguments
         board = manager.get_board(ctx.guild.id)
         season = parse_season(arguments, board.get_year_str())
 
@@ -180,8 +186,13 @@ class PlayerCog(commands.Cog):
 
         try:
             if not board.fow:
-                file, file_name = manager.draw_moves_map(
-                    ctx.guild.id, player, color_mode, season
+                file, file_name = manager.draw_map(
+                    ctx.guild.id,
+                    draw_moves=True,
+                    player_restriction=player,
+                    color_mode=color_mode,
+                    turn=season,
+                    movement_only=movement_only,
                 )
             else:
                 file, file_name = manager.draw_fow_players_moves_map(
@@ -255,8 +266,8 @@ class PlayerCog(commands.Cog):
 
         try:
             if not board.fow:
-                file, file_name = manager.draw_current_map(
-                    ctx.guild.id, color_mode, season
+                file, file_name = manager.draw_map(
+                    ctx.guild.id, color_mode=color_mode, turn=season
                 )
             else:
                 file, file_name = manager.draw_fow_current_map(

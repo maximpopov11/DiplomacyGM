@@ -1,6 +1,6 @@
 from enum import Enum
 
-from diplomacy.persistence.order import Hold, Core, Move, ConvoyMove, Support, ConvoyTransport
+from diplomacy.persistence.order import NMR, Hold, Core, Move, ConvoyMove, Support, ConvoyTransport
 from diplomacy.persistence.province import Province, Location, Coast
 from diplomacy.persistence.unit import Unit, UnitType
 
@@ -47,7 +47,7 @@ class AdjudicableOrder:
         # indicates that a move is also a convoy that failed, so no support holds
         self.not_supportable = False
         self.is_valid = True
-        if isinstance(unit.order, Hold):
+        if isinstance(unit.order, Hold) or isinstance(unit.order, NMR):
             self.type = OrderType.HOLD
         elif isinstance(unit.order, Core):
             self.type = OrderType.CORE

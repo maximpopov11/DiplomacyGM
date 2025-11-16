@@ -1,7 +1,10 @@
+import asyncio
 import datetime
 import io
+import os
 import re
 import logging
+from subprocess import PIPE
 from typing import List, Tuple
 
 
@@ -16,6 +19,7 @@ from diplomacy.adjudicator.utils import svg_to_png, png_to_jpg
 from diplomacy.persistence import phase
 from diplomacy.persistence.board import Board
 from diplomacy.persistence.manager import Manager
+from diplomacy.persistence.phase import Phase
 from diplomacy.persistence.player import Player
 from diplomacy.persistence.unit import UnitType
 
@@ -106,7 +110,7 @@ def get_player_by_channel(
     channel: commands.Context.channel,
     manager: Manager,
     server_id: int,
-    ignore_catagory=False,
+    ignore_category=False,
 ) -> Player | None:
     # thread -> main channel
     if isinstance(channel, Thread):
@@ -114,15 +118,15 @@ def get_player_by_channel(
 
     board = manager.get_board(server_id)
     name = channel.name
-    if (not ignore_catagory) and not config.is_player_category(channel.category.name):
+    if (not ignore_category) and not config.is_player_category(channel.category.name):
         return None
 
     if board.is_chaos() and name.endswith("-void"):
-        name = name[: -5]
+        name = name[:-5]
     else:
         if not name.endswith(config.player_channel_suffix):
             return None
-        
+
         name = name[: -(len(config.player_channel_suffix))]
 
     try:
@@ -167,6 +171,17 @@ def get_player_by_name(name: str, manager: Manager, server_id: int) -> Player | 
     for player in manager.get_board(server_id).players:
         if simple_player_name(player.name) == simple_player_name(name):
             return player
+    return None
+
+
+def get_maps_channel(guild: Guild) -> GuildChannel | None:
+    for channel in guild.channels:
+        if (
+            channel.name.lower() == "maps"
+            and channel.category is not None
+            and channel.category.name.lower() == "gm channels"
+        ):
+            return channel
     return None
 
 
@@ -324,15 +339,18 @@ async def send_message_and_file(
         while messages:
             message = messages.pop()
             while message:
-                cutoff = discord_embed_description_limit
+                cutoff = -1
+                if len(message) <= discord_embed_description_limit:
+                    cutoff = len(message)
                 # Try to find an even line break to split the long messages on
-                if len(message) > discord_embed_description_limit:
+                if cutoff == -1:
                     cutoff = message.rfind("\n", 0, discord_embed_description_limit)
-                    # otherwise split at limit
-                    if cutoff == -1:
-                        cutoff = message.rfind(" ", 0, discord_embed_description_limit)
-                        if cutoff == -1:
-                            cutoff = discord_embed_description_limit
+                if cutoff == -1:
+                    cutoff = message.rfind(" ", 0, discord_embed_description_limit)
+                # otherwise split at limit
+                if cutoff == -1:
+                    cutoff = discord_embed_description_limit
+
                 embed = Embed(
                     title=title,
                     description=message[:cutoff],
@@ -412,7 +430,7 @@ async def send_message_and_file(
                 else:
                     message = "Please contact your GM"
                 await send_message_and_file(
-                    channel=channel, title="File too larger", message=message
+                    channel=channel, title="File too large", message=message
                 )
                 file = None
                 file_name = None
@@ -457,6 +475,7 @@ def get_orders(
     ctx: Context,
     fields: bool = False,
     subset: str | None = None,
+    blind: bool = False,
 ) -> str | List[Tuple[str, str]]:
     if fields:
         response = []
@@ -464,6 +483,11 @@ def get_orders(
         response = ""
     if phase.is_builds(board.phase):
         for player in sorted(board.players, key=lambda sort_player: sort_player.name):
+            if not player_restriction and (
+                len(player.centers) + len(player.units) == 0
+            ):
+                continue
+
             if not player_restriction or player == player_restriction:
 
                 if (
@@ -486,12 +510,17 @@ def get_orders(
 
                 title = f"**{player_name}**: ({len(player.centers)}) ({'+' if len(player.centers) - len(player.units) >= 0 else ''}{len(player.centers) - len(player.units)})"
                 body = ""
-                for unit in player.build_orders | set(player.vassal_orders.values()):
-                    body += f"\n{unit}"
-                if player.waived_orders > 0:
-                    body += f"\nWaive {player.waived_orders}"
+                if blind:
+                    body = f" ({len(player.build_orders) + player.waived_orders})"
+                else:
+                    for unit in player.build_orders | set(
+                        player.vassal_orders.values()
+                    ):
+                        body += f"\n{unit}"
+                    if player.waived_orders > 0:
+                        body += f"\nWaive {player.waived_orders}"
 
-                if isinstance(fields, list):
+                if fields:
                     response.append((f"", f"{title}{body}"))
                 else:
                     response += f"\n{title}{body}"
@@ -504,6 +533,11 @@ def get_orders(
             players = {player_restriction}
 
         for player in sorted(players, key=lambda p: p.name):
+            if not player_restriction and (
+                len(player.centers) + len(player.units) == 0
+            ):
+                continue
+
             if phase.is_retreats(board.phase):
                 in_moves = lambda u: u == u.province.dislodged_unit
             else:
@@ -524,14 +558,17 @@ def get_orders(
 
             title = f"**{player_name}** ({len(ordered)}/{len(moving_units)})"
             body = ""
-            if missing and subset != "submitted":
-                body += f"__Missing Orders:__\n"
-                for unit in sorted(missing, key=lambda _unit: _unit.province.name):
-                    body += f"{unit}\n"
-            if ordered and subset != "missing":
-                body += f"__Submitted Orders:__\n"
-                for unit in sorted(ordered, key=lambda _unit: _unit.province.name):
-                    body += f"{unit} {unit.order}\n"
+            if blind:
+                body = ""
+            else:
+                if missing and subset != "submitted":
+                    body += f"__Missing Orders:__\n"
+                    for unit in sorted(missing, key=lambda _unit: _unit.province.name):
+                        body += f"{unit}\n"
+                if ordered and subset != "missing":
+                    body += f"__Submitted Orders:__\n"
+                    for unit in sorted(ordered, key=lambda _unit: _unit.province.name):
+                        body += f"{unit} {unit.order}\n"
 
             if fields:
                 response.append((f"", f"{title}\n{body}"))
@@ -619,3 +656,52 @@ def parse_season(
     else:
         parsed_phase = phase.get(season + " " + ("Retreats" if retreat else "Moves"))
     return (year, parsed_phase)
+
+def get_value_from_timestamp(timestamp: str) -> int | None:
+    if len(timestamp) == 10 and timestamp.isnumeric():
+        return int(timestamp)
+
+    match = re.match(r"<t:(\d{10}):\w>", timestamp)
+    if match:
+        return int(match.group(1))
+
+    return None
+
+async def upload_map_to_archive(ctx: commands.Context, server_id: int, board: Board, map: str, turn: tuple[str, phase] | None = None) -> None:
+    if "maps_sas_token" not in os.environ:
+        return
+    if turn is None:
+        turnstr = f"{(board.year + board.year_offset) % 100}{board.phase.shortname}"
+    else:
+        turnstr = f"{int(turn[0]) % 100}{turn[1].shortname}"
+    url = None
+    with open("gamelist.tsv", "r") as gamefile:
+        for server in gamefile:
+            server_info = server.strip().split("\t")
+            if str(server_id) == server_info[0]:
+                url = f"{os.environ['maps_url']}/{server_info[1]}/{server_info[2]}/{turnstr}m.png{os.environ['maps_sas_token']}"
+                break
+    if url is None:
+        return
+    png_map, _ = await svg_to_png(map, url)
+    p = await asyncio.create_subprocess_shell(
+        f'azcopy copy "{url}" --from-to PipeBlob --content-type image/png',
+        stdout=PIPE,
+        stdin=PIPE,
+        stderr=PIPE,
+    )
+    data, error = await p.communicate(input=png_map)
+    error = error.decode()
+    await send_message_and_file(
+        channel=ctx.channel,
+        title=f"Uploaded map to archive",
+    )
+    log_command(
+        logger,
+        ctx,
+        message=(
+            f"Map uploading failed: {error}"
+            if len(error) > 0
+            else "Uploaded map to archive"
+        ),
+    )

@@ -1,30 +1,31 @@
+from collections import OrderedDict
 import logging
+import os
 import re
 
 from discord import (
     CategoryChannel,
-    HTTPException,
     Member,
     PermissionOverwrite,
     Role,
     Thread,
-    User,
 )
 from discord.ext import commands
-from discord.utils import find as discord_find
+from discord.message import convert_emoji_reaction
 
 from bot import config
 from bot.parse_edit_state import parse_edit_state
 from bot import perms
 from bot.utils import (
+    get_maps_channel,
     get_orders,
     get_orders_log,
     get_player_by_channel,
-    get_player_by_name,
     get_role_by_player,
     is_gm,
     log_command,
     send_message_and_file,
+    upload_map_to_archive,
 )
 from diplomacy.persistence import phase
 from diplomacy.persistence.db.database import get_connection
@@ -89,13 +90,13 @@ class GameManagementCog(commands.Cog):
                 # Apply the updated overwrites
                 await channel.edit(overwrites=overwrites)
 
-        message = f"The following catagories have been archived: {' '.join([catagory.name for catagory in categories])}"
+        message = f"The following categories have been archived: {' '.join([category.name for category in categories])}"
         log_command(logger, ctx, message=f"Archived {len(categories)} Channels")
         await send_message_and_file(channel=ctx.channel, message=message)
 
     @commands.command(
         brief="pings players who don't have the expected number of orders.",
-        description="""Pngs all players in their orders channl that satisfy the following constraints:
+        description="""Pings all players in their orders channel that satisfy the following constraints:
         1. They have too many build orders, or too little or too many disband orders. As of now, waiving builds doesn't lead to a ping.
         2. They are missing move orders or retreat orders.
         You may also specify a timestamp to send a deadline to the players.
@@ -266,7 +267,7 @@ class GameManagementCog(commands.Cog):
             await send_message_and_file(
                 channel=ctx.channel,
                 title=f"Failed to find a player for the following:",
-                message=f"- {failed_players_str}"
+                message=f"- {failed_players_str}",
             )
 
     @commands.command(
@@ -316,11 +317,23 @@ class GameManagementCog(commands.Cog):
     )
     @perms.gm_only("publish orders")
     async def publish_orders(self, ctx: commands.Context) -> None:
+        guild = ctx.guild
+        if not guild:
+            return
+
         board = manager.get_previous_board(ctx.guild.id)
+        curr_board = manager.get_board(guild.id)
         if not board:
             await send_message_and_file(
                 channel=ctx.channel,
                 title="Failed to get previous phase",
+                embed_colour=config.ERROR_COLOUR,
+            )
+            return
+        elif not curr_board:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title="Failed to get current phase",
                 embed_colour=config.ERROR_COLOUR,
             )
             return
@@ -355,17 +368,60 @@ class GameManagementCog(commands.Cog):
                 embed_colour=config.ERROR_COLOUR,
             )
             return
-        else:
-            await send_message_and_file(
-                channel=orders_log_channel,
-                title=f"{board.phase.name} {board.get_year_str()}",
-                fields=order_text,
-            )
-            log_command(logger, ctx, message=f"Successfully published orders")
-            await send_message_and_file(
-                channel=ctx.channel,
-                title=f"Sent Orders to {orders_log_channel.mention}",
-            )
+
+        log = await send_message_and_file(
+            channel=orders_log_channel,
+            title=f"{board.phase.name} {board.get_year_str()}",
+            fields=order_text,
+        )
+        log_command(logger, ctx, message=f"Successfully published orders")
+        await send_message_and_file(
+            channel=ctx.channel,
+            title=f"Sent Orders to {log.jump_url}",
+        )
+
+        # HACK: Lifted from .ping_players
+        # Should really work its way into a util function
+        roles = {}
+        sc_changes = {}
+        for player in curr_board.players:
+            roles[player.name] = get_role_by_player(player, guild.roles)
+            sc_changes[player.name] = len(player.centers)
+
+        for player in board.players:
+            sc_changes[player.name] -= len(player.centers)
+
+        sc_changes = [f"  **{role.mention if (role := roles[k]) else k}**: ({'+' if v > 0 else ''}{sc_changes[k]})" for k, v in sorted(sc_changes.items()) if v != 0]
+        sc_changes = '\n'.join(sc_changes)
+
+        player_categories: list[CategoryChannel] = []
+        for c in guild.categories:
+            if config.is_player_category(c.name):
+                player_categories.append(c)
+
+        for c in player_categories:
+            for ch in c.text_channels:
+                player = get_player_by_channel(ch, manager, guild.id)
+                if not player or (len(player.units) + len(player.centers) == 0):
+                    continue
+
+                role = get_role_by_player(player, guild.roles)
+                out = f"Hey **{role.mention if role else player.name}**, the Game has adjudicated!\n"
+                await ch.send(out, silent=True)
+                await send_message_and_file(
+                    channel=ch,
+                    title="Adjudication Information",
+                    message=(
+                        f"**Order Log:** {log.jump_url}\n"
+                        f"**From:** {board.phase.name} {board.year + board.year_offset}\n"
+                        f"**To:** {curr_board.phase.name} {curr_board.year + board.year_offset}\n"
+                        f"**SC Changes:**\n{sc_changes}\n"
+                    ),
+                )
+
+        if "maps_sas_token" in os.environ:
+            file, _ = manager.draw_map_for_board(board, draw_moves=True)
+            await upload_map_to_archive(ctx, ctx.guild.id, board, file)
 
     @commands.command(
         brief="Adjudicates the game and outputs the moves and results maps.",
@@ -375,10 +431,16 @@ class GameManagementCog(commands.Cog):
         Arguments: 
         * pass true|t|svg|s to return an svg
         * pass standard, dark, blue, or pink for different color modes if present
+        * pass test to view maps without doing an actual adjudication
+        * pass full to automatically publish orders and maps
         """,
     )
     @perms.gm_only("adjudicate")
     async def adjudicate(self, ctx: commands.Context) -> None:
+        guild = ctx.guild
+        if not guild:
+            return
+
         board = manager.get_board(ctx.guild.id)
 
         arguments = (
@@ -390,38 +452,111 @@ class GameManagementCog(commands.Cog):
         return_svg = not ({"true", "t", "svg", "s"} & set(arguments))
         color_arguments = list(config.color_options & set(arguments))
         color_mode = color_arguments[0] if color_arguments else None
+        test_adjudicate = "test" in arguments
+        full_adjudicate = "full" in arguments
+        movement_adjudicate = "movement" in arguments
+
+        if test_adjudicate and full_adjudicate:
+            await send_message_and_file(
+                channel=ctx.channel,
+                title="Test and full adjudications are incompatable. Defaulting to test adjudication.",
+                embed_colour=config.PARTIAL_ERROR_COLOUR,
+            )
+            full_adjudicate = False
+
+        if full_adjudicate:
+            await self.lock_orders(ctx)
+
         old_turn = (board.get_year_int(), board.phase)
-        # await send_message_and_file(channel=ctx.channel, **await view_map(ctx, manager))
-        # await send_message_and_file(channel=ctx.channel, **await view_orders(ctx, manager))
-        manager.adjudicate(ctx.guild.id)
+        new_board = manager.adjudicate(ctx.guild.id, test=test_adjudicate)
 
         log_command(
             logger,
             ctx,
-            message=f"Adjudication Sucessful for {board.phase.name} {board.get_year_str()}",
+            message=f"Adjudication Successful for {board.phase.name} {board.get_year_str()}",
         )
-        file, file_name = manager.draw_moves_map(
-            ctx.guild.id, None, color_mode, old_turn
+        file, file_name = manager.draw_map(
+            ctx.guild.id,
+            draw_moves=True,
+            player_restriction=None,
+            color_mode=color_mode,
+            turn=old_turn,
         )
+        title = f"{board.name} — " if board.name else ""
+        title += f"{old_turn[1].name} {board.convert_year_int_to_str(old_turn[0])}"
         await send_message_and_file(
             channel=ctx.channel,
-            title=f"{old_turn[1].name} {board.convert_year_int_to_str(old_turn[0])}",
-            message="Moves Map",
+            title=f"{title} Orders Map",
+            message="Test adjudication" if test_adjudicate else "",
             file=file,
             file_name=file_name,
             convert_svg=return_svg,
-            file_in_embed=False,
         )
-        file, file_name = manager.draw_current_map(ctx.guild.id, color_mode)
+        if full_adjudicate:
+            map_message = await send_message_and_file(
+                channel=get_maps_channel(ctx.guild),
+                title=f"{title} Orders Map",
+                file=file,
+                file_name=file_name,
+                convert_svg=True,
+            )
+        #           await map_message.publish()
+
+        if movement_adjudicate:
+            file, file_name = manager.draw_map(
+                ctx.guild.id,
+                draw_moves=True,
+                player_restriction=None,
+                color_mode=color_mode,
+                turn=old_turn,
+                movement_only=True,
+            )
+            title = f"{board.name} — " if board.name else ""
+            title += f"{old_turn[1].name} {old_turn[0]}"
+            await send_message_and_file(
+                channel=ctx.channel,
+                title=f"{title} Movement Map",
+                message="Test adjudication" if test_adjudicate else "",
+                file=file,
+                file_name=file_name,
+                convert_svg=return_svg,
+            )
+
+        file, file_name = manager.draw_map_for_board(new_board, color_mode=color_mode)
         await send_message_and_file(
             channel=ctx.channel,
-            title=f"{board.phase.name} {board.get_year_str()}",
-            message="Results Map",
+            title=f"{title} Results Map",
+            message="Test adjudication results" if test_adjudicate else "",
             file=file,
             file_name=file_name,
             convert_svg=return_svg,
-            file_in_embed=False,
         )
+
+        if full_adjudicate:
+            map_message = await send_message_and_file(
+                channel=get_maps_channel(ctx.guild),
+                title=f"{title} Results Map",
+                file=file,
+                file_name=file_name,
+                convert_svg=True,
+            )
+            #            await map_message.publish()
+            await self.publish_orders(ctx)
+            await self.unlock_orders(ctx)
+
+        # AUTOMATIC SCOREBOARD OUTPUT FOR DATA SPREADSHEET
+        if phase.is_builds(new_board.phase) and (guild.id != config.BOT_DEV_SERVER_ID or guild.name.startswith("Imperial Diplomacy")) and not test_adjudicate:
+            channel = self.bot.get_channel(config.IMPDIP_SERVER_WINTER_SCOREBOARD_OUTPUT_CHANNEL_ID)
+            if not channel:
+                await send_message_and_file(channel=ctx.channel, message="Couldn't automatically send off the Winter Scoreboard data", embed_colour=config.ERROR_COLOUR)
+                return
+            title = f"### {guild.name} Centre Counts (alphabetical order) | {new_board.phase.name} {new_board.get_year_str()}"
+
+            players = sorted(new_board.players, key=lambda p: p.name)
+            counts = "\n".join(map(lambda p: str(len(p.centers)), players))
+
+            await channel.send(title)
+            await channel.send(counts)
 
     @commands.command(brief="Rolls back to the previous game state.")
     @perms.gm_only("rollback")
@@ -455,10 +590,14 @@ class GameManagementCog(commands.Cog):
         * move_unit <province_name> <province_name>
         * dislodge_unit <province_name> <retreat_option1> <retreat_option2>...
         * make_units_claim_provinces {True|(False) - whether or not to claim SCs}
+        * .create_player <player_name> <color_code> <win_type> <vscc> <iscc> {extends into the game's history, no starting centres/units}
+        * .delete_player <player_name>
         * set_player_points <player_name> <integer>
         * set_player_vassal <liege> <vassal>
         * remove_relationship <player1> <player2>
         * set_game_name <game_name>
+        * load_state <server_id> <spring, fall, winter}_{moves, retreats, builds> <year>
+        * apocalypse {all OR army, fleet, core, province} !!! deletes everything specified !!!
         """,
     )
     @perms.gm_only("edit")
@@ -469,298 +608,6 @@ class GameManagementCog(commands.Cog):
         message = parse_edit_state(edit_commands, manager.get_board(ctx.guild.id))
         log_command(logger, ctx, message=message["title"])
         await send_message_and_file(channel=ctx.channel, **message)
-
-    @commands.command(
-        help="""Places a substitute advertisement for a power
-
-    Usage:
-    .advertise <power> # Advertise permanent position, no extra message
-    .advertise <power> <message> # Advertise permanent position, extra message
-    .advertise <power> <timestamp> # Advertise temporary position, no extra message
-    .advertise <power> <timestamp> <message> # Advertise temporary position, extra message
-        """
-    )
-    @perms.gm_only("advertise for a substitute")
-    async def advertise(
-        self,
-        ctx: commands.Context,
-        power_role: Role,
-        timestamp: str | None = None,
-        message: str = "No message given.",
-    ):
-        guild = ctx.guild
-        if not guild:
-            return
-
-        _hub = ctx.bot.get_guild(config.IMPDIP_SERVER_ID)
-        if not _hub:
-            raise perms.CommandPermissionError(
-                "Can't advertise as can't access the Imperial Diplomacy Hub Server."
-            )
-
-        interested_sub_ping = ""
-        interested_sub_role = discord_find(
-            lambda r: r.name == "Interested Substitute", _hub.roles
-        )
-        if interested_sub_role:
-            interested_sub_ping = f"{interested_sub_role.mention}\n"
-
-        board = manager.get_board(guild.id)
-        try:
-            power: Player = board.get_player(power_role.name)
-        except ValueError:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="Did not mention a Player role.",
-                embed_colour=config.ERROR_COLOUR,
-            )
-            return
-
-        # GET TIMESTAMP FOR TEMP SUB SPECIFICATION
-        if timestamp is not None:
-            timestamp_re = r"<t:(\d+):[a-zA-Z]>"
-            match = re.match(
-                timestamp_re,
-                timestamp,
-            )
-
-            if match:
-                timestamp = f"<t:{match.group(1)}:D>"
-            else:
-                message = timestamp + " " + message
-                timestamp = None
-
-        sub_period = (
-            "Permanent" if timestamp is None else f"Temporary until {timestamp}"
-        )
-
-        # GET CHANNELS FOR POST / REDIRECTS
-        ticket_channel = ctx.bot.get_channel(
-            config.IMPDIP_SERVER_SUBSTITUTE_TICKET_CHANNEL_ID
-        )
-        if not ticket_channel:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="Could not find the channel where substitute tickets can be created",
-                embed_colour=config.ERROR_COLOUR,
-            )
-            return
-
-        advertise_channel = ctx.bot.get_channel(
-            config.IMPDIP_SERVER_SUBSTITUTE_ADVERTISE_CHANNEL_ID
-        )
-        if not advertise_channel:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="Could not find the channel meant for advertisements",
-                embed_colour=config.ERROR_COLOUR,
-            )
-            return
-
-        title = f"Substitute Advertisement"
-        out = f"""
-    {interested_sub_ping}
-    Period: {sub_period}
-    Game: {guild.name}
-    Phase: {board.phase.name} {board.get_year_str()}
-    Power: {power.name}
-    SC Count: {len(power.centers)}
-    VSCC: {round(power.score() * 100, 2)}%
-
-    Message: {message}
-
-    If you are interested, please go to {ticket_channel.mention} to create a ticket, and remember to ping {ctx.author.mention} so they know you're asking.
-            """
-
-        file, file_name = manager.draw_current_map(guild.id, "standard")
-        await send_message_and_file(
-            channel=advertise_channel,
-            title=title,
-            message=out,
-            file=file,
-            file_name=file_name,
-            convert_svg=True,
-            file_in_embed=True,
-        )
-
-        # create a ghost ping of "@Interested Substitute" since embeds don't notify
-        try:
-            msg = await advertise_channel.send(interested_sub_ping)
-            await msg.delete(delay=5)
-        except HTTPException as e:
-            logger.warning(f"failed to ping interested substitutes: {e}")
-
-    @commands.command(help="Handles the in/out substitution of two users")
-    @perms.gm_only("substitute a player")
-    async def substitute(
-        self,
-        ctx: commands.Context,
-        manager: Manager,
-        out_user: User,
-        in_user: User,
-        power_role: Role,
-        reason: str = "No reason given.",
-    ):
-        guild = ctx.guild
-        if not guild:
-            return
-
-        board = manager.get_board(guild.id)
-
-        # HACK: Need to create an approved server list for commands
-        override = False
-        if not guild.name.startswith("Imperial Diplomacy") and not override:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="You're not allowed to do that in this server.",
-                embed_colour=config.ERROR_COLOUR,
-            )
-            return
-
-        in_member = guild.get_member(in_user.id)
-        if not in_member:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="Can't substitute a player that is not in the server!",
-                embed_colour=config.ERROR_COLOUR,
-            )
-            return
-
-        if not get_player_by_name(power_role.name, manager, guild.id):
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="Did not supply a Player role.",
-                embed_colour=config.ERROR_COLOUR,
-            )
-            return
-
-        # log a substitution is occurring in the gm space
-        # TODO: Update Substitution Logging to include Reputation after Bot Integration
-        logc = ctx.bot.get_channel(config.IMPDIP_SERVER_SUBSTITUTE_LOG_CHANNEL_ID)
-        out = (
-            f"Game: {guild.name}\n"
-            + f"- Guild ID: {guild.id}\n"
-            + f"In: {in_user.mention}[{in_user.name}]\n"
-            + f"Out: {out_user.mention}[{out_user.name}]\n"
-            + f"Phase: {board.phase.name} {board.get_year_str()}\n"
-            + f"Reason: {reason}"
-        )
-        await send_message_and_file(channel=logc, message=out)
-
-        # fetch relevant roles to swap around on the users
-        player_role = discord_find(lambda r: r.name == "Player", guild.roles)
-        if not player_role:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="Can't proceed with automatic substitution processing: Couldn't find 'Player' role.",
-                embed_colour=config.ERROR_COLOUR,
-            )
-            return
-
-        orders_role = discord_find(
-            lambda r: r.name == f"orders-{power_role.name.lower()}", guild.roles
-        )
-        if not orders_role:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message=f"Can't proceed with automatic substitution processing: Couldn't find 'orders-{power_role.name.lower()}' role.",
-                embed_colour=config.ERROR_COLOUR,
-            )
-            return
-
-        cspec_role = discord_find(lambda r: r.name == "Country Spectator", guild.roles)
-        if not cspec_role:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="Can't proceed with automatic substitution processing: Couldn't find 'Country Spectator' role.",
-                embed_colour=config.ERROR_COLOUR,
-            )
-            return
-
-        # if incoming is currently a player
-        if player_role in in_member.roles:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="Can't substitute in an existing player!",
-                embed_colour=config.ERROR_COLOUR,
-            )
-            return
-
-        # if incoming is a country spec but not of current player
-        if cspec_role in in_member.roles and power_role not in in_member.roles:
-            await send_message_and_file(
-                channel=ctx.channel,
-                title="Error",
-                message="Incoming player is a country spectator for another power!",
-                embed_colour=config.ERROR_COLOUR,
-            )
-            return
-
-        # has incoming player spectated before
-        prev_spec = manager.get_spec_request(guild.id, in_user.id)
-        if prev_spec:
-            prev_spec_role = ctx.bot.get_role(prev_spec.role_id)
-
-            # previous spec of another power
-            if prev_spec.role_id != power_role.id:
-                await send_message_and_file(
-                    channel=ctx.channel,
-                    title="Error",
-                    message=f"Incoming player has previously spectated for power {prev_spec_role.mention}",
-                    embed_colour=config.ERROR_COLOUR,
-                )
-                return
-
-        # PROCESS ROLE ASSIGNMENTS
-        out = f"Outgoing Player: {out_user.name}\n"
-        out_member = guild.get_member(out_user.id)
-        if out_member:
-            prev_roles = list(
-                filter(lambda r: r in out_member.roles, [player_role, orders_role])
-            )  # roles to remove if they exist
-            prev_role_names = ", ".join(map(lambda r: r.mention, prev_roles))
-            out += f"- Previous Roles: {prev_role_names}\n"
-
-            new_roles = [cspec_role]  # roles to add
-            new_role_names = ", ".join(map(lambda r: r.mention, new_roles))
-            out += f"- New Roles: {new_role_names}\n"
-
-            try:
-                await out_member.remove_roles(*prev_roles, reason="Substitution")
-                await out_member.add_roles(*new_roles)
-            except HTTPException:
-                out += f"[ERROR] Failed to swap roles for outgoing player: {out_user.name}\n"
-
-        out += f"Incoming Player: {in_user.name}\n"
-        prev_roles = list(
-            filter(lambda r: r in in_member.roles, [cspec_role])
-        )  # roles to remove if they exist
-        prev_role_names = ", ".join(map(lambda r: r.mention, prev_roles))
-        out += f"- Previous Roles: {prev_role_names}\n"
-
-        new_roles = [player_role, power_role, orders_role]  # roles to add
-        new_role_names = ", ".join(map(lambda r: r.mention, new_roles))
-        out += f"- New Roles: {new_role_names}\n"
-
-        try:
-            await in_member.remove_roles(*prev_roles, reason="Substitution")
-            await in_member.add_roles(*new_roles)
-        except HTTPException:
-            out += f"[ERROR] Failed to swap roles for outgoing player: {out_user.name}"
-
-        await send_message_and_file(
-            channel=ctx.channel, title="Substitution results", message=out
-        )
 
     @commands.command(
         brief="blitz",
@@ -862,7 +709,7 @@ class GameManagementCog(commands.Cog):
             )
 
         player = get_player_by_channel(
-            channel, manager, ctx.guild.id, ignore_catagory=True
+            channel, manager, ctx.guild.id, ignore_category=True
         )
 
         # TODO hacky
