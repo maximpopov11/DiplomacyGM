@@ -9,7 +9,7 @@ from discord.ext.commands import ExtensionNotFound, ExtensionNotLoaded, Extensio
 
 from bot.config import (
     IMPDIP_SERVER_ID,
-    IMPDIP_BOT_WIZARD_ROLE, ERROR_COLOUR, PARTIAL_ERROR_COLOUR
+    IMPDIP_BOT_WIZARD_ROLE, ERROR_COLOUR, PARTIAL_ERROR_COLOUR, IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID
 )
 from bot.bot import DiploGM
 from bot import perms
@@ -176,6 +176,18 @@ class DevelopmentCog(commands.Cog):
             title=f"Reloaded Extension {extension}"
         )
 
+    @commands.command(hidden=True)
+    @perms.superuser_only("shutdown the bot")
+    async def su_shutdown_the_bot_yes_i_want_to_do_this(self, ctx: commands.Context):
+        await send_message_and_file(
+            channel=ctx.channel,
+            title=f"Why?",
+            message=f"Shutting down"
+        )
+        channel = self.bot.get_channel(IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID)
+        if channel:
+            await channel.send(f"{ctx.author.mention} stabbed me")
+        await self.bot.close()
 
 
 async def setup(bot: DiploGM):
