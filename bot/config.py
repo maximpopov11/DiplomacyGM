@@ -44,11 +44,14 @@ BOT_DEV_UNHANDLED_ERRORS_CHANNEL_ID = all_config["dev_hub"]["unhandled_errors_ch
 
 # IMPERIAL DIPLOMACY HUB
 IMPDIP_SERVER_ID = all_config["hub"]["id"]
+## Channels
 IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID = all_config["hub"]["status_channel"]
 IMPDIP_SERVER_SUBSTITUTE_TICKET_CHANNEL_ID = all_config["hub"]["substitute_ticket_channel"]
 IMPDIP_SERVER_SUBSTITUTE_ADVERTISE_CHANNEL_ID = all_config["hub"]["substitute_advertise_channel"]
 IMPDIP_SERVER_SUBSTITUTE_LOG_CHANNEL_ID = all_config["hub"]["substitute_log_channels"]
 IMPDIP_SERVER_WINTER_SCOREBOARD_OUTPUT_CHANNEL_ID = all_config["hub"]["winter_scoreboard_output_channels"]
+## Roles
+IMPDIP_BOT_WIZARD_ROLE = all_config["hub"]["bot_wizard"]
 
 # COLOURS
 EMBED_STANDARD_COLOUR = all_config["colours"]["embed_standard"]
