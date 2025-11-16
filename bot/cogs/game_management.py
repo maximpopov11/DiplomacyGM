@@ -467,7 +467,7 @@ class GameManagementCog(commands.Cog):
         if full_adjudicate:
             await self.lock_orders(ctx)
 
-        old_turn = (board.get_year_str(), board.phase)
+        old_turn = (board.get_year_int(), board.phase)
         new_board = manager.adjudicate(ctx.guild.id, test=test_adjudicate)
 
         log_command(
@@ -483,7 +483,7 @@ class GameManagementCog(commands.Cog):
             turn=old_turn,
         )
         title = f"{board.name} — " if board.name else ""
-        title += f"{old_turn[1].name} {old_turn[0]}"
+        title += f"{old_turn[1].name} {board.convert_year_int_to_str(old_turn[0])}"
         await send_message_and_file(
             channel=ctx.channel,
             title=f"{title} Orders Map",
@@ -599,7 +599,7 @@ class GameManagementCog(commands.Cog):
         * load_state <server_id> <spring, fall, winter}_{moves, retreats, builds> <year>
         * apocalypse {all OR army, fleet, core, province} !!! deletes everything specified !!!
         """,
-    )   
+    )
     @perms.gm_only("edit")
     async def edit(self, ctx: commands.Context) -> None:
         edit_commands = ctx.message.content.removeprefix(

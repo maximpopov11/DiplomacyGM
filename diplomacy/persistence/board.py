@@ -242,14 +242,19 @@ class Board:
 
         self.units = set()
 
-    def get_year_str(self) -> str:
-        # No 0 AD / BC
-        year = self.year_offset + self.year
+    def get_year_int(self) -> int:
+        return self.year_offset + self.year
 
+    @staticmethod
+    def convert_year_int_to_str(year: int) -> str:
+        # No 0 AD / BC
         if year <= 0:
             return f"{str(1-year)} BC"
         else:
             return str(year)
+
+    def get_year_str(self) -> str:
+        return self.convert_year_int_to_str(self.get_year_int())
         
     def is_chaos(self) -> bool:
         return self.data["players"] == "chaos"
