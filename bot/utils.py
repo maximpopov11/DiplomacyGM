@@ -311,7 +311,7 @@ async def send_message_and_file(
 ) -> Message:
 
     if not embed_colour:
-        embed_colour = "#fc71c4"
+        embed_colour = config.EMBED_STANDARD_COLOUR
 
     if convert_svg and file and file_name:
         file, file_name = await svg_to_png(file, file_name)
