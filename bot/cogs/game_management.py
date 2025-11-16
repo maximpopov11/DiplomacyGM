@@ -545,7 +545,7 @@ class GameManagementCog(commands.Cog):
             await self.unlock_orders(ctx)
 
         # AUTOMATIC SCOREBOARD OUTPUT FOR DATA SPREADSHEET
-        if phase.is_builds(new_board.phase) and guild.id != config.BOT_DEV_SERVER_ID:
+        if phase.is_builds(new_board.phase) and (guild.id != config.BOT_DEV_SERVER_ID and guild.name.startswith("Imperial Diplomacy")) and not test_adjudicate:
             channel = self.bot.get_channel(config.IMPDIP_SERVER_WINTER_SCOREBOARD_OUTPUT_CHANNEL_ID)
             if not channel:
                 await send_message_and_file(channel=ctx.channel, message="Couldn't automatically send off the Winter Scoreboard data", embed_colour=config.ERROR_COLOUR)
@@ -556,7 +556,7 @@ class GameManagementCog(commands.Cog):
             counts = "\n".join(map(lambda p: str(len(p.centers)), players))
 
             await channel.send(title)
-            await ctx.send(counts)
+            await channel.send(counts)
 
     @commands.command(brief="Rolls back to the previous game state.")
     @perms.gm_only("rollback")
