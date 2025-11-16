@@ -161,7 +161,7 @@ class DiploGM(commands.Bot):
 
         if time_spent.total_seconds() < 1:
             level = logging.DEBUG
-        elif time_spent.total_seconds() < 10:
+        elif time_spent.total_seconds() < 10 and ctx.command.name != "order":
             level = logging.INFO
         else:
             level = logging.WARN
@@ -244,7 +244,7 @@ class DiploGM(commands.Bot):
         # HACK: Seems really wrong to catch this here
         # Just in the moment it seems like a lot of work to fix the RuntimeError raises throughout the project
         if isinstance(original, RuntimeError):
-            out = f"`{original}`\n{original.__traceback__}"
+            out = f"`{original}`\n"
             await send_message_and_file(
                 channel=ctx.channel,
                 title="DiploGM ran into a Runtime Error",
@@ -288,7 +288,8 @@ class DiploGM(commands.Bot):
                 f"Location: {ctx.guild.name} [{ctx.channel.category or ''}]-[{ctx.channel.name}]\n"
                 f"Time: {str(datetime.datetime.now(datetime.timezone.utc))[:-13]} UTC\n"
                 f"Invoking User: {ctx.author.mention}[{ctx.author.name}]\n"
-                f"Command Invocation Message: `{ctx.message.content}`\n"
+                f"Invoked Command: {ctx.command.name}\n"
+                f"Command Invocation Message: ||`{ctx.message.content}`||\n"
             ) + unhandled_out
             await send_message_and_file(
                 channel=bot_error_channel,

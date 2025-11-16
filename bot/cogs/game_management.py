@@ -545,7 +545,7 @@ class GameManagementCog(commands.Cog):
             await self.unlock_orders(ctx)
 
         # AUTOMATIC SCOREBOARD OUTPUT FOR DATA SPREADSHEET
-        if phase.is_builds(new_board.phase):
+        if phase.is_builds(new_board.phase) and guild.id != config.BOT_DEV_SERVER_ID:
             channel = self.bot.get_channel(config.IMPDIP_SERVER_WINTER_SCOREBOARD_OUTPUT_CHANNEL_ID)
             if not channel:
                 await send_message_and_file(channel=ctx.channel, message="Couldn't automatically send off the Winter Scoreboard data", embed_colour=config.ERROR_COLOUR)
