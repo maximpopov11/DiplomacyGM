@@ -12,7 +12,7 @@ from bot.utils import (
     is_moderator,
     is_player_channel,
     get_player_by_channel,
-    is_admin,
+    is_superuser,
 )
 from diplomacy.persistence.manager import Manager
 from diplomacy.persistence.player import Player
@@ -140,14 +140,14 @@ def gm_only(description: str = "run this command"):
     return commands.check(lambda ctx: assert_gm_only(ctx, description))
 
 
-def assert_admin_only(ctx: commands.Context, description: str = "run this command"):
-    if not is_admin(ctx.message.author):
+def assert_superuser_only(ctx: commands.Context, description: str = "run this command"):
+    if not is_superuser(ctx.message.author):
         raise CommandPermissionError(
-            f"You cannot {description} as you are not an admin"
+            f"You cannot {description} as you are not an superuser"
         )
     else:
         return True
 
 
-def admin_only(description: str = "run this command"):
-    return commands.check(lambda ctx: assert_admin_only(ctx, description))
+def superuser_only(description: str = "run this command"):
+    return commands.check(lambda ctx: assert_superuser_only(ctx, description))

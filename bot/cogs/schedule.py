@@ -4,10 +4,12 @@ import json
 import logging
 
 from discord.ext import commands, tasks
+from discord import Message, User
 
+from bot.bot import DiploGM
 from bot import perms
 from bot.config import ERROR_COLOUR
-from bot.utils import get_value_from_timestamp, log_command, send_message_and_file
+from bot.utils import get_value_from_timestamp, log_command, send_message_and_file, log_command_no_ctx
 from diplomacy.persistence.manager import Manager
 
 logger = logging.getLogger(__name__)
@@ -20,6 +22,7 @@ IMPOSSIBLE_COMMANDS = ["schedule", "create_game", "delete_game"]
 
 
 class ScheduleCog(commands.Cog):
+    bot: DiploGM
     def __init__(self, bot):
         self.bot = bot
         self.scheduled_storage = "bot/assets/schedule.json"
@@ -49,7 +52,6 @@ class ScheduleCog(commands.Cog):
             raise e
 
         self.process_scheduled_tasks.start()
-        self.save_scheduled_tasks.start()
 
     async def close(self):
         self.process_scheduled_tasks.cancel()
@@ -142,6 +144,8 @@ class ScheduleCog(commands.Cog):
             "command": command_name,
             "args": content,
             "full_command": f"{self.bot.command_prefix}{command_name} {content}",
+            "mentions": [mention.id for mention in ctx.message.mentions],
+            "role_mentions":  [mention.id for mention in ctx.message.role_mentions],
         }
 
         out = (
@@ -154,6 +158,7 @@ class ScheduleCog(commands.Cog):
         )
 
         self.scheduled_tasks[str(ctx.message.id)] = scheduled_task
+        await self.save_scheduled_tasks()
 
     @commands.command(
         name="unschedule",
@@ -174,6 +179,7 @@ class ScheduleCog(commands.Cog):
             ids = [id for id, task in self.scheduled_tasks.items() if task["guild_id"] == gid]
             for id in ids:
                 del self.scheduled_tasks[id]
+                await self.save_scheduled_tasks()
 
             await send_message_and_file(
                 channel=ctx.channel,
@@ -184,6 +190,7 @@ class ScheduleCog(commands.Cog):
         try:
             task = self.scheduled_tasks[task_id]
             del self.scheduled_tasks[task_id]
+            await self.save_scheduled_tasks()
             await send_message_and_file(
                 channel=ctx.channel,
                 message=f"Deleted scheduled task: {task['command']} for {task['execute_at']}",
@@ -232,6 +239,7 @@ class ScheduleCog(commands.Cog):
 
     @tasks.loop(seconds=LOOP_FREQUENCY_SECONDS)
     async def process_scheduled_tasks(self):
+        # TODO: Clean up reporting and add logging for deserialisation errors
         now = datetime.datetime.now(datetime.timezone.utc)
         due = {
             id: task
@@ -244,22 +252,9 @@ class ScheduleCog(commands.Cog):
             channel_id = task["channel_id"]
             channel = self.bot.get_channel(channel_id)
             if not channel:
-                continue
-
-            command_name = task["command"]
-            full_command = (
-                f"{self.bot.command_prefix}{task['command']} {task['args']}".strip()
-            )
-            cmd = self.bot.get_command(command_name)
-            if not cmd:
-                await send_message_and_file(
-                    channel=channel,
-                    message=f"Failure to invoke scheduled `{command_name}` scheduled at: {task['creation_time']}. Could not find command `{command_name}`.\nFull command: `{full_command}`",
-                    embed_colour=ERROR_COLOUR,
-                )
                 del self.scheduled_tasks[id]
-
-                return
+                await self.save_scheduled_tasks()
+                continue
 
             # skip over stale tasks, suspected change of state not worthy of continuing automatic behaviour
             # guard in case bot goes down for extended periods
@@ -274,58 +269,105 @@ class ScheduleCog(commands.Cog):
                     embed_colour=ERROR_COLOUR,
                 )
                 del self.scheduled_tasks[id]
+                await self.save_scheduled_tasks()
                 continue
 
-            # fetch a fake context to smuggle command invoke message
+            user = self.bot.get_user(task['invoking_user_id'])
+            if user is None:
+                await send_message_and_file(
+                    channel=channel,
+                    message=f"Skipping task {id}: Could not find invoking user\nTask: {full_command}",
+                    embed_colour=ERROR_COLOUR,
+                )
+                del self.scheduled_tasks[id]
+                await self.save_scheduled_tasks()
+                continue
+
             out = (
-                f"Command: {command_name}\n"
-                f"Invoking: {full_command}\n"
-                f"Scheduled by: {user.mention if (user := self.bot.get_user(task['invoking_user_id'])) else task['invoking_user_name']}\n"
+                f"Command: {task['command']}\n"
+                f"Invoking: {task['full_command']}\n"
+                f"Scheduled by: {user.mention}\n"
                 f"Scheduled at: {task['created_at']}"
             )
             await send_message_and_file(
                 channel=channel, title="Executing scheduled command!", message=out
             )
 
-            stub = await channel.send(full_command)
-            ctx: commands.Context = await self.bot.get_context(stub)
+            mentions_users = []
+            for user_id in task["mentions"]:
+                if mentioned_user := self.bot.get_user(user_id):
+                    mentions_users.append(self.get_payload_user_from_user(mentioned_user))
 
-            ctx.prefix = str(self.bot.command_prefix)
-            ctx.invoked_with = command_name
-            ctx.message.content = full_command
+            message = Message(
+                state=self.bot._connection,
+                channel=channel,
+                data = {
+                    "id": task["invoking_msg_id"],
+                    "author": self.get_payload_user_from_user(user),
+                    "content": task['full_command'],
+                    "timestamp": task["execute_at"],
+                    "edited_timestamp": None,
+                    "tts": False,
+                    "mention_everyone": False,
+                    "mentions": mentions_users,
+                    "mention_roles": task["role_mentions"],
+                    "attachments": [],
+                    "embeds": [],
+                    "pinned": False,
+                    "type": 1,
+                    "channel_id": channel.id,
+
+                }
+            )
 
             # delete task immediately to prevent long tasks carrying over to new loops
             del self.scheduled_tasks[id]
+            await self.save_scheduled_tasks()
             try:
-                log_command(
+                log_command_no_ctx(
                     logger,
-                    ctx,
+                    task['full_command'],
+                    channel.guild.name,
+                    channel.name,
+                    user.name,
                     f"Executing command scheduled by '{task['invoking_user_name']}' at {task['created_at']}",
                 )
 
-                # HACK: Should find a better way of handling
-                # A distinction between command definitions (def func(ctx, arg1, arg2) / def func(ctx) -> msg: "func arg1 arg2")
-                # If one doesn't work try the other
-                try:
-                    await ctx.invoke(cmd, task["args"])
-                except:
-                    await cmd.invoke(ctx)
+                await self.bot.process_commands(message)
             except Exception as e:
                 await channel.send(
-                    f"Failure to invoke scheduled command.\nCommand: `{full_command}`\nScheduled at: {task['created_at']}"
+                    f"Failure to invoke scheduled command.\nCommand: `{task['full_command']}`\nScheduled at: {task['created_at']}"
                 )
 
-                user = self.bot.get_user(task["invoking_user"])
+                user = self.bot.get_user(task["invoking_user_id"])
                 if user:
                     await channel.send(f"Alert: {user.mention}")
 
                 raise e
 
+    @staticmethod
+    def get_payload_user_from_user(user: User):
+        return {
+            "id": user.id,
+            "username": user.name,
+            "discriminator": user.discriminator,
+            "avatar": user.avatar.url if user.avatar else None,
+            "global_name": user.global_name,
+            "bot": user.bot,
+            "system": user.system,
+            "mfa_enabled": False,
+            "locale": "",
+            "verified": True,
+            "email": None,
+            "flags": 0,
+            "premium_type": 0,
+            "public_flags": user.public_flags
+        }
+
     @process_scheduled_tasks.before_loop
     async def before_process_scheduled_tasks(self):
         await self.bot.wait_until_ready()
 
-    @tasks.loop(seconds=SAVE_FREQUENCY_SECONDS)
     async def save_scheduled_tasks(self):
         logger.info(f"Saving {len(self.scheduled_tasks)} stored scheduled tasks")
         with open(self.scheduled_storage, "w") as f:
@@ -335,10 +377,6 @@ class ScheduleCog(commands.Cog):
                 task["execute_at"] = task["execute_at"].isoformat()
 
             json.dump(curr_tasks, f)
-            
-    @save_scheduled_tasks.before_loop
-    async def before_save_scheduled_tasks(self):
-        await self.bot.wait_until_ready()
 
 async def setup(bot):
     cog = ScheduleCog(bot)

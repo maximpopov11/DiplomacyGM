@@ -131,7 +131,7 @@ async def announce(ctx: commands.Context, manager: Manager) -> None:
             )
         await send_message_and_file(
             channel=admin_chat_channel,
-            title="Admin Announcement",
+            title="DiploGM Announcement",
             message=content.format(*server_roles),
         )
     log_command(logger, ctx, f"Sent Announcement into {len(ctx.bot.guilds)} servers")
@@ -1225,7 +1225,7 @@ async def publish_map(
 
 # if possible save one svg slot for others
 fow_export_limit = asyncio.Semaphore(
-    max(int(os.getenv("simultaneous_svg_exports_limit")) - 1, 1)
+    max(int(config.SIMULATRANEOUS_SVG_EXPORT_LIMIT) - 1, 1)
 )
 
 

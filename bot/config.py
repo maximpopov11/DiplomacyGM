@@ -1,20 +1,71 @@
-BOT_DEV_SERVER_ID = 1262215477237645314
-BOT_DEV_UNHANDLED_ERRORS_CHANNEL_ID = 1423396664483381258
-IMPDIP_SERVER_ID = 1201167737163104376
-IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID = 1284336328657600572
-IMPDIP_SERVER_SUBSTITUTE_TICKET_CHANNEL_ID = 1294689571103309944
-IMPDIP_SERVER_SUBSTITUTE_ADVERTISE_CHANNEL_ID = 1201263909622010037
-IMPDIP_SERVER_SUBSTITUTE_LOG_CHANNEL_ID = (
-    1282421565174059053  # currently a threadchannel (#gm-hangout->'Reputation Tracker')
-)
-IMPDIP_SERVER_WINTER_SCOREBOARD_OUTPUT_CHANNEL_ID = (
-    1439377486055215246  # currently a threadchannel
-)
+import tomllib
+import sys
+from typing import List, Tuple, Any
 
-ERROR_COLOUR = "#FF0000"
-PARTIAL_ERROR_COLOUR = "#FF7700"
+with open("config_defaults.toml", "rb") as toml_file:
+    _default_toml = tomllib.load(toml_file)
 
+with open("config.toml", "rb") as toml_file:
+    _toml = tomllib.load(toml_file)
+
+
+def merge_toml(main: dict[str, Any], default: dict[str, Any], current_path: str = "") -> Tuple[
+    List[str], dict[str, Any]]:
+    output = {}
+    errors = []
+    for key in default:
+        if key in main:
+            if type(main[key]) is type(default[key]):
+                if isinstance(main[key], dict):
+                    new_errors, output[key] = merge_toml(main[key], default[key], current_path=key)
+                    errors.extend(new_errors)
+                else:
+                    output[key] = main[key]
+            else:
+                errors.append(f"{current_path}.")
+        else:
+            output[key] = default[key]
+    return errors, output
+
+
+toml_errors, all_config = merge_toml(_toml, _default_toml)
+
+# BOT CONFIG
+DISCORD_TOKEN = all_config["bot"]["discord_token"]
+LOGGING_LEVEL = all_config["bot"]["log_level"]
+COMMAND_PREFIX = all_config["bot"]["command_prefix"]
+
+# EXTENSIONS
+EXTENSIONS_TO_LOAD_ON_STARTUP = all_config["extensions"]["load_on_startup"]
+
+# DEVELOPMENT SERVER HUB
+BOT_DEV_SERVER_ID = all_config["dev_hub"]["id"]
+BOT_DEV_UNHANDLED_ERRORS_CHANNEL_ID = all_config["dev_hub"]["unhandled_errors_channel"]
+
+# IMPERIAL DIPLOMACY HUB
+IMPDIP_SERVER_ID = all_config["hub"]["id"]
+## Channels
+IMPDIP_SERVER_BOT_STATUS_CHANNEL_ID = all_config["hub"]["status_channel"]
+IMPDIP_SERVER_SUBSTITUTE_TICKET_CHANNEL_ID = all_config["hub"]["substitute_ticket_channel"]
+IMPDIP_SERVER_SUBSTITUTE_ADVERTISE_CHANNEL_ID = all_config["hub"]["substitute_advertise_channel"]
+IMPDIP_SERVER_SUBSTITUTE_LOG_CHANNEL_ID = all_config["hub"]["substitute_log_channels"]
+IMPDIP_SERVER_WINTER_SCOREBOARD_OUTPUT_CHANNEL_ID = all_config["hub"]["winter_scoreboard_output_channels"]
+## Roles
+IMPDIP_BOT_WIZARD_ROLE = all_config["hub"]["bot_wizard"]
+
+# COLOURS
+EMBED_STANDARD_COLOUR = all_config["colours"]["embed_standard"]
+PARTIAL_ERROR_COLOUR = all_config["colours"]["embed_partial_success"]
+ERROR_COLOUR = all_config["colours"]["embed_error"]
+
+# TODO: move to config_defaults.toml if applicable or elsewhere
 color_options = {"standard", "dark", "pink", "blue", "kingdoms", "empires"}
+
+# INKSCAPE
+SIMULATRANEOUS_SVG_EXPORT_LIMIT = all_config["inkscape"]["simultaneous_svg_exports_limit"]
+
+class ConfigException(Exception):
+    pass
 
 
 # Capitalization is ignored in all definitions.

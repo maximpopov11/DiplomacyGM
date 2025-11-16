@@ -1,0 +1,62 @@
+###############
+# DO NOT EDIT #
+###############
+
+# Create a `config.toml` to change defaults.
+# Dictionaries are merged into default config, all other types are overridden.
+
+[bot]
+# Example Discord bot and token tutorial - https://www.writebots.com/discord-bot-token/
+# Goto https://discord.com/developers/applications - YourBot - Bot - Token - Reveal
+discord_token = ""
+
+# Must be one of "CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"
+log_level = "INFO"
+
+# Command Prefix
+command_prefix = "."
+
+[hub]
+id = 1201167737163104376
+# Channel ids
+status_channel = 1284336328657600572
+substitute_ticket_channel = 1294689571103309944
+substitute_advertise_channel = 1201263909622010037
+substitute_log_channels = [
+    1282421565174059053  # currently a threadchannel (#gm-hangout->'Reputation Tracker')
+]
+winter_scoreboard_output_channels = [
+    1439377486055215246  # currently a threadchannel
+]
+# Role ids
+bot_wizard = 1424487941857611837
+
+[dev_hub]
+id = 1262215477237645314
+unhandled_errors_channel = 1423396664483381258
+
+
+[extensions]
+load_on_startup = [
+    "administration",
+    "command",
+    "development",
+    "fog_of_war",
+    "game_management",
+    "moderation",
+    "party",
+    "player",
+    "schedule",
+    "slash_substitute",
+    "spectator",
+    "substitute",
+]
+
+[colours]
+embed_standard = "#FC71C4"
+embed_partial_success = "#FF7700"
+embed_error = "#FF0000"
+
+[inkscape]
+# limits the number of simultaneous Inkscape invocations
+simultaneous_svg_exports_limit = 1

@@ -1,9 +1,11 @@
 import asyncio
 from subprocess import PIPE
 import os
+from bot.config import SIMULATRANEOUS_SVG_EXPORT_LIMIT
 
-limit = os.getenv("simultaneous_svg_exports_limit")
-if limit == None:
+limit = SIMULATRANEOUS_SVG_EXPORT_LIMIT
+
+if limit is None:
     limit = 4
 external_task_limit = asyncio.Semaphore(int(limit))
 
