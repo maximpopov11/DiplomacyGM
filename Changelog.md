@@ -16,7 +16,7 @@ Contributors to this release:
 
 
 # Hellenic Diplomacy
-<@518774219832819716> HellaDip should be fully supported by the bot.
+HellaDip should be fully supported by the bot.
 - Support for years before 1 A.D.
 - New way of detecting units for Helladip, you now get some fleets.
 
@@ -51,6 +51,6 @@ New Cog for developer commands
 - scheduled commands now create an artificial Message to invoke a command instead of sending a message to create a new on. This lets superusers schedule superuser commands.
 - scheduled commands have better error reporting.
 - helladip didn't use the new or old system of unit detection. I didn't want to mess around with the svg so now it checks for what the unit is called in the svg.
-- adding logging for SVG -> PNG conversion
-
+- adding logging for SVG -> PNG conversion.
+- deleted `_command.py`. Cogs are now stable.
 
