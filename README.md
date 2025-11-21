@@ -1,3 +1,6 @@
+# Archived
+This repo is archived in favor of https://github.com/Imperial-Diplomacy/DiplomacyGM which continues this work under the official ImperialDiplomacy organization.
+
 ### Sample Map Generation Output
 
 <img width="11047" height="4548" alt="ImpDip" src="https://github.com/user-attachments/assets/fb43ec57-d449-4dac-87ba-20560437076f" />
